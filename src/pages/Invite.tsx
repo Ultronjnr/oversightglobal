@@ -91,8 +91,8 @@ export default function Invite() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters");
       return;
     }
 
@@ -250,7 +250,7 @@ export default function Invite() {
                   placeholder="Create a password"
                   className="pl-10"
                   required
-                  minLength={6}
+                  minLength={8}
                   disabled={status === "accepting"}
                 />
               </div>
@@ -269,7 +269,7 @@ export default function Invite() {
                   placeholder="Confirm your password"
                   className="pl-10"
                   required
-                  minLength={6}
+                  minLength={8}
                   disabled={status === "accepting"}
                 />
               </div>
