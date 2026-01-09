@@ -28,7 +28,7 @@ const supplierSchema = z
     address: z.string().min(5, "Address is required"),
     registrationNumber: z.string().min(3, "Registration number is required"),
     industry: z.string().min(1, "Please select an industry"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

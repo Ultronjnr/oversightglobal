@@ -138,11 +138,18 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         return null;
       }
 
-      const { data: urlData } = supabase.storage
+      // Use signed URL for private bucket (1 hour expiration)
+      const { data: urlData, error: urlError } = await supabase.storage
         .from("pr-documents")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      return urlData.publicUrl;
+      if (urlError || !urlData?.signedUrl) {
+        console.error("Failed to create signed URL:", urlError);
+        toast.error("Failed to generate document URL");
+        return null;
+      }
+
+      return urlData.signedUrl;
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload document");

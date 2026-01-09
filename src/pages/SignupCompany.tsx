@@ -19,7 +19,7 @@ const signupSchema = z
     companyName: z.string().min(2, "Company name is required"),
     companyAddress: z.string().min(5, "Company address is required"),
     companyPhone: z.string().optional(),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
