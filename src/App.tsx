@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignupCompany from "./pages/SignupCompany";
 import SignupSupplier from "./pages/SignupSupplier";
+import Invite from "./pages/Invite";
 import NotFound from "./pages/NotFound";
 
 // Portals
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/signup/supplier" element={<SignupSupplier />} />
+            <Route path="/invite" element={<Invite />} />
 
             {/* Employee Portal */}
             <Route
