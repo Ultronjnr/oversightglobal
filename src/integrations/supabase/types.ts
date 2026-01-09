@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      invitations: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          invited_by: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token: string
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          organization_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           address: string | null
@@ -373,6 +412,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: {
+        Args: { _email: string; _token: string }
+        Returns: boolean
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -386,6 +429,18 @@ export type Database = {
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
+      validate_invitation: {
+        Args: { _email: string; _token: string }
+        Returns: {
+          department: string
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
