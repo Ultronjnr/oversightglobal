@@ -85,6 +85,97 @@ export type Database = {
           },
         ]
       }
+      purchase_requisitions: {
+        Row: {
+          created_at: string
+          currency: string
+          document_url: string | null
+          due_date: string | null
+          finance_status: string
+          history: Json
+          hod_status: string
+          id: string
+          items: Json
+          organization_id: string
+          parent_pr_id: string | null
+          payment_due_date: string | null
+          requested_by: string
+          requested_by_department: string | null
+          requested_by_name: string
+          status: Database["public"]["Enums"]["pr_status"]
+          total_amount: number
+          transaction_id: string
+          updated_at: string
+          urgency: Database["public"]["Enums"]["urgency_level"]
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          document_url?: string | null
+          due_date?: string | null
+          finance_status?: string
+          history?: Json
+          hod_status?: string
+          id?: string
+          items?: Json
+          organization_id: string
+          parent_pr_id?: string | null
+          payment_due_date?: string | null
+          requested_by: string
+          requested_by_department?: string | null
+          requested_by_name: string
+          status?: Database["public"]["Enums"]["pr_status"]
+          total_amount?: number
+          transaction_id: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          document_url?: string | null
+          due_date?: string | null
+          finance_status?: string
+          history?: Json
+          hod_status?: string
+          id?: string
+          items?: Json
+          organization_id?: string
+          parent_pr_id?: string | null
+          payment_due_date?: string | null
+          requested_by?: string
+          requested_by_department?: string | null
+          requested_by_name?: string
+          status?: Database["public"]["Enums"]["pr_status"]
+          total_amount?: number
+          transaction_id?: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requisitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requisitions_parent_pr_id_fkey"
+            columns: ["parent_pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requisitions_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -163,6 +254,15 @@ export type Database = {
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
+      pr_status:
+        | "PENDING_HOD_APPROVAL"
+        | "HOD_APPROVED"
+        | "HOD_DECLINED"
+        | "PENDING_FINANCE_APPROVAL"
+        | "FINANCE_APPROVED"
+        | "FINANCE_DECLINED"
+        | "SPLIT"
+      urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
     }
     CompositeTypes: {
@@ -292,6 +392,16 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
+      pr_status: [
+        "PENDING_HOD_APPROVAL",
+        "HOD_APPROVED",
+        "HOD_DECLINED",
+        "PENDING_FINANCE_APPROVAL",
+        "FINANCE_APPROVED",
+        "FINANCE_DECLINED",
+        "SPLIT",
+      ],
+      urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
     },
   },
