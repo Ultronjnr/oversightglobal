@@ -12,25 +12,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
 
 const statusConfig: Record<
   PRStatus,
-  { label: string; variant: "default" | "secondary" | "destructive" | "outline" }
+  { label: string; className: string }
 > = {
-  PENDING_HOD_APPROVAL: { label: "Pending HOD", variant: "secondary" },
-  HOD_APPROVED: { label: "HOD Approved", variant: "default" },
-  HOD_DECLINED: { label: "HOD Declined", variant: "destructive" },
-  PENDING_FINANCE_APPROVAL: { label: "Pending Finance", variant: "secondary" },
-  FINANCE_APPROVED: { label: "Approved", variant: "default" },
-  FINANCE_DECLINED: { label: "Declined", variant: "destructive" },
-  SPLIT: { label: "Split", variant: "outline" },
+  PENDING_HOD_APPROVAL: { label: "Pending HOD", className: "bg-warning/10 text-warning border-warning/20" },
+  HOD_APPROVED: { label: "HOD Approved", className: "bg-success/10 text-success border-success/20" },
+  HOD_DECLINED: { label: "HOD Declined", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  PENDING_FINANCE_APPROVAL: { label: "Pending Finance", className: "bg-warning/10 text-warning border-warning/20" },
+  FINANCE_APPROVED: { label: "Approved", className: "bg-success/10 text-success border-success/20" },
+  FINANCE_DECLINED: { label: "Declined", className: "bg-destructive/10 text-destructive border-destructive/20" },
+  SPLIT: { label: "Split", className: "bg-primary/10 text-primary border-primary/20" },
 };
 
 const urgencyConfig: Record<string, { label: string; className: string }> = {
   LOW: { label: "Low", className: "bg-muted text-muted-foreground" },
-  NORMAL: { label: "Normal", className: "bg-blue-500/10 text-blue-600" },
+  NORMAL: { label: "Normal", className: "bg-primary/10 text-primary" },
   HIGH: { label: "High", className: "bg-warning/10 text-warning" },
   URGENT: { label: "Urgent", className: "bg-destructive/10 text-destructive" },
 };
@@ -80,7 +81,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-16">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -88,7 +89,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
 
   if (error) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-16">
         <p className="text-destructive mb-4">{error}</p>
         <Button variant="outline" onClick={fetchPRs}>
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -100,43 +101,35 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
 
   if (prs.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
-        <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-        <p>No purchase requisitions yet.</p>
-        <p className="text-sm">Create your first PR using the form above.</p>
-      </div>
+      <EmptyState
+        icon={<FileText className="h-16 w-16" />}
+        title="No Purchase Requisitions"
+        description="You haven't submitted any purchase requisitions yet. Click 'New Purchase Requisition' to get started."
+      />
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Your Purchase Requisitions</h3>
-        <Button variant="ghost" size="sm" onClick={fetchPRs}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/30">
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-10"></TableHead>
-              <TableHead>Transaction ID</TableHead>
-              <TableHead>Department</TableHead>
-              <TableHead>Urgency</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
+              <TableHead className="font-semibold">Transaction ID</TableHead>
+              <TableHead className="font-semibold">Department</TableHead>
+              <TableHead className="font-semibold">Urgency</TableHead>
+              <TableHead className="text-right font-semibold">Amount</TableHead>
+              <TableHead className="font-semibold">Status</TableHead>
+              <TableHead className="font-semibold">Created</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {prs.map((pr) => (
+            {prs.map((pr, index) => (
               <>
                 <TableRow
                   key={pr.id}
-                  className="cursor-pointer hover:bg-muted/20"
+                  className={`cursor-pointer hover:bg-muted/20 ${index % 2 === 1 ? 'bg-muted/10' : ''}`}
                   onClick={() => toggleRow(pr.id)}
                 >
                   <TableCell>
@@ -148,24 +141,27 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                       )}
                     </Button>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">
+                  <TableCell className="font-mono text-sm text-foreground">
                     {pr.transaction_id}
                   </TableCell>
-                  <TableCell>{pr.requested_by_department || "-"}</TableCell>
+                  <TableCell className="text-muted-foreground">{pr.requested_by_department || "-"}</TableCell>
                   <TableCell>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                         urgencyConfig[pr.urgency]?.className || ""
                       }`}
                     >
                       {urgencyConfig[pr.urgency]?.label || pr.urgency}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className="text-right font-semibold text-foreground">
                     {pr.currency} {pr.total_amount.toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusConfig[pr.status]?.variant || "secondary"}>
+                    <Badge 
+                      variant="outline" 
+                      className={statusConfig[pr.status]?.className || ""}
+                    >
                       {statusConfig[pr.status]?.label || pr.status}
                     </Badge>
                   </TableCell>
@@ -177,30 +173,30 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                 {/* Expanded Details */}
                 {expandedRows.has(pr.id) && (
                   <TableRow key={`${pr.id}-details`}>
-                    <TableCell colSpan={7} className="bg-muted/10 p-4">
+                    <TableCell colSpan={7} className="bg-muted/5 p-6">
                       <div className="space-y-4">
                         {/* Items */}
                         <div>
-                          <h4 className="font-medium mb-2">Line Items</h4>
+                          <h4 className="font-semibold mb-3 text-foreground">Line Items</h4>
                           <div className="rounded-lg border border-border/30 overflow-hidden">
                             <table className="w-full text-sm">
                               <thead className="bg-muted/30">
                                 <tr>
-                                  <th className="text-left p-2">Description</th>
-                                  <th className="text-right p-2">Qty</th>
-                                  <th className="text-right p-2">Unit Price</th>
-                                  <th className="text-right p-2">Total</th>
+                                  <th className="text-left p-3 font-semibold">Description</th>
+                                  <th className="text-right p-3 font-semibold">Qty</th>
+                                  <th className="text-right p-3 font-semibold">Unit Price</th>
+                                  <th className="text-right p-3 font-semibold">Total</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {(pr.items as PRItem[]).map((item, idx) => (
                                   <tr key={idx} className="border-t border-border/30">
-                                    <td className="p-2">{item.description}</td>
-                                    <td className="text-right p-2">{item.quantity}</td>
-                                    <td className="text-right p-2">
+                                    <td className="p-3">{item.description}</td>
+                                    <td className="text-right p-3">{item.quantity}</td>
+                                    <td className="text-right p-3">
                                       R {item.unit_price.toFixed(2)}
                                     </td>
-                                    <td className="text-right p-2 font-medium">
+                                    <td className="text-right p-3 font-medium">
                                       R {item.total.toFixed(2)}
                                     </td>
                                   </tr>
@@ -212,29 +208,29 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
 
                         {/* Additional Info */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Due Date:</span>
-                            <p className="font-medium">
+                          <div className="bg-white rounded-lg p-3 border border-border/30">
+                            <span className="text-muted-foreground text-xs">Due Date</span>
+                            <p className="font-medium mt-1">
                               {pr.due_date
                                 ? format(new Date(pr.due_date), "dd MMM yyyy")
                                 : "-"}
                             </p>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Payment Due:</span>
-                            <p className="font-medium">
+                          <div className="bg-white rounded-lg p-3 border border-border/30">
+                            <span className="text-muted-foreground text-xs">Payment Due</span>
+                            <p className="font-medium mt-1">
                               {pr.payment_due_date
                                 ? format(new Date(pr.payment_due_date), "dd MMM yyyy")
                                 : "-"}
                             </p>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">HOD Status:</span>
-                            <p className="font-medium">{pr.hod_status}</p>
+                          <div className="bg-white rounded-lg p-3 border border-border/30">
+                            <span className="text-muted-foreground text-xs">HOD Status</span>
+                            <p className="font-medium mt-1">{pr.hod_status}</p>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Finance Status:</span>
-                            <p className="font-medium">{pr.finance_status}</p>
+                          <div className="bg-white rounded-lg p-3 border border-border/30">
+                            <span className="text-muted-foreground text-xs">Finance Status</span>
+                            <p className="font-medium mt-1">{pr.finance_status}</p>
                           </div>
                         </div>
 
@@ -245,7 +241,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                               href={pr.document_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-primary hover:underline"
+                              className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
                             >
                               <FileText className="h-4 w-4" />
                               View Attached Document
