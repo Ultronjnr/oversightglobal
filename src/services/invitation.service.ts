@@ -250,14 +250,14 @@ export async function acceptInvitation(
       return { success: false, error: profileError.message };
     }
 
-    // Assign the role
-    const { error: roleError } = await supabase.from("user_roles").insert([{
-      user_id: authData.user.id,
-      role: invitation.role as "ADMIN" | "EMPLOYEE" | "FINANCE" | "HOD" | "SUPPLIER",
-    }]);
+    // Assign the role using secure function (bypasses RLS for privileged roles)
+    const { data: roleAssigned, error: roleError } = await supabase.rpc("assign_invitation_role", {
+      _user_id: authData.user.id,
+      _role: invitation.role as "ADMIN" | "EMPLOYEE" | "FINANCE" | "HOD" | "SUPPLIER",
+    });
 
-    if (roleError) {
-      return { success: false, error: roleError.message };
+    if (roleError || !roleAssigned) {
+      return { success: false, error: roleError?.message || "Failed to assign role" };
     }
 
     // Mark invitation as accepted

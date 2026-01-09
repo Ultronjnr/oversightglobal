@@ -140,17 +140,17 @@ export default function SignupCompany() {
         return;
       }
 
-      // STEP 4b: Create user role as ADMIN
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: "ADMIN",
-      });
+      // STEP 4b: Create user role as ADMIN using secure function
+      const { data: roleAssigned, error: roleError } = await supabase.rpc(
+        "assign_invitation_role",
+        { _user_id: authData.user.id, _role: "ADMIN" }
+      );
 
-      if (roleError) {
+      if (roleError || !roleAssigned) {
         console.error("Role error:", roleError);
         // Rollback: delete org
         await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("Failed to assign admin role: " + roleError.message);
+        toast.error("Failed to assign admin role: " + (roleError?.message || "Unknown error"));
         setIsLoading(false);
         return;
       }

@@ -416,6 +416,13 @@ export type Database = {
         Args: { _email: string; _token: string }
         Returns: boolean
       }
+      assign_invitation_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -426,6 +433,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_valid_self_role_assignment: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
