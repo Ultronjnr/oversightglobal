@@ -3,8 +3,22 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+
+// Pages
 import Index from "./pages/Index";
+import Login from "./pages/Login";
+import SignupCompany from "./pages/SignupCompany";
+import SignupSupplier from "./pages/SignupSupplier";
 import NotFound from "./pages/NotFound";
+
+// Portals
+import EmployeePortal from "./pages/portals/EmployeePortal";
+import HODPortal from "./pages/portals/HODPortal";
+import FinancePortal from "./pages/portals/FinancePortal";
+import AdminPortal from "./pages/portals/AdminPortal";
+import SupplierPortal from "./pages/portals/SupplierPortal";
 
 const queryClient = new QueryClient();
 
@@ -14,11 +28,68 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup/company" element={<SignupCompany />} />
+            <Route path="/signup/supplier" element={<SignupSupplier />} />
+
+            {/* Employee Portal */}
+            <Route
+              path="/employee/portal"
+              element={
+                <ProtectedRoute allowedRoles={["EMPLOYEE"]}>
+                  <EmployeePortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* HOD Portal */}
+            <Route
+              path="/hod/portal"
+              element={
+                <ProtectedRoute allowedRoles={["HOD"]}>
+                  <HODPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Finance Portal */}
+            <Route
+              path="/finance/portal"
+              element={
+                <ProtectedRoute allowedRoles={["FINANCE"]}>
+                  <FinancePortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin Portal */}
+            <Route
+              path="/admin/portal"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <AdminPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Supplier Portal */}
+            <Route
+              path="/supplier/portal"
+              element={
+                <ProtectedRoute allowedRoles={["SUPPLIER"]}>
+                  <SupplierPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
