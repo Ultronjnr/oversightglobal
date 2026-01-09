@@ -28,10 +28,12 @@ interface SplitPRModalProps {
   pr: PurchaseRequisition | null;
   open: boolean;
   onClose: () => void;
-  onConfirm: (prId: string, splits: { items: PRItem[]; comments: string }[]) => Promise<void>;
+  onConfirm?: (prId: string, splits: { items: PRItem[]; comments: string }[]) => Promise<void>;
+  onSuccess?: () => void;
+  role?: "HOD" | "FINANCE";
 }
 
-export function SplitPRModal({ pr, open, onClose, onConfirm }: SplitPRModalProps) {
+export function SplitPRModal({ pr, open, onClose, onConfirm, onSuccess, role = "HOD" }: SplitPRModalProps) {
   const [splits, setSplits] = useState<SplitGroup[]>([
     { id: uuidv4(), items: [], comments: "" },
     { id: uuidv4(), items: [], comments: "" },
