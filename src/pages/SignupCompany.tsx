@@ -46,9 +46,33 @@ export default function SignupCompany() {
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     let createdOrgId: string | null = null;
+    let createdUserId: string | null = null;
 
     try {
-      // STEP 1: Create organization FIRST
+      // STEP 1: Sign up user FIRST (must be authenticated before creating org)
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (authError) {
+        toast.error(authError.message);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        toast.error("Failed to create user account");
+        setIsLoading(false);
+        return;
+      }
+
+      createdUserId = authData.user.id;
+
+      // STEP 2: Create organization (now authenticated)
       const { data: orgData, error: orgError } = await supabase
         .from("organizations")
         .insert({
@@ -60,7 +84,6 @@ export default function SignupCompany() {
         .single();
 
       if (orgError) {
-        // Check if it's a duplicate email error
         if (orgError.code === "23505") {
           toast.error("A company with this email already exists. Please use a different email.");
         } else {
@@ -72,75 +95,26 @@ export default function SignupCompany() {
 
       createdOrgId = orgData.id;
 
-      // STEP 2: Check if ADMIN already exists for this organization
-      const { data: hasAdmin, error: adminCheckError } = await supabase.rpc(
-        "organization_has_admin",
-        { _org_id: createdOrgId }
-      );
-
-      if (adminCheckError) {
-        console.error("Admin check error:", adminCheckError);
-        // Rollback: delete the organization we just created
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("Failed to verify admin status. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-
-      if (hasAdmin) {
-        // Rollback: delete the organization we just created
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("This company already has an admin. Please contact them.");
-        setIsLoading(false);
-        return;
-      }
-
-      // STEP 3: Create Admin user ONLY after organization exists
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (authError) {
-        // Rollback: delete the organization
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error(authError.message);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!authData.user) {
-        // Rollback: delete the organization
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("Failed to create user account");
-        setIsLoading(false);
-        return;
-      }
-
-      // STEP 4: Create profile and link to organization
+      // STEP 3: Create profile and link to organization
       const { error: profileError } = await supabase.from("profiles").insert({
         id: authData.user.id,
         email: data.email,
         name: data.name,
         surname: data.surname,
-        organization_id: createdOrgId, // Explicit link to organization
+        organization_id: createdOrgId,
         phone: data.companyPhone || null,
         status: "ACTIVE",
       });
 
       if (profileError) {
         console.error("Profile error:", profileError);
-        // Rollback: delete org (user will be orphaned but can re-signup)
         await supabase.from("organizations").delete().eq("id", createdOrgId);
         toast.error("Failed to create profile: " + profileError.message);
         setIsLoading(false);
         return;
       }
 
-      // STEP 4b: Create user role as ADMIN using secure function
+      // STEP 4: Assign ADMIN role using secure function
       const { data: roleAssigned, error: roleError } = await supabase.rpc(
         "assign_invitation_role",
         { _user_id: authData.user.id, _role: "ADMIN" }
@@ -148,21 +122,16 @@ export default function SignupCompany() {
 
       if (roleError || !roleAssigned) {
         console.error("Role error:", roleError);
-        // Rollback: delete org
         await supabase.from("organizations").delete().eq("id", createdOrgId);
         toast.error("Failed to assign admin role: " + (roleError?.message || "Unknown error"));
         setIsLoading(false);
         return;
       }
 
-      // STEP 5: Success toast
       toast.success("Company registered successfully!");
-
-      // STEP 6: Redirect immediately to admin portal
       navigate("/admin/portal");
     } catch (error: any) {
       console.error("Signup error:", error);
-      // Rollback if org was created
       if (createdOrgId) {
         await supabase.from("organizations").delete().eq("id", createdOrgId);
       }
