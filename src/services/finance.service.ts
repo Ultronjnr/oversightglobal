@@ -510,7 +510,7 @@ export async function getQuotes(): Promise<{
 }
 
 /**
- * Accept a quote and link to PR
+ * Accept a quote and link to PR - updates PR history and locks PR
  */
 export async function acceptQuote(
   quoteId: string,
@@ -520,6 +520,31 @@ export async function acceptQuote(
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return { success: false, error: "User not authenticated" };
+    }
+
+    // Get user profile for history
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("name, surname")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return { success: false, error: "Profile not found" };
+    }
+
+    // Get quote details
+    const { data: quoteData, error: quoteDataError } = await supabase
+      .from("quotes")
+      .select(`
+        *,
+        supplier:suppliers (company_name)
+      `)
+      .eq("id", quoteId)
+      .single();
+
+    if (quoteDataError || !quoteData) {
+      return { success: false, error: "Quote not found" };
     }
 
     // Update quote status
@@ -542,6 +567,42 @@ export async function acceptQuote(
 
     if (rejectError) {
       console.error("Reject other quotes error:", rejectError);
+    }
+
+    // Get PR and update history
+    const { data: prData, error: prError } = await supabase
+      .from("purchase_requisitions")
+      .select("*")
+      .eq("id", prId)
+      .single();
+
+    if (prData) {
+      const pr = prData as unknown as PurchaseRequisition;
+      const userName = `${profile.name}${profile.surname ? " " + profile.surname : ""}`;
+      const currentHistory = (pr.history as PRHistoryEntry[]) || [];
+      const supplierName = (quoteData as any).supplier?.company_name || "Unknown Supplier";
+
+      const historyEntry: PRHistoryEntry = {
+        action: "QUOTE_ACCEPTED",
+        user_id: user.id,
+        user_name: userName,
+        timestamp: new Date().toISOString(),
+        details: `Accepted quote from ${supplierName} for ${new Intl.NumberFormat("en-ZA", {
+          style: "currency",
+          currency: "ZAR",
+        }).format(quoteData.amount)}`,
+      };
+
+      const newHistory = [...currentHistory, historyEntry];
+
+      // Update PR with accepted quote info and lock from further changes
+      await supabase
+        .from("purchase_requisitions")
+        .update({
+          history: newHistory as unknown as Json,
+          total_amount: quoteData.amount,
+        })
+        .eq("id", prId);
     }
 
     return { success: true };
