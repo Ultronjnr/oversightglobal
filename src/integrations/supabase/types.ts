@@ -176,6 +176,141 @@ export type Database = {
           },
         ]
       }
+      quote_requests: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          message: string | null
+          organization_id: string
+          pr_id: string
+          requested_by: string
+          status: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          message?: string | null
+          organization_id: string
+          pr_id: string
+          requested_by: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          message?: string | null
+          organization_id?: string
+          pr_id?: string
+          requested_by?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          amount: number
+          created_at: string
+          delivery_time: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          pr_id: string
+          quote_request_id: string
+          status: string
+          supplier_id: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          pr_id: string
+          quote_request_id: string
+          status?: string
+          supplier_id: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          delivery_time?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          pr_id?: string
+          quote_request_id?: string
+          status?: string
+          supplier_id?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_quote_request_id_fkey"
+            columns: ["quote_request_id"]
+            isOneToOne: false
+            referencedRelation: "quote_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -262,6 +397,12 @@ export type Database = {
         | "FINANCE_APPROVED"
         | "FINANCE_DECLINED"
         | "SPLIT"
+      quote_status:
+        | "PENDING"
+        | "SUBMITTED"
+        | "ACCEPTED"
+        | "REJECTED"
+        | "EXPIRED"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
     }
@@ -401,6 +542,7 @@ export const Constants = {
         "FINANCE_DECLINED",
         "SPLIT",
       ],
+      quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
     },
