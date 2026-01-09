@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,17 +6,9 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Building2, Eye, EyeOff } from "lucide-react";
 
-import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 const signupSchema = z
@@ -25,10 +17,8 @@ const signupSchema = z
     surname: z.string().min(2, "Surname is required"),
     email: z.string().email("Invalid email address"),
     companyName: z.string().min(2, "Company name is required"),
+    companyAddress: z.string().min(5, "Company address is required"),
     companyPhone: z.string().optional(),
-    role: z.enum(["EMPLOYEE", "HOD", "FINANCE", "ADMIN"], {
-      required_error: "Please select a role",
-    }),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
   })
@@ -39,71 +29,73 @@ const signupSchema = z
 
 type SignupForm = z.infer<typeof signupSchema>;
 
-interface Organization {
-  id: string;
-  name: string;
-}
-
 export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
-  const [loadingOrgs, setLoadingOrgs] = useState(true);
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
     formState: { errors },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
   });
 
-  const selectedRole = watch("role");
-
-  // Fetch existing organizations
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("organizations")
-          .select("id, name")
-          .order("name");
-
-        if (error) throw error;
-        setOrganizations(data || []);
-      } catch (error) {
-        console.error("Error fetching organizations:", error);
-      } finally {
-        setLoadingOrgs(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, []);
-
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
+    let createdOrgId: string | null = null;
+
     try {
-      // If admin role and selecting existing org, check if admin exists
-      if (data.role === "ADMIN" && selectedOrgId) {
-        const { data: existingAdmins, error: adminCheckError } = await supabase
-          .rpc("organization_has_admin", { _org_id: selectedOrgId });
+      // STEP 1: Create organization FIRST
+      const { data: orgData, error: orgError } = await supabase
+        .from("organizations")
+        .insert({
+          name: data.companyName,
+          company_email: data.email,
+          address: data.companyAddress,
+        })
+        .select("id")
+        .single();
 
-        if (adminCheckError) throw adminCheckError;
-
-        if (existingAdmins) {
-          toast.error("This company already has an admin. Please contact them.");
-          setIsLoading(false);
-          return;
+      if (orgError) {
+        // Check if it's a duplicate email error
+        if (orgError.code === "23505") {
+          toast.error("A company with this email already exists. Please use a different email.");
+        } else {
+          toast.error("Failed to create organization: " + orgError.message);
         }
+        setIsLoading(false);
+        return;
       }
 
-      // Sign up user
+      createdOrgId = orgData.id;
+
+      // STEP 2: Check if ADMIN already exists for this organization
+      const { data: hasAdmin, error: adminCheckError } = await supabase.rpc(
+        "organization_has_admin",
+        { _org_id: createdOrgId }
+      );
+
+      if (adminCheckError) {
+        console.error("Admin check error:", adminCheckError);
+        // Rollback: delete the organization we just created
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+        toast.error("Failed to verify admin status. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      if (hasAdmin) {
+        // Rollback: delete the organization we just created
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+        toast.error("This company already has an admin. Please contact them.");
+        setIsLoading(false);
+        return;
+      }
+
+      // STEP 3: Create Admin user ONLY after organization exists
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -113,78 +105,68 @@ export default function SignupCompany() {
       });
 
       if (authError) {
+        // Rollback: delete the organization
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
         toast.error(authError.message);
+        setIsLoading(false);
         return;
       }
 
       if (!authData.user) {
-        toast.error("Failed to create account");
+        // Rollback: delete the organization
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+        toast.error("Failed to create user account");
+        setIsLoading(false);
         return;
       }
 
-      let organizationId = selectedOrgId;
-
-      // Create new organization if not selecting existing
-      if (!selectedOrgId) {
-        const { data: orgData, error: orgError } = await supabase
-          .from("organizations")
-          .insert({
-            name: data.companyName,
-            company_email: data.email,
-          })
-          .select("id")
-          .single();
-
-        if (orgError) {
-          toast.error("Failed to create organization");
-          return;
-        }
-
-        organizationId = orgData.id;
-      }
-
-      // Create profile
+      // STEP 4: Create profile and link to organization
       const { error: profileError } = await supabase.from("profiles").insert({
         id: authData.user.id,
         email: data.email,
         name: data.name,
         surname: data.surname,
-        organization_id: organizationId,
+        organization_id: createdOrgId, // Explicit link to organization
         phone: data.companyPhone || null,
+        status: "ACTIVE",
       });
 
       if (profileError) {
         console.error("Profile error:", profileError);
-        toast.error("Failed to create profile");
+        // Rollback: delete org (user will be orphaned but can re-signup)
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+        toast.error("Failed to create profile: " + profileError.message);
+        setIsLoading(false);
         return;
       }
 
-      // Create user role
+      // STEP 4b: Create user role as ADMIN
       const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: authData.user.id,
-        role: data.role,
+        role: "ADMIN",
       });
 
       if (roleError) {
         console.error("Role error:", roleError);
-        toast.error("Failed to assign role");
+        // Rollback: delete org
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+        toast.error("Failed to assign admin role: " + roleError.message);
+        setIsLoading(false);
         return;
       }
 
-      toast.success("Account created successfully!");
+      // STEP 5: Success toast
+      toast.success("Company registered successfully!");
 
-      // Redirect based on role
-      const rolePortalMap: Record<string, string> = {
-        EMPLOYEE: "/employee/portal",
-        HOD: "/hod/portal",
-        FINANCE: "/finance/portal",
-        ADMIN: "/admin/portal",
-      };
-
-      navigate(rolePortalMap[data.role]);
+      // STEP 6: Redirect immediately to admin portal
+      navigate("/admin/portal");
     } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error("An error occurred during signup");
+      // Rollback if org was created
+      if (createdOrgId) {
+        await supabase.from("organizations").delete().eq("id", createdOrgId);
+      }
+      toast.error("An error occurred during signup. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -200,9 +182,9 @@ export default function SignupCompany() {
               <Building2 className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Company Signup</h1>
+          <h1 className="text-2xl font-bold text-foreground">Register Your Company</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Create your company account and get started
+            Create your company and become the administrator
           </p>
         </div>
 
@@ -211,7 +193,7 @@ export default function SignupCompany() {
           {/* Name fields */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">First Name *</Label>
               <Input id="name" placeholder="John" {...register("name")} />
               {errors.name && (
                 <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -240,52 +222,31 @@ export default function SignupCompany() {
             )}
           </div>
 
-          {/* Existing Company Selection */}
+          {/* Company Name */}
           <div className="space-y-2">
-            <Label>Select Existing Company</Label>
-            {loadingOrgs ? (
-              <p className="text-sm text-muted-foreground text-center py-2">
-                Loading companies...
-              </p>
-            ) : organizations.length > 0 ? (
-              <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a company (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Create new company</SelectItem>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-sm text-muted-foreground">No existing companies</p>
+            <Label htmlFor="companyName">Company Name *</Label>
+            <Input
+              id="companyName"
+              placeholder="Acme Corporation"
+              {...register("companyName")}
+            />
+            {errors.companyName && (
+              <p className="text-sm text-destructive">{errors.companyName.message}</p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Or enter new company details below
-            </p>
           </div>
 
-          {/* Company Name */}
-          {!selectedOrgId && (
-            <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name *</Label>
-              <Input
-                id="companyName"
-                placeholder="Enter company name"
-                {...register("companyName")}
-              />
-              {errors.companyName && (
-                <p className="text-sm text-destructive">{errors.companyName.message}</p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Required if not selecting an existing company
-              </p>
-            </div>
-          )}
+          {/* Company Address */}
+          <div className="space-y-2">
+            <Label htmlFor="companyAddress">Company Address *</Label>
+            <Input
+              id="companyAddress"
+              placeholder="123 Business Street, City"
+              {...register("companyAddress")}
+            />
+            {errors.companyAddress && (
+              <p className="text-sm text-destructive">{errors.companyAddress.message}</p>
+            )}
+          </div>
 
           {/* Company Phone */}
           <div className="space-y-2">
@@ -295,25 +256,6 @@ export default function SignupCompany() {
               placeholder="+27 12 345 6789"
               {...register("companyPhone")}
             />
-          </div>
-
-          {/* Role */}
-          <div className="space-y-2">
-            <Label>Role *</Label>
-            <Select onValueChange={(value) => setValue("role", value as any)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select your role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EMPLOYEE">Employee (Requester)</SelectItem>
-                <SelectItem value="HOD">Head of Department</SelectItem>
-                <SelectItem value="FINANCE">Finance Manager</SelectItem>
-                <SelectItem value="ADMIN">Administrator</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.role && (
-              <p className="text-sm text-destructive">{errors.role.message}</p>
-            )}
           </div>
 
           {/* Password */}
@@ -362,6 +304,13 @@ export default function SignupCompany() {
             )}
           </div>
 
+          {/* Info box */}
+          <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <p className="text-xs text-muted-foreground">
+              <strong className="text-foreground">Note:</strong> You will be registered as the Administrator for this company. Only one admin is allowed per company.
+            </p>
+          </div>
+
           {/* Submit */}
           <Button
             type="submit"
@@ -370,7 +319,7 @@ export default function SignupCompany() {
             className="w-full"
             disabled={isLoading}
           >
-            {isLoading ? "Creating Account..." : "Create Account →"}
+            {isLoading ? "Creating Company..." : "Register Company →"}
           </Button>
         </form>
 
