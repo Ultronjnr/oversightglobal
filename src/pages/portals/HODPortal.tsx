@@ -41,6 +41,7 @@ import {
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import {
   getHODPendingPRs,
   hodApprovePR,
@@ -73,6 +74,19 @@ export default function HODPortal() {
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+  }>({ isOpen: false, url: "", transactionId: "" });
+
+  const openDocumentViewer = (url: string, transactionId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId });
+  };
+
+  const closeDocumentViewer = () => {
+    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+  };
 
   const navItems = [
     { label: "My Portal", href: "/hod/portal", icon: <User className="h-4 w-4" /> },
@@ -474,15 +488,16 @@ export default function HODPortal() {
                                 {/* Document */}
                                 {pr.document_url && (
                                   <div>
-                                    <a
-                                      href={pr.document_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 text-primary hover:underline"
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDocumentViewer(pr.document_url!, pr.transaction_id);
+                                      }}
+                                      className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                                     >
                                       <FileText className="h-4 w-4" />
                                       View Attached Document
-                                    </a>
+                                    </button>
                                   </div>
                                 )}
                               </div>
@@ -529,6 +544,14 @@ export default function HODPortal() {
           setSelectedPR(null);
         }}
         onConfirm={handleSplit}
+      />
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={documentModal.isOpen}
+        onClose={closeDocumentViewer}
+        documentUrl={documentModal.url}
+        transactionId={documentModal.transactionId}
       />
     </DashboardLayout>
   );
