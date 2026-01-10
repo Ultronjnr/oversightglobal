@@ -400,7 +400,15 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   {/* Items Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-foreground">Items Required</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-foreground">Items Required</h3>
+                        <Badge 
+                          variant="secondary" 
+                          className="bg-primary/10 text-primary border-primary/20 font-semibold px-2.5 py-0.5"
+                        >
+                          {items.length} {items.length === 1 ? 'item' : 'items'}
+                        </Badge>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
