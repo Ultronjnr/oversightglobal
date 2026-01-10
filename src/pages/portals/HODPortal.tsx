@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -57,6 +58,7 @@ const urgencyConfig: Record<string, { label: string; className: string }> = {
 };
 
 export default function HODPortal() {
+  const navigate = useNavigate();
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -225,6 +227,7 @@ export default function HODPortal() {
         <div className="flex flex-wrap items-center gap-3">
           <Button
             className="bg-foreground text-background hover:bg-foreground/90 gap-2"
+            onClick={() => navigate("/analytics")}
           >
             <BarChart3 className="h-4 w-4" />
             Procurement Analytics

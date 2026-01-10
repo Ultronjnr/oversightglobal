@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import type { PurchaseRequisition } from "@/types/pr.types";
 import { toast } from "sonner";
 
 export default function EmployeePortal() {
+  const navigate = useNavigate();
   const [showPRModal, setShowPRModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [stats, setStats] = useState({ total: 0, approved: 0, pending: 0 });
@@ -91,6 +93,7 @@ export default function EmployeePortal() {
         <div className="flex flex-wrap items-center gap-3">
           <Button
             className="bg-foreground text-background hover:bg-foreground/90 gap-2"
+            onClick={() => navigate("/analytics")}
           >
             <BarChart3 className="h-4 w-4" />
             Procurement Analytics

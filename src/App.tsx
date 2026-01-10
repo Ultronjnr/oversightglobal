@@ -13,6 +13,7 @@ import SignupCompany from "./pages/SignupCompany";
 import SignupSupplier from "./pages/SignupSupplier";
 import Invite from "./pages/Invite";
 import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -37,6 +38,16 @@ const App = () => (
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/signup/supplier" element={<SignupSupplier />} />
             <Route path="/invite" element={<Invite />} />
+
+            {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
+                  <Analytics />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Employee Portal */}
             <Route
