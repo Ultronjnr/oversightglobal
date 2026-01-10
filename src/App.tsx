@@ -14,6 +14,7 @@ import SignupSupplier from "./pages/SignupSupplier";
 import Invite from "./pages/Invite";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
+import PRHistory from "./pages/PRHistory";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -45,6 +46,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
                   <Analytics />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* PR History - accessible by EMPLOYEE, HOD, FINANCE, ADMIN */}
+            <Route
+              path="/pr-history"
+              element={
+                <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
+                  <PRHistory />
                 </ProtectedRoute>
               }
             />
