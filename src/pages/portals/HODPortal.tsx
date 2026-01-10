@@ -12,12 +12,23 @@ import {
   ChevronRight,
   RefreshCw,
   Loader2,
+  BarChart3,
+  ShoppingCart,
+  Inbox,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { StatCard } from "@/components/ui/stat-card";
+import { SectionCard } from "@/components/ui/section-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -28,12 +39,14 @@ import {
 } from "@/components/ui/table";
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
+import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import {
   getHODPendingPRs,
   hodApprovePR,
   hodDeclinePR,
   hodSplitPR,
 } from "@/services/approval.service";
+
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 
 const urgencyConfig: Record<string, { label: string; className: string }> = {
@@ -48,12 +61,16 @@ export default function HODPortal() {
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({ pending: 0, approved: 0, declined: 0 });
+  const [showCleared, setShowCleared] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Modal states
   const [selectedPR, setSelectedPR] = useState<PurchaseRequisition | null>(null);
   const [modalAction, setModalAction] = useState<"approve" | "decline" | null>(null);
   const [showFinalizationModal, setShowFinalizationModal] = useState(false);
   const [showSplitModal, setShowSplitModal] = useState(false);
+  const [showIncomingModal, setShowIncomingModal] = useState(false);
+  const [showPRModal, setShowPRModal] = useState(false);
 
   const navItems = [
     { label: "My Portal", href: "/hod/portal", icon: <User className="h-4 w-4" /> },
@@ -79,7 +96,7 @@ export default function HODPortal() {
 
   useEffect(() => {
     fetchPRs();
-  }, []);
+  }, [refreshTrigger]);
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -161,60 +178,140 @@ export default function HODPortal() {
     }
   };
 
+  const handleClearDashboard = () => {
+    setShowCleared(true);
+    toast.success("Dashboard cleared");
+  };
+
+  const handleRefreshDashboard = () => {
+    setShowCleared(false);
+    setRefreshTrigger((prev) => prev + 1);
+    toast.success("Dashboard refreshed");
+  };
+
+  const handlePRFormSuccess = () => {
+    setShowPRModal(false);
+    setShowCleared(false);
+    setRefreshTrigger((prev) => prev + 1);
+    toast.success("Purchase requisition submitted (sent directly to Finance)");
+  };
+
   return (
     <DashboardLayout title="HOD Dashboard" navItems={navItems}>
       <div className="space-y-6">
-        {/* Stats */}
+        {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="dashboard-card">
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">Pending Review</p>
-              <p className="text-3xl font-bold text-warning mt-1">{stats.pending}</p>
-            </CardContent>
-          </Card>
-          <Card className="dashboard-card">
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">Approved Today</p>
-              <p className="text-3xl font-bold text-success mt-1">{stats.approved}</p>
-            </CardContent>
-          </Card>
-          <Card className="dashboard-card">
-            <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground">Declined Today</p>
-              <p className="text-3xl font-bold text-destructive mt-1">{stats.declined}</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            label="Pending Review"
+            value={stats.pending}
+            valueColor="warning"
+            isLoading={loading}
+          />
+          <StatCard
+            label="Approved Today"
+            value={stats.approved}
+            valueColor="success"
+            isLoading={loading}
+          />
+          <StatCard
+            label="Declined Today"
+            value={stats.declined}
+            valueColor="destructive"
+            isLoading={loading}
+          />
         </div>
 
-        {/* Pending Approvals Queue */}
-        <Card className="dashboard-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                Pending Approvals
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={fetchPRs} disabled={loading}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
+        {/* Action Buttons Row */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            className="bg-foreground text-background hover:bg-foreground/90 gap-2"
+          >
+            <BarChart3 className="h-4 w-4" />
+            Procurement Analytics
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 bg-white hover:bg-muted/50"
+            onClick={() => setShowPRModal(true)}
+          >
+            <ShoppingCart className="h-4 w-4" />
+            New Purchase Requisition
+          </Button>
+          
+          {/* Prominent blue circled button */}
+          <Button
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6"
+            onClick={() => setShowIncomingModal(true)}
+          >
+            <Inbox className="h-4 w-4" />
+            Incoming Purchase Requisitions
+            {stats.pending > 0 && (
+              <Badge variant="secondary" className="ml-1 bg-white text-primary">
+                {stats.pending}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 bg-destructive/5"
+            onClick={handleClearDashboard}
+          >
+            <X className="h-4 w-4" />
+            Clear Dashboard
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 text-success border-success/30 hover:bg-success/5 bg-success/5"
+            onClick={handleRefreshDashboard}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Dashboard
+          </Button>
+        </div>
+
+        {/* Main Content Card */}
+        <SectionCard
+          title="Pending Approvals"
+          icon={<FileText className="h-5 w-5" />}
+        >
+          {showCleared ? (
+            <EmptyState
+              icon={<FileText className="h-16 w-16" />}
+              title="Dashboard Cleared"
+              description="Your dashboard is now clean. Click 'Incoming Purchase Requisitions' to review pending approvals."
+            />
+          ) : (
+            <EmptyState
+              icon={<ClipboardCheck className="h-16 w-16" />}
+              title="No Pending Approvals"
+              description="Requisitions requiring your approval will appear here. Click 'Incoming Purchase Requisitions' to view the queue."
+            />
+          )}
+        </SectionCard>
+      </div>
+
+      {/* Incoming Purchase Requisitions Modal */}
+      <Dialog open={showIncomingModal} onOpenChange={setShowIncomingModal}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Inbox className="h-5 w-5" />
+              Incoming Purchase Requisitions
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="mt-4">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : prs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-4 rounded-full bg-muted mb-4">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h3 className="font-medium text-foreground mb-1">No Pending Approvals</h3>
-                <p className="text-sm text-muted-foreground">
-                  Requisitions requiring your approval will appear here.
-                </p>
-              </div>
+              <EmptyState
+                icon={<FileText className="h-16 w-16" />}
+                title="No Pending Approvals"
+                description="There are no requisitions waiting for your approval at this time."
+              />
             ) : (
               <div className="rounded-lg border border-border/50 overflow-hidden">
                 <Table>
@@ -395,9 +492,17 @@ export default function HODPortal() {
                 </Table>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New PR Modal - HOD bypasses HOD approval */}
+      <PurchaseRequisitionModal
+        open={showPRModal}
+        onOpenChange={setShowPRModal}
+        onSuccess={handlePRFormSuccess}
+        bypassHODApproval={true}
+      />
 
       {/* Finalization Modal */}
       <FinalizationModal
