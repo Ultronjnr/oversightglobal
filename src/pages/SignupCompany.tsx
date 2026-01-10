@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { getSafeErrorMessage, logError } from "@/lib/error-handler";
 
 const signupSchema = z
   .object({
@@ -59,7 +60,7 @@ export default function SignupCompany() {
       });
 
       if (authError) {
-        toast.error(authError.message);
+        toast.error(getSafeErrorMessage(authError));
         setIsLoading(false);
         return;
       }
@@ -84,10 +85,11 @@ export default function SignupCompany() {
         .single();
 
       if (orgError) {
+        logError("createOrganization", orgError);
         if (orgError.code === "23505") {
           toast.error("A company with this email already exists. Please use a different email.");
         } else {
-          toast.error("Failed to create organization: " + orgError.message);
+          toast.error(getSafeErrorMessage(orgError));
         }
         setIsLoading(false);
         return;
@@ -107,9 +109,9 @@ export default function SignupCompany() {
       });
 
       if (profileError) {
-        console.error("Profile error:", profileError);
+        logError("createProfile", profileError);
         await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("Failed to create profile: " + profileError.message);
+        toast.error(getSafeErrorMessage(profileError));
         setIsLoading(false);
         return;
       }
@@ -121,9 +123,9 @@ export default function SignupCompany() {
       );
 
       if (roleError || !roleAssigned) {
-        console.error("Role error:", roleError);
+        logError("assignRole", roleError);
         await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error("Failed to assign admin role: " + (roleError?.message || "Unknown error"));
+        toast.error(getSafeErrorMessage(roleError));
         setIsLoading(false);
         return;
       }
@@ -131,11 +133,11 @@ export default function SignupCompany() {
       toast.success("Company registered successfully!");
       navigate("/admin/portal");
     } catch (error: any) {
-      console.error("Signup error:", error);
+      logError("signup", error);
       if (createdOrgId) {
         await supabase.from("organizations").delete().eq("id", createdOrgId);
       }
-      toast.error("An error occurred during signup. Please try again.");
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

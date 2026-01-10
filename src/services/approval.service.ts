@@ -6,6 +6,7 @@ import type {
   PRItem,
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
+import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 
 interface ApprovalResult {
   success: boolean;
@@ -104,14 +105,14 @@ export async function hodApprovePR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("hodApprovePR", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("hodApprovePR error:", error);
-    return { success: false, error: error.message };
+    logError("hodApprovePR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -176,14 +177,14 @@ export async function hodDeclinePR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("hodDeclinePR", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("hodDeclinePR error:", error);
-    return { success: false, error: error.message };
+    logError("hodDeclinePR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -265,8 +266,8 @@ export async function hodSplitPR(
         .insert(childPR);
 
       if (insertError) {
-        console.error("Child PR insert error:", insertError);
-        return { success: false, error: `Failed to create split PR: ${insertError.message}` };
+        logError("hodSplitPR.childInsert", insertError);
+        return { success: false, error: getSafeErrorMessage(insertError) };
       }
     }
 
@@ -291,14 +292,14 @@ export async function hodSplitPR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Parent update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("hodSplitPR.parentUpdate", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("hodSplitPR error:", error);
-    return { success: false, error: error.message };
+    logError("hodSplitPR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -318,13 +319,13 @@ export async function getHODPendingPRs(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching HOD PRs:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getHODPendingPRs", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as unknown as PurchaseRequisition[] };
   } catch (error: any) {
-    console.error("getHODPendingPRs error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getHODPendingPRs", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }

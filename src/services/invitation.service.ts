@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getSafeErrorMessage } from "@/lib/error-handler";
 
 export interface Invitation {
   id: string;
@@ -86,7 +87,7 @@ export async function createInvitation(
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: getSafeErrorMessage(error) };
     }
 
     // Generate invite link
@@ -95,7 +96,7 @@ export async function createInvitation(
 
     return { success: true, inviteLink };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -114,12 +115,12 @@ export async function getOrganizationInvitations(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      return { success: false, data: [], error: error.message };
+      return { success: false, data: [], error: getSafeErrorMessage(error) };
     }
 
     return { success: true, data: data as Invitation[] };
   } catch (error: any) {
-    return { success: false, data: [], error: error.message };
+    return { success: false, data: [], error: getSafeErrorMessage(error) };
   }
 }
 
@@ -136,12 +137,12 @@ export async function cancelInvitation(
       .eq("id", invitationId);
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: getSafeErrorMessage(error) };
     }
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -171,7 +172,7 @@ export async function validateInvitation(
     });
 
     if (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: getSafeErrorMessage(error) };
     }
 
     if (!data || data.length === 0) {
@@ -192,7 +193,7 @@ export async function validateInvitation(
 
     return { success: true, data: invitation };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -229,7 +230,7 @@ export async function acceptInvitation(
     });
 
     if (authError) {
-      return { success: false, error: authError.message };
+      return { success: false, error: getSafeErrorMessage(authError) };
     }
 
     if (!authData.user) {
@@ -247,7 +248,7 @@ export async function acceptInvitation(
     });
 
     if (profileError) {
-      return { success: false, error: profileError.message };
+      return { success: false, error: getSafeErrorMessage(profileError) };
     }
 
     // Assign the role using secure function (bypasses RLS for privileged roles)
@@ -257,7 +258,7 @@ export async function acceptInvitation(
     });
 
     if (roleError || !roleAssigned) {
-      return { success: false, error: roleError?.message || "Failed to assign role" };
+      return { success: false, error: getSafeErrorMessage(roleError) };
     }
 
     // Mark invitation as accepted
@@ -268,6 +269,6 @@ export async function acceptInvitation(
 
     return { success: true, role: invitation.role };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }

@@ -452,6 +452,7 @@ export type Database = {
           status: string
         }[]
       }
+      validate_pr_items: { Args: { items: Json }; Returns: boolean }
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"

@@ -5,6 +5,7 @@ import type {
   PRItem,
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
+import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 
 interface ApprovalResult {
   success: boolean;
@@ -130,14 +131,14 @@ export async function financeApprovePR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("financeApprovePR", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("financeApprovePR error:", error);
-    return { success: false, error: error.message };
+    logError("financeApprovePR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -198,14 +199,14 @@ export async function financeDeclinePR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("financeDeclinePR", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("financeDeclinePR error:", error);
-    return { success: false, error: error.message };
+    logError("financeDeclinePR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -284,8 +285,8 @@ export async function financeSplitPR(
         .insert(childPR);
 
       if (insertError) {
-        console.error("Child PR insert error:", insertError);
-        return { success: false, error: `Failed to create split PR: ${insertError.message}` };
+        logError("financeSplitPR.childInsert", insertError);
+        return { success: false, error: getSafeErrorMessage(insertError) };
       }
     }
 
@@ -310,14 +311,14 @@ export async function financeSplitPR(
       .eq("id", prId);
 
     if (updateError) {
-      console.error("Parent update error:", updateError);
-      return { success: false, error: updateError.message };
+      logError("financeSplitPR.parentUpdate", updateError);
+      return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("financeSplitPR error:", error);
-    return { success: false, error: error.message };
+    logError("financeSplitPR", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -337,14 +338,14 @@ export async function getFinancePendingPRs(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching Finance PRs:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getFinancePendingPRs", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as unknown as PurchaseRequisition[] };
   } catch (error: any) {
-    console.error("getFinancePendingPRs error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getFinancePendingPRs", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -364,14 +365,14 @@ export async function getVerifiedSuppliers(): Promise<{
       .order("company_name", { ascending: true });
 
     if (error) {
-      console.error("Error fetching suppliers:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getVerifiedSuppliers", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as Supplier[] };
   } catch (error: any) {
-    console.error("getVerifiedSuppliers error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getVerifiedSuppliers", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -390,14 +391,14 @@ export async function getAllSuppliers(): Promise<{
       .order("company_name", { ascending: true });
 
     if (error) {
-      console.error("Error fetching all suppliers:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getAllSuppliers", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as Supplier[] };
   } catch (error: any) {
-    console.error("getAllSuppliers error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getAllSuppliers", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -440,14 +441,14 @@ export async function sendQuoteRequest(
       });
 
     if (insertError) {
-      console.error("Quote request insert error:", insertError);
-      return { success: false, error: insertError.message };
+      logError("sendQuoteRequest", insertError);
+      return { success: false, error: getSafeErrorMessage(insertError) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("sendQuoteRequest error:", error);
-    return { success: false, error: error.message };
+    logError("sendQuoteRequest", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -469,14 +470,14 @@ export async function getQuoteRequests(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching quote requests:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getQuoteRequests", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as unknown as QuoteRequest[] };
   } catch (error: any) {
-    console.error("getQuoteRequests error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getQuoteRequests", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -498,14 +499,14 @@ export async function getQuotes(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching quotes:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("getQuotes", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as unknown as Quote[] };
   } catch (error: any) {
-    console.error("getQuotes error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getQuotes", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -554,8 +555,8 @@ export async function acceptQuote(
       .eq("id", quoteId);
 
     if (quoteError) {
-      console.error("Quote update error:", quoteError);
-      return { success: false, error: quoteError.message };
+      logError("acceptQuote.quoteUpdate", quoteError);
+      return { success: false, error: getSafeErrorMessage(quoteError) };
     }
 
     // Reject other quotes for the same PR
@@ -566,7 +567,7 @@ export async function acceptQuote(
       .neq("id", quoteId);
 
     if (rejectError) {
-      console.error("Reject other quotes error:", rejectError);
+      logError("acceptQuote.rejectOthers", rejectError);
     }
 
     // Get PR and update history
@@ -607,8 +608,8 @@ export async function acceptQuote(
 
     return { success: true };
   } catch (error: any) {
-    console.error("acceptQuote error:", error);
-    return { success: false, error: error.message };
+    logError("acceptQuote", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -623,13 +624,13 @@ export async function rejectQuote(quoteId: string): Promise<ApprovalResult> {
       .eq("id", quoteId);
 
     if (error) {
-      console.error("Quote reject error:", error);
-      return { success: false, error: error.message };
+      logError("rejectQuote", error);
+      return { success: false, error: getSafeErrorMessage(error) };
     }
 
     return { success: true };
   } catch (error: any) {
-    console.error("rejectQuote error:", error);
-    return { success: false, error: error.message };
+    logError("rejectQuote", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
