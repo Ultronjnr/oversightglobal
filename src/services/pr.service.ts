@@ -8,6 +8,7 @@ import type {
   PurchaseRequisition,
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
+import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 
 /**
  * Generate a unique transaction ID in format: PR-YYYYMMDD-XXXX
@@ -60,13 +61,13 @@ async function organizationHasHOD(organizationId: string): Promise<boolean> {
       .in("id", hodUserIds);
 
     if (profileError) {
-      console.error("Error checking HOD profiles:", profileError);
+      logError("checkHODProfiles", profileError);
       return false;
     }
 
     return profiles && profiles.length > 0;
   } catch (error) {
-    console.error("Error in organizationHasHOD:", error);
+    logError("organizationHasHOD", error);
     return false;
   }
 }
@@ -154,8 +155,8 @@ export async function createPurchaseRequisition(
       .single();
 
     if (insertError) {
-      console.error("PR insert error:", insertError);
-      return { success: false, error: insertError.message };
+      logError("prInsert", insertError);
+      return { success: false, error: getSafeErrorMessage(insertError) };
     }
 
     // Cast the response to our type
@@ -166,8 +167,8 @@ export async function createPurchaseRequisition(
       data: pr,
     };
   } catch (error: any) {
-    console.error("createPurchaseRequisition error:", error);
-    return { success: false, error: error.message || "An unexpected error occurred" };
+    logError("createPurchaseRequisition", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 
@@ -186,14 +187,14 @@ export async function getUserPurchaseRequisitions(): Promise<{
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Error fetching PRs:", error);
-      return { success: false, error: error.message, data: [] };
+      logError("fetchPRs", error);
+      return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
     return { success: true, data: (data || []) as unknown as PurchaseRequisition[] };
   } catch (error: any) {
-    console.error("getUserPurchaseRequisitions error:", error);
-    return { success: false, error: error.message, data: [] };
+    logError("getUserPurchaseRequisitions", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
 
@@ -213,13 +214,13 @@ export async function getPurchaseRequisitionById(prId: string): Promise<{
       .single();
 
     if (error) {
-      console.error("Error fetching PR:", error);
-      return { success: false, error: error.message, data: null };
+      logError("fetchPRById", error);
+      return { success: false, error: getSafeErrorMessage(error), data: null };
     }
 
     return { success: true, data: data as unknown as PurchaseRequisition };
   } catch (error: any) {
-    console.error("getPurchaseRequisitionById error:", error);
-    return { success: false, error: error.message, data: null };
+    logError("getPurchaseRequisitionById", error);
+    return { success: false, error: getSafeErrorMessage(error), data: null };
   }
 }

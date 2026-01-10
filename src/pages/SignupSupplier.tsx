@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { getSafeErrorMessage, logError } from "@/lib/error-handler";
 
 const supplierSchema = z
   .object({
@@ -79,7 +80,7 @@ export default function SignupSupplier() {
       });
 
       if (authError) {
-        toast.error(authError.message);
+        toast.error(getSafeErrorMessage(authError));
         return;
       }
 
@@ -97,8 +98,8 @@ export default function SignupSupplier() {
       });
 
       if (profileError) {
-        console.error("Profile error:", profileError);
-        toast.error("Failed to create profile");
+        logError("createProfile", profileError);
+        toast.error(getSafeErrorMessage(profileError));
         return;
       }
 
@@ -115,8 +116,8 @@ export default function SignupSupplier() {
       });
 
       if (supplierError) {
-        console.error("Supplier error:", supplierError);
-        toast.error("Failed to create supplier record");
+        logError("createSupplier", supplierError);
+        toast.error(getSafeErrorMessage(supplierError));
         return;
       }
 
@@ -127,16 +128,16 @@ export default function SignupSupplier() {
       });
 
       if (roleError) {
-        console.error("Role error:", roleError);
-        toast.error("Failed to assign role");
+        logError("assignRole", roleError);
+        toast.error(getSafeErrorMessage(roleError));
         return;
       }
 
       toast.success("Supplier account created successfully!");
       navigate("/supplier/portal");
     } catch (error: any) {
-      console.error("Signup error:", error);
-      toast.error("An error occurred during signup");
+      logError("supplierSignup", error);
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

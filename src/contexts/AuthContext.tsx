@@ -3,6 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { logError } from "@/lib/error-handler";
 
 type AppRole = "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER";
 
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (profileError && profileError.code !== "PGRST116") {
-        console.error("Error fetching profile:", profileError);
+        logError("fetchProfile", profileError);
         return;
       }
 
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (roleError && roleError.code !== "PGRST116") {
-        console.error("Error fetching role:", roleError);
+        logError("fetchRole", roleError);
         return;
       }
 
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(roleData.role as AppRole);
       }
     } catch (error) {
-      console.error("Error in fetchProfile:", error);
+      logError("fetchProfile", error);
     }
   };
 
