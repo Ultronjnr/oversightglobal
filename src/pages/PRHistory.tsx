@@ -49,6 +49,7 @@ import {
   exportPRHistoryToCSV,
   type PRHistoryFilters,
 } from "@/services/pr-history.service";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import type { PurchaseRequisition, PRStatus, UrgencyLevel, PRItem } from "@/types/pr.types";
 
 const STATUS_OPTIONS: { value: PRStatus | "ALL"; label: string }[] = [
@@ -100,6 +101,19 @@ export default function PRHistory() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedPR, setSelectedPR] = useState<PurchaseRequisition | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+  }>({ isOpen: false, url: "", transactionId: "" });
+
+  const openDocumentViewer = (url: string, transactionId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId });
+  };
+
+  const closeDocumentViewer = () => {
+    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+  };
 
   // Filters
   const [filters, setFilters] = useState<PRHistoryFilters>({
@@ -579,10 +593,31 @@ export default function PRHistory() {
                     </p>
                   </div>
                 </div>
+
+                {/* Document */}
+                {selectedPR.document_url && (
+                  <div className="pt-4 border-t">
+                    <button
+                      onClick={() => openDocumentViewer(selectedPR.document_url!, selectedPR.transaction_id)}
+                      className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Attached Document
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Document Viewer Modal */}
+        <DocumentViewerModal
+          isOpen={documentModal.isOpen}
+          onClose={closeDocumentViewer}
+          documentUrl={documentModal.url}
+          transactionId={documentModal.transactionId}
+        />
       </div>
     </DashboardLayout>
   );
