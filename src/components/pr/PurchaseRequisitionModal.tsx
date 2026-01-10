@@ -516,13 +516,38 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                                 </div>
                               </div>
 
-                              {/* Item Total */}
-                              <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/30">
-                                <span className="text-sm text-muted-foreground">Total (Inc. VAT):</span>
-                                <span className="text-lg font-bold text-foreground">
-                                  {formatZAR((item.quantity * getNumericPrice(item.unit_price)) * (item.vat_classification === "STANDARD" ? 1.15 : 1))}
-                                </span>
-                              </div>
+                              {/* Item Total with VAT Breakdown */}
+                              {(() => {
+                                const subtotal = item.quantity * getNumericPrice(item.unit_price);
+                                const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
+                                const vatAmount = subtotal * vatRate;
+                                const totalWithVat = subtotal + vatAmount;
+                                
+                                return (
+                                  <div className="pt-3 border-t border-border/30 space-y-1.5">
+                                    <div className="flex items-center justify-end gap-3">
+                                      <span className="text-sm text-muted-foreground">Subtotal:</span>
+                                      <span className="text-sm font-medium text-foreground w-28 text-right">
+                                        {formatZAR(subtotal)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-3">
+                                      <span className="text-sm text-muted-foreground">
+                                        VAT ({item.vat_classification === "STANDARD" ? "15%" : "0%"}):
+                                      </span>
+                                      <span className={`text-sm font-medium w-28 text-right ${vatAmount > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                                        {vatAmount > 0 ? `+ ${formatZAR(vatAmount)}` : formatZAR(0)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-3 pt-1.5 border-t border-dashed border-border/50">
+                                      <span className="text-sm font-medium text-foreground">Total (Inc. VAT):</span>
+                                      <span className="text-lg font-bold text-foreground w-28 text-right">
+                                        {formatZAR(totalWithVat)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
 
                               {/* Technical Specs & Justification */}
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
