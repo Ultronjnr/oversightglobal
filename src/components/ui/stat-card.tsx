@@ -8,6 +8,7 @@ interface StatCardProps {
   isLoading?: boolean;
   className?: string;
   icon?: ReactNode;
+  footer?: ReactNode;
 }
 
 export function StatCard({ 
@@ -16,7 +17,8 @@ export function StatCard({
   valueColor = "default", 
   isLoading = false,
   className,
-  icon
+  icon,
+  footer
 }: StatCardProps) {
   const colorClasses = {
     default: "text-foreground",
@@ -32,14 +34,15 @@ export function StatCard({
       className
     )}>
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground font-medium mb-2">{label}</p>
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground font-medium">{label}</p>
           <p className={cn(
             "text-4xl font-bold",
             colorClasses[valueColor]
           )}>
             {isLoading ? "-" : value}
           </p>
+          {footer && <div className="pt-1">{footer}</div>}
         </div>
         {icon && (
           <div className="text-muted-foreground/50">
