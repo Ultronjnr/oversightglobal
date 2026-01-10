@@ -3,11 +3,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Upload, FileText, X, Loader2, Calendar, Clock, Calculator, Building, Hash } from "lucide-react";
+import { Plus, Upload, FileText, X, Loader2, Calendar, Clock, Calculator, Building, Hash, Paperclip, Check } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { format } from "date-fns";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,27 +50,25 @@ interface PurchaseRequisitionModalProps {
   onSuccess?: () => void;
 }
 
+const createEmptyItem = (): PRItemExtended => ({
+  id: uuidv4(),
+  name: "",
+  description: "",
+  quantity: 1,
+  unit_price: 0,
+  total: 0,
+  vat_classification: "VAT_APPLICABLE",
+  technical_specs: "",
+  business_justification: ""
+});
+
 export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
   const [transactionId, setTransactionId] = useState("");
-  const [items, setItems] = useState<PRItemExtended[]>([
-    { 
-      id: uuidv4(), 
-      name: "",
-      description: "", 
-      quantity: 1, 
-      unit_price: 0, 
-      total: 0,
-      vat_classification: "VAT_APPLICABLE",
-      technical_specs: "",
-      business_justification: ""
-    },
-  ]);
+  const [items, setItems] = useState<PRItemExtended[]>([createEmptyItem()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const vatRate = 15;
 
   const {
     register,
@@ -107,21 +105,9 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: Purc
     }
   }, [open, profile, setValue]);
 
+  // Add new item at TOP for better UX
   const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { 
-        id: uuidv4(), 
-        name: "",
-        description: "", 
-        quantity: 1, 
-        unit_price: 0, 
-        total: 0,
-        vat_classification: "VAT_APPLICABLE",
-        technical_specs: "",
-        business_justification: ""
-      },
-    ]);
+    setItems((prev) => [createEmptyItem(), ...prev]);
   };
 
   const removeItem = (index: number) => {
@@ -135,7 +121,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: Purc
         const updated = { ...item, [field]: value };
         
         // Recalculate total when quantity or unit_price changes
-        if (field === "quantity" || field === "unit_price") {
+        if (field === "quantity" || field === "unit_price" || field === "vat_classification") {
           const vatMultiplier = updated.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1;
           updated.total = updated.quantity * updated.unit_price * vatMultiplier;
         }
@@ -254,17 +240,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: Purc
       
       // Reset form
       reset();
-      setItems([{ 
-        id: uuidv4(), 
-        name: "",
-        description: "", 
-        quantity: 1, 
-        unit_price: 0, 
-        total: 0,
-        vat_classification: "VAT_APPLICABLE",
-        technical_specs: "",
-        business_justification: ""
-      }]);
+      setItems([createEmptyItem()]);
       setUploadedFile(null);
       
       onSuccess?.();
@@ -286,335 +262,376 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: Purc
     return labels[urgency] || "NORMAL";
   };
 
+  const getUrgencyColor = () => {
+    const colors: Record<string, string> = {
+      LOW: "bg-muted text-muted-foreground",
+      NORMAL: "bg-primary/10 text-primary",
+      HIGH: "bg-warning/10 text-warning",
+      URGENT: "bg-destructive/10 text-destructive"
+    };
+    return colors[urgency] || "bg-primary/10 text-primary";
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white">
-        <DialogHeader className="px-6 py-4 border-b border-border/30 sticky top-0 bg-white z-10">
-          <DialogTitle className="text-xl font-semibold">Submit New Purchase Requisition</DialogTitle>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="relative">
-          {/* Blue left border indicator */}
-          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
-          
-          <div className="p-6 pl-8 space-y-6">
-            {/* Form Title with Transaction ID */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <FileText className="h-6 w-6 text-primary" />
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">New Purchase Requisition</h2>
-                  <p className="text-sm text-muted-foreground">Submit a new purchase requisition for approval through the procurement process</p>
-                </div>
-              </div>
-              <Badge variant="outline" className="font-mono text-xs px-3 py-1.5 bg-muted/30">
-                <Hash className="h-3 w-3 mr-1" />
-                {transactionId}
-              </Badge>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0 bg-white border-0 shadow-2xl">
+        <div className="flex flex-col h-full max-h-[95vh]">
+          {/* Header */}
+          <div className="flex items-start justify-between px-8 py-6 border-b border-border/40 bg-white">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-bold text-foreground">Submit New Purchase Requisition</h1>
+              <p className="text-sm text-muted-foreground">
+                Submit a new purchase requisition for approval through the procurement process
+              </p>
             </div>
+            <Badge variant="outline" className="font-mono text-xs px-3 py-1.5 bg-muted/50 border-border/50 text-muted-foreground shrink-0">
+              <Hash className="h-3 w-3 mr-1" />
+              {transactionId}
+            </Badge>
+          </div>
 
-            {/* Date and Department Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  Request Date
-                </Label>
-                <Input
-                  type="date"
-                  value={format(new Date(), "yyyy-MM-dd")}
-                  disabled
-                  className="bg-muted/30"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  Approval Due Date *
-                </Label>
-                <Input
-                  type="date"
-                  {...register("due_date")}
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <Calculator className="h-4 w-4 text-muted-foreground" />
-                  Payment Due Date *
-                </Label>
-                <Input
-                  type="date"
-                  {...register("payment_due_date")}
-                  className="bg-white"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-medium">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  Department
-                </Label>
-                <Input
-                  {...register("department")}
-                  placeholder="IT Department"
-                  className="bg-white"
-                />
-                {errors.department && (
-                  <p className="text-sm text-destructive">{errors.department.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Urgency Level</Label>
-                <Select
-                  defaultValue="NORMAL"
-                  onValueChange={(value) => setValue("urgency", value as any)}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border shadow-lg z-50">
-                    <SelectItem value="LOW">Low Priority</SelectItem>
-                    <SelectItem value="NORMAL">Normal Priority</SelectItem>
-                    <SelectItem value="HIGH">High Priority</SelectItem>
-                    <SelectItem value="URGENT">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Items Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">Items Required</h3>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                  Add Item
-                </Button>
-              </div>
-
-              {items.map((item, index) => (
-                <div key={item.id} className="border-l-4 border-primary/50 bg-muted/10 rounded-r-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Item {index + 1}</h4>
-                    {items.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {/* Scrollable Content */}
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
+              <div className="relative">
+                {/* Blue left border indicator */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
+                
+                <div className="p-8 pl-10 space-y-8">
+                  {/* Header Fields Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm">Item Name *</Label>
+                      <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        Request Date
+                      </Label>
                       <Input
-                        value={item.name}
-                        onChange={(e) => updateItem(index, "name", e.target.value)}
-                        placeholder="e.g., Laptop"
-                        className="bg-white"
+                        type="text"
+                        value={format(new Date(), "yyyy/MM/dd")}
+                        disabled
+                        className="bg-muted/50 border-border/50 text-foreground h-11"
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label className="text-sm">Description *</Label>
+                      <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        Approval Due Date
+                        <span className="text-destructive">*</span>
+                      </Label>
                       <Input
-                        value={item.description}
-                        onChange={(e) => updateItem(index, "description", e.target.value)}
-                        placeholder="e.g., Dell Laptop Computer with specifications"
-                        className="bg-white"
+                        type="date"
+                        {...register("due_date")}
+                        className="bg-white border-border h-11"
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label className="text-sm">Quantity</Label>
+                      <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Calculator className="h-4 w-4 text-muted-foreground" />
+                        Payment Due Date
+                        <span className="text-destructive">*</span>
+                      </Label>
                       <Input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
-                        className="bg-white"
+                        type="date"
+                        {...register("payment_due_date")}
+                        className="bg-white border-border h-11"
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label className="text-sm">Unit Price (ZAR) *</Label>
+                      <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        Department
+                      </Label>
                       <Input
-                        type="number"
-                        min={0}
-                        step={0.01}
-                        value={item.unit_price}
-                        onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
-                        placeholder="0.00"
-                        className="bg-white"
+                        {...register("department")}
+                        placeholder="IT Department"
+                        className="bg-white border-border h-11"
                       />
+                      {errors.department && (
+                        <p className="text-xs text-destructive">{errors.department.message}</p>
+                      )}
                     </div>
+
                     <div className="space-y-2">
-                      <Label className="text-sm">VAT Classification</Label>
+                      <Label className="text-sm font-medium text-foreground">Urgency Level</Label>
                       <Select
-                        value={item.vat_classification}
-                        onValueChange={(value) => updateItem(index, "vat_classification", value)}
+                        defaultValue="NORMAL"
+                        onValueChange={(value) => setValue("urgency", value as any)}
                       >
-                        <SelectTrigger className="bg-white">
+                        <SelectTrigger className="bg-white border-border h-11">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-white border shadow-lg z-50">
-                          <SelectItem value="VAT_APPLICABLE">VAT Applicable</SelectItem>
-                          <SelectItem value="VAT_EXEMPT">VAT Exempt</SelectItem>
-                          <SelectItem value="ZERO_RATED">Zero Rated</SelectItem>
+                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
+                          <SelectItem value="LOW">Low Priority</SelectItem>
+                          <SelectItem value="NORMAL">Normal Priority</SelectItem>
+                          <SelectItem value="HIGH">High Priority</SelectItem>
+                          <SelectItem value="URGENT">Urgent</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <Label className="text-sm text-muted-foreground">Total (Inc. VAT)</Label>
-                      <p className="text-lg font-semibold bg-muted/50 px-3 py-1 rounded">
-                        ZAR {((item.quantity * item.unit_price) * (item.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1)).toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
-                      </p>
+                  {/* Items Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-foreground">Items Required</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addItem}
+                        className="bg-muted/50 hover:bg-muted border-border/50 gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {items.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="bg-white border border-border/60 rounded-lg overflow-hidden shadow-sm"
+                        >
+                          {/* Item Card with Blue Left Border */}
+                          <div className="flex">
+                            <div className="w-1.5 bg-primary shrink-0" />
+                            <div className="flex-1 p-5 space-y-5">
+                              {/* Item Header */}
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-semibold text-foreground">Item {items.length - index}</h4>
+                                {items.length > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => removeItem(index)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+
+                              {/* Item Fields Grid */}
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">
+                                    Item Name <span className="text-destructive">*</span>
+                                  </Label>
+                                  <Input
+                                    value={item.name}
+                                    onChange={(e) => updateItem(index, "name", e.target.value)}
+                                    placeholder="e.g., Laptop"
+                                    className="bg-white border-border h-10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">
+                                    Description <span className="text-destructive">*</span>
+                                  </Label>
+                                  <Input
+                                    value={item.description}
+                                    onChange={(e) => updateItem(index, "description", e.target.value)}
+                                    placeholder="e.g., Dell Laptop Computer"
+                                    className="bg-white border-border h-10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    value={item.quantity}
+                                    onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
+                                    className="bg-white border-border h-10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">
+                                    Unit Price (ZAR) <span className="text-destructive">*</span>
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    step={0.01}
+                                    value={item.unit_price}
+                                    onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
+                                    placeholder="0.00"
+                                    className="bg-white border-border h-10"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">VAT Classification</Label>
+                                  <Select
+                                    value={item.vat_classification}
+                                    onValueChange={(value) => updateItem(index, "vat_classification", value)}
+                                  >
+                                    <SelectTrigger className="bg-white border-border h-10">
+                                      <SelectValue placeholder="VAT Applicable..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white border border-border shadow-lg z-[100]">
+                                      <SelectItem value="VAT_APPLICABLE">VAT Applicable</SelectItem>
+                                      <SelectItem value="VAT_EXEMPT">VAT Exempt</SelectItem>
+                                      <SelectItem value="ZERO_RATED">Zero Rated</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Item Total */}
+                              <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/30">
+                                <span className="text-sm text-muted-foreground">Total (Inc. VAT):</span>
+                                <span className="text-lg font-bold text-foreground">
+                                  ZAR {((item.quantity * item.unit_price) * (item.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1)).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+
+                              {/* Technical Specs & Justification */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">Technical Specifications</Label>
+                                  <Textarea
+                                    value={item.technical_specs}
+                                    onChange={(e) => updateItem(index, "technical_specs", e.target.value)}
+                                    placeholder="Model, specifications, technical requirements..."
+                                    className="bg-white border-border min-h-[90px] resize-none"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label className="text-sm text-muted-foreground">Business Justification</Label>
+                                  <Textarea
+                                    value={item.business_justification}
+                                    onChange={(e) => updateItem(index, "business_justification", e.target.value)}
+                                    placeholder="Business need, purpose, expected benefits..."
+                                    className="bg-white border-border min-h-[90px] resize-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
+                  {/* Grand Total Bar */}
+                  <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-6 py-4">
+                    <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
+                    <span className="text-2xl font-bold text-primary">
+                      ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Supplier Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm">Technical Specifications</Label>
-                      <Textarea
-                        value={item.technical_specs}
-                        onChange={(e) => updateItem(index, "technical_specs", e.target.value)}
-                        placeholder="Model, specifications, technical requirements..."
-                        className="bg-white min-h-[80px]"
-                      />
+                      <Label className="text-sm font-medium text-foreground">Preferred Supplier</Label>
+                      <Select onValueChange={(value) => setValue("supplier_preference", value)}>
+                        <SelectTrigger className="bg-white border-border h-11">
+                          <SelectValue placeholder="Select a supplier or type manually..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
+                          <SelectItem value="manual">Type manually...</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm">Business Justification</Label>
-                      <Textarea
-                        value={item.business_justification}
-                        onChange={(e) => updateItem(index, "business_justification", e.target.value)}
-                        placeholder="Business need, purpose, expected benefits..."
-                        className="bg-white min-h-[80px]"
+                      <Label className="text-sm font-medium text-foreground">Supplier Address</Label>
+                      <Input
+                        {...register("supplier_address")}
+                        placeholder="e.g., 123 Supplier Street, City, Postal Code"
+                        className="bg-white border-border h-11"
                       />
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Grand Total Bar */}
-            <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-6 py-4">
-              <span className="font-semibold text-foreground">Grand Total (ZAR):</span>
-              <span className="text-2xl font-bold text-primary">
-                ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            {/* Supplier Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Preferred Supplier</Label>
-                <Select
-                  onValueChange={(value) => setValue("supplier_preference", value)}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select a supplier or type manually..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border shadow-lg z-50">
-                    <SelectItem value="manual">Type manually...</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Supplier Address</Label>
-                <Input
-                  {...register("supplier_address")}
-                  placeholder="e.g., 123 Supplier Street, City, Postal Code"
-                  className="bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Special Instructions */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Special Instructions</Label>
-              <Textarea
-                {...register("special_instructions")}
-                placeholder="Any special requirements, installation needs, training requirements..."
-                className="bg-white min-h-[100px]"
-              />
-            </div>
-
-            {/* File Upload */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-sm font-medium">
-                <Upload className="h-4 w-4" />
-                Supporting Documents
-              </Label>
-              {uploadedFile ? (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <span className="flex-1 text-sm truncate">{uploadedFile.name}</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={removeFile}
-                    className="h-8 w-8"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-4 p-3 border border-border/50 rounded-lg">
-                  <label className="cursor-pointer">
-                    <span className="px-4 py-2 bg-muted rounded text-sm font-medium hover:bg-muted/80 transition-colors">
-                      Choose File
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx"
-                      onChange={handleFileChange}
+                  {/* Special Instructions */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-foreground">Special Instructions</Label>
+                    <Textarea
+                      {...register("special_instructions")}
+                      placeholder="Any special requirements, installation needs, training requirements..."
+                      className="bg-white border-border min-h-[100px] resize-none"
                     />
-                  </label>
-                  <span className="text-sm text-muted-foreground">No file chosen</span>
+                  </div>
+
+                  {/* File Upload */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                      Supporting Documents
+                    </Label>
+                    {uploadedFile ? (
+                      <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/30">
+                        <div className="flex items-center justify-center h-8 w-8 rounded-full bg-success/20">
+                          <Check className="h-4 w-4 text-success" />
+                        </div>
+                        <span className="flex-1 text-sm font-medium text-foreground truncate">{uploadedFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={removeFile}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4 p-4 border border-border rounded-lg bg-white">
+                        <label className="cursor-pointer shrink-0">
+                          <span className="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-md text-sm font-medium transition-colors">
+                            <Upload className="h-4 w-4" />
+                            Choose File
+                          </span>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx"
+                            onChange={handleFileChange}
+                          />
+                        </label>
+                        <span className="text-sm text-muted-foreground">No file chosen</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary Bar */}
+                  <div className="flex items-center gap-4 bg-muted/50 border border-border/50 rounded-lg px-6 py-4">
+                    <Badge className={`font-semibold uppercase text-xs px-3 py-1 ${getUrgencyColor()}`}>
+                      {getUrgencyLabel()} Priority
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {items.length} item(s) • ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Summary Bar */}
-            <div className="flex items-center gap-4 bg-primary/5 border border-primary/20 rounded-lg px-6 py-3">
-              <Badge className="bg-primary/10 text-primary border-primary/20 font-medium">
-                {getUrgencyLabel()} Priority
-              </Badge>
-              <span className="text-sm text-muted-foreground">
-                {items.length} item(s) • ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2 })}
-              </span>
+            {/* Sticky Submit Button */}
+            <div className="shrink-0 p-6 bg-white border-t border-border/40">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full bg-foreground hover:bg-foreground/90 text-background font-semibold h-14 text-base shadow-lg"
+                disabled={isSubmitting || isUploading}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Creating Purchase Requisition...
+                  </>
+                ) : (
+                  "Submit Purchase Requisition"
+                )}
+              </Button>
             </div>
-          </div>
-
-          {/* Submit Button */}
-          <div className="sticky bottom-0 p-6 pt-4 bg-white border-t border-border/30">
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full bg-foreground hover:bg-foreground/90 text-white font-semibold py-6 text-base"
-              disabled={isSubmitting || isUploading}
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Creating PR...
-                </>
-              ) : (
-                "Submit Purchase Requisition"
-              )}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
