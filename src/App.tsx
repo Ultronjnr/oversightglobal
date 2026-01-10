@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PRNotificationProvider } from "@/components/PRNotificationProvider";
 
 // Pages
 import Index from "./pages/Index";
@@ -32,6 +33,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <PRNotificationProvider>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -113,6 +115,7 @@ const App = () => (
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PRNotificationProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
