@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DocumentViewerModal } from "./DocumentViewerModal";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
 
@@ -45,6 +46,19 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+  }>({ isOpen: false, url: "", transactionId: "" });
+
+  const openDocumentViewer = (url: string, transactionId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId });
+  };
+
+  const closeDocumentViewer = () => {
+    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+  };
 
   const fetchPRs = async () => {
     setLoading(true);
@@ -237,15 +251,16 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                         {/* Document */}
                         {pr.document_url && (
                           <div>
-                            <a
-                              href={pr.document_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-primary hover:underline font-medium"
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openDocumentViewer(pr.document_url!, pr.transaction_id);
+                              }}
+                              className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                             >
                               <FileText className="h-4 w-4" />
                               View Attached Document
-                            </a>
+                            </button>
                           </div>
                         )}
                       </div>
@@ -257,6 +272,14 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
           </TableBody>
         </Table>
       </div>
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={documentModal.isOpen}
+        onClose={closeDocumentViewer}
+        documentUrl={documentModal.url}
+        transactionId={documentModal.transactionId}
+      />
     </div>
   );
 }
