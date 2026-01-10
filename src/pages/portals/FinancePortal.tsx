@@ -82,8 +82,6 @@ export default function FinancePortal() {
 
   const navItems = [
     { label: "My Portal", href: "/finance/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Pending Approvals", href: "/finance/portal", icon: <DollarSign className="h-4 w-4" /> },
-    { label: "Analytics", href: "/finance/portal", icon: <BarChart3 className="h-4 w-4" /> },
   ];
 
   const fetchData = async () => {
