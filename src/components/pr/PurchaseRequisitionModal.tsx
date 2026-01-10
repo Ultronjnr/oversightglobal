@@ -577,13 +577,52 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     </div>
                   </div>
 
-                  {/* Grand Total Bar */}
-                  <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-6 py-4">
-                    <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
-                    <span className="text-2xl font-bold text-primary">
-                      {formatZAR(calculateGrandTotal())}
-                    </span>
-                  </div>
+                  {/* Grand Total Bar with VAT Breakdown */}
+                  {(() => {
+                    const grandSubtotal = items.reduce((sum, item) => {
+                      return sum + (item.quantity * getNumericPrice(item.unit_price));
+                    }, 0);
+                    
+                    const grandVat = items.reduce((sum, item) => {
+                      const subtotal = item.quantity * getNumericPrice(item.unit_price);
+                      const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
+                      return sum + (subtotal * vatRate);
+                    }, 0);
+                    
+                    const grandTotal = grandSubtotal + grandVat;
+                    
+                    return (
+                      <div className="bg-primary/5 border border-primary/20 rounded-lg px-6 py-5">
+                        <div className="space-y-3">
+                          {/* Subtotal Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Subtotal (excl. VAT):</span>
+                            <span className="text-base font-medium text-foreground">
+                              {formatZAR(grandSubtotal)}
+                            </span>
+                          </div>
+                          
+                          {/* VAT Row */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Total VAT (15%):</span>
+                            <span className={`text-base font-medium ${grandVat > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                              {grandVat > 0 ? `+ ${formatZAR(grandVat)}` : formatZAR(0)}
+                            </span>
+                          </div>
+                          
+                          {/* Divider */}
+                          <div className="border-t border-primary/30 pt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
+                              <span className="text-2xl font-bold text-primary">
+                                {formatZAR(grandTotal)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Supplier Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
