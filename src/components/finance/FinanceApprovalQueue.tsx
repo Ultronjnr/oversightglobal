@@ -36,6 +36,7 @@ import {
 } from "@/services/finance.service";
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
@@ -49,6 +50,19 @@ export function FinanceApprovalQueue() {
   const [splitModalPR, setSplitModalPR] = useState<PurchaseRequisition | null>(null);
   const [quoteModalPR, setQuoteModalPR] = useState<PurchaseRequisition | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+  }>({ isOpen: false, url: "", transactionId: "" });
+
+  const openDocumentViewer = (url: string, transactionId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId });
+  };
+
+  const closeDocumentViewer = () => {
+    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+  };
 
   useEffect(() => {
     fetchPRs();
@@ -367,6 +381,22 @@ export function FinanceApprovalQueue() {
                                     </div>
                                   </div>
                                 )}
+
+                                {/* Document */}
+                                {pr.document_url && (
+                                  <div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openDocumentViewer(pr.document_url!, pr.transaction_id);
+                                      }}
+                                      className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      View Attached Document
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -430,6 +460,14 @@ export function FinanceApprovalQueue() {
           onSuccess={fetchPRs}
         />
       )}
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={documentModal.isOpen}
+        onClose={closeDocumentViewer}
+        documentUrl={documentModal.url}
+        transactionId={documentModal.transactionId}
+      />
     </>
   );
 }
