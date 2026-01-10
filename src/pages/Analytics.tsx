@@ -6,21 +6,56 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   User,
   BarChart3,
   TrendingUp,
-  FileText,
   DollarSign,
   CheckCircle,
   Clock,
   ArrowUpRight,
   ArrowDownRight,
-  PieChart,
-  LineChart,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon,
+  Download,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
+} from "recharts";
 import { getAnalyticsData, type AnalyticsData } from "@/services/analytics.service";
 import { toast } from "sonner";
+import { format } from "date-fns";
+
+const STATUS_COLORS: Record<string, string> = {
+  "Pending HOD": "#f59e0b",
+  "HOD Approved": "#3b82f6",
+  "Pending Finance": "#fb923c",
+  "Approved": "#22c55e",
+  "Declined": "#ef4444",
+  "Split": "#a855f7",
+  "HOD Declined": "#ef4444",
+};
 
 export default function Analytics() {
   const { user, role, profile } = useAuth();
@@ -28,7 +63,6 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
 
-  // Build nav items based on role
   const getNavItems = () => {
     const baseHref = role === "EMPLOYEE" 
       ? "/employee/portal" 
@@ -71,17 +105,149 @@ export default function Analytics() {
     }).format(value);
   };
 
+  const exportToCSV = () => {
+    if (!analytics) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const reportDate = format(new Date(), "yyyy-MM-dd");
+    const roleLabel = role === "EMPLOYEE" ? "Personal" : role === "HOD" ? "Department" : "Organization";
+    
+    let csvContent = `Procurement Analytics Report - ${roleLabel}\n`;
+    csvContent += `Generated: ${format(new Date(), "PPpp")}\n`;
+    csvContent += `User: ${profile?.name} ${profile?.surname || ""}\n\n`;
+    
+    csvContent += "SUMMARY STATISTICS\n";
+    csvContent += `Total Quotes,${analytics.totalQuotes}\n`;
+    csvContent += `Total Value,${analytics.totalValue}\n`;
+    csvContent += `Approval Rate,${analytics.approvalRate}%\n`;
+    csvContent += `Pending,${analytics.pending}\n`;
+    csvContent += `Approved Today,${analytics.approvedToday}\n`;
+    csvContent += `Awaiting Action,${analytics.awaitingAction}\n`;
+    csvContent += `Average Quote Value,${analytics.avgQuoteValue}\n\n`;
+    
+    csvContent += "MONTHLY TRENDS\n";
+    csvContent += "Month,Count,Value\n";
+    analytics.monthlyTrends.forEach(trend => {
+      csvContent += `${trend.month},${trend.count},${trend.value}\n`;
+    });
+    csvContent += "\n";
+    
+    csvContent += "STATUS DISTRIBUTION\n";
+    csvContent += "Status,Count\n";
+    analytics.statusDistribution.forEach(item => {
+      csvContent += `${item.status},${item.count}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `analytics-report-${reportDate}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Report exported successfully");
+  };
+
+  const exportToJSON = () => {
+    if (!analytics) {
+      toast.error("No data to export");
+      return;
+    }
+
+    const reportDate = format(new Date(), "yyyy-MM-dd");
+    const roleLabel = role === "EMPLOYEE" ? "Personal" : role === "HOD" ? "Department" : "Organization";
+    
+    const reportData = {
+      metadata: {
+        reportType: "Procurement Analytics",
+        scope: roleLabel,
+        generatedAt: new Date().toISOString(),
+        generatedBy: `${profile?.name} ${profile?.surname || ""}`.trim(),
+      },
+      summary: {
+        totalQuotes: analytics.totalQuotes,
+        totalValue: analytics.totalValue,
+        approvalRate: analytics.approvalRate,
+        pending: analytics.pending,
+        approvedToday: analytics.approvedToday,
+        awaitingAction: analytics.awaitingAction,
+        avgQuoteValue: analytics.avgQuoteValue,
+      },
+      monthlyTrends: analytics.monthlyTrends,
+      statusDistribution: analytics.statusDistribution,
+    };
+
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `analytics-report-${reportDate}.json`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Report exported successfully");
+  };
+
+  const printReport = () => {
+    window.print();
+    toast.success("Print dialog opened");
+  };
+
+  // Prepare chart data
+  const pieChartData = analytics?.statusDistribution.map(item => ({
+    name: item.status,
+    value: item.count,
+    color: STATUS_COLORS[item.status] || "#94a3b8",
+  })) || [];
+
+  const areaChartData = analytics?.monthlyTrends.map(trend => ({
+    month: trend.month,
+    count: trend.count,
+    value: trend.value / 1000, // Convert to thousands for better display
+  })) || [];
+
   return (
     <DashboardLayout title="Analytics" navItems={getNavItems()}>
-      <div className="space-y-6">
-        {/* Subtitle */}
-        <p className="text-muted-foreground -mt-4">
-          Comprehensive insights and statistics for procurement management with advanced filtering and analysis
-        </p>
+      <div className="space-y-6 print:space-y-4">
+        {/* Header with Export */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 -mt-4">
+          <p className="text-muted-foreground">
+            Comprehensive insights and statistics for procurement management with advanced filtering and analysis
+          </p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 print:hidden">
+                <Download className="h-4 w-4" />
+                Export Report
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV} className="gap-2 cursor-pointer">
+                <FileSpreadsheet className="h-4 w-4" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToJSON} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={printReport} className="gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                Print Report
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full grid grid-cols-2 h-12 bg-muted/50">
+          <TabsList className="w-full grid grid-cols-2 h-12 bg-muted/50 print:hidden">
             <TabsTrigger 
               value="overview" 
               className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -157,76 +323,132 @@ export default function Analytics() {
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Monthly Trends Card */}
+              {/* Monthly Trends Chart */}
               <SectionCard
                 title="Monthly Quote Trends"
-                icon={<LineChart className="h-5 w-5" />}
+                icon={<LineChartIcon className="h-5 w-5" />}
               >
-                <div className="h-64 flex items-center justify-center">
-                  {analytics?.monthlyTrends && analytics.monthlyTrends.length > 0 ? (
-                    <div className="w-full space-y-3">
-                      {analytics.monthlyTrends.map((trend, index) => (
-                        <div key={trend.month} className="flex items-center gap-3">
-                          <span className="text-sm text-muted-foreground w-10">{trend.month}</span>
-                          <div className="flex-1 bg-muted rounded-full h-6 overflow-hidden">
-                            <div
-                              className="h-full bg-primary/80 rounded-full flex items-center justify-end pr-2"
-                              style={{
-                                width: `${Math.max(
-                                  10,
-                                  (trend.count /
-                                    Math.max(...analytics.monthlyTrends.map((t) => t.count || 1))) *
-                                    100
-                                )}%`,
-                              }}
-                            >
-                              <span className="text-xs text-white font-medium">{trend.count}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                <div className="h-72">
+                  {areaChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={areaChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="month" 
+                          tick={{ fontSize: 12 }}
+                          className="text-muted-foreground"
+                        />
+                        <YAxis 
+                          yAxisId="left"
+                          tick={{ fontSize: 12 }}
+                          className="text-muted-foreground"
+                        />
+                        <YAxis 
+                          yAxisId="right" 
+                          orientation="right"
+                          tick={{ fontSize: 12 }}
+                          tickFormatter={(value) => `R${value}k`}
+                          className="text-muted-foreground"
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                          formatter={(value: number, name: string) => {
+                            if (name === 'value') return [`R${(value * 1000).toLocaleString()}`, 'Value'];
+                            return [value, 'Quotes'];
+                          }}
+                        />
+                        <Legend />
+                        <Area
+                          yAxisId="left"
+                          type="monotone"
+                          dataKey="count"
+                          name="Quotes"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorCount)"
+                        />
+                        <Area
+                          yAxisId="right"
+                          type="monotone"
+                          dataKey="value"
+                          name="Value (R thousands)"
+                          stroke="hsl(var(--success))"
+                          strokeWidth={2}
+                          fillOpacity={1}
+                          fill="url(#colorValue)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   ) : (
-                    <div className="text-center text-muted-foreground">
-                      <LineChart className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                      <p>No trend data available</p>
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      <div className="text-center">
+                        <LineChartIcon className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                        <p>No trend data available</p>
+                      </div>
                     </div>
                   )}
                 </div>
               </SectionCard>
 
-              {/* Status Distribution Card */}
+              {/* Status Distribution Pie Chart */}
               <SectionCard
                 title="Quote Status Distribution"
-                icon={<PieChart className="h-5 w-5" />}
+                icon={<PieChartIcon className="h-5 w-5" />}
               >
-                <div className="h-64 flex items-center justify-center">
-                  {analytics?.statusDistribution && analytics.statusDistribution.length > 0 ? (
-                    <div className="w-full space-y-3">
-                      {analytics.statusDistribution.map((item) => {
-                        const colors: Record<string, string> = {
-                          "Pending HOD": "bg-warning",
-                          "HOD Approved": "bg-blue-500",
-                          "Pending Finance": "bg-orange-400",
-                          "Approved": "bg-success",
-                          "Declined": "bg-destructive",
-                          "Split": "bg-purple-500",
-                        };
-                        return (
-                          <div key={item.status} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`h-3 w-3 rounded-full ${colors[item.status] || "bg-muted"}`} />
-                              <span className="text-sm">{item.status}</span>
-                            </div>
-                            <Badge variant="secondary">{item.count}</Badge>
-                          </div>
-                        );
-                      })}
-                    </div>
+                <div className="h-72">
+                  {pieChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={2}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={false}
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--background))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                        />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          formatter={(value) => <span className="text-sm">{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
                   ) : (
-                    <div className="text-center text-muted-foreground">
-                      <PieChart className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                      <p>No status data available</p>
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      <div className="text-center">
+                        <PieChartIcon className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                        <p>No status data available</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -265,19 +487,119 @@ export default function Analytics() {
           </TabsContent>
 
           {/* Advanced Analytics Tab */}
-          <TabsContent value="advanced" className="mt-6">
+          <TabsContent value="advanced" className="mt-6 space-y-6">
+            {/* Value by Month Bar Chart */}
             <SectionCard
-              title="Advanced Analytics"
-              icon={<TrendingUp className="h-5 w-5" />}
+              title="Monthly Value Breakdown"
+              icon={<BarChart3 className="h-5 w-5" />}
             >
-              <div className="h-64 flex items-center justify-center">
-                <div className="text-center text-muted-foreground">
-                  <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-30" />
-                  <p className="text-lg font-medium">Coming Soon</p>
-                  <p className="text-sm mt-1">Advanced analytics features are under development</p>
-                </div>
+              <div className="h-72">
+                {areaChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={areaChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="month" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `R${value}k`}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                        }}
+                        formatter={(value: number) => [`R${(value * 1000).toLocaleString()}`, 'Value']}
+                      />
+                      <Bar 
+                        dataKey="value" 
+                        name="Value"
+                        fill="hsl(var(--primary))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-30" />
+                      <p>No value data available</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </SectionCard>
+
+            {/* Detailed Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <SectionCard title="Performance Summary">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground">Total Requisitions</span>
+                    <span className="font-semibold">{analytics?.totalQuotes || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground">Total Value</span>
+                    <span className="font-semibold text-success">{formatCurrency(analytics?.totalValue || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground">Approval Rate</span>
+                    <span className="font-semibold text-primary">{analytics?.approvalRate || 0}%</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-muted-foreground">Avg Value</span>
+                    <span className="font-semibold">{formatCurrency(analytics?.avgQuoteValue || 0)}</span>
+                  </div>
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Status Breakdown">
+                <div className="space-y-3">
+                  {analytics?.statusDistribution.map(item => (
+                    <div key={item.status} className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="h-3 w-3 rounded-full" 
+                          style={{ backgroundColor: STATUS_COLORS[item.status] || "#94a3b8" }}
+                        />
+                        <span className="text-sm">{item.status}</span>
+                      </div>
+                      <Badge variant="secondary">{item.count}</Badge>
+                    </div>
+                  )) || (
+                    <p className="text-muted-foreground text-sm">No data available</p>
+                  )}
+                </div>
+              </SectionCard>
+
+              <SectionCard title="Today's Activity">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground">Approved</span>
+                    <Badge className="bg-success/10 text-success hover:bg-success/20">
+                      {analytics?.approvedToday || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border/50">
+                    <span className="text-muted-foreground">Awaiting Action</span>
+                    <Badge className="bg-warning/10 text-warning hover:bg-warning/20">
+                      {analytics?.awaitingAction || 0}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-muted-foreground">Pending Review</span>
+                    <Badge className="bg-primary/10 text-primary hover:bg-primary/20">
+                      {analytics?.pending || 0}
+                    </Badge>
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
