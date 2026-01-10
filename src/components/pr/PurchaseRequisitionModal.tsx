@@ -37,9 +37,10 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface PRItemExtended extends PRItem {
+interface PRItemExtended extends Omit<PRItem, 'unit_price'> {
   name: string;
-  vat_classification: string;
+  unit_price: number | '';  // Allow empty string for display purposes
+  vat_classification: 'STANDARD' | 'ZERO';
   technical_specs: string;
   business_justification: string;
 }
@@ -56,12 +57,22 @@ const createEmptyItem = (): PRItemExtended => ({
   name: "",
   description: "",
   quantity: 1,
-  unit_price: 0,
+  unit_price: '',  // Empty by default, not 0
   total: 0,
-  vat_classification: "VAT_APPLICABLE",
+  vat_classification: "STANDARD",  // Default: Standard Rated (15% VAT)
   technical_specs: "",
   business_justification: ""
 });
+
+// Helper to get numeric value for calculations
+const getNumericPrice = (price: number | ''): number => {
+  return price === '' ? 0 : price;
+};
+
+// Format currency for SA
+const formatZAR = (amount: number): string => {
+  return `ZAR ${amount.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypassHODApproval = false }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
@@ -119,12 +130,21 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
     setItems((prev) =>
       prev.map((item, i) => {
         if (i !== index) return item;
-        const updated = { ...item, [field]: value };
+        
+        // Handle unit_price specially to allow empty string
+        let updatedValue = value;
+        if (field === "unit_price") {
+          // Allow empty string or valid number
+          updatedValue = value === '' ? '' : (parseFloat(String(value)) || 0);
+        }
+        
+        const updated = { ...item, [field]: updatedValue };
         
         // Recalculate total when quantity or unit_price changes
         if (field === "quantity" || field === "unit_price" || field === "vat_classification") {
-          const vatMultiplier = updated.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1;
-          updated.total = updated.quantity * updated.unit_price * vatMultiplier;
+          const numericPrice = getNumericPrice(updated.unit_price);
+          const vatMultiplier = updated.vat_classification === "STANDARD" ? 1.15 : 1;
+          updated.total = updated.quantity * numericPrice * vatMultiplier;
         }
         
         return updated;
@@ -134,8 +154,9 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
 
   const calculateGrandTotal = () => {
     return items.reduce((sum, item) => {
-      const vatMultiplier = item.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1;
-      return sum + (item.quantity * item.unit_price * vatMultiplier);
+      const numericPrice = getNumericPrice(item.unit_price);
+      const vatMultiplier = item.vat_classification === "STANDARD" ? 1.15 : 1;
+      return sum + (item.quantity * numericPrice * vatMultiplier);
     }, 0);
   };
 
@@ -195,7 +216,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const onSubmit = async (data: FormData) => {
     // Validate items
     const validItems = items.filter(
-      (item) => (item.name.trim() || item.description.trim()) && item.quantity > 0 && item.unit_price > 0
+      (item) => (item.name.trim() || item.description.trim()) && item.quantity > 0 && getNumericPrice(item.unit_price) > 0
     );
 
     if (validItems.length === 0) {
@@ -217,7 +238,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         id: item.id,
         description: item.name || item.description,
         quantity: item.quantity,
-        unit_price: item.unit_price,
+        unit_price: getNumericPrice(item.unit_price),
         total: item.total,
         supplier_preference: data.supplier_preference,
       }));
@@ -457,12 +478,24 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                                     Unit Price (ZAR) <span className="text-destructive">*</span>
                                   </Label>
                                   <Input
-                                    type="number"
-                                    min={0}
-                                    step={0.01}
+                                    type="text"
+                                    inputMode="decimal"
                                     value={item.unit_price}
-                                    onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)}
-                                    placeholder="0.00"
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      // Allow empty, or valid decimal number
+                                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                        updateItem(index, "unit_price", val === '' ? '' : val);
+                                      }
+                                    }}
+                                    onBlur={(e) => {
+                                      // Format on blur if there's a value
+                                      const val = e.target.value;
+                                      if (val !== '' && !isNaN(parseFloat(val))) {
+                                        updateItem(index, "unit_price", parseFloat(val));
+                                      }
+                                    }}
+                                    placeholder="e.g. 12500.00"
                                     className="bg-white border-border h-10"
                                   />
                                 </div>
@@ -473,12 +506,11 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                                     onValueChange={(value) => updateItem(index, "vat_classification", value)}
                                   >
                                     <SelectTrigger className="bg-white border-border h-10">
-                                      <SelectValue placeholder="VAT Applicable..." />
+                                      <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent className="bg-white border border-border shadow-lg z-[100]">
-                                      <SelectItem value="VAT_APPLICABLE">VAT Applicable</SelectItem>
-                                      <SelectItem value="VAT_EXEMPT">VAT Exempt</SelectItem>
-                                      <SelectItem value="ZERO_RATED">Zero Rated</SelectItem>
+                                      <SelectItem value="STANDARD">Standard Rated (15% VAT)</SelectItem>
+                                      <SelectItem value="ZERO">Zero Rated (0% VAT)</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -488,7 +520,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                               <div className="flex items-center justify-end gap-3 pt-2 border-t border-border/30">
                                 <span className="text-sm text-muted-foreground">Total (Inc. VAT):</span>
                                 <span className="text-lg font-bold text-foreground">
-                                  ZAR {((item.quantity * item.unit_price) * (item.vat_classification === "VAT_APPLICABLE" ? 1.15 : 1)).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  {formatZAR((item.quantity * getNumericPrice(item.unit_price)) * (item.vat_classification === "STANDARD" ? 1.15 : 1))}
                                 </span>
                               </div>
 
@@ -524,7 +556,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   <div className="flex items-center justify-between bg-primary/5 border border-primary/20 rounded-lg px-6 py-4">
                     <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
                     <span className="text-2xl font-bold text-primary">
-                      ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatZAR(calculateGrandTotal())}
                     </span>
                   </div>
 
@@ -608,7 +640,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                       {getUrgencyLabel()} Priority
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {items.length} item(s) • ZAR {calculateGrandTotal().toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {items.length} item(s) • {formatZAR(calculateGrandTotal())}
                     </span>
                   </div>
                 </div>
