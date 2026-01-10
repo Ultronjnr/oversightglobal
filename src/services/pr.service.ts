@@ -173,6 +173,101 @@ export async function createPurchaseRequisition(
 }
 
 /**
+ * Create a new Purchase Requisition that bypasses HOD approval
+ * Used when HOD submits their own PR - goes directly to Finance
+ */
+export async function createPurchaseRequisitionBypassHOD(
+  input: CreatePRInput
+): Promise<CreatePRResult> {
+  try {
+    // 1. Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    // 2. Get user profile for name and organization
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, name, surname, organization_id, department")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return { success: false, error: "User profile not found" };
+    }
+
+    if (!profile.organization_id) {
+      return { success: false, error: "User is not associated with an organization" };
+    }
+
+    // 3. Generate transaction ID
+    const transactionId = generateTransactionId();
+
+    // 4. Calculate total amount
+    const totalAmount = calculateTotalAmount(input.items);
+
+    // 5. Set status directly to PENDING_FINANCE_APPROVAL (bypass HOD)
+    const initialStatus: PRStatus = "PENDING_FINANCE_APPROVAL";
+
+    // 6. Create initial history entry
+    const userName = `${profile.name}${profile.surname ? " " + profile.surname : ""}`;
+    const historyEntry: PRHistoryEntry = {
+      action: "PR_CREATED",
+      user_id: user.id,
+      user_name: userName,
+      timestamp: new Date().toISOString(),
+      details: "Submitted directly for Finance approval (HOD self-submission)",
+    };
+
+    // 7. Insert the PR
+    const insertData = {
+      transaction_id: transactionId,
+      organization_id: profile.organization_id,
+      requested_by: user.id,
+      requested_by_name: userName,
+      requested_by_department: input.department || profile.department,
+      items: input.items as unknown as Json,
+      total_amount: totalAmount,
+      currency: "ZAR",
+      urgency: input.urgency,
+      hod_status: "Auto-Approved",
+      finance_status: "Pending",
+      status: initialStatus,
+      due_date: input.due_date || null,
+      payment_due_date: input.payment_due_date || null,
+      document_url: input.document_url || null,
+      history: [historyEntry] as unknown as Json,
+    };
+
+    const { data: prData, error: insertError } = await supabase
+      .from("purchase_requisitions" as any)
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (insertError) {
+      logError("prInsertBypassHOD", insertError);
+      return { success: false, error: getSafeErrorMessage(insertError) };
+    }
+
+    const pr = prData as unknown as PurchaseRequisition;
+
+    return {
+      success: true,
+      data: pr,
+    };
+  } catch (error: any) {
+    logError("createPurchaseRequisitionBypassHOD", error);
+    return { success: false, error: getSafeErrorMessage(error) };
+  }
+}
+
+/**
  * Get all PRs for the current user (based on their role)
  */
 export async function getUserPurchaseRequisitions(): Promise<{

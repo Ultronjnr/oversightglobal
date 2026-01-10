@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { createPurchaseRequisition } from "@/services/pr.service";
+import { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
@@ -48,6 +48,7 @@ interface PurchaseRequisitionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  bypassHODApproval?: boolean;
 }
 
 const createEmptyItem = (): PRItemExtended => ({
@@ -62,7 +63,7 @@ const createEmptyItem = (): PRItemExtended => ({
   business_justification: ""
 });
 
-export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: PurchaseRequisitionModalProps) {
+export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypassHODApproval = false }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
   const [transactionId, setTransactionId] = useState("");
   const [items, setItems] = useState<PRItemExtended[]>([createEmptyItem()]);
@@ -221,7 +222,9 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess }: Purc
         supplier_preference: data.supplier_preference,
       }));
 
-      const result = await createPurchaseRequisition({
+      // Use bypass function if HOD is submitting their own PR
+      const createFn = bypassHODApproval ? createPurchaseRequisitionBypassHOD : createPurchaseRequisition;
+      const result = await createFn({
         items: prItems,
         urgency: data.urgency as UrgencyLevel,
         department: data.department,
