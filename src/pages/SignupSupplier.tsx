@@ -112,7 +112,7 @@ export default function SignupSupplier() {
         address: data.address,
         registration_number: data.registrationNumber,
         industry: data.industry,
-        is_verified: false,
+        is_verified: true,
       });
 
       if (supplierError) {
