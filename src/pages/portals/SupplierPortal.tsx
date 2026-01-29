@@ -29,6 +29,8 @@ import {
   getSupplierQuoteRequests,
   getSupplierQuotes,
   getSupplierStats,
+  acceptQuoteRequest,
+  declineQuoteRequest,
   type SupplierProfile,
   type SupplierQuoteRequest,
   type SupplierQuote,
@@ -54,6 +56,7 @@ export default function SupplierPortal() {
   // Quote submission modal
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupplierQuoteRequest | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
@@ -96,6 +99,36 @@ export default function SupplierPortal() {
   const handleSubmitQuote = (request: SupplierQuoteRequest) => {
     setSelectedRequest(request);
     setQuoteModalOpen(true);
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    setProcessingId(requestId);
+    try {
+      const result = await acceptQuoteRequest(requestId);
+      if (result.success) {
+        toast.success("Quote request accepted! You can now submit your quote.");
+        loadData();
+      } else {
+        toast.error(result.error || "Failed to accept request");
+      }
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    setProcessingId(requestId);
+    try {
+      const result = await declineQuoteRequest(requestId);
+      if (result.success) {
+        toast.success("Quote request declined");
+        loadData();
+      } else {
+        toast.error(result.error || "Failed to decline request");
+      }
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleQuoteSuccess = () => {
@@ -146,7 +179,21 @@ export default function SupplierPortal() {
         return (
           <Badge variant="outline" className="border-warning/30 text-warning">
             <Clock className="h-3 w-3 mr-1" />
-            Awaiting Quote
+            Awaiting Response
+          </Badge>
+        );
+      case "ACCEPTED":
+        return (
+          <Badge className="bg-primary/20 text-primary border-primary/30">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Accepted - Submit Quote
+          </Badge>
+        );
+      case "DECLINED":
+        return (
+          <Badge variant="outline" className="border-muted-foreground/30 text-muted-foreground">
+            <XCircle className="h-3 w-3 mr-1" />
+            Declined
           </Badge>
         );
       case "QUOTED":
@@ -319,7 +366,9 @@ export default function SupplierPortal() {
                         className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                       >
                         <div className="space-y-1">
-                          <p className="font-medium">Quote Request</p>
+                          <p className="font-medium">
+                            {request.organization_name || "Organization"} - {request.pr_transaction_id || "PR"}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {request.items?.length || 0} item(s) •{" "}
                             {format(new Date(request.created_at), "MMM d, yyyy")}
@@ -327,7 +376,29 @@ export default function SupplierPortal() {
                         </div>
                         <div className="flex items-center gap-3">
                           {getRequestStatusBadge(request.status)}
-                          {request.status === "PENDING" && !hasQuotedForRequest(request.id) && (
+                          {request.status === "PENDING" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => handleAcceptRequest(request.id)}
+                                disabled={processingId === request.id}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Accept
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeclineRequest(request.id)}
+                                disabled={processingId === request.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Decline
+                              </Button>
+                            </div>
+                          )}
+                          {request.status === "ACCEPTED" && !hasQuotedForRequest(request.id) && (
                             <Button
                               size="sm"
                               onClick={() => handleSubmitQuote(request)}
@@ -370,6 +441,8 @@ export default function SupplierPortal() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Organization</TableHead>
+                          <TableHead>PR Reference</TableHead>
                           <TableHead>Request Date</TableHead>
                           <TableHead>Items</TableHead>
                           <TableHead>Estimated Value</TableHead>
@@ -387,6 +460,12 @@ export default function SupplierPortal() {
 
                           return (
                             <TableRow key={request.id}>
+                              <TableCell className="font-medium">
+                                {request.organization_name || "—"}
+                              </TableCell>
+                              <TableCell className="font-mono text-sm">
+                                {request.pr_transaction_id || "—"}
+                              </TableCell>
                               <TableCell>
                                 {format(new Date(request.created_at), "MMM d, yyyy")}
                               </TableCell>
@@ -409,7 +488,28 @@ export default function SupplierPortal() {
                               </TableCell>
                               <TableCell>{getRequestStatusBadge(request.status)}</TableCell>
                               <TableCell>
-                                {!quoted && request.status === "PENDING" ? (
+                                {request.status === "PENDING" ? (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="default"
+                                      onClick={() => handleAcceptRequest(request.id)}
+                                      disabled={processingId === request.id}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleDeclineRequest(request.id)}
+                                      disabled={processingId === request.id}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Decline
+                                    </Button>
+                                  </div>
+                                ) : request.status === "ACCEPTED" && !quoted ? (
                                   <Button
                                     size="sm"
                                     onClick={() => handleSubmitQuote(request)}
@@ -419,7 +519,7 @@ export default function SupplierPortal() {
                                   </Button>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">
-                                    {quoted ? "Quote Submitted" : "—"}
+                                    {quoted ? "Quote Submitted" : request.status === "DECLINED" ? "Declined" : "—"}
                                   </span>
                                 )}
                               </TableCell>
