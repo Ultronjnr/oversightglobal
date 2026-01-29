@@ -36,13 +36,14 @@ const getStatusStyle = (status: PRStatus): 'success' | 'error' | 'info' | 'warni
 
 export function usePRNotifications() {
   const { user, role } = useAuth();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const prChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const quoteChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!user) return;
 
     // Subscribe to PR changes
-    const channel = supabase
+    const prChannel = supabase
       .channel('pr-status-changes')
       .on(
         'postgres_changes',
@@ -94,11 +95,50 @@ export function usePRNotifications() {
       )
       .subscribe();
 
-    channelRef.current = channel;
+    prChannelRef.current = prChannel;
+
+    // Subscribe to quote request changes for Finance role
+    if (role === 'FINANCE') {
+      const quoteChannel = supabase
+        .channel('quote-request-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'quote_requests',
+          },
+          (payload) => {
+            const oldRecord = payload.old as { status?: string };
+            const newRecord = payload.new as { status?: string; pr_id?: string };
+
+            // Only notify on status changes to ACCEPTED
+            if (oldRecord.status === newRecord.status) return;
+            
+            if (newRecord.status === 'ACCEPTED') {
+              showNotification(
+                'A supplier has accepted your quote request and will submit a quote soon',
+                'success'
+              );
+            } else if (newRecord.status === 'DECLINED') {
+              showNotification(
+                'A supplier has declined your quote request',
+                'warning'
+              );
+            }
+          }
+        )
+        .subscribe();
+
+      quoteChannelRef.current = quoteChannel;
+    }
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+      if (prChannelRef.current) {
+        supabase.removeChannel(prChannelRef.current);
+      }
+      if (quoteChannelRef.current) {
+        supabase.removeChannel(quoteChannelRef.current);
       }
     };
   }, [user, role]);
