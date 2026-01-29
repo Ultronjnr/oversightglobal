@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_suppliers: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          status: Database["public"]["Enums"]["org_supplier_status"]
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          status?: Database["public"]["Enums"]["org_supplier_status"]
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          status?: Database["public"]["Enums"]["org_supplier_status"]
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_suppliers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -456,6 +498,7 @@ export type Database = {
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
+      org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
       pr_status:
         | "PENDING_HOD_APPROVAL"
         | "HOD_APPROVED"
@@ -600,6 +643,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
+      org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
       pr_status: [
         "PENDING_HOD_APPROVAL",
         "HOD_APPROVED",
