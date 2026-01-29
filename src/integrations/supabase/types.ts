@@ -477,6 +477,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_supplier_linked_to_org: {
+        Args: { _org_id: string; _supplier_id: string }
+        Returns: boolean
+      }
       is_valid_self_role_assignment: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
