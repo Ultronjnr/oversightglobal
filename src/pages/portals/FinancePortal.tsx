@@ -20,6 +20,7 @@ import {
   Loader2,
   AlertTriangle,
   Clock,
+  CheckCircle2,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -54,6 +55,9 @@ import {
   getQuotes,
   financeApprovePR,
   financeDeclinePR,
+  getPRsWithQuoteStatus,
+  type PRWithQuoteStatus,
+  type QuoteWorkflowStatus,
 } from "@/services/finance.service";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 
@@ -64,12 +68,21 @@ const urgencyConfig: Record<string, { label: string; className: string }> = {
   URGENT: { label: "Urgent", className: "bg-destructive/10 text-destructive" },
 };
 
+const quoteWorkflowConfig: Record<QuoteWorkflowStatus, { label: string; className: string; icon: string }> = {
+  PENDING_REVIEW: { label: "Pending Review", className: "bg-muted text-muted-foreground", icon: "clock" },
+  QUOTE_SENT: { label: "Quote Sent", className: "bg-blue-500/10 text-blue-600 border-blue-500/30", icon: "send" },
+  QUOTE_ACCEPTED: { label: "Quote Accepted", className: "bg-warning/10 text-warning border-warning/30", icon: "check" },
+  QUOTE_SUBMITTED: { label: "Quote Received", className: "bg-primary/10 text-primary border-primary/30", icon: "file" },
+  COMPLETED: { label: "Completed", className: "bg-success/10 text-success border-success/30", icon: "check-circle" },
+};
+
 export default function FinancePortal() {
   const navigate = useNavigate();
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
+  const [prsWithQuoteStatus, setPrsWithQuoteStatus] = useState<PRWithQuoteStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [stats, setStats] = useState({ pending: 0, quotes: 0, approved: 0, declined: 0 });
+  const [stats, setStats] = useState({ pending: 0, quotes: 0, approved: 0, declined: 0, quoteAccepted: 0 });
   const [showCleared, setShowCleared] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -90,9 +103,10 @@ export default function FinancePortal() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prsResult, quotesResult] = await Promise.all([
+      const [prsResult, quotesResult, prsWithStatusResult] = await Promise.all([
         getFinancePendingPRs(),
         getQuotes(),
+        getPRsWithQuoteStatus(),
       ]);
 
       if (prsResult.success) {
@@ -105,6 +119,16 @@ export default function FinancePortal() {
       if (quotesResult.success) {
         const pendingQuotes = quotesResult.data.filter(q => q.status === "SUBMITTED").length;
         setStats((prev) => ({ ...prev, quotes: pendingQuotes }));
+      }
+
+      if (prsWithStatusResult.success) {
+        setPrsWithQuoteStatus(prsWithStatusResult.data);
+        const quoteAcceptedCount = prsWithStatusResult.data.filter(
+          pr => pr.quote_workflow_status === "QUOTE_ACCEPTED" || 
+                pr.quote_workflow_status === "QUOTE_SUBMITTED" ||
+                pr.quote_workflow_status === "COMPLETED"
+        ).length;
+        setStats((prev) => ({ ...prev, quoteAccepted: quoteAcceptedCount }));
       }
     } catch (error) {
       console.error("Fetch error:", error);
@@ -318,11 +342,91 @@ export default function FinancePortal() {
               </TabsList>
 
               <TabsContent value="approvals">
-                <EmptyState
-                  icon={<DollarSign className="h-16 w-16" />}
-                  title="No Pending Approvals"
-                  description="Requisitions requiring your approval will appear here. Click 'Incoming Purchase Requisitions' to view the full queue."
-                />
+                {prsWithQuoteStatus.length === 0 ? (
+                  <EmptyState
+                    icon={<DollarSign className="h-16 w-16" />}
+                    title="No Quote Workflows"
+                    description="Requisitions with quote activity will appear here. Send quote requests from the Incoming Purchase Requisitions modal."
+                  />
+                ) : (
+                  <div className="space-y-4">
+                    {/* Status progression legend */}
+                    <div className="flex items-center gap-6 p-3 bg-muted/30 rounded-lg text-sm">
+                      <span className="text-muted-foreground font-medium">Workflow:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 rounded bg-muted text-muted-foreground text-xs">PR Created</span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-600 text-xs">Quote Sent</span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="px-2 py-1 rounded bg-warning/10 text-warning text-xs">Quote Accepted</span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                        <span className="px-2 py-1 rounded bg-success/10 text-success text-xs">Completed</span>
+                      </div>
+                    </div>
+
+                    {/* PRs with quote status table */}
+                    <div className="rounded-lg border border-border/50 overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30">
+                            <TableHead>Transaction ID</TableHead>
+                            <TableHead>Requester</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead>Quote Status</TableHead>
+                            <TableHead>Workflow Progress</TableHead>
+                            <TableHead>Last Updated</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {prsWithQuoteStatus.map((pr) => {
+                            const config = quoteWorkflowConfig[pr.quote_workflow_status];
+                            return (
+                              <TableRow key={pr.id} className="hover:bg-muted/20">
+                                <TableCell className="font-mono text-sm font-medium">
+                                  {pr.transaction_id}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">{pr.requested_by_name}</p>
+                                    <p className="text-xs text-muted-foreground">{pr.requested_by_department || "-"}</p>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  {formatCurrency(pr.total_amount, pr.currency)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className={config.className}>
+                                    {config.icon === "check-circle" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                    {config.icon === "send" && <Send className="h-3 w-3 mr-1" />}
+                                    {config.icon === "check" && <Check className="h-3 w-3 mr-1" />}
+                                    {config.icon === "file" && <FileText className="h-3 w-3 mr-1" />}
+                                    {config.icon === "clock" && <Clock className="h-3 w-3 mr-1" />}
+                                    {config.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1">
+                                    {/* Progress dots */}
+                                    <div className={`h-2 w-2 rounded-full ${pr.quote_workflow_status !== "PENDING_REVIEW" ? "bg-success" : "bg-muted-foreground/30"}`} title="PR Created" />
+                                    <div className={`h-1 w-4 ${["QUOTE_SENT", "QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} />
+                                    <div className={`h-2 w-2 rounded-full ${["QUOTE_SENT", "QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} title="Quote Sent" />
+                                    <div className={`h-1 w-4 ${["QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} />
+                                    <div className={`h-2 w-2 rounded-full ${["QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} title="Quote Accepted" />
+                                    <div className={`h-1 w-4 ${pr.quote_workflow_status === "COMPLETED" ? "bg-success" : "bg-muted-foreground/30"}`} />
+                                    <div className={`h-2 w-2 rounded-full ${pr.quote_workflow_status === "COMPLETED" ? "bg-success" : "bg-muted-foreground/30"}`} title="Completed" />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {format(new Date(pr.updated_at), "dd MMM yyyy HH:mm")}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="suppliers">

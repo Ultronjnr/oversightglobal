@@ -38,6 +38,20 @@ export interface QuoteRequest {
   pr?: PurchaseRequisition;
 }
 
+export type QuoteWorkflowStatus = 
+  | "PENDING_REVIEW"
+  | "QUOTE_SENT"
+  | "QUOTE_ACCEPTED"
+  | "QUOTE_SUBMITTED"
+  | "COMPLETED";
+
+export interface PRWithQuoteStatus extends PurchaseRequisition {
+  quote_workflow_status: QuoteWorkflowStatus;
+  quote_request_count: number;
+  accepted_quote_count: number;
+  submitted_quote_count: number;
+}
+
 export interface Quote {
   id: string;
   quote_request_id: string;
@@ -632,5 +646,96 @@ export async function rejectQuote(quoteId: string): Promise<ApprovalResult> {
   } catch (error: any) {
     logError("rejectQuote", error);
     return { success: false, error: getSafeErrorMessage(error) };
+  }
+}
+
+/**
+ * Get PRs with quote workflow status for Finance Overview
+ * Status progression: PR → Quote Sent → Quote Accepted → Completed
+ */
+export async function getPRsWithQuoteStatus(): Promise<{
+  success: boolean;
+  data: PRWithQuoteStatus[];
+  error?: string;
+}> {
+  try {
+    // Get all PRs that are approved or have quote activity
+    const { data: prsData, error: prsError } = await supabase
+      .from("purchase_requisitions")
+      .select("*")
+      .in("status", ["PENDING_FINANCE_APPROVAL", "FINANCE_APPROVED", "SPLIT"])
+      .order("updated_at", { ascending: false });
+
+    if (prsError) {
+      logError("getPRsWithQuoteStatus.prs", prsError);
+      return { success: false, error: getSafeErrorMessage(prsError), data: [] };
+    }
+
+    const prs = (prsData || []) as unknown as PurchaseRequisition[];
+
+    // Get all quote requests for these PRs
+    const prIds = prs.map(pr => pr.id);
+    
+    if (prIds.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const { data: quoteRequestsData, error: qrError } = await supabase
+      .from("quote_requests")
+      .select("pr_id, status")
+      .in("pr_id", prIds);
+
+    if (qrError) {
+      logError("getPRsWithQuoteStatus.quoteRequests", qrError);
+    }
+
+    const { data: quotesData, error: quotesError } = await supabase
+      .from("quotes")
+      .select("pr_id, status")
+      .in("pr_id", prIds);
+
+    if (quotesError) {
+      logError("getPRsWithQuoteStatus.quotes", quotesError);
+    }
+
+    // Map PRs with quote workflow status
+    const prsWithStatus: PRWithQuoteStatus[] = prs.map(pr => {
+      const prQuoteRequests = (quoteRequestsData || []).filter(qr => qr.pr_id === pr.id);
+      const prQuotes = (quotesData || []).filter(q => q.pr_id === pr.id);
+      
+      const quoteRequestCount = prQuoteRequests.length;
+      const acceptedQuoteRequestCount = prQuoteRequests.filter(qr => qr.status === "ACCEPTED").length;
+      const submittedQuoteCount = prQuotes.filter(q => q.status === "SUBMITTED").length;
+      const acceptedQuoteCount = prQuotes.filter(q => q.status === "ACCEPTED").length;
+
+      let quoteWorkflowStatus: QuoteWorkflowStatus = "PENDING_REVIEW";
+      
+      if (pr.status === "FINANCE_APPROVED" && acceptedQuoteCount > 0) {
+        quoteWorkflowStatus = "COMPLETED";
+      } else if (acceptedQuoteCount > 0) {
+        quoteWorkflowStatus = "COMPLETED";
+      } else if (submittedQuoteCount > 0) {
+        quoteWorkflowStatus = "QUOTE_SUBMITTED";
+      } else if (acceptedQuoteRequestCount > 0) {
+        quoteWorkflowStatus = "QUOTE_ACCEPTED";
+      } else if (quoteRequestCount > 0) {
+        quoteWorkflowStatus = "QUOTE_SENT";
+      } else {
+        quoteWorkflowStatus = "PENDING_REVIEW";
+      }
+
+      return {
+        ...pr,
+        quote_workflow_status: quoteWorkflowStatus,
+        quote_request_count: quoteRequestCount,
+        accepted_quote_count: acceptedQuoteCount,
+        submitted_quote_count: submittedQuoteCount,
+      };
+    });
+
+    return { success: true, data: prsWithStatus };
+  } catch (error: any) {
+    logError("getPRsWithQuoteStatus", error);
+    return { success: false, error: getSafeErrorMessage(error), data: [] };
   }
 }
