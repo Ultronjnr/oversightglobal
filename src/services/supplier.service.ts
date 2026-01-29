@@ -25,6 +25,8 @@ export interface SupplierQuoteRequest {
   status: string;
   created_at: string;
   updated_at: string;
+  organization_name?: string;
+  pr_transaction_id?: string;
 }
 
 export interface SupplierQuote {
@@ -83,7 +85,7 @@ export async function getSupplierProfile(): Promise<{
 }
 
 /**
- * Get quote requests for the current supplier
+ * Get quote requests for the current supplier with organization and PR details
  */
 export async function getSupplierQuoteRequests(): Promise<{
   success: boolean;
@@ -107,9 +109,14 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: "Supplier profile not found" };
     }
 
+    // Get quote requests with organization name
     const { data, error } = await supabase
       .from("quote_requests")
-      .select("*")
+      .select(`
+        *,
+        organizations:organization_id (name),
+        purchase_requisitions:pr_id (transaction_id)
+      `)
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false });
 
@@ -117,7 +124,16 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: error.message };
     }
 
-    return { success: true, data: (data || []) as unknown as SupplierQuoteRequest[] };
+    // Transform data to include organization name and PR transaction ID
+    const transformedData = (data || []).map((item: any) => ({
+      ...item,
+      organization_name: item.organizations?.name || "Unknown Organization",
+      pr_transaction_id: item.purchase_requisitions?.transaction_id || "Unknown PR",
+      organizations: undefined,
+      purchase_requisitions: undefined,
+    }));
+
+    return { success: true, data: transformedData as SupplierQuoteRequest[] };
   } catch (error: any) {
     return { success: false, data: [], error: error.message };
   }
@@ -299,6 +315,122 @@ export async function updateSupplierProfile(
 
     if (error) {
       return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Accept a quote request - supplier agrees to provide a quote
+ */
+export async function acceptQuoteRequest(
+  quoteRequestId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Get supplier ID
+    const { data: supplier } = await supabase
+      .from("suppliers")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!supplier) {
+      return { success: false, error: "Supplier profile not found" };
+    }
+
+    // Verify the quote request belongs to this supplier and is pending
+    const { data: request, error: reqError } = await supabase
+      .from("quote_requests")
+      .select("id, status")
+      .eq("id", quoteRequestId)
+      .eq("supplier_id", supplier.id)
+      .single();
+
+    if (reqError || !request) {
+      return { success: false, error: "Quote request not found" };
+    }
+
+    if (request.status !== "PENDING") {
+      return { success: false, error: "Quote request is no longer pending" };
+    }
+
+    // Update status to ACCEPTED
+    const { error: updateError } = await supabase
+      .from("quote_requests")
+      .update({ 
+        status: "ACCEPTED",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", quoteRequestId);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Decline a quote request - supplier declines to participate
+ */
+export async function declineQuoteRequest(
+  quoteRequestId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Get supplier ID
+    const { data: supplier } = await supabase
+      .from("suppliers")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!supplier) {
+      return { success: false, error: "Supplier profile not found" };
+    }
+
+    // Verify the quote request belongs to this supplier and is pending
+    const { data: request, error: reqError } = await supabase
+      .from("quote_requests")
+      .select("id, status")
+      .eq("id", quoteRequestId)
+      .eq("supplier_id", supplier.id)
+      .single();
+
+    if (reqError || !request) {
+      return { success: false, error: "Quote request not found" };
+    }
+
+    if (request.status !== "PENDING") {
+      return { success: false, error: "Quote request is no longer pending" };
+    }
+
+    // Update status to DECLINED
+    const { error: updateError } = await supabase
+      .from("quote_requests")
+      .update({ 
+        status: "DECLINED",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", quoteRequestId);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
     }
 
     return { success: true };
