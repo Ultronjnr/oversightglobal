@@ -27,6 +27,8 @@ export interface SupplierQuoteRequest {
   updated_at: string;
   organization_name?: string;
   pr_transaction_id?: string;
+  requester_name?: string;
+  requester_email?: string;
 }
 
 export interface SupplierQuote {
@@ -109,13 +111,14 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: "Supplier profile not found" };
     }
 
-    // Get quote requests with organization name
+    // Get quote requests with organization name, PR details, and requester info
     const { data, error } = await supabase
       .from("quote_requests")
       .select(`
         *,
         organizations:organization_id (name),
-        purchase_requisitions:pr_id (transaction_id)
+        purchase_requisitions:pr_id (transaction_id),
+        profiles:requested_by (name, email)
       `)
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false });
@@ -124,13 +127,16 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: error.message };
     }
 
-    // Transform data to include organization name and PR transaction ID
+    // Transform data to include organization name, PR transaction ID, and requester info
     const transformedData = (data || []).map((item: any) => ({
       ...item,
       organization_name: item.organizations?.name || "Unknown Organization",
       pr_transaction_id: item.purchase_requisitions?.transaction_id || "Unknown PR",
+      requester_name: item.profiles?.name || null,
+      requester_email: item.profiles?.email || null,
       organizations: undefined,
       purchase_requisitions: undefined,
+      profiles: undefined,
     }));
 
     return { success: true, data: transformedData as SupplierQuoteRequest[] };

@@ -263,12 +263,12 @@ export default function SupplierPortal() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="requests">
+            <TabsTrigger value="requests" className="relative">
               Quote Requests
               {stats.pendingRequests > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
                   {stats.pendingRequests}
-                </Badge>
+                </span>
               )}
             </TabsTrigger>
             <TabsTrigger value="quotes">My Quotes</TabsTrigger>
@@ -367,7 +367,10 @@ export default function SupplierPortal() {
                       >
                         <div className="space-y-1">
                           <p className="font-medium">
-                            {request.organization_name || "Organization"} - {request.pr_transaction_id || "PR"}
+                            {request.organization_name} - {request.pr_transaction_id}
+                            {request.requester_name && (
+                              <span className="text-muted-foreground font-normal"> (from {request.requester_name})</span>
+                            )}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {request.items?.length || 0} item(s) •{" "}
@@ -460,11 +463,16 @@ export default function SupplierPortal() {
 
                           return (
                             <TableRow key={request.id}>
-                              <TableCell className="font-medium">
-                                {request.organization_name || "—"}
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{request.organization_name}</p>
+                                  {request.requester_name && (
+                                    <p className="text-xs text-muted-foreground">from {request.requester_name}</p>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell className="font-mono text-sm">
-                                {request.pr_transaction_id || "—"}
+                                {request.pr_transaction_id}
                               </TableCell>
                               <TableCell>
                                 {format(new Date(request.created_at), "MMM d, yyyy")}
