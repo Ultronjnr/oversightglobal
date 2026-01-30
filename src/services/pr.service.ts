@@ -38,34 +38,41 @@ function calculateTotalAmount(items: CreatePRInput["items"]): number {
 }
 
 /**
- * Check if organization has an HOD
+ * Check if organization has an ACTIVE HOD user
  */
 async function organizationHasHOD(organizationId: string): Promise<boolean> {
   try {
-    // Query user_roles table to find HOD users, then check if they belong to this org
-    const { data: hodUsers, error } = await supabase
+    // Query for ACTIVE users with HOD role in the specified organization
+    // First get all HOD user IDs
+    const { data: hodUsers, error: roleError } = await supabase
       .from("user_roles")
       .select("user_id")
       .eq("role", "HOD");
 
-    if (error || !hodUsers || hodUsers.length === 0) {
+    if (roleError) {
+      logError("fetchHODRoles", roleError);
       return false;
     }
 
-    // Check if any of these HOD users belong to the organization
+    if (!hodUsers || hodUsers.length === 0) {
+      return false;
+    }
+
+    // Check if any HOD users are ACTIVE and belong to the organization
     const hodUserIds = hodUsers.map((u) => u.user_id);
-    const { data: profiles, error: profileError } = await supabase
+    const { data: activeHODs, error: profileError } = await supabase
       .from("profiles")
       .select("id")
       .eq("organization_id", organizationId)
+      .eq("status", "ACTIVE")
       .in("id", hodUserIds);
 
     if (profileError) {
-      logError("checkHODProfiles", profileError);
+      logError("checkActiveHODProfiles", profileError);
       return false;
     }
 
-    return profiles && profiles.length > 0;
+    return activeHODs !== null && activeHODs.length > 0;
   } catch (error) {
     logError("organizationHasHOD", error);
     return false;
