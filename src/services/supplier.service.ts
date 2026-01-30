@@ -118,7 +118,8 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: "Supplier profile not found" };
     }
 
-    // Get quote requests with organization name, PR details, and requester info
+    // Get quote requests with organization name and PR details
+    // Note: requested_by doesn't have FK to profiles, so we get requester info from the PR
     const { data, error } = await supabase
       .from("quote_requests")
       .select(`
@@ -132,9 +133,9 @@ export async function getSupplierQuoteRequests(): Promise<{
           document_url,
           total_amount,
           currency,
-          items
-        ),
-        profiles:requested_by (name, email)
+          items,
+          requested_by_name
+        )
       `)
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false });
@@ -143,15 +144,16 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: error.message };
     }
 
-    // Transform data to include organization name, PR details, and requester info
+    // Transform data to include organization name and PR details
     const transformedData = (data || []).map((item: any) => {
       const pr = item.purchase_requisitions;
       return {
         ...item,
         organization_name: item.organizations?.name || "Unknown Organization",
         pr_transaction_id: pr?.transaction_id || "Unknown PR",
-        requester_name: item.profiles?.name || null,
-        requester_email: item.profiles?.email || null,
+        // Get requester name from the PR record
+        requester_name: pr?.requested_by_name || null,
+        requester_email: null, // Email not available without additional query
         // Extended PR details
         pr_due_date: pr?.due_date || null,
         pr_payment_due_date: pr?.payment_due_date || null,
@@ -163,7 +165,6 @@ export async function getSupplierQuoteRequests(): Promise<{
         items: item.items?.length > 0 ? item.items : (pr?.items || []),
         organizations: undefined,
         purchase_requisitions: undefined,
-        profiles: undefined,
       };
     });
 
