@@ -485,6 +485,10 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      organization_has_active_hod: {
+        Args: { _org_id: string }
+        Returns: boolean
+      }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
       validate_invitation: {
         Args: { _email: string; _token: string }
