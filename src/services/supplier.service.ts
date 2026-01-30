@@ -145,14 +145,15 @@ export async function getSupplierQuoteRequests(): Promise<{
     }
 
     // Transform data to include organization name and PR details
+    // Use safer fallback text instead of "Unknown" to improve UX
     const transformedData = (data || []).map((item: any) => {
       const pr = item.purchase_requisitions;
       return {
         ...item,
-        organization_name: item.organizations?.name || "Unknown Organization",
-        pr_transaction_id: pr?.transaction_id || "Unknown PR",
+        organization_name: item.organizations?.name || "Organization Assigned",
+        pr_transaction_id: pr?.transaction_id || "PR Pending",
         // Get requester name from the PR record
-        requester_name: pr?.requested_by_name || null,
+        requester_name: pr?.requested_by_name || "Finance Department",
         requester_email: null, // Email not available without additional query
         // Extended PR details
         pr_due_date: pr?.due_date || null,
