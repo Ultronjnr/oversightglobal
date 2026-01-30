@@ -379,10 +379,8 @@ export default function SupplierPortal() {
                       >
                         <div className="space-y-1 flex-1">
                           <p className="font-medium">
-                            {request.organization_name} - {request.pr_transaction_id}
-                            {request.requester_name && (
-                              <span className="text-muted-foreground font-normal"> (from {request.requester_name})</span>
-                            )}
+                            {request.organization_name || "Organization Assigned"} - {request.pr_transaction_id || "PR Pending"}
+                            <span className="text-muted-foreground font-normal"> (from {request.requester_name || "Finance Department"})</span>
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {request.items?.length || 0} item(s) •{" "}
@@ -498,14 +496,12 @@ export default function SupplierPortal() {
                             <TableRow key={request.id}>
                               <TableCell>
                                 <div>
-                                  <p className="font-medium">{request.organization_name}</p>
-                                  {request.requester_name && (
-                                    <p className="text-xs text-muted-foreground">from {request.requester_name}</p>
-                                  )}
+                                  <p className="font-medium">{request.organization_name || "Organization Assigned"}</p>
+                                  <p className="text-xs text-muted-foreground">from {request.requester_name || "Finance Department"}</p>
                                 </div>
                               </TableCell>
                               <TableCell className="font-mono text-sm">
-                                {request.pr_transaction_id}
+                                {request.pr_transaction_id || "PR Pending"}
                               </TableCell>
                               <TableCell>
                                 {format(new Date(request.created_at), "MMM d, yyyy")}
