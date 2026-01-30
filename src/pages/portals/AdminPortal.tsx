@@ -48,9 +48,6 @@ export default function AdminPortal() {
 
   const navItems = [
     { label: "Dashboard", href: "/admin/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Users", href: "/admin/users", icon: <Users className="h-4 w-4" /> },
-    { label: "Organization", href: "/admin/organization", icon: <Building2 className="h-4 w-4" /> },
-    { label: "Settings", href: "/admin/settings", icon: <Settings className="h-4 w-4" /> },
   ];
 
   return (
