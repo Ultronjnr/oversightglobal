@@ -23,6 +23,7 @@ import {
   Send,
   XCircle,
   AlertCircle,
+  Eye,
 } from "lucide-react";
 import {
   getSupplierProfile,
@@ -37,6 +38,7 @@ import {
   type SupplierStats,
 } from "@/services/supplier.service";
 import { SubmitQuoteModal } from "@/components/supplier/SubmitQuoteModal";
+import { QuoteRequestDetailsModal } from "@/components/supplier/QuoteRequestDetailsModal";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -57,6 +59,10 @@ export default function SupplierPortal() {
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupplierQuoteRequest | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Quote request details modal
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [detailsRequest, setDetailsRequest] = useState<SupplierQuoteRequest | null>(null);
 
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
@@ -99,6 +105,11 @@ export default function SupplierPortal() {
   const handleSubmitQuote = (request: SupplierQuoteRequest) => {
     setSelectedRequest(request);
     setQuoteModalOpen(true);
+  };
+
+  const handleViewDetails = (request: SupplierQuoteRequest) => {
+    setDetailsRequest(request);
+    setDetailsModalOpen(true);
   };
 
   const handleAcceptRequest = async (requestId: string) => {
@@ -363,9 +374,10 @@ export default function SupplierPortal() {
                     {quoteRequests.slice(0, 5).map((request) => (
                       <div
                         key={request.id}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer group"
+                        onClick={() => handleViewDetails(request)}
                       >
-                        <div className="space-y-1">
+                        <div className="space-y-1 flex-1">
                           <p className="font-medium">
                             {request.organization_name} - {request.pr_transaction_id}
                             {request.requester_name && (
@@ -377,14 +389,29 @@ export default function SupplierPortal() {
                             {format(new Date(request.created_at), "MMM d, yyyy")}
                           </p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                           {getRequestStatusBadge(request.status)}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewDetails(request);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
                           {request.status === "PENDING" && (
                             <div className="flex gap-2">
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => handleAcceptRequest(request.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAcceptRequest(request.id);
+                                }}
                                 disabled={processingId === request.id}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
@@ -393,7 +420,10 @@ export default function SupplierPortal() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleDeclineRequest(request.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeclineRequest(request.id);
+                                }}
                                 disabled={processingId === request.id}
                               >
                                 <XCircle className="h-4 w-4 mr-1" />
@@ -404,7 +434,10 @@ export default function SupplierPortal() {
                           {request.status === "ACCEPTED" && !hasQuotedForRequest(request.id) && (
                             <Button
                               size="sm"
-                              onClick={() => handleSubmitQuote(request)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSubmitQuote(request);
+                              }}
                             >
                               <Send className="h-4 w-4 mr-1" />
                               Submit Quote
@@ -496,40 +529,49 @@ export default function SupplierPortal() {
                               </TableCell>
                               <TableCell>{getRequestStatusBadge(request.status)}</TableCell>
                               <TableCell>
-                                {request.status === "PENDING" ? (
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="default"
-                                      onClick={() => handleAcceptRequest(request.id)}
-                                      disabled={processingId === request.id}
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Accept
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => handleDeclineRequest(request.id)}
-                                      disabled={processingId === request.id}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                      Decline
-                                    </Button>
-                                  </div>
-                                ) : request.status === "ACCEPTED" && !quoted ? (
+                                <div className="flex gap-2">
                                   <Button
                                     size="sm"
-                                    onClick={() => handleSubmitQuote(request)}
+                                    variant="ghost"
+                                    onClick={() => handleViewDetails(request)}
                                   >
-                                    <Send className="h-4 w-4 mr-1" />
-                                    Submit Quote
+                                    <Eye className="h-4 w-4" />
                                   </Button>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">
-                                    {quoted ? "Quote Submitted" : request.status === "DECLINED" ? "Declined" : "—"}
-                                  </span>
-                                )}
+                                  {request.status === "PENDING" ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        onClick={() => handleAcceptRequest(request.id)}
+                                        disabled={processingId === request.id}
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Accept
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleDeclineRequest(request.id)}
+                                        disabled={processingId === request.id}
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Decline
+                                      </Button>
+                                    </>
+                                  ) : request.status === "ACCEPTED" && !quoted ? (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleSubmitQuote(request)}
+                                    >
+                                      <Send className="h-4 w-4 mr-1" />
+                                      Submit Quote
+                                    </Button>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                      {quoted ? "Quote Submitted" : request.status === "DECLINED" ? "Declined" : "—"}
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           );
@@ -610,6 +652,13 @@ export default function SupplierPortal() {
         onOpenChange={setQuoteModalOpen}
         quoteRequest={selectedRequest}
         onSuccess={handleQuoteSuccess}
+      />
+
+      {/* Quote Request Details Modal */}
+      <QuoteRequestDetailsModal
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        request={detailsRequest}
       />
     </DashboardLayout>
   );
