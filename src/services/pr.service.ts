@@ -39,40 +39,24 @@ function calculateTotalAmount(items: CreatePRInput["items"]): number {
 
 /**
  * Check if organization has an ACTIVE HOD user
+ * Uses a SECURITY DEFINER function to bypass RLS restrictions
  */
 async function organizationHasHOD(organizationId: string): Promise<boolean> {
   try {
-    // Query for ACTIVE users with HOD role in the specified organization
-    // First get all HOD user IDs
-    const { data: hodUsers, error: roleError } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "HOD");
+    // Use the database function that bypasses RLS to check for active HODs
+    const { data, error } = await supabase.rpc("organization_has_active_hod", {
+      _org_id: organizationId,
+    });
 
-    if (roleError) {
-      logError("fetchHODRoles", roleError);
+    if (error) {
+      logError("organizationHasActiveHOD", error);
       return false;
     }
 
-    if (!hodUsers || hodUsers.length === 0) {
-      return false;
-    }
+    // Log routing decision for debugging (server-side only)
+    console.log("[PR Routing] org:", organizationId, "| HOD detected:", data);
 
-    // Check if any HOD users are ACTIVE and belong to the organization
-    const hodUserIds = hodUsers.map((u) => u.user_id);
-    const { data: activeHODs, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .eq("status", "ACTIVE")
-      .in("id", hodUserIds);
-
-    if (profileError) {
-      logError("checkActiveHODProfiles", profileError);
-      return false;
-    }
-
-    return activeHODs !== null && activeHODs.length > 0;
+    return data === true;
   } catch (error) {
     logError("organizationHasHOD", error);
     return false;
