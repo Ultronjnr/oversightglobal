@@ -29,6 +29,13 @@ export interface SupplierQuoteRequest {
   pr_transaction_id?: string;
   requester_name?: string;
   requester_email?: string;
+  // Extended PR details
+  pr_due_date?: string | null;
+  pr_payment_due_date?: string | null;
+  pr_urgency?: string;
+  pr_document_url?: string | null;
+  pr_total_amount?: number;
+  pr_currency?: string;
 }
 
 export interface SupplierQuote {
@@ -117,7 +124,16 @@ export async function getSupplierQuoteRequests(): Promise<{
       .select(`
         *,
         organizations:organization_id (name),
-        purchase_requisitions:pr_id (transaction_id),
+        purchase_requisitions:pr_id (
+          transaction_id,
+          due_date,
+          payment_due_date,
+          urgency,
+          document_url,
+          total_amount,
+          currency,
+          items
+        ),
         profiles:requested_by (name, email)
       `)
       .eq("supplier_id", supplier.id)
@@ -127,17 +143,29 @@ export async function getSupplierQuoteRequests(): Promise<{
       return { success: false, data: [], error: error.message };
     }
 
-    // Transform data to include organization name, PR transaction ID, and requester info
-    const transformedData = (data || []).map((item: any) => ({
-      ...item,
-      organization_name: item.organizations?.name || "Unknown Organization",
-      pr_transaction_id: item.purchase_requisitions?.transaction_id || "Unknown PR",
-      requester_name: item.profiles?.name || null,
-      requester_email: item.profiles?.email || null,
-      organizations: undefined,
-      purchase_requisitions: undefined,
-      profiles: undefined,
-    }));
+    // Transform data to include organization name, PR details, and requester info
+    const transformedData = (data || []).map((item: any) => {
+      const pr = item.purchase_requisitions;
+      return {
+        ...item,
+        organization_name: item.organizations?.name || "Unknown Organization",
+        pr_transaction_id: pr?.transaction_id || "Unknown PR",
+        requester_name: item.profiles?.name || null,
+        requester_email: item.profiles?.email || null,
+        // Extended PR details
+        pr_due_date: pr?.due_date || null,
+        pr_payment_due_date: pr?.payment_due_date || null,
+        pr_urgency: pr?.urgency || "NORMAL",
+        pr_document_url: pr?.document_url || null,
+        pr_total_amount: pr?.total_amount || 0,
+        pr_currency: pr?.currency || "ZAR",
+        // Use PR items if quote_request items is empty
+        items: item.items?.length > 0 ? item.items : (pr?.items || []),
+        organizations: undefined,
+        purchase_requisitions: undefined,
+        profiles: undefined,
+      };
+    });
 
     return { success: true, data: transformedData as SupplierQuoteRequest[] };
   } catch (error: any) {
