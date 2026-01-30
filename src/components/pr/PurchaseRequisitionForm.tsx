@@ -138,18 +138,24 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         return null;
       }
 
-      // Use signed URL for private bucket (1 hour expiration)
-      const { data: urlData, error: urlError } = await supabase.storage
+      // Store the storage path instead of signed URL
+      // The edge function will generate fresh signed URLs on demand
+      // This ensures document access works even for old PRs
+      const storagePath = fileName;
+      
+      // Create a temporary signed URL to verify upload was successful
+      const { error: urlError } = await supabase.storage
         .from("pr-documents")
-        .createSignedUrl(fileName, 3600);
+        .createSignedUrl(fileName, 60);
 
-      if (urlError || !urlData?.signedUrl) {
-        console.error("Failed to create signed URL:", urlError);
-        toast.error("Failed to generate document URL");
+      if (urlError) {
+        console.error("Failed to verify upload:", urlError);
+        toast.error("Failed to verify document upload");
         return null;
       }
 
-      return urlData.signedUrl;
+      // Return the path (prefixed to match edge function expectations)
+      return `pr-documents/${storagePath}`;
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload document");

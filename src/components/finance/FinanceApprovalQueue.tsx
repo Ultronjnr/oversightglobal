@@ -54,14 +54,15 @@ export function FinanceApprovalQueue() {
     isOpen: boolean;
     url: string;
     transactionId: string;
-  }>({ isOpen: false, url: "", transactionId: "" });
+    prId: string;
+  }>({ isOpen: false, url: "", transactionId: "", prId: "" });
 
-  const openDocumentViewer = (url: string, transactionId: string) => {
-    setDocumentModal({ isOpen: true, url, transactionId });
+  const openDocumentViewer = (url: string, transactionId: string, prId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId, prId });
   };
 
   const closeDocumentViewer = () => {
-    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+    setDocumentModal({ isOpen: false, url: "", transactionId: "", prId: "" });
   };
 
   useEffect(() => {
@@ -388,7 +389,7 @@ export function FinanceApprovalQueue() {
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        openDocumentViewer(pr.document_url!, pr.transaction_id);
+                                        openDocumentViewer(pr.document_url!, pr.transaction_id, pr.id);
                                       }}
                                       className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                                     >
@@ -466,6 +467,7 @@ export function FinanceApprovalQueue() {
         isOpen={documentModal.isOpen}
         onClose={closeDocumentViewer}
         documentUrl={documentModal.url}
+        prId={documentModal.prId}
         transactionId={documentModal.transactionId}
       />
     </>

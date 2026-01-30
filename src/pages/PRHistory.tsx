@@ -105,14 +105,15 @@ export default function PRHistory() {
     isOpen: boolean;
     url: string;
     transactionId: string;
-  }>({ isOpen: false, url: "", transactionId: "" });
+    prId: string;
+  }>({ isOpen: false, url: "", transactionId: "", prId: "" });
 
-  const openDocumentViewer = (url: string, transactionId: string) => {
-    setDocumentModal({ isOpen: true, url, transactionId });
+  const openDocumentViewer = (url: string, transactionId: string, prId: string) => {
+    setDocumentModal({ isOpen: true, url, transactionId, prId });
   };
 
   const closeDocumentViewer = () => {
-    setDocumentModal({ isOpen: false, url: "", transactionId: "" });
+    setDocumentModal({ isOpen: false, url: "", transactionId: "", prId: "" });
   };
 
   // Filters
@@ -598,7 +599,7 @@ export default function PRHistory() {
                 {selectedPR.document_url && (
                   <div className="pt-4 border-t">
                     <button
-                      onClick={() => openDocumentViewer(selectedPR.document_url!, selectedPR.transaction_id)}
+                      onClick={() => openDocumentViewer(selectedPR.document_url!, selectedPR.transaction_id, selectedPR.id)}
                       className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                     >
                       <FileText className="h-4 w-4" />
@@ -616,6 +617,7 @@ export default function PRHistory() {
           isOpen={documentModal.isOpen}
           onClose={closeDocumentViewer}
           documentUrl={documentModal.url}
+          prId={documentModal.prId}
           transactionId={documentModal.transactionId}
         />
       </div>

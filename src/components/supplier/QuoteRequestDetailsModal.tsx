@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +24,11 @@ import {
   User,
   Mail,
   AlertTriangle,
-  ExternalLink,
   DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { SupplierQuoteRequest } from "@/services/supplier.service";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 
 interface QuoteRequestDetailsModalProps {
   open: boolean;
@@ -40,6 +41,8 @@ export function QuoteRequestDetailsModal({
   onOpenChange,
   request,
 }: QuoteRequestDetailsModalProps) {
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+
   if (!request) return null;
 
   const formatCurrency = (amount: number) => {
@@ -244,9 +247,9 @@ export function QuoteRequestDetailsModal({
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                onClick={() => window.open(request.pr_document_url!, "_blank")}
+                onClick={() => setShowDocumentModal(true)}
               >
-                <ExternalLink className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 View Document
               </Button>
             </div>
@@ -260,6 +263,17 @@ export function QuoteRequestDetailsModal({
           </div>
         </div>
       </DialogContent>
+
+      {/* Document Viewer Modal */}
+      {request.pr_document_url && (
+        <DocumentViewerModal
+          isOpen={showDocumentModal}
+          onClose={() => setShowDocumentModal(false)}
+          documentUrl={request.pr_document_url}
+          prId={request.pr_id}
+          transactionId={request.pr_transaction_id}
+        />
+      )}
     </Dialog>
   );
 }
