@@ -58,9 +58,10 @@ export interface AcceptSupplierInvitationParams {
   companyName: string;
   industries: string[];
   vatNumber?: string;
-  registrationNumber?: string;
-  phone?: string;
-  address?: string;
+  registrationNumber: string;
+  phone: string;
+  address: string;
+  contactPerson: string;
 }
 
 interface AcceptSupplierResponse {
@@ -117,9 +118,10 @@ export async function acceptSupplierInvitation(
       _company_name: params.companyName,
       _industries: params.industries,
       _vat_number: params.vatNumber || null,
-      _registration_number: params.registrationNumber || null,
-      _phone: params.phone || null,
-      _address: params.address || null,
+      _registration_number: params.registrationNumber,
+      _phone: params.phone,
+      _address: params.address,
+      _contact_person: params.contactPerson,
     });
 
     if (error) {

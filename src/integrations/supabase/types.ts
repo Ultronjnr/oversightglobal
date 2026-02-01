@@ -355,6 +355,7 @@ export type Database = {
           address: string | null
           company_name: string
           contact_email: string
+          contact_person: string | null
           created_at: string
           id: string
           industry: string | null
@@ -371,6 +372,7 @@ export type Database = {
           address?: string | null
           company_name: string
           contact_email: string
+          contact_person?: string | null
           created_at?: string
           id?: string
           industry?: string | null
@@ -387,6 +389,7 @@ export type Database = {
           address?: string | null
           company_name?: string
           contact_email?: string
+          contact_person?: string | null
           created_at?: string
           id?: string
           industry?: string | null
@@ -436,20 +439,36 @@ export type Database = {
         Args: { _email: string; _token: string }
         Returns: boolean
       }
-      accept_supplier_invitation: {
-        Args: {
-          _address?: string
-          _company_name: string
-          _email: string
-          _industries: string[]
-          _phone?: string
-          _registration_number?: string
-          _token: string
-          _user_id: string
-          _vat_number?: string
-        }
-        Returns: Json
-      }
+      accept_supplier_invitation:
+        | {
+            Args: {
+              _address?: string
+              _company_name: string
+              _email: string
+              _industries: string[]
+              _phone?: string
+              _registration_number?: string
+              _token: string
+              _user_id: string
+              _vat_number?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _address?: string
+              _company_name: string
+              _contact_person?: string
+              _email: string
+              _industries: string[]
+              _phone?: string
+              _registration_number?: string
+              _token: string
+              _user_id: string
+              _vat_number?: string
+            }
+            Returns: Json
+          }
       assign_invitation_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

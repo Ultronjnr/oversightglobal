@@ -263,7 +263,8 @@ export function SuppliersTab() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Company</TableHead>
-                  <TableHead>Contact</TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead>Contact Details</TableHead>
                   <TableHead>Industry</TableHead>
                   <TableHead>Registration #</TableHead>
                   <TableHead>VAT #</TableHead>
@@ -290,6 +291,11 @@ export function SuppliersTab() {
                           </Badge>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {supplier.contact_person || (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
