@@ -528,7 +528,8 @@ export async function getQuotes(): Promise<{
 }
 
 /**
- * Accept a quote and link to PR - updates PR history and locks PR
+ * Accept a quote using the secure RPC function that automatically rejects other quotes
+ * This locks the decision and prevents any further changes
  */
 export async function acceptQuote(
   quoteId: string,
@@ -540,19 +541,33 @@ export async function acceptQuote(
       return { success: false, error: "User not authenticated" };
     }
 
-    // Get user profile for history
-    const { data: profile, error: profileError } = await supabase
+    // Call the RPC function that handles accepting one quote and rejecting others atomically
+    const { data: rpcResult, error: rpcError } = await supabase
+      .rpc("accept_quote_and_reject_others", {
+        _quote_id: quoteId,
+        _pr_id: prId,
+      });
+
+    if (rpcError) {
+      logError("acceptQuote.rpc", rpcError);
+      return { success: false, error: getSafeErrorMessage(rpcError) };
+    }
+
+    const result = rpcResult as { success: boolean; error?: string; accepted_quote_id?: string };
+    
+    if (!result.success) {
+      return { success: false, error: result.error || "Failed to accept quote" };
+    }
+
+    // Get user profile for history update
+    const { data: profile } = await supabase
       .from("profiles")
       .select("name, surname")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile) {
-      return { success: false, error: "Profile not found" };
-    }
-
-    // Get quote details
-    const { data: quoteData, error: quoteDataError } = await supabase
+    // Get quote details for history
+    const { data: quoteData } = await supabase
       .from("quotes")
       .select(`
         *,
@@ -561,66 +576,41 @@ export async function acceptQuote(
       .eq("id", quoteId)
       .single();
 
-    if (quoteDataError || !quoteData) {
-      return { success: false, error: "Quote not found" };
-    }
-
-    // Update quote status
-    const { error: quoteError } = await supabase
-      .from("quotes")
-      .update({ status: "ACCEPTED" })
-      .eq("id", quoteId);
-
-    if (quoteError) {
-      logError("acceptQuote.quoteUpdate", quoteError);
-      return { success: false, error: getSafeErrorMessage(quoteError) };
-    }
-
-    // Reject other quotes for the same PR
-    const { error: rejectError } = await supabase
-      .from("quotes")
-      .update({ status: "REJECTED" })
-      .eq("pr_id", prId)
-      .neq("id", quoteId);
-
-    if (rejectError) {
-      logError("acceptQuote.rejectOthers", rejectError);
-    }
-
-    // Get PR and update history
-    const { data: prData, error: prError } = await supabase
-      .from("purchase_requisitions")
-      .select("*")
-      .eq("id", prId)
-      .single();
-
-    if (prData) {
-      const pr = prData as unknown as PurchaseRequisition;
-      const userName = `${profile.name}${profile.surname ? " " + profile.surname : ""}`;
-      const currentHistory = (pr.history as PRHistoryEntry[]) || [];
-      const supplierName = (quoteData as any).supplier?.company_name || "Unknown Supplier";
-
-      const historyEntry: PRHistoryEntry = {
-        action: "QUOTE_ACCEPTED",
-        user_id: user.id,
-        user_name: userName,
-        timestamp: new Date().toISOString(),
-        details: `Accepted quote from ${supplierName} for ${new Intl.NumberFormat("en-ZA", {
-          style: "currency",
-          currency: "ZAR",
-        }).format(quoteData.amount)}`,
-      };
-
-      const newHistory = [...currentHistory, historyEntry];
-
-      // Update PR with accepted quote info and lock from further changes
-      await supabase
+    // Update PR history if we have the data
+    if (profile && quoteData) {
+      const { data: prData } = await supabase
         .from("purchase_requisitions")
-        .update({
-          history: newHistory as unknown as Json,
-          total_amount: quoteData.amount,
-        })
-        .eq("id", prId);
+        .select("*")
+        .eq("id", prId)
+        .single();
+
+      if (prData) {
+        const pr = prData as unknown as PurchaseRequisition;
+        const userName = `${profile.name}${profile.surname ? " " + profile.surname : ""}`;
+        const currentHistory = (pr.history as PRHistoryEntry[]) || [];
+        const supplierName = (quoteData as any).supplier?.company_name || "Unknown Supplier";
+
+        const historyEntry: PRHistoryEntry = {
+          action: "QUOTE_ACCEPTED",
+          user_id: user.id,
+          user_name: userName,
+          timestamp: new Date().toISOString(),
+          details: `Accepted quote from ${supplierName} for ${new Intl.NumberFormat("en-ZA", {
+            style: "currency",
+            currency: "ZAR",
+          }).format(quoteData.amount)}. Other quotes have been automatically rejected.`,
+        };
+
+        const newHistory = [...currentHistory, historyEntry];
+
+        await supabase
+          .from("purchase_requisitions")
+          .update({
+            history: newHistory as unknown as Json,
+            total_amount: quoteData.amount,
+          })
+          .eq("id", prId);
+      }
     }
 
     return { success: true };

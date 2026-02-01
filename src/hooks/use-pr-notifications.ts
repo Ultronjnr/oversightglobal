@@ -131,6 +131,44 @@ export function usePRNotifications() {
         .subscribe();
 
       quoteChannelRef.current = quoteChannel;
+
+      // Also subscribe to submitted quotes for Finance
+      const submittedQuotesChannel = supabase
+        .channel('finance-quote-submissions')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'quotes',
+          },
+          () => {
+            showNotification(
+              'A new quote has been submitted by a supplier',
+              'info'
+            );
+          }
+        )
+        .subscribe();
+
+      // Subscribe to invoice uploads
+      const invoiceChannel = supabase
+        .channel('finance-invoice-uploads')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'invoices',
+          },
+          () => {
+            showNotification(
+              'A supplier has uploaded an invoice for an accepted quote',
+              'success'
+            );
+          }
+        )
+        .subscribe();
     }
 
     return () => {
