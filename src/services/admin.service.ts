@@ -30,6 +30,7 @@ export interface Invitation {
   invited_by: string;
   created_at: string;
   expires_at: string;
+  department?: string | null;
 }
 
 export interface Supplier {
@@ -41,22 +42,9 @@ export interface Supplier {
   phone: string | null;
   address: string | null;
   industry: string | null;
+  vat_number: string | null;
+  organization_id: string | null;
   created_at: string;
-}
-
-export type OrgSupplierStatus = "PENDING" | "ACCEPTED" | "DECLINED";
-
-export interface OrganizationSupplier {
-  id: string;
-  supplier_id: string;
-  organization_id: string;
-  status: OrgSupplierStatus;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SupplierWithStatus extends Supplier {
-  relationship_status?: OrgSupplierStatus | null;
 }
 
 /**
@@ -218,9 +206,9 @@ export async function getAllOrganizationPRs(): Promise<{
 }
 
 /**
- * Get verified suppliers
+ * Get organization suppliers (suppliers linked to this organization)
  */
-export async function getVerifiedSuppliers(): Promise<{
+export async function getOrganizationSuppliers(): Promise<{
   success: boolean;
   data: Supplier[];
   error?: string;
@@ -229,7 +217,6 @@ export async function getVerifiedSuppliers(): Promise<{
     const { data, error } = await supabase
       .from("suppliers")
       .select("*")
-      .eq("is_verified", true)
       .order("company_name", { ascending: true });
 
     if (error) {
@@ -239,244 +226,6 @@ export async function getVerifiedSuppliers(): Promise<{
     return { success: true, data: (data || []) as Supplier[] };
   } catch (error: any) {
     return { success: false, data: [], error: error.message };
-  }
-}
-
-/**
- * Get unlinked verified suppliers (not yet linked to admin's organization)
- */
-export async function getUnlinkedSuppliers(): Promise<{
-  success: boolean;
-  data: SupplierWithStatus[];
-  error?: string;
-}> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, data: [], error: "Not authenticated" };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.organization_id) {
-      return { success: false, data: [], error: "No organization found" };
-    }
-
-    // Get all verified suppliers
-    const { data: suppliers, error: suppliersError } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("is_verified", true)
-      .order("company_name", { ascending: true });
-
-    if (suppliersError) {
-      return { success: false, data: [], error: suppliersError.message };
-    }
-
-    // Get existing relationships for this organization
-    const { data: relationships, error: relError } = await supabase
-      .from("organization_suppliers")
-      .select("supplier_id, status")
-      .eq("organization_id", profile.organization_id);
-
-    if (relError) {
-      return { success: false, data: [], error: relError.message };
-    }
-
-    // Create a map of supplier relationships
-    const relationshipMap = new Map(
-      (relationships || []).map((r) => [r.supplier_id, r.status as OrgSupplierStatus])
-    );
-
-    // Filter to only unlinked suppliers (no relationship or DECLINED can be re-added)
-    const unlinkedSuppliers: SupplierWithStatus[] = (suppliers || [])
-      .filter((s) => {
-        const status = relationshipMap.get(s.id);
-        return !status || status === "DECLINED";
-      })
-      .map((s) => ({
-        ...s,
-        relationship_status: relationshipMap.get(s.id) || null,
-      }));
-
-    return { success: true, data: unlinkedSuppliers };
-  } catch (error: any) {
-    return { success: false, data: [], error: error.message };
-  }
-}
-
-/**
- * Get suppliers linked to admin's organization (ACCEPTED status)
- */
-export async function getLinkedSuppliers(): Promise<{
-  success: boolean;
-  data: Supplier[];
-  error?: string;
-}> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, data: [], error: "Not authenticated" };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.organization_id) {
-      return { success: false, data: [], error: "No organization found" };
-    }
-
-    // Get accepted relationships for this organization
-    const { data: relationships, error: relError } = await supabase
-      .from("organization_suppliers")
-      .select("supplier_id")
-      .eq("organization_id", profile.organization_id)
-      .eq("status", "ACCEPTED");
-
-    if (relError) {
-      return { success: false, data: [], error: relError.message };
-    }
-
-    if (!relationships || relationships.length === 0) {
-      return { success: true, data: [] };
-    }
-
-    const supplierIds = relationships.map((r) => r.supplier_id);
-
-    // Get supplier details
-    const { data: suppliers, error: suppliersError } = await supabase
-      .from("suppliers")
-      .select("*")
-      .in("id", supplierIds)
-      .order("company_name", { ascending: true });
-
-    if (suppliersError) {
-      return { success: false, data: [], error: suppliersError.message };
-    }
-
-    return { success: true, data: (suppliers || []) as Supplier[] };
-  } catch (error: any) {
-    return { success: false, data: [], error: error.message };
-  }
-}
-
-/**
- * Accept a supplier (create or update relationship to ACCEPTED)
- */
-export async function acceptSupplier(
-  supplierId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "Not authenticated" };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.organization_id) {
-      return { success: false, error: "No organization found" };
-    }
-
-    // Upsert the relationship
-    const { error } = await supabase
-      .from("organization_suppliers")
-      .upsert(
-        {
-          supplier_id: supplierId,
-          organization_id: profile.organization_id,
-          status: "ACCEPTED",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "supplier_id,organization_id" }
-      );
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Decline a supplier (create or update relationship to DECLINED)
- */
-export async function declineSupplier(
-  supplierId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: "Not authenticated" };
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile?.organization_id) {
-      return { success: false, error: "No organization found" };
-    }
-
-    // Upsert the relationship
-    const { error } = await supabase
-      .from("organization_suppliers")
-      .upsert(
-        {
-          supplier_id: supplierId,
-          organization_id: profile.organization_id,
-          status: "DECLINED",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "supplier_id,organization_id" }
-      );
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Verify a supplier
- */
-export async function verifySupplier(
-  supplierId: string,
-  verified: boolean
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from("suppliers")
-      .update({ is_verified: verified })
-      .eq("id", supplierId);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
   }
 }
 
@@ -497,28 +246,33 @@ export async function getAdminStats(): Promise<{
     const [usersResult, prsResult, suppliersResult] = await Promise.all([
       getOrganizationUsers(),
       getAllOrganizationPRs(),
-      getVerifiedSuppliers(),
+      getOrganizationSuppliers(),
     ]);
 
-    const activePRs = prsResult.data.filter(
-      (pr) =>
-        pr.status !== "FINANCE_APPROVED" &&
-        pr.status !== "FINANCE_DECLINED" &&
-        pr.status !== "HOD_DECLINED" &&
-        pr.status !== "SPLIT"
-    ).length;
-
-    const completedPRs = prsResult.data.filter(
-      (pr) => pr.status === "FINANCE_APPROVED"
-    ).length;
+    const totalUsers = usersResult.success ? usersResult.data.length : 0;
+    const activePRs = prsResult.success
+      ? prsResult.data.filter(
+          (pr) =>
+            pr.status !== "FINANCE_APPROVED" &&
+            pr.status !== "FINANCE_DECLINED" &&
+            pr.status !== "HOD_DECLINED" &&
+            pr.status !== "SPLIT"
+        ).length
+      : 0;
+    const completedPRs = prsResult.success
+      ? prsResult.data.filter((pr) => pr.status === "FINANCE_APPROVED").length
+      : 0;
+    const verifiedSuppliers = suppliersResult.success
+      ? suppliersResult.data.filter((s) => s.is_verified).length
+      : 0;
 
     return {
       success: true,
       data: {
-        totalUsers: usersResult.data.length,
+        totalUsers,
         activePRs,
         completedPRs,
-        verifiedSuppliers: suppliersResult.data.length,
+        verifiedSuppliers,
       },
     };
   } catch (error: any) {
@@ -527,5 +281,77 @@ export async function getAdminStats(): Promise<{
       data: { totalUsers: 0, activePRs: 0, completedPRs: 0, verifiedSuppliers: 0 },
       error: error.message,
     };
+  }
+}
+
+/**
+ * Update a user's role
+ */
+export async function updateUserRole(
+  userId: string,
+  newRole: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("user_roles")
+      .update({ role: newRole })
+      .eq("user_id", userId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Update a user's status
+ */
+export async function updateUserStatus(
+  userId: string,
+  status: "ACTIVE" | "SUSPENDED"
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ status })
+      .eq("id", userId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delete a user from the organization
+ */
+export async function deleteUser(
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Delete role first
+    await supabase.from("user_roles").delete().eq("user_id", userId);
+
+    // Update profile to remove from organization
+    const { error } = await supabase
+      .from("profiles")
+      .update({ organization_id: null, status: "SUSPENDED" })
+      .eq("id", userId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }

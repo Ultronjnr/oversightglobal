@@ -53,48 +53,6 @@ export type Database = {
         }
         Relationships: []
       }
-      organization_suppliers: {
-        Row: {
-          created_at: string
-          id: string
-          organization_id: string
-          status: Database["public"]["Enums"]["org_supplier_status"]
-          supplier_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          organization_id: string
-          status?: Database["public"]["Enums"]["org_supplier_status"]
-          supplier_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          organization_id?: string
-          status?: Database["public"]["Enums"]["org_supplier_status"]
-          supplier_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_suppliers_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "organization_suppliers_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       organizations: {
         Row: {
           address: string | null
@@ -400,10 +358,14 @@ export type Database = {
           created_at: string
           id: string
           industry: string | null
+          invited_by_admin_id: string | null
+          is_public: boolean
           is_verified: boolean
+          organization_id: string | null
           phone: string | null
           registration_number: string | null
           user_id: string
+          vat_number: string | null
         }
         Insert: {
           address?: string | null
@@ -412,10 +374,14 @@ export type Database = {
           created_at?: string
           id?: string
           industry?: string | null
+          invited_by_admin_id?: string | null
+          is_public?: boolean
           is_verified?: boolean
+          organization_id?: string | null
           phone?: string | null
           registration_number?: string | null
           user_id: string
+          vat_number?: string | null
         }
         Update: {
           address?: string | null
@@ -424,12 +390,24 @@ export type Database = {
           created_at?: string
           id?: string
           industry?: string | null
+          invited_by_admin_id?: string | null
+          is_public?: boolean
           is_verified?: boolean
+          organization_id?: string | null
           phone?: string | null
           registration_number?: string | null
           user_id?: string
+          vat_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -458,12 +436,30 @@ export type Database = {
         Args: { _email: string; _token: string }
         Returns: boolean
       }
+      accept_supplier_invitation: {
+        Args: {
+          _address?: string
+          _company_name: string
+          _email: string
+          _industries: string[]
+          _phone?: string
+          _registration_number?: string
+          _token: string
+          _user_id: string
+          _vat_number?: string
+        }
+        Returns: Json
+      }
       assign_invitation_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      create_supplier_invitation: {
+        Args: { _company_name: string; _email: string }
+        Returns: Json
       }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
