@@ -84,9 +84,10 @@ export default function Invite() {
   
   // Supplier-specific fields
   const [companyName, setCompanyName] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [industry, setIndustry] = useState("");
+  const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
   const [vatNumber, setVatNumber] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
 
@@ -171,15 +172,39 @@ export default function Invite() {
     setStatus("accepting");
 
     if (isSupplierInvite) {
-      // Supplier registration
+      // Supplier registration - validate all required fields
       if (!companyName.trim()) {
         toast.error("Please enter your company name");
         setStatus("valid");
         return;
       }
 
-      if (!industry) {
-        toast.error("Please select an industry");
+      if (!contactPerson.trim()) {
+        toast.error("Please enter a contact person name");
+        setStatus("valid");
+        return;
+      }
+
+      if (!phone.trim()) {
+        toast.error("Please enter a contact phone number");
+        setStatus("valid");
+        return;
+      }
+
+      if (!address.trim()) {
+        toast.error("Please enter your business address");
+        setStatus("valid");
+        return;
+      }
+
+      if (!registrationNumber.trim()) {
+        toast.error("Please enter your company registration number");
+        setStatus("valid");
+        return;
+      }
+
+      if (selectedIndustries.length === 0) {
+        toast.error("Please select at least one industry");
         setStatus("valid");
         return;
       }
@@ -188,12 +213,13 @@ export default function Invite() {
         token,
         email,
         password,
-        companyName,
-        industries: [industry],
-        vatNumber: vatNumber || undefined,
-        registrationNumber: registrationNumber || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
+        companyName: companyName.trim(),
+        industries: selectedIndustries,
+        vatNumber: vatNumber.trim() || undefined,
+        registrationNumber: registrationNumber.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        contactPerson: contactPerson.trim(),
       });
 
       if (!result.success) {
@@ -331,49 +357,16 @@ export default function Invite() {
                 </div>
               </div>
 
-              {/* Industry */}
+              {/* Registration Number */}
               <div className="space-y-2">
-                <Label>Industry *</Label>
-                <Select 
-                  value={industry} 
-                  onValueChange={setIndustry}
-                  disabled={status === "accepting"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {industries.map((ind) => (
-                      <SelectItem key={ind} value={ind}>
-                        {ind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Phone */}
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="registrationNumber">Registration Number *</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+27 12 345 6789"
-                  disabled={status === "accepting"}
-                />
-              </div>
-
-              {/* Address */}
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Business St, City, Country"
-                  rows={2}
+                  id="registrationNumber"
+                  type="text"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                  placeholder="REG-2024-001234"
+                  required
                   disabled={status === "accepting"}
                 />
               </div>
@@ -391,15 +384,78 @@ export default function Invite() {
                 />
               </div>
 
-              {/* Registration Number */}
+              {/* Industry Multi-select */}
               <div className="space-y-2">
-                <Label htmlFor="registrationNumber">Registration Number</Label>
+                <Label>Industry * <span className="text-xs text-muted-foreground">(select all that apply)</span></Label>
+                <div className="grid grid-cols-2 gap-2 p-3 border rounded-md bg-muted/30">
+                  {industries.map((ind) => (
+                    <label key={ind} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedIndustries.includes(ind)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedIndustries([...selectedIndustries, ind]);
+                          } else {
+                            setSelectedIndustries(selectedIndustries.filter(i => i !== ind));
+                          }
+                        }}
+                        disabled={status === "accepting"}
+                        className="rounded border-input"
+                      />
+                      {ind}
+                    </label>
+                  ))}
+                </div>
+                {selectedIndustries.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {selectedIndustries.join(", ")}
+                  </p>
+                )}
+              </div>
+
+              {/* Address */}
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <Textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Business St, City, Country"
+                  rows={2}
+                  required
+                  disabled={status === "accepting"}
+                />
+              </div>
+
+              {/* Contact Person */}
+              <div className="space-y-2">
+                <Label htmlFor="contactPerson">Contact Person *</Label>
+                <div className="relative">
+                  <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="contactPerson"
+                    type="text"
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    placeholder="John Smith"
+                    className="pl-10"
+                    required
+                    disabled={status === "accepting"}
+                  />
+                </div>
+              </div>
+
+              {/* Contact Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Contact Phone *</Label>
                 <Input
-                  id="registrationNumber"
-                  type="text"
-                  value={registrationNumber}
-                  onChange={(e) => setRegistrationNumber(e.target.value)}
-                  placeholder="REG-2024-001234"
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+27 12 345 6789"
+                  required
                   disabled={status === "accepting"}
                 />
               </div>

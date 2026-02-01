@@ -37,6 +37,7 @@ export interface Supplier {
   id: string;
   company_name: string;
   contact_email: string;
+  contact_person: string | null;
   registration_number: string | null;
   is_verified: boolean;
   phone: string | null;
