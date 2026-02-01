@@ -49,6 +49,7 @@ export interface SupplierQuote {
   valid_until: string | null;
   notes: string | null;
   status: string;
+  document_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -227,6 +228,7 @@ export async function submitQuote(params: {
   deliveryTime?: string;
   validUntil?: string;
   notes?: string;
+  documentUrl?: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -267,6 +269,7 @@ export async function submitQuote(params: {
       delivery_time: params.deliveryTime || null,
       valid_until: params.validUntil || null,
       notes: params.notes || null,
+      document_url: params.documentUrl || null,
       status: "SUBMITTED",
     });
 

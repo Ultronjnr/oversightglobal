@@ -49,7 +49,7 @@ import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
 import { SupplierList } from "@/components/finance/SupplierList";
-import { QuotesTable } from "@/components/finance/QuotesTable";
+import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -434,7 +434,7 @@ export default function FinancePortal() {
               </TabsContent>
 
               <TabsContent value="quotes">
-                <QuotesTable />
+                <QuoteComparisonView onQuoteAction={() => setRefreshTrigger(prev => prev + 1)} />
               </TabsContent>
             </Tabs>
           )}

@@ -319,6 +319,7 @@ export type Database = {
           amount: number
           created_at: string
           delivery_time: string | null
+          document_url: string | null
           id: string
           notes: string | null
           organization_id: string
@@ -333,6 +334,7 @@ export type Database = {
           amount: number
           created_at?: string
           delivery_time?: string | null
+          document_url?: string | null
           id?: string
           notes?: string | null
           organization_id: string
@@ -347,6 +349,7 @@ export type Database = {
           amount?: number
           created_at?: string
           delivery_time?: string | null
+          document_url?: string | null
           id?: string
           notes?: string | null
           organization_id?: string

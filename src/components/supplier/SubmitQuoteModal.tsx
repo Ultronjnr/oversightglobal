@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { submitQuote, type SupplierQuoteRequest } from "@/services/supplier.service";
-import { Send, DollarSign, Truck, Calendar } from "lucide-react";
+import { uploadQuoteDocument } from "@/services/quote-document.service";
+import { Send, DollarSign, Truck, Calendar, FileUp, X, Loader2, FileText } from "lucide-react";
 import { format, addDays } from "date-fns";
 
 interface SubmitQuoteModalProps {
@@ -36,6 +37,35 @@ export function SubmitQuoteModal({
   );
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate PDF
+    if (file.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+
+    // Validate size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File size must be less than 10MB");
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +80,22 @@ export function SubmitQuoteModal({
 
     setIsSubmitting(true);
     try {
+      let documentUrl: string | undefined;
+
+      // Upload document if selected
+      if (selectedFile) {
+        setIsUploading(true);
+        const uploadResult = await uploadQuoteDocument(selectedFile, quoteRequest.id);
+        setIsUploading(false);
+
+        if (!uploadResult.success) {
+          toast.error(uploadResult.error || "Failed to upload document");
+          setIsSubmitting(false);
+          return;
+        }
+        documentUrl = uploadResult.path;
+      }
+
       const result = await submitQuote({
         quoteRequestId: quoteRequest.id,
         prId: quoteRequest.pr_id,
@@ -58,6 +104,7 @@ export function SubmitQuoteModal({
         deliveryTime: deliveryTime || undefined,
         validUntil: validUntil || undefined,
         notes: notes || undefined,
+        documentUrl,
       });
 
       if (!result.success) {
@@ -70,6 +117,7 @@ export function SubmitQuoteModal({
       resetForm();
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -78,6 +126,10 @@ export function SubmitQuoteModal({
     setDeliveryTime("");
     setValidUntil(format(addDays(new Date(), 30), "yyyy-MM-dd"));
     setNotes("");
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const calculateTotalFromItems = () => {
@@ -87,7 +139,7 @@ export function SubmitQuoteModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5 text-primary" />
@@ -160,7 +212,7 @@ export function SubmitQuoteModal({
 
           {/* Delivery Time */}
           <div className="space-y-2">
-            <Label htmlFor="deliveryTime">Estimated Delivery Time</Label>
+            <Label htmlFor="deliveryTime">Estimated Delivery Date *</Label>
             <div className="relative">
               <Truck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -170,6 +222,7 @@ export function SubmitQuoteModal({
                 onChange={(e) => setDeliveryTime(e.target.value)}
                 placeholder="e.g., 5-7 business days"
                 className="pl-10"
+                required
                 disabled={isSubmitting}
               />
             </div>
@@ -177,7 +230,7 @@ export function SubmitQuoteModal({
 
           {/* Valid Until */}
           <div className="space-y-2">
-            <Label htmlFor="validUntil">Quote Valid Until</Label>
+            <Label htmlFor="validUntil">Quote Valid Until *</Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -187,8 +240,54 @@ export function SubmitQuoteModal({
                 onChange={(e) => setValidUntil(e.target.value)}
                 min={format(new Date(), "yyyy-MM-dd")}
                 className="pl-10"
+                required
                 disabled={isSubmitting}
               />
+            </div>
+          </div>
+
+          {/* Quote Document Upload */}
+          <div className="space-y-2">
+            <Label>Quote Document (PDF)</Label>
+            <div className="border-2 border-dashed border-border/50 rounded-lg p-4">
+              {selectedFile ? (
+                <div className="flex items-center justify-between bg-muted/50 rounded-md p-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium truncate max-w-[200px]">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={removeFile}
+                    disabled={isSubmitting}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center cursor-pointer py-4">
+                  <FileUp className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium">Click to upload PDF</p>
+                  <p className="text-xs text-muted-foreground">Max 10MB</p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    disabled={isSubmitting}
+                  />
+                </label>
+              )}
             </div>
           </div>
 
@@ -215,7 +314,14 @@ export function SubmitQuoteModal({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Submit Quote"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isUploading ? "Uploading..." : "Submitting..."}
+                </>
+              ) : (
+                "Submit Quote"
+              )}
             </Button>
           </DialogFooter>
         </form>
