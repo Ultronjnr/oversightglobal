@@ -65,6 +65,7 @@ export interface Quote {
   valid_until: string | null;
   notes: string | null;
   status: string;
+  document_url: string | null;
   created_at: string;
   updated_at: string;
   supplier?: Supplier;
