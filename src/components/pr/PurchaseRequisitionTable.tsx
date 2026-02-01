@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Loader2, RefreshCw, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DocumentViewerModal } from "./DocumentViewerModal";
+import { PRChatPanel } from "./PRChatPanel";
+import { PRChatButton } from "./PRChatButton";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
 
@@ -137,6 +139,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
               <TableHead className="text-right font-semibold">Amount</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Created</TableHead>
+              <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -183,12 +186,15 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(pr.created_at), "dd MMM yyyy")}
                   </TableCell>
+                  <TableCell>
+                    <PRChatButton prId={pr.id} onClick={() => toggleRow(pr.id)} />
+                  </TableCell>
                 </TableRow>
 
                 {/* Expanded Details */}
                 {expandedRows.has(pr.id) && (
                   <TableRow key={`${pr.id}-details`}>
-                    <TableCell colSpan={7} className="bg-muted/5 p-6">
+                    <TableCell colSpan={8} className="bg-muted/5 p-6">
                       <div className="space-y-4">
                         {/* Items */}
                         <div>
@@ -264,6 +270,9 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                             </button>
                           </div>
                         )}
+
+                        {/* Chat Panel */}
+                        <PRChatPanel prId={pr.id} transactionId={pr.transaction_id} />
                       </div>
                     </TableCell>
                   </TableRow>
