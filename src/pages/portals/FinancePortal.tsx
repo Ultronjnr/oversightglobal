@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
+  Receipt,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -50,6 +51,7 @@ import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionMod
 import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
 import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
+import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -339,6 +341,10 @@ export default function FinancePortal() {
                   <FileText className="h-4 w-4" />
                   Quotes
                 </TabsTrigger>
+                <TabsTrigger value="invoices" className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Invoices
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -435,6 +441,10 @@ export default function FinancePortal() {
 
               <TabsContent value="quotes">
                 <QuoteComparisonView onQuoteAction={() => setRefreshTrigger(prev => prev + 1)} />
+              </TabsContent>
+
+              <TabsContent value="invoices">
+                <InvoicesTable />
               </TabsContent>
             </Tabs>
           )}

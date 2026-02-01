@@ -24,6 +24,8 @@ import {
   XCircle,
   AlertCircle,
   Eye,
+  Upload,
+  Receipt,
 } from "lucide-react";
 import {
   getSupplierProfile,
@@ -37,15 +39,19 @@ import {
   type SupplierQuote,
   type SupplierStats,
 } from "@/services/supplier.service";
+import { getSupplierInvoices, type Invoice } from "@/services/invoice.service";
 import { SubmitQuoteModal } from "@/components/supplier/SubmitQuoteModal";
 import { QuoteRequestDetailsModal } from "@/components/supplier/QuoteRequestDetailsModal";
+import { UploadInvoiceModal } from "@/components/supplier/UploadInvoiceModal";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function SupplierPortal() {
   const [profile, setProfile] = useState<SupplierProfile | null>(null);
   const [quoteRequests, setQuoteRequests] = useState<SupplierQuoteRequest[]>([]);
   const [quotes, setQuotes] = useState<SupplierQuote[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [stats, setStats] = useState<SupplierStats>({
     pendingRequests: 0,
     submittedQuotes: 0,
@@ -64,22 +70,62 @@ export default function SupplierPortal() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [detailsRequest, setDetailsRequest] = useState<SupplierQuoteRequest | null>(null);
 
+  // Invoice upload modal
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedQuoteForInvoice, setSelectedQuoteForInvoice] = useState<SupplierQuote | null>(null);
+
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
   ];
 
   useEffect(() => {
     loadData();
+    
+    // Subscribe to quote status changes for real-time notifications
+    const quoteChannel = supabase
+      .channel('supplier-quote-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'quotes',
+        },
+        (payload) => {
+          const oldRecord = payload.old as { status?: string };
+          const newRecord = payload.new as { status?: string };
+          
+          if (oldRecord.status === newRecord.status) return;
+          
+          if (newRecord.status === 'ACCEPTED') {
+            toast.success('🎉 Your quote has been accepted! You can now upload your invoice.', {
+              duration: 8000,
+            });
+            loadData();
+          } else if (newRecord.status === 'REJECTED') {
+            toast.info('Your quote was not selected for this request.', {
+              duration: 5000,
+            });
+            loadData();
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(quoteChannel);
+    };
   }, []);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [profileResult, requestsResult, quotesResult, statsResult] = await Promise.all([
+      const [profileResult, requestsResult, quotesResult, statsResult, invoicesResult] = await Promise.all([
         getSupplierProfile(),
         getSupplierQuoteRequests(),
         getSupplierQuotes(),
         getSupplierStats(),
+        getSupplierInvoices(),
       ]);
 
       if (profileResult.success && profileResult.data) {
@@ -96,6 +142,10 @@ export default function SupplierPortal() {
 
       if (statsResult.success) {
         setStats(statsResult.data);
+      }
+
+      if (invoicesResult.success) {
+        setInvoices(invoicesResult.data);
       }
     } finally {
       setIsLoading(false);
@@ -172,6 +222,20 @@ export default function SupplierPortal() {
             Accepted
           </Badge>
         );
+      case "INVOICE_UPLOADED":
+        return (
+          <Badge className="bg-primary/20 text-primary border-primary/30">
+            <Receipt className="h-3 w-3 mr-1" />
+            Invoice Uploaded
+          </Badge>
+        );
+      case "AWAITING_PAYMENT":
+        return (
+          <Badge className="bg-warning/20 text-warning border-warning/30">
+            <DollarSign className="h-3 w-3 mr-1" />
+            Awaiting Payment
+          </Badge>
+        );
       case "REJECTED":
         return (
           <Badge variant="destructive">
@@ -182,6 +246,22 @@ export default function SupplierPortal() {
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
+  };
+
+  // Check if invoice has been uploaded for a quote
+  const hasInvoiceForQuote = (quoteId: string) => {
+    return invoices.some((inv) => inv.quote_id === quoteId);
+  };
+
+  const handleUploadInvoice = (quote: SupplierQuote) => {
+    setSelectedQuoteForInvoice(quote);
+    setInvoiceModalOpen(true);
+  };
+
+  const handleInvoiceSuccess = () => {
+    setInvoiceModalOpen(false);
+    setSelectedQuoteForInvoice(null);
+    loadData();
   };
 
   const getRequestStatusBadge = (status: string) => {
@@ -610,28 +690,51 @@ export default function SupplierPortal() {
                           <TableHead>Delivery</TableHead>
                           <TableHead>Valid Until</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {quotes.map((quote) => (
-                          <TableRow key={quote.id}>
-                            <TableCell>
-                              {format(new Date(quote.created_at), "MMM d, yyyy")}
-                            </TableCell>
-                            <TableCell className="font-mono font-semibold text-primary">
-                              {formatCurrency(quote.amount)}
-                            </TableCell>
-                            <TableCell>
-                              {quote.delivery_time || "—"}
-                            </TableCell>
-                            <TableCell>
-                              {quote.valid_until
-                                ? format(new Date(quote.valid_until), "MMM d, yyyy")
-                                : "—"}
-                            </TableCell>
-                            <TableCell>{getQuoteStatusBadge(quote.status)}</TableCell>
-                          </TableRow>
-                        ))}
+                        {quotes.map((quote) => {
+                          const invoiceUploaded = hasInvoiceForQuote(quote.id);
+                          return (
+                            <TableRow key={quote.id}>
+                              <TableCell>
+                                {format(new Date(quote.created_at), "MMM d, yyyy")}
+                              </TableCell>
+                              <TableCell className="font-mono font-semibold text-primary">
+                                {formatCurrency(quote.amount)}
+                              </TableCell>
+                              <TableCell>
+                                {quote.delivery_time || "—"}
+                              </TableCell>
+                              <TableCell>
+                                {quote.valid_until
+                                  ? format(new Date(quote.valid_until), "MMM d, yyyy")
+                                  : "—"}
+                              </TableCell>
+                              <TableCell>{getQuoteStatusBadge(quote.status)}</TableCell>
+                              <TableCell>
+                                {quote.status === "ACCEPTED" && !invoiceUploaded ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleUploadInvoice(quote)}
+                                    className="gap-1"
+                                  >
+                                    <Upload className="h-4 w-4" />
+                                    Upload Invoice
+                                  </Button>
+                                ) : invoiceUploaded ? (
+                                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <CheckCircle className="h-4 w-4 text-success" />
+                                    Invoice Submitted
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
@@ -655,6 +758,14 @@ export default function SupplierPortal() {
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
         request={detailsRequest}
+      />
+
+      {/* Upload Invoice Modal */}
+      <UploadInvoiceModal
+        open={invoiceModalOpen}
+        onOpenChange={setInvoiceModalOpen}
+        quote={selectedQuoteForInvoice}
+        onSuccess={handleInvoiceSuccess}
       />
     </DashboardLayout>
   );
