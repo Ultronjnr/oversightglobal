@@ -22,6 +22,7 @@ import {
   Clock,
   CheckCircle2,
   Receipt,
+  Banknote,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -53,6 +54,7 @@ import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
 import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
+import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -365,6 +367,10 @@ export default function FinancePortal() {
                   <Receipt className="h-4 w-4" />
                   Invoices
                 </TabsTrigger>
+                <TabsTrigger value="payments" className="flex items-center gap-2">
+                  <Banknote className="h-4 w-4" />
+                  Approved – Not Paid
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -465,6 +471,10 @@ export default function FinancePortal() {
 
               <TabsContent value="invoices">
                 <InvoicesTable />
+              </TabsContent>
+
+              <TabsContent value="payments">
+                <PaymentPreparationTab onPaymentComplete={() => setRefreshTrigger(prev => prev + 1)} />
               </TabsContent>
             </Tabs>
           )}

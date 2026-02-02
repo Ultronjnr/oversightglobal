@@ -185,6 +185,25 @@ export async function getSupplierInvoices(): Promise<{
   }
 }
 
+export interface InvoiceWithDetails extends Invoice {
+  supplier?: {
+    id: string;
+    company_name: string;
+    contact_email: string;
+  };
+  pr?: {
+    id: string;
+    transaction_id: string;
+    total_amount: number;
+    currency: string;
+    requested_by_name: string;
+  };
+  quote?: {
+    id: string;
+    amount: number;
+  };
+}
+
 /**
  * Get invoices for finance (organization-wide)
  */
@@ -210,6 +229,51 @@ export async function getOrganizationInvoices(): Promise<{
 }
 
 /**
+ * Get invoices awaiting payment with full details
+ */
+export async function getInvoicesAwaitingPayment(): Promise<{
+  success: boolean;
+  data: InvoiceWithDetails[];
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from("invoices")
+      .select(`
+        *,
+        supplier:suppliers (
+          id,
+          company_name,
+          contact_email
+        ),
+        pr:purchase_requisitions (
+          id,
+          transaction_id,
+          total_amount,
+          currency,
+          requested_by_name
+        ),
+        quote:quotes (
+          id,
+          amount
+        )
+      `)
+      .in("status", ["UPLOADED", "AWAITING_PAYMENT"])
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("getInvoicesAwaitingPayment error:", error);
+      return { success: false, data: [], error: error.message };
+    }
+
+    return { success: true, data: (data || []) as InvoiceWithDetails[] };
+  } catch (error: any) {
+    console.error("getInvoicesAwaitingPayment error:", error);
+    return { success: false, data: [], error: error.message };
+  }
+}
+
+/**
  * Update invoice status (Finance only)
  */
 export async function updateInvoiceStatus(
@@ -228,6 +292,34 @@ export async function updateInvoiceStatus(
 
     return { success: true };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Mark multiple invoices as paid (batch operation)
+ */
+export async function markInvoicesAsPaid(
+  invoiceIds: string[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (invoiceIds.length === 0) {
+      return { success: false, error: "No invoices selected" };
+    }
+
+    const { error } = await supabase
+      .from("invoices")
+      .update({ status: "PAID" })
+      .in("id", invoiceIds);
+
+    if (error) {
+      console.error("markInvoicesAsPaid error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("markInvoicesAsPaid error:", error);
     return { success: false, error: error.message };
   }
 }
