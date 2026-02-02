@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          type: Database["public"]["Enums"]["category_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          type: Database["public"]["Enums"]["category_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          type?: Database["public"]["Enums"]["category_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           created_at: string
@@ -229,6 +267,7 @@ export type Database = {
       }
       purchase_requisitions: {
         Row: {
+          category_id: string | null
           created_at: string
           currency: string
           document_url: string | null
@@ -251,6 +290,7 @@ export type Database = {
           urgency: Database["public"]["Enums"]["urgency_level"]
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           currency?: string
           document_url?: string | null
@@ -273,6 +313,7 @@ export type Database = {
           urgency?: Database["public"]["Enums"]["urgency_level"]
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           currency?: string
           document_url?: string | null
@@ -295,6 +336,13 @@ export type Database = {
           urgency?: Database["public"]["Enums"]["urgency_level"]
         }
         Relationships: [
+          {
+            foreignKeyName: "purchase_requisitions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "purchase_requisitions_organization_id_fkey"
             columns: ["organization_id"]
@@ -631,6 +679,7 @@ export type Database = {
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
+      category_type: "EXPENSE" | "ASSET"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
       pr_status:
         | "PENDING_HOD_APPROVAL"
@@ -776,6 +825,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
+      category_type: ["EXPENSE", "ASSET"],
       org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
       pr_status: [
         "PENDING_HOD_APPROVAL",

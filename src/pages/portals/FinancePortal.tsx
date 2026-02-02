@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
+import { CategorySelectionModal } from "@/components/finance/CategorySelectionModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
@@ -92,6 +93,7 @@ export default function FinancePortal() {
   const [selectedPR, setSelectedPR] = useState<PurchaseRequisition | null>(null);
   const [modalAction, setModalAction] = useState<"approve" | "decline" | null>(null);
   const [showFinalizationModal, setShowFinalizationModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showIncomingModal, setShowIncomingModal] = useState(false);
@@ -157,8 +159,7 @@ export default function FinancePortal() {
 
   const openApproveModal = (pr: PurchaseRequisition) => {
     setSelectedPR(pr);
-    setModalAction("approve");
-    setShowFinalizationModal(true);
+    setShowCategoryModal(true);
   };
 
   const openDeclineModal = (pr: PurchaseRequisition) => {
@@ -183,21 +184,14 @@ export default function FinancePortal() {
     comments: string
   ) => {
     try {
-      const result =
-        action === "approve"
-          ? await financeApprovePR(prId, comments)
-          : await financeDeclinePR(prId, comments);
+      // For declines, use the standard flow (no category needed)
+      const result = await financeDeclinePR(prId, comments);
 
       if (result.success) {
-        toast.success(
-          action === "approve"
-            ? "PR approved successfully"
-            : "PR declined and returned"
-        );
+        toast.success("PR declined and returned");
         setStats((prev) => ({
           ...prev,
-          [action === "approve" ? "approved" : "declined"]:
-            prev[action === "approve" ? "approved" : "declined"] + 1,
+          declined: prev.declined + 1,
         }));
         fetchData();
       } else {
@@ -205,6 +199,32 @@ export default function FinancePortal() {
       }
     } catch (error) {
       console.error("Finalization error:", error);
+      toast.error("An error occurred");
+    }
+  };
+
+  const handleCategoryApproval = async (
+    prId: string,
+    categoryId: string,
+    comments: string
+  ) => {
+    try {
+      const result = await financeApprovePR(prId, comments, categoryId);
+
+      if (result.success) {
+        toast.success("PR approved and categorized successfully");
+        setStats((prev) => ({
+          ...prev,
+          approved: prev.approved + 1,
+        }));
+        setShowCategoryModal(false);
+        setSelectedPR(null);
+        fetchData();
+      } else {
+        toast.error(result.error || "Approval failed");
+      }
+    } catch (error) {
+      console.error("Category approval error:", error);
       toast.error("An error occurred");
     }
   };
@@ -696,7 +716,18 @@ export default function FinancePortal() {
         onSuccess={handlePRFormSuccess}
       />
 
-      {/* Finalization Modal */}
+      {/* Category Selection Modal for Approvals */}
+      <CategorySelectionModal
+        pr={selectedPR}
+        open={showCategoryModal}
+        onClose={() => {
+          setShowCategoryModal(false);
+          setSelectedPR(null);
+        }}
+        onConfirm={handleCategoryApproval}
+      />
+
+      {/* Finalization Modal (for declines only) */}
       <FinalizationModal
         pr={selectedPR}
         action={modalAction}
