@@ -56,6 +56,7 @@ export interface PurchaseRequisition {
   payment_due_date: string | null;
   document_url: string | null;
   parent_pr_id: string | null;
+  category_id: string | null;
   history: PRHistoryEntry[];
   created_at: string;
   updated_at: string;

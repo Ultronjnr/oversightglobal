@@ -92,11 +92,12 @@ function generateSplitTransactionId(parentId: string, index: number): string {
 }
 
 /**
- * Finance approves a PR
+ * Finance approves a PR with required category
  */
 export async function financeApprovePR(
   prId: string,
-  comments: string
+  comments: string,
+  categoryId?: string
 ): Promise<ApprovalResult> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -138,13 +139,20 @@ export async function financeApprovePR(
 
     const newHistory = [...currentHistory, historyEntry];
 
+    // Build update object - include category_id if provided
+    const updateData: Record<string, unknown> = {
+      status: "FINANCE_APPROVED",
+      finance_status: "Approved",
+      history: newHistory as unknown as Json,
+    };
+
+    if (categoryId) {
+      updateData.category_id = categoryId;
+    }
+
     const { error: updateError } = await supabase
       .from("purchase_requisitions")
-      .update({
-        status: "FINANCE_APPROVED",
-        finance_status: "Approved",
-        history: newHistory as unknown as Json,
-      })
+      .update(updateData)
       .eq("id", prId);
 
     if (updateError) {
