@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatCurrency } from "@/lib/utils";
 import type { PRItem } from "@/types/pr.types";
 
 interface PRItemRowProps {
@@ -71,7 +72,7 @@ export function PRItemRow({
 
       {/* Total */}
       <div className="col-span-2 flex items-center h-10 px-3 text-sm font-medium text-foreground bg-muted/50 rounded-lg border border-border/50">
-        R {item.total.toFixed(2)}
+        {formatCurrency(item.total)}
       </div>
 
       {/* Remove */}

@@ -21,6 +21,7 @@ import { PRItemRow } from "./PRItemRow";
 import { createPurchaseRequisition } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 
 const formSchema = z.object({
@@ -166,14 +167,38 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
   };
 
   const onSubmit = async (data: FormData) => {
-    // Validate items
+    // Validate items with clear error messages
+    const invalidItems = items.filter(
+      (item, index) => {
+        if (!item.description.trim()) return true;
+        if (item.quantity <= 0) return true;
+        if (item.unit_price <= 0) return true;
+        return false;
+      }
+    );
+
+    if (items.length === 0) {
+      toast.error("At least one item is required", {
+        description: "Please add line items to your purchase requisition.",
+      });
+      return;
+    }
+
     const validItems = items.filter(
       (item) => item.description.trim() && item.quantity > 0 && item.unit_price > 0
     );
 
     if (validItems.length === 0) {
-      toast.error("Please add at least one valid item");
+      toast.error("Invalid line items", {
+        description: "Each item needs a description, quantity greater than 0, and a unit price.",
+      });
       return;
+    }
+
+    if (invalidItems.length > 0 && validItems.length > 0) {
+      toast.warning("Some items were skipped", {
+        description: `${invalidItems.length} incomplete item(s) were excluded from submission.`,
+      });
     }
 
     setIsSubmitting(true);
@@ -336,15 +361,15 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
           <div className="w-full max-w-xs space-y-2 p-4 rounded-lg bg-muted/30 border border-border/50">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal:</span>
-              <span>R {calculateSubtotal().toFixed(2)}</span>
+              <span>{formatCurrency(calculateSubtotal())}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">VAT ({vatRate}%):</span>
-              <span>R {calculateVAT().toFixed(2)}</span>
+              <span>{formatCurrency(calculateVAT())}</span>
             </div>
             <div className="flex justify-between font-semibold text-lg border-t border-border/50 pt-2">
               <span>Total:</span>
-              <span className="text-primary">R {calculateTotal().toFixed(2)}</span>
+              <span className="text-primary">{formatCurrency(calculateTotal())}</span>
             </div>
           </div>
         </div>
