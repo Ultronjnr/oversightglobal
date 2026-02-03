@@ -7,13 +7,13 @@ import type { Database } from '@/integrations/supabase/types';
 type PRStatus = Database['public']['Enums']['pr_status'];
 
 const STATUS_LABELS: Record<PRStatus, string> = {
-  PENDING_HOD_APPROVAL: 'Pending HOD Approval',
-  HOD_APPROVED: 'HOD Approved',
-  HOD_DECLINED: 'HOD Declined',
-  PENDING_FINANCE_APPROVAL: 'Pending Finance Approval',
-  FINANCE_APPROVED: 'Finance Approved',
-  FINANCE_DECLINED: 'Finance Declined',
-  SPLIT: 'Split',
+  PENDING_HOD_APPROVAL: 'awaiting HOD approval',
+  HOD_APPROVED: 'approved by HOD',
+  HOD_DECLINED: 'declined by HOD',
+  PENDING_FINANCE_APPROVAL: 'awaiting Finance review',
+  FINANCE_APPROVED: 'fully approved',
+  FINANCE_DECLINED: 'declined by Finance',
+  SPLIT: 'split into multiple requests',
 };
 
 const getStatusStyle = (status: PRStatus): 'success' | 'error' | 'info' | 'warning' => {
@@ -67,29 +67,29 @@ export function usePRNotifications() {
 
           // Notify the requester about their own PR
           if (newRecord.requested_by === user.id) {
-            const message = `Your PR #${transactionId} status changed to: ${statusLabel}`;
-            showNotification(message, style);
+            const message = `PR #${transactionId} is now ${statusLabel}`;
+            showNotification(message, style, 'Your Purchase Requisition');
             return;
           }
 
           // Notify HOD about new PRs pending their approval
           if (role === 'HOD' && newStatus === 'PENDING_HOD_APPROVAL') {
-            const message = `New PR #${transactionId} from ${requesterName} requires your approval`;
-            showNotification(message, 'info');
+            const message = `${requesterName} submitted PR #${transactionId} for your review`;
+            showNotification(message, 'info', 'New Approval Request');
             return;
           }
 
           // Notify Finance about PRs ready for their review
           if (role === 'FINANCE' && newStatus === 'PENDING_FINANCE_APPROVAL') {
-            const message = `PR #${transactionId} is ready for finance review`;
-            showNotification(message, 'info');
+            const message = `PR #${transactionId} has been approved by HOD and needs Finance review`;
+            showNotification(message, 'info', 'Ready for Finance Review');
             return;
           }
 
           // Notify Admin about all status changes
           if (role === 'ADMIN') {
-            const message = `PR #${transactionId} status changed to: ${statusLabel}`;
-            showNotification(message, style);
+            const message = `PR #${transactionId} is now ${statusLabel}`;
+            showNotification(message, style, 'Status Update');
           }
         }
       )
@@ -117,13 +117,15 @@ export function usePRNotifications() {
             
             if (newRecord.status === 'ACCEPTED') {
               showNotification(
-                'A supplier has accepted your quote request and will submit a quote soon',
-                'success'
+                'A supplier accepted your quote request and will submit their quote shortly',
+                'success',
+                'Quote Request Accepted'
               );
             } else if (newRecord.status === 'DECLINED') {
               showNotification(
-                'A supplier has declined your quote request',
-                'warning'
+                'A supplier declined your quote request. Consider reaching out to other suppliers.',
+                'warning',
+                'Quote Request Declined'
               );
             }
           }
@@ -144,8 +146,9 @@ export function usePRNotifications() {
           },
           () => {
             showNotification(
-              'A new quote has been submitted by a supplier',
-              'info'
+              'A supplier has submitted a new quote for your review',
+              'info',
+              'New Quote Received'
             );
           }
         )
@@ -163,8 +166,9 @@ export function usePRNotifications() {
           },
           () => {
             showNotification(
-              'A supplier has uploaded an invoice for an accepted quote',
-              'success'
+              'A supplier has uploaded an invoice. Review it in the Invoices tab.',
+              'success',
+              'Invoice Uploaded'
             );
           }
         )
@@ -182,18 +186,27 @@ export function usePRNotifications() {
   }, [user, role]);
 }
 
-function showNotification(message: string, style: 'success' | 'error' | 'info' | 'warning') {
+function showNotification(
+  message: string,
+  style: 'success' | 'error' | 'info' | 'warning',
+  title?: string
+) {
+  const options = { 
+    duration: 6000,
+    description: message,
+  };
+
   switch (style) {
     case 'success':
-      toast.success(message, { duration: 5000 });
+      toast.success(title || 'Success', options);
       break;
     case 'error':
-      toast.error(message, { duration: 5000 });
+      toast.error(title || 'Error', options);
       break;
     case 'warning':
-      toast.warning(message, { duration: 5000 });
+      toast.warning(title || 'Warning', options);
       break;
     default:
-      toast.info(message, { duration: 5000 });
+      toast.info(title || 'Info', options);
   }
 }

@@ -11,13 +11,13 @@ import {
   Building2,
   AlertCircle,
   CheckCircle2,
-  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -40,6 +40,7 @@ import {
   markInvoicesAsPaid,
   type InvoiceWithDetails,
 } from "@/services/invoice.service";
+import { formatCurrency } from "@/lib/utils";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
@@ -101,13 +102,17 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     if (result.success && result.url) {
       window.open(result.url, "_blank");
     } else {
-      toast.error(result.error || "Failed to get document URL");
+      toast.error("Failed to load document", {
+        description: result.error || "The invoice document could not be retrieved.",
+      });
     }
   };
 
   const handleCreateBatch = () => {
     if (selectedIds.size === 0) {
-      toast.error("Please select at least one invoice");
+      toast.error("No invoices selected", {
+        description: "Please select at least one invoice to create a payment batch.",
+      });
       return;
     }
     setShowBatchModal(true);
@@ -120,22 +125,19 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     const result = await markInvoicesAsPaid(Array.from(selectedIds));
     
     if (result.success) {
-      toast.success(`${selectedIds.size} invoice(s) marked as paid`);
+      toast.success("Payment batch completed", {
+        description: `${selectedIds.size} invoice(s) have been marked as paid.`,
+      });
       setSelectedIds(new Set());
       setShowBatchModal(false);
       fetchInvoices();
       onPaymentComplete?.();
     } else {
-      toast.error(result.error || "Failed to mark invoices as paid");
+      toast.error("Failed to process payment batch", {
+        description: result.error || "Some invoices may not have been updated.",
+      });
     }
     setIsProcessing(false);
-  };
-
-  const formatCurrency = (amount: number, currency: string = "ZAR") => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency,
-    }).format(amount);
   };
 
   if (loading) {
@@ -252,16 +254,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                   {formatCurrency(invoice.quote?.amount || 0, invoice.pr?.currency)}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={
-                      invoice.status === "AWAITING_PAYMENT"
-                        ? "bg-warning/10 text-warning border-warning/30"
-                        : "bg-blue-500/10 text-blue-600 border-blue-500/30"
-                    }
-                  >
-                    {invoice.status === "AWAITING_PAYMENT" ? "Awaiting Payment" : "Invoice Uploaded"}
-                  </Badge>
+                  <StatusBadge type="invoice" status={invoice.status} />
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {format(new Date(invoice.created_at), "dd MMM yyyy")}

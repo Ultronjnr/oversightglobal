@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,13 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import {
   Loader2,
   FileText,
   Check,
   X,
-  Clock,
   Calendar,
   Truck,
 } from "lucide-react";
@@ -27,6 +26,7 @@ import {
   type Quote,
 } from "@/services/finance.service";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 export function QuotesTable() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -56,10 +56,14 @@ export function QuotesTable() {
     try {
       const result = await acceptQuote(quote.id, quote.pr_id);
       if (result.success) {
-        toast.success("Quote accepted");
+        toast.success("Quote accepted", {
+          description: "The supplier has been notified and can now upload their invoice.",
+        });
         fetchQuotes();
       } else {
-        toast.error(result.error || "Failed to accept quote");
+        toast.error("Failed to accept quote", {
+          description: result.error || "Please try again or contact support.",
+        });
       }
     } finally {
       setActionLoading(null);
@@ -71,56 +75,24 @@ export function QuotesTable() {
     try {
       const result = await rejectQuote(quoteId);
       if (result.success) {
-        toast.success("Quote rejected");
+        toast.success("Quote rejected", {
+          description: "The quote has been marked as rejected.",
+        });
         fetchQuotes();
       } else {
-        toast.error(result.error || "Failed to reject quote");
+        toast.error("Failed to reject quote", {
+          description: result.error || "Please try again.",
+        });
       }
     } finally {
       setActionLoading(null);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-    }).format(amount);
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "SUBMITTED":
-        return (
-          <Badge variant="outline" className="border-primary/30 text-primary">
-            <Clock className="h-3 w-3 mr-1" />
-            Pending Review
-          </Badge>
-        );
-      case "ACCEPTED":
-        return (
-          <Badge className="bg-success/20 text-success border-success/30">
-            <Check className="h-3 w-3 mr-1" />
-            Accepted
-          </Badge>
-        );
-      case "REJECTED":
-        return (
-          <Badge variant="destructive">
-            <X className="h-3 w-3 mr-1" />
-            Rejected
-          </Badge>
-        );
-      case "EXPIRED":
-        return (
-          <Badge variant="secondary">
-            <Clock className="h-3 w-3 mr-1" />
-            Expired
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+  // Map quote status for StatusBadge
+  const getQuoteStatusForBadge = (status: string) => {
+    if (status === "ACCEPTED") return "QUOTE_ACCEPTED";
+    return status;
   };
 
   if (isLoading) {
@@ -203,7 +175,7 @@ export function QuotesTable() {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{getStatusBadge(quote.status)}</TableCell>
+                    <TableCell>{<StatusBadge type="quote" status={getQuoteStatusForBadge(quote.status)} />}</TableCell>
                     <TableCell>
                       {quote.status === "SUBMITTED" && (
                         <div className="flex gap-2">

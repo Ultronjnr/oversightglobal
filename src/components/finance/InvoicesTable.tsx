@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -16,17 +15,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import {
   Loader2,
   FileText,
   Receipt,
-  Clock,
   DollarSign,
-  CheckCircle,
   ExternalLink,
   Download,
   Building2,
+  CheckCircle2,
 } from "lucide-react";
 import { getOrganizationInvoices, getInvoiceDocumentUrl, updateInvoiceStatus, type Invoice } from "@/services/invoice.service";
 import { format } from "date-fns";
@@ -77,41 +76,17 @@ export function InvoicesTable() {
     try {
       const result = await updateInvoiceStatus(invoiceId, "AWAITING_PAYMENT");
       if (result.success) {
-        toast.success("Invoice marked as awaiting payment");
+        toast.success("Invoice status updated", {
+          description: "Invoice has been marked as awaiting payment.",
+        });
         fetchInvoices();
       } else {
-        toast.error(result.error || "Failed to update invoice");
+        toast.error("Failed to update invoice", {
+          description: result.error || "Please try again.",
+        });
       }
     } finally {
       setActionLoading(null);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "UPLOADED":
-        return (
-          <Badge variant="outline" className="border-primary/30 text-primary">
-            <Receipt className="h-3 w-3 mr-1" />
-            Uploaded
-          </Badge>
-        );
-      case "AWAITING_PAYMENT":
-        return (
-          <Badge className="bg-warning/20 text-warning border-warning/30">
-            <Clock className="h-3 w-3 mr-1" />
-            Awaiting Payment
-          </Badge>
-        );
-      case "PAID":
-        return (
-          <Badge className="bg-success/20 text-success border-success/30">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Paid
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -173,7 +148,7 @@ export function InvoicesTable() {
                       <TableCell className="font-mono text-sm">
                         {invoice.quote_id.slice(0, 8)}...
                       </TableCell>
-                      <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                      <TableCell><StatusBadge type="invoice" status={invoice.status} /></TableCell>
                       <TableCell>
                         <Button
                           variant="outline"
@@ -210,7 +185,7 @@ export function InvoicesTable() {
                         )}
                         {invoice.status === "PAID" && (
                           <span className="text-sm text-success flex items-center gap-1">
-                            <CheckCircle className="h-4 w-4" />
+                            <CheckCircle2 className="h-4 w-4" />
                             Completed
                           </span>
                         )}

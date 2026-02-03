@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FileText, Loader2, RefreshCw, MessageSquare } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText, Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,31 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { DocumentViewerModal } from "./DocumentViewerModal";
 import { PRChatPanel } from "./PRChatPanel";
 import { PRChatButton } from "./PRChatButton";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
+import { formatCurrency } from "@/lib/utils";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
-
-const statusConfig: Record<
-  PRStatus,
-  { label: string; className: string }
-> = {
-  PENDING_HOD_APPROVAL: { label: "Pending HOD", className: "bg-warning/10 text-warning border-warning/20" },
-  HOD_APPROVED: { label: "HOD Approved", className: "bg-success/10 text-success border-success/20" },
-  HOD_DECLINED: { label: "HOD Declined", className: "bg-destructive/10 text-destructive border-destructive/20" },
-  PENDING_FINANCE_APPROVAL: { label: "Pending Finance", className: "bg-warning/10 text-warning border-warning/20" },
-  FINANCE_APPROVED: { label: "Approved", className: "bg-success/10 text-success border-success/20" },
-  FINANCE_DECLINED: { label: "Declined", className: "bg-destructive/10 text-destructive border-destructive/20" },
-  SPLIT: { label: "Split", className: "bg-primary/10 text-primary border-primary/20" },
-};
-
-const urgencyConfig: Record<string, { label: string; className: string }> = {
-  LOW: { label: "Low", className: "bg-muted text-muted-foreground" },
-  NORMAL: { label: "Normal", className: "bg-primary/10 text-primary" },
-  HIGH: { label: "High", className: "bg-warning/10 text-warning" },
-  URGENT: { label: "Urgent", className: "bg-destructive/10 text-destructive" },
-};
 
 interface PurchaseRequisitionTableProps {
   refreshTrigger?: number;
@@ -164,24 +145,13 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                   </TableCell>
                   <TableCell className="text-muted-foreground">{pr.requested_by_department || "-"}</TableCell>
                   <TableCell>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        urgencyConfig[pr.urgency]?.className || ""
-                      }`}
-                    >
-                      {urgencyConfig[pr.urgency]?.label || pr.urgency}
-                    </span>
+                    <StatusBadge type="urgency" status={pr.urgency} showIcon={pr.urgency === 'HIGH' || pr.urgency === 'URGENT'} />
                   </TableCell>
                   <TableCell className="text-right font-semibold text-foreground">
-                    {pr.currency} {pr.total_amount.toLocaleString()}
+                    {formatCurrency(pr.total_amount, pr.currency)}
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={statusConfig[pr.status]?.className || ""}
-                    >
-                      {statusConfig[pr.status]?.label || pr.status}
-                    </Badge>
+                    <StatusBadge type="pr" status={pr.status} />
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(pr.created_at), "dd MMM yyyy")}
@@ -215,10 +185,10 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                                     <td className="p-3">{item.description}</td>
                                     <td className="text-right p-3">{item.quantity}</td>
                                     <td className="text-right p-3">
-                                      R {item.unit_price.toFixed(2)}
+                                      {formatCurrency(item.unit_price)}
                                     </td>
                                     <td className="text-right p-3 font-medium">
-                                      R {item.total.toFixed(2)}
+                                      {formatCurrency(item.total)}
                                     </td>
                                   </tr>
                                 ))}
