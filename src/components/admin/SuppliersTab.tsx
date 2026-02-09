@@ -34,7 +34,8 @@ import {
   ExternalLink
 } from "lucide-react";
 import { getOrganizationSuppliers, type Supplier } from "@/services/admin.service";
-import { createSupplierInvitation } from "@/services/supplier-invitation.service";
+import { supabase } from "@/integrations/supabase/client";
+import { getSafeErrorMessage } from "@/lib/error-handler";
 import { format } from "date-fns";
 
 export function SuppliersTab() {
@@ -73,17 +74,39 @@ export function SuppliersTab() {
 
     setIsInviting(true);
     try {
-      const result = await createSupplierInvitation({
-        email: inviteEmail,
-        companyName: inviteCompanyName,
-      });
+      // Get current user for invited_by and org
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Not authenticated"); return; }
 
-      if (result.success && result.inviteLink) {
-        setGeneratedLink(result.inviteLink);
-        toast.success("Supplier invitation created!");
-      } else {
-        toast.error(result.error || "Failed to create invitation");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.organization_id) { toast.error("Organization not found"); return; }
+
+      const { data, error } = await supabase
+        .from("supplier_invitations")
+        .insert({
+          email: inviteEmail.toLowerCase(),
+          company_name: inviteCompanyName,
+          organization_id: profile.organization_id,
+          invited_by: user.id,
+        })
+        .select("token")
+        .single();
+
+      if (error) {
+        toast.error(getSafeErrorMessage(error));
+        return;
       }
+
+      const link = `${window.location.origin}/join/supplier?token=${data.token}`;
+      setGeneratedLink(link);
+      toast.success("Supplier invitation created!");
+    } catch (err: any) {
+      toast.error(getSafeErrorMessage(err));
     } finally {
       setIsInviting(false);
     }
