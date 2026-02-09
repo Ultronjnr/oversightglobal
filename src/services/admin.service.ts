@@ -215,9 +215,25 @@ export async function getOrganizationSuppliers(): Promise<{
   error?: string;
 }> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, data: [], error: "Not authenticated" };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return { success: false, data: [], error: "No organization found" };
+    }
+
     const { data, error } = await supabase
       .from("suppliers")
       .select("*")
+      .eq("organization_id", profile.organization_id)
       .order("company_name", { ascending: true });
 
     if (error) {

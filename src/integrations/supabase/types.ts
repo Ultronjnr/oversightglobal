@@ -516,7 +516,7 @@ export type Database = {
           invited_by_admin_id: string | null
           is_public: boolean
           is_verified: boolean
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           registration_number: string | null
           user_id: string
@@ -533,7 +533,7 @@ export type Database = {
           invited_by_admin_id?: string | null
           is_public?: boolean
           is_verified?: boolean
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           registration_number?: string | null
           user_id: string
@@ -550,7 +550,7 @@ export type Database = {
           invited_by_admin_id?: string | null
           is_public?: boolean
           is_verified?: boolean
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           registration_number?: string | null
           user_id?: string
