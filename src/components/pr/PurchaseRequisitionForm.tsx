@@ -27,7 +27,6 @@ import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 const formSchema = z.object({
   department: z.string().min(1, "Department is required"),
   urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
-  supplier_preference: z.string().optional(),
   due_date: z.string().optional(),
   payment_due_date: z.string().optional(),
 });
@@ -214,7 +213,6 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         items: validItems,
         urgency: data.urgency as UrgencyLevel,
         department: data.department,
-        supplier_preference: data.supplier_preference,
         due_date: data.due_date || undefined,
         payment_due_date: data.payment_due_date || undefined,
         document_url: documentUrl,
@@ -244,7 +242,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Header Fields */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="department">Department *</Label>
           <Input
@@ -274,16 +272,6 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
               <SelectItem value="URGENT">Urgent</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="supplier_preference">Preferred Supplier</Label>
-          <Input
-            id="supplier_preference"
-            placeholder="Optional"
-            {...register("supplier_preference")}
-            className="bg-background/50"
-          />
         </div>
       </div>
 
