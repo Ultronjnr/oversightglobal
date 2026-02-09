@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 import SignupCompany from "./pages/SignupCompany";
 
 import Invite from "./pages/Invite";
+import JoinSupplier from "./pages/JoinSupplier";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import PRHistory from "./pages/PRHistory";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/invite" element={<Invite />} />
+            <Route path="/join/supplier" element={<JoinSupplier />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
             <Route
