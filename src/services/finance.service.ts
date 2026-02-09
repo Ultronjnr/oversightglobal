@@ -383,10 +383,26 @@ export async function getVerifiedSuppliers(): Promise<{
   error?: string;
 }> {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Not authenticated", data: [] };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return { success: false, error: "Organization not found", data: [] };
+    }
+
     const { data, error } = await supabase
       .from("suppliers")
       .select("*")
       .eq("is_verified", true)
+      .eq("organization_id", profile.organization_id)
       .order("company_name", { ascending: true });
 
     if (error) {
@@ -410,9 +426,25 @@ export async function getAllSuppliers(): Promise<{
   error?: string;
 }> {
   try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Not authenticated", data: [] };
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return { success: false, error: "Organization not found", data: [] };
+    }
+
     const { data, error } = await supabase
       .from("suppliers")
       .select("*")
+      .eq("organization_id", profile.organization_id)
       .order("company_name", { ascending: true });
 
     if (error) {
