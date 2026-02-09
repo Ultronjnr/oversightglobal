@@ -26,6 +26,24 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage } from "@/lib/error-handler";
 
+const INDUSTRY_OPTIONS = [
+  "Construction & Building Materials",
+  "IT & Technology",
+  "Office Supplies & Stationery",
+  "Cleaning & Sanitation",
+  "Electrical & Electronics",
+  "Plumbing & Water Systems",
+  "Catering & Food Services",
+  "Transport & Logistics",
+  "Security Services",
+  "Furniture & Fittings",
+  "Printing & Signage",
+  "Consulting & Professional Services",
+  "Medical & Healthcare Supplies",
+  "Agriculture & Farming",
+  "Other",
+];
+
 const joinSchema = z
   .object({
     email: z.string().email(),
@@ -35,6 +53,7 @@ const joinSchema = z
     address: z.string().min(1, "Address is required").max(500),
     registrationNumber: z.string().min(1, "Registration number is required").max(100),
     vatNumber: z.string().max(100).optional(),
+    industry: z.string().min(1, "Industry is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
@@ -156,6 +175,7 @@ export default function JoinSupplier() {
         address: formData.address,
         registration_number: formData.registrationNumber,
         vat_number: formData.vatNumber || null,
+        industry: formData.industry,
         organization_id: invitation.organization_id,
         is_public: false,
         is_verified: true,
@@ -286,6 +306,25 @@ export default function JoinSupplier() {
             </div>
             {errors.contactPerson && (
               <p className="text-sm text-destructive">{errors.contactPerson.message}</p>
+            )}
+          </div>
+
+          {/* Industry */}
+          <div className="space-y-2">
+            <Label htmlFor="industry">Industry *</Label>
+            <select
+              id="industry"
+              {...register("industry")}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              defaultValue=""
+            >
+              <option value="" disabled>Select your industry</option>
+              {INDUSTRY_OPTIONS.map((ind) => (
+                <option key={ind} value={ind}>{ind}</option>
+              ))}
+            </select>
+            {errors.industry && (
+              <p className="text-sm text-destructive">{errors.industry.message}</p>
             )}
           </div>
 
