@@ -13,7 +13,10 @@ import {
   User,
   Loader2,
   AlertCircle,
-  CheckCircle,
+  Phone,
+  MapPin,
+  FileText,
+  Hash,
 } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
@@ -28,6 +31,10 @@ const joinSchema = z
     email: z.string().email(),
     companyName: z.string().min(1, "Company name is required").max(200),
     contactPerson: z.string().min(1, "Contact person name is required").max(200),
+    phone: z.string().min(1, "Phone number is required").max(30),
+    address: z.string().min(1, "Address is required").max(500),
+    registrationNumber: z.string().min(1, "Registration number is required").max(100),
+    vatNumber: z.string().max(100).optional(),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
@@ -130,6 +137,7 @@ export default function JoinSupplier() {
         id: userId,
         email: formData.email.toLowerCase(),
         name: formData.companyName,
+        phone: formData.phone || null,
         organization_id: invitation.organization_id,
       });
 
@@ -144,6 +152,10 @@ export default function JoinSupplier() {
         company_name: formData.companyName,
         contact_email: formData.email.toLowerCase(),
         contact_person: formData.contactPerson,
+        phone: formData.phone,
+        address: formData.address,
+        registration_number: formData.registrationNumber,
+        vat_number: formData.vatNumber || null,
         organization_id: invitation.organization_id,
         is_public: false,
         is_verified: true,
@@ -277,7 +289,75 @@ export default function JoinSupplier() {
             )}
           </div>
 
-          {/* Password */}
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone">Contact Phone *</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="phone"
+                placeholder="+27 12 345 6789"
+                className="pl-10"
+                {...register("phone")}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-sm text-destructive">{errors.phone.message}</p>
+            )}
+          </div>
+
+          {/* Address */}
+          <div className="space-y-2">
+            <Label htmlFor="address">Company Address *</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="address"
+                placeholder="Full street address, city, postal code"
+                className="pl-10"
+                {...register("address")}
+              />
+            </div>
+            {errors.address && (
+              <p className="text-sm text-destructive">{errors.address.message}</p>
+            )}
+          </div>
+
+          {/* Registration & VAT in a row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="registrationNumber">Registration Number *</Label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="registrationNumber"
+                  placeholder="e.g. 2024/123456/07"
+                  className="pl-10"
+                  {...register("registrationNumber")}
+                />
+              </div>
+              {errors.registrationNumber && (
+                <p className="text-sm text-destructive">{errors.registrationNumber.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vatNumber">VAT Number</Label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="vatNumber"
+                  placeholder="Optional"
+                  className="pl-10"
+                  {...register("vatNumber")}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border pt-2">
+            <p className="text-xs text-muted-foreground mb-3">Account Credentials</p>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <div className="relative">
