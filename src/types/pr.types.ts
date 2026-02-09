@@ -17,6 +17,7 @@ export interface PRItem {
   quantity: number;
   unit_price: number;
   total: number;
+  /** @deprecated No longer used in new PRs. Kept for backward compatibility with old records. */
   supplier_preference?: string;
 }
 
@@ -32,6 +33,7 @@ export interface CreatePRInput {
   items: PRItem[];
   urgency: UrgencyLevel;
   department: string;
+  /** @deprecated No longer used. Supplier assignment handled via RFQ by Finance. */
   supplier_preference?: string;
   due_date?: string;
   payment_due_date?: string;
