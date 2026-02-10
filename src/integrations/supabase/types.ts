@@ -671,6 +671,10 @@ export type Database = {
             }
             Returns: Json
           }
+      accept_supplier_invitation_token: {
+        Args: { _token: string; _user_id: string }
+        Returns: boolean
+      }
       assign_invitation_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -720,6 +724,7 @@ export type Database = {
         }[]
       }
       validate_pr_items: { Args: { items: Json }; Returns: boolean }
+      validate_supplier_invitation: { Args: { _token: string }; Returns: Json }
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"

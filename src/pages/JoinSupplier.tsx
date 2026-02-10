@@ -101,26 +101,39 @@ export default function JoinSupplier() {
 
   const validateToken = async (t: string) => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from("supplier_invitations")
-        .select("id, email, company_name, organization_id")
-        .eq("token", t)
-        .eq("status", "PENDING")
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle();
+      const { data, error: fetchError } = await supabase.rpc(
+        "validate_supplier_invitation",
+        { _token: t }
+      );
 
       if (fetchError) {
         setError("Unable to validate invitation.");
         return;
       }
-      if (!data) {
-        setError("This invitation is invalid or has expired.");
+
+      const result = data as unknown as {
+        valid: boolean;
+        error?: string;
+        id?: string;
+        email?: string;
+        company_name?: string;
+        organization_id?: string;
+      };
+
+      if (!result?.valid) {
+        setError(result?.error || "This invitation is invalid or has expired.");
         return;
       }
 
-      setInvitation(data);
-      setValue("email", data.email);
-      setValue("companyName", data.company_name);
+      const inv = {
+        id: result.id!,
+        email: result.email!,
+        company_name: result.company_name!,
+        organization_id: result.organization_id!,
+      };
+      setInvitation(inv);
+      setValue("email", inv.email);
+      setValue("companyName", inv.company_name);
     } catch {
       setError("Something went wrong.");
     } finally {
@@ -197,15 +210,11 @@ export default function JoinSupplier() {
         return;
       }
 
-      // 5. Mark invitation as accepted
-      const { error: updateError } = await supabase
-        .from("supplier_invitations")
-        .update({ status: "ACCEPTED" })
-        .eq("id", invitation.id);
-
-      if (updateError) {
-        console.error("Failed to update invitation status", updateError);
-      }
+      // 5. Mark invitation as accepted via secure RPC
+      await supabase.rpc("accept_supplier_invitation_token", {
+        _token: token,
+        _user_id: userId,
+      });
 
       toast.success("Account created! Please check your email to confirm, then log in.");
       navigate("/login");
