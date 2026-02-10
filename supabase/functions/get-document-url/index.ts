@@ -163,12 +163,9 @@ Deno.serve(async (req) => {
       .createSignedUrl(storagePath, 600); // 10 minutes
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error("Signed URL error:", signedUrlError);
+      console.error("Signed URL generation failed:", signedUrlError);
       return new Response(
-        JSON.stringify({ 
-          error: "Failed to generate document URL",
-          details: signedUrlError?.message 
-        }),
+        JSON.stringify({ error: "Unable to access document" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
