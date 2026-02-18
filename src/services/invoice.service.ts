@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
+import { postSystemNote } from "@/services/pr-messaging.service";
 
 const BUCKET_NAME = "invoice-documents";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -22,8 +23,106 @@ export interface UploadInvoiceResult {
   error?: string;
 }
 
+// ─── Validation error ────────────────────────────────────────────────────────
+
+export class InvoiceUploadError extends Error {
+  constructor(
+    public code: "QUOTE_NOT_ACCEPTED" | "DUPLICATE_INVOICE" | "NOT_AUTHENTICATED" | "SUPPLIER_NOT_FOUND" | "UPLOAD_FAILED" | "INSERT_FAILED",
+    message: string
+  ) {
+    super(message);
+    this.name = "InvoiceUploadError";
+  }
+}
+
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
 /**
- * Upload an invoice document (PDF only) and create invoice record
+ * Verifies that a quote exists for this PR, belongs to this supplier, and has
+ * been explicitly accepted by Finance.  This is the quotation-first gate:
+ * no invoice may be uploaded unless Finance has already accepted a quote.
+ */
+async function verifyQuoteIsAccepted(quoteId: string, supplierId: string): Promise<void> {
+  const { data: quote, error } = await supabase
+    .from("quotes")
+    .select("id, status, supplier_id")
+    .eq("id", quoteId)
+    .eq("supplier_id", supplierId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[invoice] quote lookup error:", error.message);
+    throw new InvoiceUploadError(
+      "QUOTE_NOT_ACCEPTED",
+      "Unable to verify quotation status. Please try again."
+    );
+  }
+
+  if (!quote) {
+    throw new InvoiceUploadError(
+      "QUOTE_NOT_ACCEPTED",
+      "Invoice upload allowed only after quotation approval. No matching quotation found."
+    );
+  }
+
+  // The accepted_quote_and_reject_others RPC sets status = 'ACCEPTED'.
+  // We also allow 'INVOICE_UPLOADED' to guard re-upload attempts separately.
+  if (quote.status !== "ACCEPTED" && quote.status !== "INVOICE_UPLOADED") {
+    throw new InvoiceUploadError(
+      "QUOTE_NOT_ACCEPTED",
+      "Invoice upload allowed only after quotation approval. Your quote has not yet been approved by Finance."
+    );
+  }
+}
+
+/**
+ * Appends an audit entry to the PR's history JSONB column.
+ * Non-fatal: failure is logged but does NOT block the upload.
+ */
+async function appendPRHistory(prId: string, entry: {
+  action: string;
+  user_id: string;
+  user_name: string;
+  timestamp: string;
+  details: string;
+}): Promise<void> {
+  try {
+    const { data: pr, error: prFetchError } = await supabase
+      .from("purchase_requisitions")
+      .select("history")
+      .eq("id", prId)
+      .single();
+
+    if (prFetchError || !pr) {
+      console.warn("[invoice] could not fetch PR history for audit:", prFetchError?.message);
+      return;
+    }
+
+    const currentHistory = Array.isArray(pr.history) ? pr.history : [];
+    const newHistory = [...currentHistory, entry];
+
+    const { error: updateError } = await supabase
+      .from("purchase_requisitions")
+      .update({ history: newHistory })
+      .eq("id", prId);
+
+    if (updateError) {
+      console.warn("[invoice] could not update PR history:", updateError.message);
+    }
+  } catch (err) {
+    console.warn("[invoice] appendPRHistory unexpected error:", err);
+  }
+}
+
+/**
+ * Upload an invoice document (PDF only) and create invoice record.
+ *
+ * Enforcement rules:
+ *   1. Caller must be an authenticated supplier.
+ *   2. A quote for this PR must exist AND be in ACCEPTED status (quotation-first rule).
+ *   3. No invoice may already exist for this quote (immutability — no replacement).
+ *   4. File must be PDF ≤ 10 MB.
+ *   5. On success, PR history is updated with a system audit note.
  */
 export async function uploadInvoice(
   file: File,
@@ -32,26 +131,24 @@ export async function uploadInvoice(
   organizationId: string
 ): Promise<UploadInvoiceResult> {
   try {
-    // Validate file type
+    // ── 1. File validation ───────────────────────────────────────────────────
     if (file.type !== "application/pdf") {
       return { success: false, error: "Only PDF files are allowed" };
     }
-
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       return { success: false, error: "File size must be less than 10MB" };
     }
 
-    // Get current user
+    // ── 2. Authentication ────────────────────────────────────────────────────
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
       return { success: false, error: "Not authenticated" };
     }
 
-    // Get supplier ID
+    // ── 3. Resolve supplier identity ─────────────────────────────────────────
     const { data: supplier, error: supplierError } = await supabase
       .from("suppliers")
-      .select("id")
+      .select("id, company_name")
       .eq("user_id", user.id)
       .single();
 
@@ -59,7 +156,11 @@ export async function uploadInvoice(
       return { success: false, error: "Supplier profile not found" };
     }
 
-    // Check if invoice already exists for this quote
+    // ── 4. QUOTATION-FIRST GATE ───────────────────────────────────────────────
+    //    Throws InvoiceUploadError with a clear message if the quote is not ACCEPTED.
+    await verifyQuoteIsAccepted(quoteId, supplier.id);
+
+    // ── 5. Immutability guard — no replacement after initial upload ───────────
     const { data: existingInvoice } = await supabase
       .from("invoices")
       .select("id")
@@ -67,14 +168,16 @@ export async function uploadInvoice(
       .maybeSingle();
 
     if (existingInvoice) {
-      return { success: false, error: "An invoice has already been uploaded for this quote" };
+      return {
+        success: false,
+        error: "An invoice has already been uploaded for this quote and cannot be replaced.",
+      };
     }
 
-    // Generate unique filename
+    // ── 6. Upload PDF to storage ──────────────────────────────────────────────
     const fileName = `${uuidv4()}.pdf`;
     const filePath = `${user.id}/${quoteId}/${fileName}`;
 
-    // Upload file
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filePath, file, {
@@ -83,11 +186,14 @@ export async function uploadInvoice(
       });
 
     if (uploadError) {
-      console.error("Upload error:", uploadError);
-      return { success: false, error: uploadError.message };
+      console.error("[invoice] upload error:", uploadError);
+      return { success: false, error: "Failed to upload invoice. Please try again." };
     }
 
-    // Create invoice record
+    // ── 7. Create invoice record ──────────────────────────────────────────────
+    //    Stores linked_quote_id, uploaded_by, and uploaded_at for full traceability.
+    const now = new Date().toISOString();
+
     const { data: invoice, error: insertError } = await supabase
       .from("invoices")
       .insert({
@@ -102,22 +208,42 @@ export async function uploadInvoice(
       .single();
 
     if (insertError) {
-      console.error("Insert error:", insertError);
-      // Try to clean up uploaded file
+      console.error("[invoice] insert error:", insertError);
+      // Clean up the orphaned file
       await supabase.storage.from(BUCKET_NAME).remove([filePath]);
-      return { success: false, error: insertError.message };
+      return { success: false, error: "Failed to create invoice record. Please try again." };
     }
 
-    // Update quote status to INVOICE_UPLOADED
+    // ── 8. Progress the quote status ─────────────────────────────────────────
     await supabase
       .from("quotes")
       .update({ status: "INVOICE_UPLOADED" })
       .eq("id", quoteId);
 
+    // ── 9. Append immutable audit entry to PR history ─────────────────────────
+    //    Non-fatal; logged but does not block success response.
+    await appendPRHistory(prId, {
+      action: "INVOICE_UPLOADED",
+      user_id: user.id,
+      user_name: supplier.company_name,
+      timestamp: now,
+      details: `Final invoice uploaded after quotation approval. Quote ID: ${quoteId.slice(0, 8)}…`,
+    });
+
+    // ── 10. Post system note to PR chat for full single-audit-trail visibility ─
+    //    Non-fatal — run best-effort; failure does not block the upload response.
+    postSystemNote(
+      prId,
+      `📎 Final invoice uploaded by ${supplier.company_name} after quotation approval.`
+    ).catch((err) => console.warn("[invoice] postSystemNote failed:", err));
+
     return { success: true, invoice: invoice as Invoice };
-  } catch (error: any) {
-    console.error("uploadInvoice error:", error);
-    return { success: false, error: error.message };
+  } catch (err: any) {
+    if (err instanceof InvoiceUploadError) {
+      return { success: false, error: err.message };
+    }
+    console.error("[invoice] uploadInvoice unexpected error:", err);
+    return { success: false, error: "An unexpected error occurred. Please try again." };
   }
 }
 
