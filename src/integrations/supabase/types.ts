@@ -180,11 +180,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pr_message_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pr_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "pr_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pr_messages: {
         Row: {
           created_at: string
           id: string
+          is_system_note: boolean
           message: string
+          organization_id: string
           pr_id: string
           sender_id: string
           sender_name: string
@@ -193,7 +227,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_system_note?: boolean
           message: string
+          organization_id: string
           pr_id: string
           sender_id: string
           sender_name: string
@@ -202,13 +238,22 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_system_note?: boolean
           message?: string
+          organization_id?: string
           pr_id?: string
           sender_id?: string
           sender_name?: string
           sender_role?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pr_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pr_messages_pr_id_fkey"
             columns: ["pr_id"]

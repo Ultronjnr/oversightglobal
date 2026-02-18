@@ -41,11 +41,12 @@ export async function sendPRMessage(input: SendMessageInput): Promise<{ success:
     // Get user profile and role
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("name, surname")
+      .select("name, surname, organization_id")
       .eq("id", user.id)
       .single();
 
     if (profileError) throw profileError;
+    if (!profile.organization_id) throw new Error("User has no organization");
 
     const { data: roleData, error: roleError } = await supabase
       .from("user_roles")
@@ -67,6 +68,7 @@ export async function sendPRMessage(input: SendMessageInput): Promise<{ success:
         sender_name: senderName,
         sender_role: roleData.role,
         message: input.message.trim(),
+        organization_id: profile.organization_id,
       })
       .select()
       .single();
