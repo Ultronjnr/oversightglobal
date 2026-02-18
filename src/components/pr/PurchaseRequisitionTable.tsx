@@ -14,11 +14,17 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DocumentViewerModal } from "./DocumentViewerModal";
-import { PRChatPanel } from "./PRChatPanel";
 import { PRChatButton } from "./PRChatButton";
+import { PRChatSlidePanel } from "./PRChatSlidePanel";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import { formatCurrency } from "@/lib/utils";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
+
+interface ChatState {
+  open: boolean;
+  prId: string;
+  transactionId: string;
+}
 
 interface PurchaseRequisitionTableProps {
   refreshTrigger?: number;
@@ -29,6 +35,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -157,7 +164,10 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                     {format(new Date(pr.created_at), "dd MMM yyyy")}
                   </TableCell>
                   <TableCell>
-                    <PRChatButton prId={pr.id} onClick={() => toggleRow(pr.id)} />
+                    <PRChatButton
+                      prId={pr.id}
+                      onClick={() => setChatPanel({ open: true, prId: pr.id, transactionId: pr.transaction_id })}
+                    />
                   </TableCell>
                 </TableRow>
 
@@ -241,8 +251,6 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                           </div>
                         )}
 
-                        {/* Chat Panel */}
-                        <PRChatPanel prId={pr.id} transactionId={pr.transaction_id} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -260,6 +268,14 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
         documentUrl={documentModal.url}
         prId={documentModal.prId}
         transactionId={documentModal.transactionId}
+      />
+
+      {/* PR Chat Slide Panel */}
+      <PRChatSlidePanel
+        open={chatPanel.open}
+        onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
+        prId={chatPanel.prId}
+        transactionId={chatPanel.transactionId}
       />
     </div>
   );

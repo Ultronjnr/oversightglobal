@@ -16,6 +16,7 @@ import {
   BarChart3,
   ShoppingCart,
   Inbox,
+  MessageSquare,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -42,6 +43,7 @@ import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getHODPendingPRs,
   hodApprovePR,
@@ -50,6 +52,8 @@ import {
 } from "@/services/approval.service";
 
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
+
+interface ChatState { open: boolean; prId: string; transactionId: string; }
 
 const urgencyConfig: Record<string, { label: string; className: string }> = {
   LOW: { label: "Low", className: "bg-muted text-muted-foreground" },
@@ -74,6 +78,7 @@ export default function HODPortal() {
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
+  const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -414,6 +419,15 @@ export default function HODPortal() {
                               >
                                 <Scissors className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                onClick={() => setChatPanel({ open: true, prId: pr.id, transactionId: pr.transaction_id })}
+                                title="Transaction Chat"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -554,6 +568,14 @@ export default function HODPortal() {
         documentUrl={documentModal.url}
         prId={documentModal.prId}
         transactionId={documentModal.transactionId}
+      />
+
+      {/* PR Chat Slide Panel */}
+      <PRChatSlidePanel
+        open={chatPanel.open}
+        onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
+        prId={chatPanel.prId}
+        transactionId={chatPanel.transactionId}
       />
     </DashboardLayout>
   );

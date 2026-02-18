@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getMessageCount } from "@/services/pr-chat.service";
+import { getPRMessages } from "@/services/pr-messaging.service";
 
 interface PRChatButtonProps {
   prId: string;
@@ -12,7 +12,11 @@ export function PRChatButton({ prId, onClick }: PRChatButtonProps) {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    getMessageCount(prId).then(setCount);
+    getPRMessages(prId).then((result) => {
+      if (result.success && result.data) {
+        setCount(result.data.length);
+      }
+    });
   }, [prId]);
 
   return (

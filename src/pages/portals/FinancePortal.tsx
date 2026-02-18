@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Receipt,
   Banknote,
+  MessageSquare,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -55,6 +56,7 @@ import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
+import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -65,6 +67,8 @@ import {
   type QuoteWorkflowStatus,
 } from "@/services/finance.service";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
+
+interface ChatState { open: boolean; prId: string; transactionId: string; }
 
 const urgencyConfig: Record<string, { label: string; className: string }> = {
   LOW: { label: "Low", className: "bg-muted text-muted-foreground" },
@@ -100,6 +104,7 @@ export default function FinancePortal() {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
+  const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
 
   const navItems = [
     { label: "My Portal", href: "/finance/portal", icon: <User className="h-4 w-4" /> },
@@ -595,6 +600,15 @@ export default function FinancePortal() {
                               >
                                 <Send className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                onClick={() => setChatPanel({ open: true, prId: pr.id, transactionId: pr.transaction_id })}
+                                title="Transaction Chat"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -782,6 +796,14 @@ export default function FinancePortal() {
           }}
         />
       )}
+
+      {/* PR Chat Slide Panel */}
+      <PRChatSlidePanel
+        open={chatPanel.open}
+        onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
+        prId={chatPanel.prId}
+        transactionId={chatPanel.transactionId}
+      />
     </DashboardLayout>
   );
 }
