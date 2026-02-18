@@ -27,13 +27,23 @@ import {
   Building2,
   CheckCircle2,
 } from "lucide-react";
-import { getOrganizationInvoices, getInvoiceDocumentUrl, updateInvoiceStatus, type Invoice } from "@/services/invoice.service";
+import {
+  getOrganizationInvoices,
+  getInvoiceDocumentUrl,
+  updateInvoiceStatus,
+  type Invoice,
+} from "@/services/invoice.service";
+import { getInvoiceSignedUrl } from "@/services/invoice-export.service";
+import { InvoiceExportControls } from "@/components/finance/InvoiceExportControls";
+import type { InvoiceExportRow } from "@/services/invoice-export.service";
 import { format } from "date-fns";
 
 export function InvoicesTable() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceExportRow[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -64,7 +74,7 @@ export function InvoicesTable() {
       setDocumentModal({
         isOpen: true,
         url: result.url,
-        title: `Invoice - ${format(new Date(invoice.created_at), "dd MMM yyyy")}`,
+        title: `Invoice – ${format(new Date(invoice.created_at), "dd MMM yyyy")}`,
       });
     } else {
       toast.error("Failed to load document");
@@ -90,6 +100,27 @@ export function InvoicesTable() {
     }
   };
 
+  /** Download a single invoice PDF by generating a signed URL and triggering a browser download. */
+  const handleDownloadSingleInvoice = async (invoice: Invoice) => {
+    setDownloadLoading(invoice.id);
+    try {
+      const result = await getInvoiceSignedUrl(invoice.document_url);
+      if (result.success && result.url) {
+        const link = document.createElement("a");
+        link.href = result.url;
+        link.download = `invoice_${format(new Date(invoice.created_at), "yyyyMMdd")}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Invoice download started.");
+      } else {
+        toast.error("Download failed", { description: result.error });
+      }
+    } finally {
+      setDownloadLoading(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -100,6 +131,10 @@ export function InvoicesTable() {
     );
   }
 
+  // When a date-range filter is active, show the filtered export rows (read-only).
+  // When null, fall back to the full invoice list with all actions.
+  const showFiltered = filteredInvoices !== null;
+
   return (
     <>
       <Card>
@@ -109,98 +144,192 @@ export function InvoicesTable() {
             Supplier Invoices
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          {invoices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="p-4 rounded-full bg-muted mb-4">
-                <Receipt className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-medium text-foreground mb-1">No Invoices Yet</h3>
-              <p className="text-sm text-muted-foreground">
-                Supplier invoices will appear here after quotes are accepted.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Quote ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Document</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>
-                        {format(new Date(invoice.created_at), "dd MMM yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono text-sm">{invoice.supplier_id.slice(0, 8)}...</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-sm">
-                        {invoice.quote_id.slice(0, 8)}...
-                      </TableCell>
-                      <TableCell><StatusBadge type="invoice" status={invoice.status} /></TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDocument(invoice)}
-                          className="gap-1"
-                        >
-                          <FileText className="h-4 w-4" />
-                          View
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        {invoice.status === "UPLOADED" && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleMarkAwaitingPayment(invoice.id)}
-                            disabled={actionLoading === invoice.id}
-                            className="gap-1"
-                          >
-                            {actionLoading === invoice.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <>
-                                <DollarSign className="h-4 w-4" />
-                                Mark Awaiting Payment
-                              </>
+        <CardContent className="space-y-0">
+          {/* Date-range filter + CSV export controls */}
+          <InvoiceExportControls onFilteredInvoices={setFilteredInvoices} />
+
+          {/* ── Filtered view ─────────────────────────────────────────── */}
+          {showFiltered && (
+            <>
+              {filteredInvoices!.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="p-4 rounded-full bg-muted mb-4">
+                    <Receipt className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium text-foreground mb-1">No Invoices in Range</h3>
+                  <p className="text-sm text-muted-foreground">
+                    No invoices were found for the selected date range.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Transaction ID</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInvoices!.map((inv) => (
+                        <TableRow key={inv.id}>
+                          <TableCell>
+                            {format(new Date(inv.createdAt), "dd MMM yyyy")}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {inv.transactionId}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium">{inv.supplierName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {inv.supplierEmail}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {new Intl.NumberFormat("en-ZA", {
+                              style: "currency",
+                              currency: inv.currency,
+                            }).format(inv.totalAmount)}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge type="invoice" status={inv.paymentStatus} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Full invoice list (default view) ──────────────────────── */}
+          {!showFiltered && (
+            <>
+              {invoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="p-4 rounded-full bg-muted mb-4">
+                    <Receipt className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium text-foreground mb-1">No Invoices Yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Supplier invoices will appear here after quotes are accepted.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead>Quote ID</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Document</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell>
+                            {format(new Date(invoice.created_at), "dd MMM yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-mono text-sm">
+                                {invoice.supplier_id.slice(0, 8)}...
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {invoice.quote_id.slice(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge type="invoice" status={invoice.status} />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewDocument(invoice)}
+                                className="gap-1"
+                              >
+                                <FileText className="h-4 w-4" />
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadSingleInvoice(invoice)}
+                                disabled={downloadLoading === invoice.id}
+                                className="gap-1"
+                                title="Download Selected Invoice"
+                              >
+                                {downloadLoading === invoice.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {invoice.status === "UPLOADED" && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleMarkAwaitingPayment(invoice.id)}
+                                disabled={actionLoading === invoice.id}
+                                className="gap-1"
+                              >
+                                {actionLoading === invoice.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <DollarSign className="h-4 w-4" />
+                                    Mark Awaiting Payment
+                                  </>
+                                )}
+                              </Button>
                             )}
-                          </Button>
-                        )}
-                        {invoice.status === "AWAITING_PAYMENT" && (
-                          <span className="text-sm text-muted-foreground">
-                            Processing...
-                          </span>
-                        )}
-                        {invoice.status === "PAID" && (
-                          <span className="text-sm text-success flex items-center gap-1">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Completed
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                            {invoice.status === "AWAITING_PAYMENT" && (
+                              <span className="text-sm text-muted-foreground">
+                                Processing...
+                              </span>
+                            )}
+                            {invoice.status === "PAID" && (
+                              <span className="text-sm text-success flex items-center gap-1">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Completed
+                              </span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Document Viewer Modal */}
-      <Dialog open={documentModal.isOpen} onOpenChange={(open) => setDocumentModal({ ...documentModal, isOpen: open })}>
+      <Dialog
+        open={documentModal.isOpen}
+        onOpenChange={(open) => setDocumentModal({ ...documentModal, isOpen: open })}
+      >
         <DialogContent className="max-w-4xl h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
