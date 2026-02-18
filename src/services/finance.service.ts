@@ -6,6 +6,8 @@ import type {
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
 import { logError, getSafeErrorMessage } from "@/lib/error-handler";
+import { postSystemNote } from "@/services/pr-messaging.service";
+
 
 interface ApprovalResult {
   success: boolean;
@@ -650,6 +652,16 @@ export async function acceptQuote(
             total_amount: quoteData.amount,
           })
           .eq("id", prId);
+
+        // Post system note to the single PR audit conversation.
+        // Non-fatal: runs best-effort; failure does not block acceptance.
+        postSystemNote(
+          prId,
+          `✅ Quotation from ${supplierName} accepted by Finance (${new Intl.NumberFormat("en-ZA", {
+            style: "currency",
+            currency: "ZAR",
+          }).format(quoteData.amount)}). Awaiting final invoice from supplier.`
+        ).catch((err) => console.warn("[finance] postSystemNote failed:", err));
       }
     }
 

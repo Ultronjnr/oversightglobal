@@ -156,6 +156,69 @@ function mapMessage(
 // ─── Public API ─────────────────────────────────────────────────────────────
 
 /**
+ * postSystemNote
+ *
+ * Writes an immutable, is_system_note=true audit entry to pr_messages.
+ * Intended to be called by backend services (not directly by the user) to record
+ * lifecycle events such as quote approval, invoice upload, status transitions, etc.
+ *
+ * Security guarantees:
+ *   - Caller must be authenticated (service operates in the context of the acting user)
+ *   - Organization isolation enforced via RLS and application-level guard
+ *   - System notes are immutable (no update/delete exposed)
+ *
+ * @param prId  The purchase_requisition_id the note belongs to.
+ * @param note  Plain-text description of the system event.
+ */
+export async function postSystemNote(
+  prId: string,
+  note: string
+): Promise<PRMessagingResult<PRMessage>> {
+  try {
+    const user = await requireUser();
+
+    const [callerOrgId, callerRole, callerName] = await Promise.all([
+      requireCallerOrg(user.id),
+      requireCallerRole(user.id),
+      getCallerName(user.id),
+    ]);
+
+    await requirePRInOrg(prId, callerOrgId);
+
+    const { data: messageRow, error: insertError } = await supabase
+      .from("pr_messages")
+      .insert({
+        pr_id: prId,
+        sender_id: user.id,
+        sender_name: callerName,
+        sender_role: callerRole,
+        message: note.trim(),
+        organization_id: callerOrgId,
+        is_system_note: true,
+      })
+      .select()
+      .single();
+
+    if (insertError || !messageRow) {
+      // Non-fatal for callers that don't require this — log and surface error
+      console.warn("[pr-messaging] postSystemNote insert failed:", insertError?.message);
+      throw new PRMessagingError(
+        "Failed to record system note. The action completed but the audit entry was not saved.",
+        "INSERT_FAILED"
+      );
+    }
+
+    return { success: true, data: mapMessage(messageRow, []) };
+  } catch (err) {
+    if (err instanceof PRMessagingError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: "An unexpected error occurred." };
+  }
+}
+
+
+/**
  * sendPRMessage
  *
  * Creates a new message (and optional attachments) on a PR.
