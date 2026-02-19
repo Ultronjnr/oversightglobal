@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -352,9 +352,8 @@ export default function HODPortal() {
                   </TableHeader>
                   <TableBody>
                     {prs.map((pr) => (
-                      <>
+                      <React.Fragment key={pr.id}>
                         <TableRow
-                          key={pr.id}
                           className="cursor-pointer hover:bg-muted/20"
                           onClick={() => toggleRow(pr.id)}
                         >
@@ -519,7 +518,7 @@ export default function HODPortal() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>

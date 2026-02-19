@@ -333,22 +333,34 @@ export interface InvoiceWithDetails extends Invoice {
 /**
  * Get invoices for finance (organization-wide)
  */
+export interface InvoiceWithSupplier extends Invoice {
+  supplier_company_name?: string;
+}
+
 export async function getOrganizationInvoices(): Promise<{
   success: boolean;
-  data: Invoice[];
+  data: InvoiceWithSupplier[];
   error?: string;
 }> {
   try {
     const { data, error } = await supabase
       .from("invoices")
-      .select("*")
+      .select(`
+        *,
+        supplier:suppliers ( company_name )
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
       return { success: false, data: [], error: error.message };
     }
 
-    return { success: true, data: (data || []) as Invoice[] };
+    const mapped: InvoiceWithSupplier[] = (data || []).map((inv: any) => ({
+      ...inv,
+      supplier_company_name: inv.supplier?.company_name ?? undefined,
+    }));
+
+    return { success: true, data: mapped };
   } catch (error: any) {
     return { success: false, data: [], error: error.message };
   }
