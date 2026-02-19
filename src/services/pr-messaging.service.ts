@@ -39,22 +39,37 @@ async function requireUser() {
   return user;
 }
 
-/** Returns the caller's organization_id from their profile or throws. */
+/** 
+ * Returns the caller's organization_id or throws.
+ * For internal users: resolves via profiles.organization_id.
+ * For SUPPLIER users: profiles.organization_id is NULL — resolves via suppliers.organization_id.
+ */
 async function requireCallerOrg(userId: string): Promise<string> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("organization_id, name, surname")
+    .select("organization_id")
     .eq("id", userId)
     .single();
 
-  if (error || !data?.organization_id) {
-    throw new PRMessagingError(
-      "Your account is not linked to an organization.",
-      "ORGANIZATION_MISMATCH"
-    );
+  if (!error && data?.organization_id) {
+    return data.organization_id;
   }
 
-  return data.organization_id;
+  // Fallback: supplier users have NULL profile org_id — look up via suppliers table
+  const { data: supplierData, error: supplierError } = await supabase
+    .from("suppliers")
+    .select("organization_id")
+    .eq("user_id", userId)
+    .single();
+
+  if (!supplierError && supplierData?.organization_id) {
+    return supplierData.organization_id;
+  }
+
+  throw new PRMessagingError(
+    "Your account is not linked to an organization.",
+    "ORGANIZATION_MISMATCH"
+  );
 }
 
 /** Returns the caller's role or throws. */
@@ -88,20 +103,21 @@ async function getCallerName(userId: string): Promise<string> {
 }
 
 /**
- * Verifies that the PR exists and belongs to the caller's organization.
- * Relies on RLS — if the PR is not visible to the caller the query returns
- * nothing, which is treated as a mismatch.
+ * Verifies that the PR exists and is visible to the caller via RLS.
+ * For internal users: PR must belong to caller's org.
+ * For suppliers: RLS allows access if they have a quote_request on this PR —
+ *   so we just check the PR exists and is visible (no org equality check needed,
+ *   as the DB-level policy already enforces correct tenant scoping for suppliers).
  */
 async function requirePRInOrg(
   prId: string,
-  callerOrgId: string
+  _callerOrgId: string
 ): Promise<void> {
   const { data, error } = await supabase
     .from("purchase_requisitions")
-    .select("id, organization_id")
+    .select("id")
     .eq("id", prId)
-    .eq("organization_id", callerOrgId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) {
     throw new PRMessagingError(
@@ -177,13 +193,27 @@ export async function postSystemNote(
   try {
     const user = await requireUser();
 
-    const [callerOrgId, callerRole, callerName] = await Promise.all([
-      requireCallerOrg(user.id),
+    // Fetch role, name, and PR's org_id in parallel.
+    // We use the PR's organization_id for the message (not caller's profile org)
+    // to correctly handle supplier users whose profile.organization_id is NULL.
+    const [callerRole, callerName, prRow] = await Promise.all([
       requireCallerRole(user.id),
       getCallerName(user.id),
+      supabase
+        .from("purchase_requisitions")
+        .select("id, organization_id")
+        .eq("id", prId)
+        .maybeSingle(),
     ]);
 
-    await requirePRInOrg(prId, callerOrgId);
+    if (prRow.error || !prRow.data) {
+      throw new PRMessagingError(
+        "The purchase requisition was not found or you do not have access to it.",
+        "PR_NOT_FOUND"
+      );
+    }
+
+    const prOrgId = prRow.data.organization_id;
 
     const { data: messageRow, error: insertError } = await supabase
       .from("pr_messages")
@@ -193,14 +223,13 @@ export async function postSystemNote(
         sender_name: callerName,
         sender_role: callerRole,
         message: note.trim(),
-        organization_id: callerOrgId,
+        organization_id: prOrgId,
         is_system_note: true,
       })
       .select()
       .single();
 
     if (insertError || !messageRow) {
-      // Non-fatal for callers that don't require this — log and surface error
       console.warn("[pr-messaging] postSystemNote insert failed:", insertError?.message);
       throw new PRMessagingError(
         "Failed to record system note. The action completed but the audit entry was not saved.",
@@ -247,17 +276,29 @@ export async function sendPRMessage(
     // 2. Authenticate
     const user = await requireUser();
 
-    // 3. Resolve caller org, role, and name in parallel
-    const [callerOrgId, callerRole, callerName] = await Promise.all([
-      requireCallerOrg(user.id),
+    // 3. Resolve role, name, and PR's org_id in parallel.
+    // We use the PR's organization_id for the message insert so supplier users
+    // (who have NULL profile.organization_id) get the correct org on the message.
+    const [callerRole, callerName, prRow] = await Promise.all([
       requireCallerRole(user.id),
       getCallerName(user.id),
+      supabase
+        .from("purchase_requisitions")
+        .select("id, organization_id")
+        .eq("id", input.purchaseRequisitionId)
+        .maybeSingle(),
     ]);
 
-    // 4. Verify the PR is accessible and belongs to the caller's org
-    await requirePRInOrg(input.purchaseRequisitionId, callerOrgId);
+    if (prRow.error || !prRow.data) {
+      throw new PRMessagingError(
+        "The purchase requisition was not found or you do not have access to it.",
+        "PR_NOT_FOUND"
+      );
+    }
 
-    // 5. Insert the message row
+    const prOrgId = prRow.data.organization_id;
+
+    // 4. Insert the message row
     const { data: messageRow, error: insertError } = await supabase
       .from("pr_messages")
       .insert({
@@ -266,7 +307,7 @@ export async function sendPRMessage(
         sender_name: callerName,
         sender_role: callerRole,
         message: hasText ? input.messageText!.trim() : "",
-        organization_id: callerOrgId,
+        organization_id: prOrgId,
         is_system_note: input.isSystemNote ?? false,
       })
       .select()
@@ -334,13 +375,23 @@ export async function getPRMessages(
     // 1. Authenticate
     const user = await requireUser();
 
-    // 2. Resolve caller org
-    const callerOrgId = await requireCallerOrg(user.id);
+    // 2. Verify PR is visible to this user (RLS enforces tenant isolation server-side).
+    // We no longer do an org equality check here because supplier users have NULL
+    // profile.organization_id — the DB-level RLS policy already restricts what they can see.
+    const { data: prCheck, error: prCheckError } = await supabase
+      .from("purchase_requisitions")
+      .select("id")
+      .eq("id", prId)
+      .maybeSingle();
 
-    // 3. Verify PR access
-    await requirePRInOrg(prId, callerOrgId);
+    if (prCheckError || !prCheck) {
+      throw new PRMessagingError(
+        "The purchase requisition was not found or you do not have access to it.",
+        "PR_NOT_FOUND"
+      );
+    }
 
-    // 4. Fetch messages (RLS also enforces org scope server-side)
+    // 3. Fetch messages (RLS enforces org scope server-side)
     const { data: messageRows, error: fetchError } = await supabase
       .from("pr_messages")
       .select("*")
@@ -358,7 +409,7 @@ export async function getPRMessages(
       return { success: true, data: [] };
     }
 
-    // 5. Fetch all attachments for these messages in one query
+    // 4. Fetch all attachments for these messages in one query
     const messageIds = messageRows.map((m) => m.id);
 
     const { data: attachmentRows, error: attachFetchError } = await supabase
@@ -371,7 +422,7 @@ export async function getPRMessages(
       console.warn("[pr-messaging] Attachment fetch failed:", attachFetchError.message);
     }
 
-    // 6. Group attachments by message_id
+    // 5. Group attachments by message_id
     const attachmentsByMessageId = new Map<string, PRMessageAttachment[]>();
 
     if (attachmentRows) {
@@ -383,7 +434,7 @@ export async function getPRMessages(
       }
     }
 
-    // 7. Map and return
+    // 6. Map and return
     const messages: PRMessage[] = messageRows.map((row) =>
       mapMessage(row, attachmentsByMessageId.get(row.id) ?? [])
     );
@@ -396,3 +447,4 @@ export async function getPRMessages(
     return { success: false, error: "An unexpected error occurred. Please try again." };
   }
 }
+
