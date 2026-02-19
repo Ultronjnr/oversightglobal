@@ -1,3 +1,4 @@
+import React from 'react';
 import { usePRNotifications } from '@/hooks/use-pr-notifications';
 
 export function PRNotificationProvider({ children }: { children: React.ReactNode }) {

@@ -32,6 +32,7 @@ import {
   getInvoiceDocumentUrl,
   updateInvoiceStatus,
   type Invoice,
+  type InvoiceWithSupplier,
 } from "@/services/invoice.service";
 import { getInvoiceSignedUrl } from "@/services/invoice-export.service";
 import { InvoiceExportControls } from "@/components/finance/InvoiceExportControls";
@@ -39,7 +40,7 @@ import type { InvoiceExportRow } from "@/services/invoice-export.service";
 import { format } from "date-fns";
 
 export function InvoicesTable() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceWithSupplier[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<InvoiceExportRow[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -246,8 +247,8 @@ export function InvoicesTable() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Building2 className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-mono text-sm">
-                                {invoice.supplier_id.slice(0, 8)}...
+                              <span className="font-medium">
+                                {invoice.supplier_company_name ?? invoice.supplier_id.slice(0, 8) + "…"}
                               </span>
                             </div>
                           </TableCell>
