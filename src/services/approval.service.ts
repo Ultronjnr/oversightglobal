@@ -7,6 +7,7 @@ import type {
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
 import { logError, getSafeErrorMessage } from "@/lib/error-handler";
+import { postSystemNote } from "@/services/pr-messaging.service";
 
 interface ApprovalResult {
   success: boolean;
@@ -109,6 +110,12 @@ export async function hodApprovePR(
       return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
+    // Post immutable system note for audit trail (non-fatal)
+    postSystemNote(
+      prId,
+      `✅ HOD Approved by ${userName}${comments ? `: "${comments}"` : "."} PR forwarded to Finance.`
+    ).catch((err) => console.warn("[approval] postSystemNote failed:", err));
+
     return { success: true };
   } catch (error: any) {
     logError("hodApprovePR", error);
@@ -180,6 +187,12 @@ export async function hodDeclinePR(
       logError("hodDeclinePR", updateError);
       return { success: false, error: getSafeErrorMessage(updateError) };
     }
+
+    // Post immutable system note for audit trail (non-fatal)
+    postSystemNote(
+      prId,
+      `❌ HOD Declined by ${userName}${comments ? `: "${comments}"` : "."} PR returned to requester.`
+    ).catch((err) => console.warn("[approval] postSystemNote failed:", err));
 
     return { success: true };
   } catch (error: any) {
