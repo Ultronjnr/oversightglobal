@@ -162,6 +162,12 @@ export async function financeApprovePR(
       return { success: false, error: getSafeErrorMessage(updateError) };
     }
 
+    // Post immutable system note for audit trail (non-fatal)
+    postSystemNote(
+      prId,
+      `✅ Finance Approved by ${userName}${comments ? `: "${comments}"` : "."} PR marked as Finance Approved.`
+    ).catch((err) => console.warn("[finance] postSystemNote failed:", err));
+
     return { success: true };
   } catch (error: any) {
     logError("financeApprovePR", error);
@@ -229,6 +235,12 @@ export async function financeDeclinePR(
       logError("financeDeclinePR", updateError);
       return { success: false, error: getSafeErrorMessage(updateError) };
     }
+
+    // Post immutable system note for audit trail (non-fatal)
+    postSystemNote(
+      prId,
+      `❌ Finance Declined by ${userName}${comments ? `: "${comments}"` : "."} PR returned for review.`
+    ).catch((err) => console.warn("[finance] postSystemNote failed:", err));
 
     return { success: true };
   } catch (error: any) {
