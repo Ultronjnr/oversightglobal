@@ -499,6 +499,21 @@ export async function sendQuoteRequest(
       return { success: false, error: "Organization not found" };
     }
 
+    // Guard: prevent duplicate quote requests for the same PR+supplier
+    const { data: existingRequest } = await supabase
+      .from("quote_requests")
+      .select("id, status")
+      .eq("pr_id", prId)
+      .eq("supplier_id", supplierId)
+      .maybeSingle();
+
+    if (existingRequest) {
+      return {
+        success: false,
+        error: `A quote request has already been sent to this supplier for this PR (status: ${existingRequest.status}).`,
+      };
+    }
+
     const { error: insertError } = await supabase
       .from("quote_requests")
       .insert({
@@ -515,6 +530,12 @@ export async function sendQuoteRequest(
       logError("sendQuoteRequest", insertError);
       return { success: false, error: getSafeErrorMessage(insertError) };
     }
+
+    // Post system note to PR chat for audit trail
+    postSystemNote(
+      prId,
+      `📋 Quote request sent to supplier by Finance.${message ? ` Message: "${message}"` : ""}`
+    ).catch((err) => console.warn("[finance] sendQuoteRequest postSystemNote failed:", err));
 
     return { success: true };
   } catch (error: any) {
