@@ -8,18 +8,28 @@ interface LogoProps {
 }
 
 export function Logo({ className, iconOnly = false, size = "md" }: LogoProps) {
-  const heightClasses = {
-    sm: "h-14",
-    md: "h-16",
-    lg: "h-20",
-  };
+  if (size === "lg") {
+    // Login/Signup pages - 192px height
+    return (
+      <div className={cn("flex items-center justify-center mx-auto mb-6", className)}>
+        <img
+          src={logoFull}
+          alt="Oversight"
+          className="w-auto object-contain drop-shadow-lg hover:scale-110 transition-all duration-300"
+          style={{ height: "192px" }}
+        />
+      </div>
+    );
+  }
 
+  // Header logo - 119px height with overflow effect
   return (
-    <div className={cn("flex items-center", className)}>
+    <div className={cn("flex items-center group", className)}>
       <img
         src={logoFull}
         alt="Oversight"
-        className={cn("w-auto object-contain", heightClasses[size])}
+        className="w-auto object-contain hover:scale-110 transition-transform duration-300"
+        style={{ height: "119px", marginRight: "-1px", paddingRight: "2px" }}
       />
     </div>
   );
