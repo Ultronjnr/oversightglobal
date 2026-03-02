@@ -56,12 +56,12 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
   return (
     <div className="min-h-screen bg-[hsl(220,30%,97%)]">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-border/40 shadow-sm">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/40 shadow-sm" style={{ height: "64px" }}>
+        <div className="mx-auto px-6 h-full">
+          <div className="flex items-center justify-between h-full">
             {/* Logo & Nav */}
-            <div className="flex items-center gap-6">
-              <Link to="/">
+            <div className="flex items-center gap-3">
+              <Link to="/" className="flex items-center">
                 <Logo size="sm" />
               </Link>
               
