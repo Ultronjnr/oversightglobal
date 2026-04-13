@@ -10,6 +10,7 @@ import { PRNotificationProvider } from "@/components/PRNotificationProvider";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage";
 import SignupCompany from "./pages/SignupCompany";
 
 import Invite from "./pages/Invite";
@@ -37,8 +38,9 @@ const App = () => (
           <PRNotificationProvider>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Index />} />
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/join/supplier" element={<JoinSupplier />} />
