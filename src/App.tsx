@@ -38,8 +38,8 @@ const App = () => (
           <PRNotificationProvider>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<Index />} />
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/join/supplier" element={<JoinSupplier />} />
