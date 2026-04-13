@@ -10,6 +10,7 @@ import { PRNotificationProvider } from "@/components/PRNotificationProvider";
 // Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import LandingPage from "./pages/LandingPage";
 import SignupCompany from "./pages/SignupCompany";
 
 import Invite from "./pages/Invite";
