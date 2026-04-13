@@ -57,7 +57,7 @@ export default function LandingPage() {
           {/* Split Hero Panels */}
           <div className="grid md:grid-cols-2 gap-6 lg:gap-8 mb-10">
             {/* Left - Chaos Panel */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 to-slate-800 p-6 min-h-[320px] flex flex-col justify-center shadow-2xl">
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-foreground/95 to-foreground/80 p-6 min-h-[320px] flex flex-col justify-center shadow-2xl">
               {/* Scattered paper effect - decorative shapes */}
               <div className="absolute inset-0 opacity-10">
                 <div className="absolute top-4 left-4 w-16 h-20 bg-white/20 rotate-12 rounded" />
@@ -100,7 +100,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right - Control Panel */}
-            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50 p-6 min-h-[320px] flex flex-col justify-center shadow-2xl border border-border/50">
+            <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-secondary to-accent p-6 min-h-[320px] flex flex-col justify-center shadow-2xl border border-border/50">
               {/* Clean desk decorative elements */}
               <div className="absolute bottom-4 right-4 opacity-10">
                 <div className="w-16 h-20 bg-primary/30 rounded" />
