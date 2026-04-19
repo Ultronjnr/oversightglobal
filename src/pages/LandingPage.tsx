@@ -202,7 +202,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="bg-background border-t border-border py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} Oversight. All rights reserved.
+          © {new Date().getFullYear()} Ovasyt. All rights reserved.
         </div>
       </footer>
     </div>
