@@ -25,6 +25,7 @@ import HODPortal from "./pages/portals/HODPortal";
 import FinancePortal from "./pages/portals/FinancePortal";
 import AdminPortal from "./pages/portals/AdminPortal";
 import SupplierPortal from "./pages/portals/SupplierPortal";
+import FreemiumPortal from "./pages/portals/FreemiumPortal";
 
 const queryClient = new QueryClient();
 
@@ -111,6 +112,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["SUPPLIER"]}>
                   <SupplierPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Freemium Portal — simplified workspace for FREEMIUM tier */}
+            <Route
+              path="/freemium/portal"
+              element={
+                <ProtectedRoute>
+                  <FreemiumPortal />
                 </ProtectedRoute>
               }
             />
