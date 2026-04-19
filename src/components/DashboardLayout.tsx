@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { LogOut, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
-import dashboardBg from "@/assets/dashboard-bg.jpg";
 
 interface NavItem {
   label: string;
@@ -55,17 +54,9 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
   };
 
   return (
-    <div className="min-h-screen relative">
-      {/* Premium background */}
-      <div
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${dashboardBg})` }}
-        aria-hidden="true"
-      />
-      <div className="fixed inset-0 -z-10 bg-gradient-to-b from-background/60 via-background/80 to-background/95" aria-hidden="true" />
-
+    <div className="min-h-screen bg-[hsl(220,30%,97%)]">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-border/40 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-border/40 shadow-sm">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo & Nav */}
@@ -137,13 +128,13 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-6 py-10">
+      <main className="container mx-auto px-6 py-8">
         {/* Title */}
-        <div className="mb-8 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/60 shadow-lg px-6 py-5">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             {title}
           </h1>
-          <div className="h-1 w-16 bg-gradient-to-r from-primary to-primary/40 rounded-full mt-3" />
+          <div className="h-1 w-16 bg-primary rounded-full mt-3" />
         </div>
 
         {/* Content */}
