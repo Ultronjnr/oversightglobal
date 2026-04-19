@@ -65,7 +65,7 @@ export default function LandingPage() {
               className="bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, #ffffff 0%, #ffffff 50%, hsl(222 47% 11%) 50%, hsl(222 47% 11%) 100%)",
+                  "linear-gradient(to right, #ffffff 0%, #ffffff 50%, hsl(222 60% 18%) 50%, hsl(222 60% 22%) 100%)",
               }}
             >
               From financial chaos to complete control.
@@ -134,8 +134,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Bridging CTA Button - centered between the two cards */}
-            <div className="md:absolute md:left-1/2 md:-translate-x-1/2 md:bottom-0 md:translate-y-1/2 mt-6 md:mt-0 flex justify-center w-full md:w-auto z-10">
+            {/* Bridging CTA Button - centered below the cards */}
+            <div className="md:absolute md:left-1/2 md:-translate-x-1/2 md:-bottom-8 md:translate-y-full mt-6 md:mt-0 flex justify-center w-full md:w-auto z-10">
               <Link to="/signup/company">
                 <Button
                   size="lg"
@@ -150,9 +150,9 @@ export default function LandingPage() {
       </section>
 
       {/* Bottom Features Section */}
-      <section id="features" className="bg-white py-20">
+      <section id="features" className="bg-white pt-28 pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: iconLostInvoices,
@@ -174,19 +174,17 @@ export default function LandingPage() {
                 title: "Get Audit Ready",
                 description: "Generate compliance packs instantly",
               },
-            ].map((feature, idx) => (
+            ].map((feature) => (
               <div
                 key={feature.title}
-                className={`text-center px-4 ${
-                  idx < 3 ? "lg:border-r lg:border-border/60" : ""
-                }`}
+                className="text-center px-6 py-8 rounded-2xl border border-border bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
               >
-                <div className="flex justify-center mb-5 h-32 items-center">
+                <div className="flex justify-center mb-5 h-28 items-center">
                   <img
                     src={feature.icon}
                     alt={feature.title}
                     loading="lazy"
-                    className="h-32 w-auto object-contain drop-shadow-lg"
+                    className="h-28 w-auto object-contain drop-shadow-lg"
                   />
                 </div>
                 <h3 className="font-bold text-slate-900 text-lg mb-2">
