@@ -52,6 +52,51 @@ export type Database = {
           },
         ]
       }
+      freemium_business_profiles: {
+        Row: {
+          company_name: string
+          company_type: Database["public"]["Enums"]["company_type"]
+          created_at: string
+          full_name: string
+          id: string
+          next_vat_submission_date: string | null
+          registration_number: string
+          updated_at: string
+          user_id: string
+          vat_cycle: Database["public"]["Enums"]["vat_cycle"] | null
+          vat_number: string | null
+          vat_registered: boolean
+        }
+        Insert: {
+          company_name: string
+          company_type: Database["public"]["Enums"]["company_type"]
+          created_at?: string
+          full_name: string
+          id?: string
+          next_vat_submission_date?: string | null
+          registration_number: string
+          updated_at?: string
+          user_id: string
+          vat_cycle?: Database["public"]["Enums"]["vat_cycle"] | null
+          vat_number?: string | null
+          vat_registered?: boolean
+        }
+        Update: {
+          company_name?: string
+          company_type?: Database["public"]["Enums"]["company_type"]
+          created_at?: string
+          full_name?: string
+          id?: string
+          next_vat_submission_date?: string | null
+          registration_number?: string
+          updated_at?: string
+          user_id?: string
+          vat_cycle?: Database["public"]["Enums"]["vat_cycle"] | null
+          vat_number?: string | null
+          vat_registered?: boolean
+        }
+        Relationships: []
+      }
       freemium_documents: {
         Row: {
           description: string | null
@@ -804,6 +849,7 @@ export type Database = {
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
       category_type: "EXPENSE" | "ASSET"
+      company_type: "PTY_LTD" | "PLC" | "NPO"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
       pr_status:
         | "PENDING_HOD_APPROVAL"
@@ -822,6 +868,7 @@ export type Database = {
       subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
+      vat_cycle: "MONTHLY" | "BI_MONTHLY"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -951,6 +998,7 @@ export const Constants = {
     Enums: {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
       category_type: ["EXPENSE", "ASSET"],
+      company_type: ["PTY_LTD", "PLC", "NPO"],
       org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
       pr_status: [
         "PENDING_HOD_APPROVAL",
@@ -965,6 +1013,7 @@ export const Constants = {
       subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
+      vat_cycle: ["MONTHLY", "BI_MONTHLY"],
     },
   },
 } as const
