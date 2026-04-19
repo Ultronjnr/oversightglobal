@@ -4,13 +4,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 const Index = () => {
-  const { user, role, isLoading } = useAuth();
+  const { user, role, profile, isLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!isLoading) {
       if (user && role) {
-        // Redirect based on role
+        // FREEMIUM tier gets simplified portal regardless of role
+        if (profile?.tier === "FREEMIUM") {
+          navigate("/freemium/portal");
+          return;
+        }
         const rolePortalMap: Record<string, string> = {
           EMPLOYEE: "/employee/portal",
           HOD: "/hod/portal",
@@ -23,7 +27,7 @@ const Index = () => {
         navigate("/login");
       }
     }
-  }, [user, role, isLoading, navigate]);
+  }, [user, role, profile, isLoading, navigate]);
 
   return <LoadingScreen />;
 };
