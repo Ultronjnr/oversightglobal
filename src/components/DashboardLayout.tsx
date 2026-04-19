@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { LogOut, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
+import dashboardBg from "@/assets/dashboard-bg.jpg";
 
 interface NavItem {
   label: string;
