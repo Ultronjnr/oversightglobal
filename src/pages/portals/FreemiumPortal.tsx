@@ -51,6 +51,26 @@ export default function FreemiumPortal() {
   const [bp, setBp] = useState<BusinessProfile | null>(null);
   const [docCount, setDocCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!user || upgrading) return;
+    setUpgrading(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ tier: "STANDARD" })
+      .eq("id", user.id);
+    if (error) {
+      setUpgrading(false);
+      toast.error("Upgrade failed. Please try again.");
+      return;
+    }
+    toast.success("You now have access to full system features");
+    // Reload so AuthContext re-fetches the profile and routing picks up the new tier
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 800);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -161,11 +181,12 @@ export default function FreemiumPortal() {
         <Button
           variant="gradient"
           size="sm"
-          onClick={() => toast.info("Upgrade flow coming soon")}
+          onClick={handleUpgrade}
+          disabled={upgrading}
           className="gap-2"
         >
           <Sparkles className="h-4 w-4" />
-          Upgrade Plan
+          {upgrading ? "Upgrading..." : "Upgrade Plan"}
         </Button>
       </div>
 
@@ -407,10 +428,11 @@ export default function FreemiumPortal() {
               </div>
               <Button
                 variant="secondary"
-                onClick={() => toast.info("Upgrade flow coming soon")}
+                onClick={handleUpgrade}
+                disabled={upgrading}
                 className="gap-2"
               >
-                Upgrade
+                {upgrading ? "Upgrading..." : "Upgrade"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
