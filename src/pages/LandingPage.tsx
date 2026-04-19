@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 export default function LandingPage() {
   return (
     <div
-      className="min-h-screen bg-background relative bg-fixed bg-cover bg-center before:absolute before:inset-0 before:bg-background/80 before:backdrop-blur-sm before:pointer-events-none before:z-0"
+      className="min-h-screen bg-background relative bg-fixed bg-cover bg-center before:absolute before:inset-0 before:bg-gradient-to-b before:from-background/85 before:via-background/80 before:to-background/90 before:backdrop-blur-md before:pointer-events-none before:z-0"
       style={{ backgroundImage: `url(${landingBg})` }}
     >
       {/* Navigation */}
