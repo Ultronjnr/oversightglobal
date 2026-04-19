@@ -52,6 +52,33 @@ export type Database = {
           },
         ]
       }
+      freemium_documents: {
+        Row: {
+          description: string | null
+          file_name: string
+          file_path: string
+          id: string
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          description?: string | null
+          file_name: string
+          file_path: string
+          id?: string
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       invitations: {
         Row: {
           created_at: string
