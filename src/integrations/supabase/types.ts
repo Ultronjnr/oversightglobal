@@ -274,6 +274,7 @@ export type Database = {
           phone: string | null
           status: Database["public"]["Enums"]["user_status"]
           surname: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
           updated_at: string
         }
         Insert: {
@@ -286,6 +287,7 @@ export type Database = {
           phone?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           surname?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
         }
         Update: {
@@ -298,6 +300,7 @@ export type Database = {
           phone?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           surname?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
           updated_at?: string
         }
         Relationships: [
@@ -789,6 +792,7 @@ export type Database = {
         | "ACCEPTED"
         | "REJECTED"
         | "EXPIRED"
+      subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
     }
@@ -931,6 +935,7 @@ export const Constants = {
         "SPLIT",
       ],
       quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
+      subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
     },
