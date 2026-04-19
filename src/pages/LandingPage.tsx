@@ -51,7 +51,7 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative z-10 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-center text-foreground mb-12">
             From financial chaos to{" "}
@@ -159,7 +159,7 @@ export default function LandingPage() {
       </section>
 
       {/* Feature Cards */}
-      <section id="features" className="bg-secondary/50 py-16">
+      <section id="features" className="relative z-10 bg-secondary/50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
@@ -198,7 +198,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-background border-t border-border py-8">
+      <footer className="relative z-10 bg-background border-t border-border py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Oversight. All rights reserved.
         </div>
