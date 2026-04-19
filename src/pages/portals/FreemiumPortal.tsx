@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { FreemiumDocumentStorage } from "@/components/freemium/FreemiumDocumentStorage";
+import { FreemiumBusinessProfile } from "@/components/freemium/FreemiumBusinessProfile";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -163,35 +164,39 @@ export default function FreemiumPortal() {
       {view === "documents" && <FreemiumDocumentStorage />}
 
       {view === "profile" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCog className="h-5 w-5 text-primary" />
-              Profile Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 max-w-xl">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Name</Label>
-                <Input defaultValue={profile?.name || ""} />
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCog className="h-5 w-5 text-primary" />
+                Profile Settings
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Name</Label>
+                  <Input defaultValue={profile?.name || ""} />
+                </div>
+                <div>
+                  <Label>Surname</Label>
+                  <Input defaultValue={profile?.surname || ""} />
+                </div>
               </div>
               <div>
-                <Label>Surname</Label>
-                <Input defaultValue={profile?.surname || ""} />
+                <Label>Email</Label>
+                <Input defaultValue={profile?.email || ""} disabled />
               </div>
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input defaultValue={profile?.email || ""} disabled />
-            </div>
-            <div>
-              <Label>Phone</Label>
-              <Input defaultValue={profile?.phone || ""} />
-            </div>
-            <Button onClick={() => toast.success("Profile saved")}>Save changes</Button>
-          </CardContent>
-        </Card>
+              <div>
+                <Label>Phone</Label>
+                <Input defaultValue={profile?.phone || ""} />
+              </div>
+              <Button onClick={() => toast.success("Profile saved")}>Save changes</Button>
+            </CardContent>
+          </Card>
+
+          <FreemiumBusinessProfile />
+        </div>
       )}
     </DashboardLayout>
   );
