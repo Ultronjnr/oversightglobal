@@ -5,7 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { LayoutDashboard, FolderOpen, UserCog, Sparkles, Upload } from "lucide-react";
+import {
+  LayoutDashboard,
+  FolderOpen,
+  UserCog,
+  Upload,
+  Receipt,
+  Landmark,
+  Wallet,
+  AlertTriangle,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 import { toast } from "sonner";
 
 type View = "dashboard" | "documents" | "profile";
@@ -15,24 +26,45 @@ export default function FreemiumPortal() {
   const [view, setView] = useState<View>("dashboard");
 
   const navItems = [
-    { label: "Dashboard", href: "#dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
-    { label: "Document Storage", href: "#documents", icon: <FolderOpen className="h-4 w-4" /> },
-    { label: "Profile Settings", href: "#profile", icon: <UserCog className="h-4 w-4" /> },
+    { label: "Dashboard", key: "dashboard" as View, icon: <LayoutDashboard className="h-4 w-4" /> },
+    { label: "Document Storage", key: "documents" as View, icon: <FolderOpen className="h-4 w-4" /> },
+    { label: "Profile Settings", key: "profile" as View, icon: <UserCog className="h-4 w-4" /> },
+  ];
+
+  const displayName = profile?.name
+    ? `${profile.name}${profile.surname ? " " + profile.surname : ""}`
+    : "there";
+
+  const estimationCards = [
+    {
+      title: "VAT Estimation",
+      description: "Estimate your VAT liability based on stored invoices.",
+      icon: <Receipt className="h-5 w-5 text-primary" />,
+    },
+    {
+      title: "Income Tax Estimation",
+      description: "Get a quick view of your projected income tax.",
+      icon: <Landmark className="h-5 w-5 text-primary" />,
+    },
+    {
+      title: "PAYE Estimation",
+      description: "Estimate Pay-As-You-Earn obligations.",
+      icon: <Wallet className="h-5 w-5 text-primary" />,
+    },
   ];
 
   return (
     <DashboardLayout title="Freemium Workspace" navItems={[]}>
-      {/* Simple in-page tabs (Freemium-only nav) */}
+      {/* Freemium-only nav tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
         {navItems.map((item) => {
-          const key = item.href.replace("#", "") as View;
-          const active = view === key;
+          const active = view === item.key;
           return (
             <Button
-              key={key}
+              key={item.key}
               variant={active ? "default" : "outline"}
               size="sm"
-              onClick={() => setView(key)}
+              onClick={() => setView(item.key)}
               className="gap-2"
             >
               {item.icon}
@@ -43,28 +75,85 @@ export default function FreemiumPortal() {
       </div>
 
       {view === "dashboard" && (
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Welcome, {profile?.name || "there"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground space-y-2">
-              <p>You're on the <strong>Freemium</strong> plan.</p>
-              <p>Store documents and manage your profile. Upgrade to Standard to unlock Purchase Requisitions, Approvals, Suppliers and Finance workflows.</p>
+        <div className="space-y-6">
+          {/* 1. Welcome Section */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="py-8">
+              <h2 className="text-2xl font-bold text-foreground">
+                Welcome, {displayName}
+              </h2>
+              <p className="text-muted-foreground mt-2 max-w-2xl">
+                Understand your financial position and avoid unnecessary tax losses.
+              </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Upgrade to Standard</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Get the full procurement suite: PRs, multi-stage approvals, supplier RFQs, invoice & payment tracking.
-              </p>
-              <Button onClick={() => toast.info("Upgrade flow coming soon")}>Upgrade now</Button>
+
+          {/* 2. Estimation Cards */}
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Tax Estimations
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              {estimationCards.map((card) => (
+                <Card key={card.title} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-primary/10">{card.icon}</div>
+                      <CardTitle className="text-base">{card.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{card.description}</p>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => toast.info(`${card.title} coming soon`)}
+                    >
+                      Calculate Estimate
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          {/* 3. Quick Insight */}
+          <Card className="border-warning/30 bg-warning/5">
+            <CardContent className="py-5 flex items-start gap-3">
+              <div className="p-2 rounded-lg bg-warning/15">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Quick Insight</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  You may be overpaying tax due to missing documentation.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 4. Upgrade Prompt */}
+          <Card className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground border-0">
+            <CardContent className="py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <Sparkles className="h-6 w-6 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-base">
+                    Unlock full financial control and real-time tracking
+                  </p>
+                  <p className="text-sm opacity-90 mt-1">
+                    Upgrade to Standard for PRs, approvals, suppliers and finance workflows.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="secondary"
+                onClick={() => toast.info("Upgrade flow coming soon")}
+                className="gap-2"
+              >
+                Upgrade
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </CardContent>
           </Card>
         </div>
