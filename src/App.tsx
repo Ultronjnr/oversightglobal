@@ -120,7 +120,7 @@ const App = () => (
             <Route
               path="/freemium/portal"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute allowFreemium>
                   <FreemiumPortal />
                 </ProtectedRoute>
               }
