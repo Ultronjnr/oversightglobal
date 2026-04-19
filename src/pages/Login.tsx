@@ -79,7 +79,15 @@ export default function Login() {
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
-      <div className="auth-card animate-slide-up">
+      <div className="auth-card animate-slide-up relative">
+        {/* Back to home */}
+        <Link
+          to="/"
+          className="absolute top-4 left-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to home
+        </Link>
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
