@@ -428,10 +428,11 @@ export default function FreemiumPortal() {
               </div>
               <Button
                 variant="secondary"
-                onClick={() => toast.info("Upgrade flow coming soon")}
+                onClick={handleUpgrade}
+                disabled={upgrading}
                 className="gap-2"
               >
-                Upgrade
+                {upgrading ? "Upgrading..." : "Upgrade"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </CardContent>
