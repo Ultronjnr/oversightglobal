@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import logoImage from "@/assets/ovasyt-logo.jpeg";
+import logoImage from "@/assets/ovasyt-logo.png";
 
 interface LogoProps {
   className?: string;
@@ -7,13 +7,11 @@ interface LogoProps {
   size?: "sm" | "md" | "lg";
 }
 
-export function Logo({ className, iconOnly = false, size = "md" }: LogoProps) {
-  // Heights tuned to match the prior visual weight of the Oversight mark.
-  // The new logo is wide (logo + wordmark), so we constrain by height only.
+export function Logo({ className, size = "md" }: LogoProps) {
   const sizeClasses = {
-    sm: "h-8",
-    md: "h-10",
-    lg: "h-14",
+    sm: "h-12",
+    md: "h-16",
+    lg: "h-24",
   };
 
   return (
