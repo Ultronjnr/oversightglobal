@@ -170,29 +170,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* CTA */}
-          <div className="text-center flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/signup/company">
-              <Button
-                size="lg"
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground text-lg px-10 py-6 font-semibold shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
-              >
-                Start Free Check
-              </Button>
-            </Link>
-            <Link to="/login">
-              <Button
-                variant="outline"
-                size="lg"
-                className="text-lg px-10 py-6 font-semibold backdrop-blur-md bg-background/60"
-              >
-                Sign In
-              </Button>
-            </Link>
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            No credit card required · Setup in minutes
-          </p>
         </div>
       </section>
 
