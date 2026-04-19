@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import landingBg from "@/assets/landing-bg.jpg";
 import {
   AlertTriangle,
   CircleAlert,
@@ -15,7 +16,10 @@ import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background relative bg-fixed bg-cover bg-center before:absolute before:inset-0 before:bg-background/80 before:backdrop-blur-sm before:pointer-events-none before:z-0"
+      style={{ backgroundImage: `url(${landingBg})` }}
+    >
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
