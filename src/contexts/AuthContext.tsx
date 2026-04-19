@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { logError } from "@/lib/error-handler";
 
 type AppRole = "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER";
+type SubscriptionTier = "FREEMIUM" | "STANDARD" | "ADMIN";
 
 interface UserProfile {
   id: string;
@@ -15,6 +16,7 @@ interface UserProfile {
   department?: string;
   organization_id?: string;
   phone?: string;
+  tier?: SubscriptionTier;
 }
 
 interface AuthContextType {
@@ -61,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           department: profileData.department,
           organization_id: profileData.organization_id,
           phone: profileData.phone,
+          tier: (profileData as { tier?: SubscriptionTier }).tier,
         });
       }
 
