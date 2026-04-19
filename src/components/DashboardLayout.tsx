@@ -131,7 +131,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
       <main className="container mx-auto px-6 py-8">
         {/* Title */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
             {title}
           </h1>
           <div className="h-1 w-16 bg-primary rounded-full mt-3" />

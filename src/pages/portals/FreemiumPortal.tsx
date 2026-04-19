@@ -269,13 +269,17 @@ export default function FreemiumPortal() {
             </Card>
           </div>
 
-          {/* Welcome */}
+          {/* Welcome — compact strip to mirror Admin's clean stats→tabs rhythm */}
           <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardContent className="py-6">
-              <h2 className="text-xl font-bold text-foreground">Welcome back, {displayName}</h2>
-              <p className="text-muted-foreground mt-1 max-w-2xl">
-                Understand your financial position and avoid unnecessary tax losses.
-              </p>
+            <CardContent className="py-4 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Welcome back, {displayName}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Understand your financial position and avoid unnecessary tax losses.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
