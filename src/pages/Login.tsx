@@ -110,7 +110,7 @@ export default function Login() {
               <span>Quote Request & Approval System</span>
             </div>
             <h1 className="text-4xl font-bold leading-tight tracking-tight">
-              Welcome back to <br /> Oversight
+              Welcome back to <br /> Ovasyt
             </h1>
             <p className="text-primary-foreground/80 text-base max-w-md">
               Sign in to manage purchase requisitions, approvals, and supplier
@@ -156,7 +156,7 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 text-xs text-primary-foreground/70">
-          © {new Date().getFullYear()} Oversight. All rights reserved.
+          © {new Date().getFullYear()} Ovasyt. All rights reserved.
         </div>
       </div>
 
@@ -253,7 +253,7 @@ export default function Login() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-3 text-muted-foreground tracking-wider">
-                  New to Oversight?
+                  New to Ovasyt?
                 </span>
               </div>
             </div>
