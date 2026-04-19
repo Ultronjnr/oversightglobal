@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { FreemiumDocumentStorage } from "@/components/freemium/FreemiumDocumentStorage";
 import { FreemiumBusinessProfile } from "@/components/freemium/FreemiumBusinessProfile";
+import { VatCountdownCard } from "@/components/freemium/VatCountdownCard";
 import {
   LayoutDashboard,
   FolderOpen,
