@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import { FreemiumDocumentStorage } from "@/components/freemium/FreemiumDocumentStorage";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -159,25 +160,7 @@ export default function FreemiumPortal() {
         </div>
       )}
 
-      {view === "documents" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FolderOpen className="h-5 w-5 text-primary" />
-              Document Storage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="border-2 border-dashed border-border rounded-xl p-10 text-center">
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Drag & drop files here, or click to upload.
-              </p>
-              <Button onClick={() => toast.info("Upload coming soon")}>Upload document</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {view === "documents" && <FreemiumDocumentStorage />}
 
       {view === "profile" && (
         <Card>
