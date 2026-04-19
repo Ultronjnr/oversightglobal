@@ -91,6 +91,9 @@ export default function FreemiumPortal() {
             </CardContent>
           </Card>
 
+          {/* VAT Countdown Reminder */}
+          <VatCountdownCard onSetDate={() => setView("profile")} />
+
           {/* 2. Estimation Cards */}
           <div>
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
