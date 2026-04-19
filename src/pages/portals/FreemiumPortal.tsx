@@ -181,11 +181,12 @@ export default function FreemiumPortal() {
         <Button
           variant="gradient"
           size="sm"
-          onClick={() => toast.info("Upgrade flow coming soon")}
+          onClick={handleUpgrade}
+          disabled={upgrading}
           className="gap-2"
         >
           <Sparkles className="h-4 w-4" />
-          Upgrade Plan
+          {upgrading ? "Upgrading..." : "Upgrade Plan"}
         </Button>
       </div>
 
