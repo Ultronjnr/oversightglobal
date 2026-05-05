@@ -11,6 +11,7 @@ import type { PRMessage } from "@/types/pr-message.types";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const roleColors: Record<string, string> = {
   EMPLOYEE: "bg-primary/10 text-primary border-primary/20",
