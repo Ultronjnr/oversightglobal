@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { getPRMessages, sendPRMessage } from "@/services/pr-messaging.service";
 import type { PRMessage } from "@/types/pr-message.types";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 const roleColors: Record<string, string> = {
   EMPLOYEE: "bg-primary/10 text-primary border-primary/20",
@@ -26,6 +28,8 @@ interface PRChatPanelProps {
 }
 
 export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
+  const { user } = useAuth();
+  const currentUserId = user?.id ?? "";
   const [messages, setMessages] = useState<PRMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -82,8 +86,13 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
     });
 
     if (result.success && result.data) {
-      setMessages((prev) => [...prev, result.data!]);
+      // Dedupe: poll may have already fetched it
+      setMessages((prev) =>
+        prev.some((m) => m.id === result.data!.id) ? prev : [...prev, result.data!]
+      );
       setNewMessage("");
+      // Refresh from server to ensure consistency with both participants
+      fetchMessages(true);
     } else {
       toast.error(result.error || "Failed to send message");
     }
@@ -126,58 +135,87 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
               No messages yet. Start the conversation.
             </div>
           ) : (
-            messages.map((msg) => (
-              <div key={msg.id} className="flex flex-col gap-1">
-                {msg.isSystemNote ? (
-                  // System note — subtle centered divider style
-                  <div className="flex items-center gap-2 py-1">
+            messages.map((msg) => {
+              if (msg.isSystemNote) {
+                return (
+                  <div key={msg.id} className="flex items-center gap-2 py-1">
                     <div className="h-px flex-1 bg-border" />
-                    <span className="text-xs text-muted-foreground italic px-2">
+                    <span className="text-xs text-muted-foreground italic px-2 text-center">
                       {msg.messageText}
                     </span>
                     <div className="h-px flex-1 bg-border" />
                   </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm text-foreground">
-                        {msg.senderName || "Unknown"}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs py-0 ${roleColors[msg.senderRole] || ""}`}
-                      >
-                        {msg.senderRole}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(msg.createdAt), "dd MMM yyyy, HH:mm")}
-                      </span>
-                    </div>
-                    {msg.messageText && (
-                      <p className="text-sm text-foreground/90 leading-relaxed">
-                        {msg.messageText}
-                      </p>
+                );
+              }
+
+              const isMine = msg.senderUserId === currentUserId;
+
+              return (
+                <div
+                  key={msg.id}
+                  className={cn("flex w-full", isMine ? "justify-end" : "justify-start")}
+                >
+                  <div
+                    className={cn(
+                      "flex flex-col gap-1 max-w-[78%]",
+                      isMine ? "items-end" : "items-start"
                     )}
-                    {msg.attachments.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-1">
-                        {msg.attachments.map((att) => (
-                          <a
-                            key={att.id}
-                            href={att.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline bg-primary/5 border border-primary/20 rounded px-2 py-1"
-                          >
-                            <Paperclip className="h-3 w-3" />
-                            {att.fileName}
-                          </a>
-                        ))}
+                  >
+                    {!isMine && (
+                      <div className="flex items-center gap-2 px-1">
+                        <span className="font-medium text-xs text-foreground">
+                          {msg.senderName || "Unknown"}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] py-0 px-1.5 ${roleColors[msg.senderRole] || ""}`}
+                        >
+                          {msg.senderRole}
+                        </Badge>
                       </div>
                     )}
-                  </>
-                )}
-              </div>
-            ))
+
+                    <div
+                      className={cn(
+                        "rounded-2xl px-3 py-2 text-sm leading-relaxed shadow-sm",
+                        isMine
+                          ? "bg-primary text-primary-foreground rounded-br-sm"
+                          : "bg-muted text-foreground rounded-bl-sm"
+                      )}
+                    >
+                      {msg.messageText && (
+                        <p className="whitespace-pre-wrap break-words">{msg.messageText}</p>
+                      )}
+                      {msg.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {msg.attachments.map((att) => (
+                            <a
+                              key={att.id}
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={cn(
+                                "inline-flex items-center gap-1.5 text-xs rounded px-2 py-1 border",
+                                isMine
+                                  ? "bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:underline"
+                                  : "bg-background border-border text-primary hover:underline"
+                              )}
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              {att.fileName}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] text-muted-foreground px-1">
+                      {format(new Date(msg.createdAt), "dd MMM, HH:mm")}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
           )}
           {/* Scroll anchor */}
           <div ref={scrollAnchorRef} />
