@@ -21,6 +21,7 @@ const roleColors: Record<string, string> = {
 };
 
 const POLL_INTERVAL_MS = 5000;
+const FALLBACK_POLL_INTERVAL_MS = 15000;
 
 interface PRChatPanelProps {
   prId: string;
@@ -63,12 +64,36 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
   useEffect(() => {
     pollingRef.current = setInterval(() => {
       fetchMessages(true);
-    }, POLL_INTERVAL_MS);
+    }, FALLBACK_POLL_INTERVAL_MS);
 
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
   }, [fetchMessages]);
+
+  // Realtime subscription — instant updates for both participants
+  useEffect(() => {
+    const channel = supabase
+      .channel(`pr_messages:${prId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "pr_messages",
+          filter: `pr_id=eq.${prId}`,
+        },
+        () => {
+          // Re-fetch so attachments + role/name joins stay consistent
+          fetchMessages(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [prId, fetchMessages]);
 
   // Scroll to bottom whenever messages update
   useEffect(() => {
