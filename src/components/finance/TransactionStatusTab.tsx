@@ -26,6 +26,23 @@ export type TransactionStatusFilter =
   | "REIMBURSEMENTS"
   | "BATCHES";
 
+export type TransactionStatusCounts = Record<TransactionStatusFilter, number>;
+
+export async function getTransactionStatusCounts(): Promise<TransactionStatusCounts> {
+  const filters: TransactionStatusFilter[] = [
+    "PARTIALLY_PAID",
+    "FULLY_PAID",
+    "OVERDUE",
+    "REIMBURSEMENTS",
+    "BATCHES",
+  ];
+  const results = await Promise.all(filters.map((f) => loadRows(f)));
+  return filters.reduce((acc, f, i) => {
+    acc[f] = results[i].length;
+    return acc;
+  }, {} as TransactionStatusCounts);
+}
+
 interface TransactionRow {
   id: string;
   transactionId: string;
