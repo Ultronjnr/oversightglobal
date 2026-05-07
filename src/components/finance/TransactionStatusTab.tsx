@@ -282,6 +282,23 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
 
 async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow[]> {
   try {
+    if (filter === "REIMBURSEMENTS") {
+      const { data } = await supabase
+        .from("reimbursements")
+        .select("id")
+        .eq("status", "PENDING");
+      return (data || []).map((r: any) => ({
+        id: r.id,
+        transactionId: r.id.slice(0, 8),
+        party: "",
+        totalAmount: 0,
+        amountPaid: 0,
+        remaining: 0,
+        status: "Pending",
+        date: "",
+      }));
+    }
+
     if (filter === "BATCHES") {
       const { data } = await supabase
         .from("payment_batches")
