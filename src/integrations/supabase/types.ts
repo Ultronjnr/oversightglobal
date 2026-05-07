@@ -695,6 +695,63 @@ export type Database = {
           },
         ]
       }
+      reimbursements: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          currency: string
+          description: string
+          employee_id: string
+          employee_name: string
+          id: string
+          notes: string | null
+          organization_id: string
+          paid_at: string | null
+          paid_by_employee: boolean
+          proof_document_url: string | null
+          status: Database["public"]["Enums"]["reimbursement_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          currency?: string
+          description: string
+          employee_id: string
+          employee_name: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          paid_at?: string | null
+          paid_by_employee?: boolean
+          proof_document_url?: string | null
+          status?: Database["public"]["Enums"]["reimbursement_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          employee_id?: string
+          employee_name?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          paid_by_employee?: boolean
+          proof_document_url?: string | null
+          status?: Database["public"]["Enums"]["reimbursement_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       supplier_invitations: {
         Row: {
           company_name: string
@@ -940,6 +997,7 @@ export type Database = {
         | "ACCEPTED"
         | "REJECTED"
         | "EXPIRED"
+      reimbursement_status: "PENDING" | "APPROVED" | "DECLINED" | "PAID"
       subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
@@ -1085,6 +1143,7 @@ export const Constants = {
         "SPLIT",
       ],
       quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
+      reimbursement_status: ["PENDING", "APPROVED", "DECLINED", "PAID"],
       subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],

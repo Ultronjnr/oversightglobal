@@ -64,6 +64,7 @@ import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTa
 import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
 import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/components/finance/TransactionStatusTab";
 import { BatchesTab } from "@/components/finance/BatchesTab";
+import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
@@ -535,7 +536,7 @@ export default function FinancePortal() {
                 <TransactionStatusTab filter="OVERDUE" />
               </TabsContent>
               <TabsContent value="reimbursements">
-                <TransactionStatusTab filter="REIMBURSEMENTS" />
+                <ReimbursementsTab />
               </TabsContent>
               <TabsContent value="batches">
                 <BatchesTab />
