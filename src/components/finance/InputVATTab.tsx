@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Percent, AlertTriangle } from "lucide-react";
+import { Loader2, Percent } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/ui/stat-card";
