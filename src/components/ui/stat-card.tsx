@@ -30,22 +30,26 @@ export function StatCard({
 
   return (
     <div className={cn(
-      "bg-white rounded-xl border border-border/50 p-6 shadow-sm hover:shadow-md transition-shadow",
+      "bg-white rounded-xl border border-border/50 p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow",
       className
     )}>
-      <div className="flex items-start justify-between">
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground font-medium">{label}</p>
-          <p className={cn(
-            "text-4xl font-bold",
-            colorClasses[valueColor]
-          )}>
-            {isLoading ? "-" : value}
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium truncate">{label}</p>
+          {isLoading ? (
+            <div className="h-8 sm:h-9 lg:h-10 w-2/3 rounded-md bg-muted animate-pulse" />
+          ) : (
+            <p className={cn(
+              "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words",
+              colorClasses[valueColor]
+            )}>
+              {value}
+            </p>
+          )}
           {footer && <div className="pt-1">{footer}</div>}
         </div>
         {icon && (
-          <div className="text-muted-foreground/50">
+          <div className="text-muted-foreground/50 flex-shrink-0">
             {icon}
           </div>
         )}
