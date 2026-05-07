@@ -30,6 +30,7 @@ import {
   Undo2,
   Layers,
 } from "lucide-react";
+import { Percent } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ import { TransactionStatusTab, type TransactionStatusFilter } from "@/components
 import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/components/finance/TransactionStatusTab";
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
+import { InputVATTab } from "@/components/finance/InputVATTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
