@@ -228,6 +228,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          organization_id: string | null
+          related_transaction_id: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          organization_id?: string | null
+          related_transaction_id?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          organization_id?: string | null
+          related_transaction_id?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           address: string | null
@@ -881,6 +917,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _notify_role: {
+        Args: {
+          _message: string
+          _org_id: string
+          _related: string
+          _role: Database["public"]["Enums"]["app_role"]
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: undefined
+      }
+      _notify_users: {
+        Args: {
+          _message: string
+          _org_id: string
+          _related: string
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+          _user_ids: string[]
+        }
+        Returns: undefined
+      }
       accept_invitation: {
         Args: { _email: string; _token: string }
         Returns: boolean
@@ -982,6 +1040,18 @@ export type Database = {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
       category_type: "EXPENSE" | "ASSET"
       company_type: "PTY_LTD" | "PLC" | "NPO"
+      notification_type:
+        | "requisition_submitted"
+        | "requisition_approved"
+        | "requisition_declined"
+        | "reimbursement_submitted"
+        | "reimbursement_approved"
+        | "partial_payment"
+        | "full_payment"
+        | "batch_created"
+        | "overdue_transaction"
+        | "invoice_uploaded"
+        | "ai_receipt_matched"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
       pr_status:
         | "PENDING_HOD_APPROVAL"
@@ -1132,6 +1202,19 @@ export const Constants = {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
       category_type: ["EXPENSE", "ASSET"],
       company_type: ["PTY_LTD", "PLC", "NPO"],
+      notification_type: [
+        "requisition_submitted",
+        "requisition_approved",
+        "requisition_declined",
+        "reimbursement_submitted",
+        "reimbursement_approved",
+        "partial_payment",
+        "full_payment",
+        "batch_created",
+        "overdue_transaction",
+        "invoice_uploaded",
+        "ai_receipt_matched",
+      ],
       org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
       pr_status: [
         "PENDING_HOD_APPROVAL",
