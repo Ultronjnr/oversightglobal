@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -145,9 +145,8 @@ export function BatchesTab() {
             const isOpen = expanded.has(b.id);
             const status = batchStatus(b);
             return (
-              <>
+              <Fragment key={b.id}>
                 <TableRow
-                  key={b.id}
                   className="cursor-pointer hover:bg-muted/20"
                   onClick={() => toggleExpand(b.id)}
                 >
@@ -182,7 +181,7 @@ export function BatchesTab() {
                   </TableCell>
                 </TableRow>
                 {isOpen && (
-                  <TableRow key={`${b.id}-detail`} className="bg-muted/10 hover:bg-muted/10">
+                  <TableRow className="bg-muted/10 hover:bg-muted/10">
                     <TableCell colSpan={6} className="p-4">
                       {b.notes && (
                         <p className="text-sm text-muted-foreground mb-3">
@@ -271,7 +270,7 @@ export function BatchesTab() {
                     </TableCell>
                   </TableRow>
                 )}
-              </>
+              </Fragment>
             );
           })}
         </TableBody>

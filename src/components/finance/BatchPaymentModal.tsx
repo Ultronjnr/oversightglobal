@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Banknote, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 
@@ -38,8 +38,10 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Initialize amounts when items change / modal opens
-  useMemo(() => {
+  // Initialize amounts when items change / modal opens.
+  // NOTE: previously this used useMemo, which is an anti-pattern for state
+  // updates and could trigger render loops in strict mode.
+  useEffect(() => {
     if (open) {
       const init: Record<string, string> = {};
       items.forEach((it) => {
