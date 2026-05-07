@@ -68,6 +68,7 @@ import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -129,6 +130,25 @@ export default function FinancePortal() {
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
+  const notifCounts = useNotificationCounts();
+  const approvalsNotif =
+    (notifCounts["requisition_submitted"] || 0) + (notifCounts["requisition_approved"] || 0);
+  const invoicesNotif = notifCounts["invoice_uploaded"] || 0;
+  const quotesNotif =
+    (notifCounts["quote_received"] || 0) + (notifCounts["quote_submitted"] || 0);
+  const reimbNotif =
+    (notifCounts["reimbursement_submitted"] || 0) + (notifCounts["ai_receipt_matched"] || 0);
+  const paymentsNotif =
+    (notifCounts["partial_payment"] || 0) + (notifCounts["full_payment"] || 0);
+  const overdueNotif = notifCounts["overdue_transaction"] || 0;
+  const batchesNotif = notifCounts["batch_created"] || 0;
+
+  const NotifDot = ({ n }: { n: number }) =>
+    n > 0 ? (
+      <span className="ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold flex items-center justify-center">
+        {n > 99 ? "99+" : n}
+      </span>
+    ) : null;
 
   const navItems = [
     { label: "My Portal", href: "/finance/portal", icon: <User className="h-4 w-4" /> },
@@ -458,6 +478,7 @@ export default function FinancePortal() {
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <DollarSign className="h-4 w-4" />
                   <span className="text-sm">Approvals</span>
+                  <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Building2 className="h-4 w-4" />
@@ -466,14 +487,17 @@ export default function FinancePortal() {
                 <TabsTrigger value="quotes" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <FileText className="h-4 w-4" />
                   <span className="text-sm">Quotes</span>
+                  <NotifDot n={quotesNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="invoices" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Receipt className="h-4 w-4" />
                   <span className="text-sm">Invoices</span>
+                  <NotifDot n={invoicesNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="payments" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Banknote className="h-4 w-4" />
                   <span className="text-sm">Approved – Not Paid</span>
+                  <NotifDot n={paymentsNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="partially_paid" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Wallet className="h-4 w-4" />
@@ -489,16 +513,19 @@ export default function FinancePortal() {
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Overdue (30+)</span>
                   <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">{tabCounts.OVERDUE}</Badge>
+                  <NotifDot n={overdueNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="reimbursements" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Undo2 className="h-4 w-4" />
                   <span className="text-sm">Reimbursements</span>
                   <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">{tabCounts.REIMBURSEMENTS}</Badge>
+                  <NotifDot n={reimbNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="batches" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Layers className="h-4 w-4" />
                   <span className="text-sm">Batches</span>
                   <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
+                  <NotifDot n={batchesNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="input_vat" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
