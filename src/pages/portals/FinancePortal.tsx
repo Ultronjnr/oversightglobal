@@ -63,6 +63,7 @@ import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
 import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/components/finance/TransactionStatusTab";
+import { BatchesTab } from "@/components/finance/BatchesTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
@@ -537,7 +538,7 @@ export default function FinancePortal() {
                 <TransactionStatusTab filter="REIMBURSEMENTS" />
               </TabsContent>
               <TabsContent value="batches">
-                <TransactionStatusTab filter="BATCHES" />
+                <BatchesTab />
               </TabsContent>
             </Tabs>
           )}
