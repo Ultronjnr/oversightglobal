@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -671,9 +671,8 @@ export default function FinancePortal() {
                   </TableHeader>
                   <TableBody>
                     {prs.map((pr) => (
-                      <>
+                      <Fragment key={pr.id}>
                         <TableRow
-                          key={pr.id}
                           className="cursor-pointer hover:bg-muted/20"
                           onClick={() => toggleRow(pr.id)}
                         >
