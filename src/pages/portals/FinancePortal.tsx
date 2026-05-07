@@ -500,6 +500,10 @@ export default function FinancePortal() {
                   Batches
                   <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
                 </TabsTrigger>
+                <TabsTrigger value="input_vat" className="flex items-center gap-2">
+                  <Percent className="h-4 w-4" />
+                  Input VAT
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -620,6 +624,9 @@ export default function FinancePortal() {
               </TabsContent>
               <TabsContent value="batches">
                 <BatchesTab />
+              </TabsContent>
+              <TabsContent value="input_vat">
+                <InputVATTab />
               </TabsContent>
             </Tabs>
           )}
