@@ -30,6 +30,7 @@ import {
   Undo2,
   Layers,
 } from "lucide-react";
+import { Percent } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ import { TransactionStatusTab, type TransactionStatusFilter } from "@/components
 import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/components/finance/TransactionStatusTab";
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
+import { InputVATTab } from "@/components/finance/InputVATTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
@@ -498,6 +500,10 @@ export default function FinancePortal() {
                   Batches
                   <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
                 </TabsTrigger>
+                <TabsTrigger value="input_vat" className="flex items-center gap-2">
+                  <Percent className="h-4 w-4" />
+                  Input VAT
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -618,6 +624,9 @@ export default function FinancePortal() {
               </TabsContent>
               <TabsContent value="batches">
                 <BatchesTab />
+              </TabsContent>
+              <TabsContent value="input_vat">
+                <InputVATTab />
               </TabsContent>
             </Tabs>
           )}
