@@ -26,15 +26,15 @@ export function PRChatSlidePanel({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — sits above any open dialog overlay so the chat is never blocked */}
       <div
-        className="fixed inset-0 z-40 bg-black/20"
+        className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-md bg-background border-l border-border shadow-xl flex flex-col">
+      <div className="fixed right-0 top-0 z-[101] h-full w-full max-w-md bg-background border-l border-border shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 shrink-0">
           <div className="flex items-center gap-2">

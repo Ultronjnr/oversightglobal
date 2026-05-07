@@ -50,6 +50,8 @@ import {
   type PRHistoryFilters,
 } from "@/services/pr-history.service";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRChatButton } from "@/components/pr/PRChatButton";
+import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import type { PurchaseRequisition, PRStatus, UrgencyLevel, PRItem } from "@/types/pr.types";
 
 const STATUS_OPTIONS: { value: PRStatus | "ALL"; label: string }[] = [
@@ -107,6 +109,12 @@ export default function PRHistory() {
     transactionId: string;
     prId: string;
   }>({ isOpen: false, url: "", transactionId: "", prId: "" });
+
+  const [chatPanel, setChatPanel] = useState<{
+    open: boolean;
+    prId: string;
+    transactionId: string;
+  }>({ open: false, prId: "", transactionId: "" });
 
   const openDocumentViewer = (url: string, transactionId: string, prId: string) => {
     setDocumentModal({ isOpen: true, url, transactionId, prId });
@@ -406,15 +414,27 @@ export default function PRHistory() {
                         {format(new Date(pr.created_at), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(pr)}
-                          className="gap-1"
-                        >
-                          <Eye className="h-4 w-4" />
-                          View
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(pr)}
+                            className="gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Button>
+                          <PRChatButton
+                            prId={pr.id}
+                            onClick={() =>
+                              setChatPanel({
+                                open: true,
+                                prId: pr.id,
+                                transactionId: pr.transaction_id,
+                              })
+                            }
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -619,6 +639,14 @@ export default function PRHistory() {
           documentUrl={documentModal.url}
           prId={documentModal.prId}
           transactionId={documentModal.transactionId}
+        />
+
+        {/* PR Chat Slide Panel — available to every role on every PR */}
+        <PRChatSlidePanel
+          open={chatPanel.open}
+          onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
+          prId={chatPanel.prId}
+          transactionId={chatPanel.transactionId}
         />
       </div>
     </DashboardLayout>
