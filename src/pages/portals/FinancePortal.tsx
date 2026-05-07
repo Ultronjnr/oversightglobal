@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -454,7 +454,7 @@ export default function FinancePortal() {
             />
           ) : (
             <Tabs defaultValue="approvals" className="space-y-4">
-              <TabsList>
+              <TabsList className="flex w-full overflow-x-auto justify-start h-auto flex-wrap gap-1">
                 <TabsTrigger value="approvals" className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
                   Approvals
@@ -671,9 +671,8 @@ export default function FinancePortal() {
                   </TableHeader>
                   <TableBody>
                     {prs.map((pr) => (
-                      <>
+                      <Fragment key={pr.id}>
                         <TableRow
-                          key={pr.id}
                           className="cursor-pointer hover:bg-muted/20"
                           onClick={() => toggleRow(pr.id)}
                         >
@@ -870,7 +869,7 @@ export default function FinancePortal() {
                             </TableCell>
                           </TableRow>
                         )}
-                      </>
+                      </Fragment>
                     ))}
                   </TableBody>
                 </Table>
