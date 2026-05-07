@@ -4,9 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { LogOut, Bell } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
+import { NotificationBell } from "./NotificationBell";
 
 interface NavItem {
   label: string;
@@ -91,9 +92,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
             {/* Right side */}
             <div className="flex items-center gap-4">
               {/* Notifications */}
-              <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-                <Bell className="h-5 w-5" />
-              </Button>
+              <NotificationBell />
 
               {/* User info */}
               <div className="hidden sm:flex items-center gap-3">
