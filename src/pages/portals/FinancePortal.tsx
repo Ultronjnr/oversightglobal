@@ -454,59 +454,57 @@ export default function FinancePortal() {
             />
           ) : (
             <Tabs defaultValue="approvals" className="space-y-4">
-              <div className="-mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto scroll-smooth scrollbar-thin">
-              <TabsList className="inline-flex w-max min-w-full justify-start h-auto gap-1">
-                <TabsTrigger value="approvals" className="flex items-center gap-2">
+              <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl">
+                <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <DollarSign className="h-4 w-4" />
-                  Approvals
+                  <span className="text-sm">Approvals</span>
                 </TabsTrigger>
-                <TabsTrigger value="suppliers" className="flex items-center gap-2">
+                <TabsTrigger value="suppliers" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Building2 className="h-4 w-4" />
-                  Suppliers
+                  <span className="text-sm">Suppliers</span>
                 </TabsTrigger>
-                <TabsTrigger value="quotes" className="flex items-center gap-2">
+                <TabsTrigger value="quotes" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <FileText className="h-4 w-4" />
-                  Quotes
+                  <span className="text-sm">Quotes</span>
                 </TabsTrigger>
-                <TabsTrigger value="invoices" className="flex items-center gap-2">
+                <TabsTrigger value="invoices" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Receipt className="h-4 w-4" />
-                  Invoices
+                  <span className="text-sm">Invoices</span>
                 </TabsTrigger>
-                <TabsTrigger value="payments" className="flex items-center gap-2">
+                <TabsTrigger value="payments" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Banknote className="h-4 w-4" />
-                  Approved – Not Paid
+                  <span className="text-sm">Approved – Not Paid</span>
                 </TabsTrigger>
-                <TabsTrigger value="partially_paid" className="flex items-center gap-2">
+                <TabsTrigger value="partially_paid" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Wallet className="h-4 w-4" />
-                  Partially Paid
+                  <span className="text-sm">Partially Paid</span>
                   <Badge variant="secondary" className="ml-1 bg-warning/15 text-warning border-warning/30">{tabCounts.PARTIALLY_PAID}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="fully_paid" className="flex items-center gap-2">
+                <TabsTrigger value="fully_paid" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <CheckCheck className="h-4 w-4" />
-                  Fully Paid
+                  <span className="text-sm">Fully Paid</span>
                   <Badge variant="secondary" className="ml-1 bg-success/15 text-success border-success/30">{tabCounts.FULLY_PAID}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="overdue" className="flex items-center gap-2">
+                <TabsTrigger value="overdue" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <AlertCircle className="h-4 w-4" />
-                  Overdue (30+)
+                  <span className="text-sm">Overdue (30+)</span>
                   <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">{tabCounts.OVERDUE}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="reimbursements" className="flex items-center gap-2">
+                <TabsTrigger value="reimbursements" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Undo2 className="h-4 w-4" />
-                  Reimbursements
+                  <span className="text-sm">Reimbursements</span>
                   <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">{tabCounts.REIMBURSEMENTS}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="batches" className="flex items-center gap-2">
+                <TabsTrigger value="batches" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Layers className="h-4 w-4" />
-                  Batches
+                  <span className="text-sm">Batches</span>
                   <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="input_vat" className="flex items-center gap-2">
+                <TabsTrigger value="input_vat" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
-                  Input VAT
+                  <span className="text-sm">Input VAT</span>
                 </TabsTrigger>
               </TabsList>
-              </div>
 
               <TabsContent value="approvals">
                 {prsWithQuoteStatus.length === 0 ? (
