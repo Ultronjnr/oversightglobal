@@ -62,6 +62,7 @@ import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
+import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/components/finance/TransactionStatusTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
@@ -98,6 +99,13 @@ export default function FinancePortal() {
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({ pending: 0, quotes: 0, approved: 0, declined: 0, quoteAccepted: 0 });
+  const [tabCounts, setTabCounts] = useState<TransactionStatusCounts>({
+    PARTIALLY_PAID: 0,
+    FULLY_PAID: 0,
+    OVERDUE: 0,
+    REIMBURSEMENTS: 0,
+    BATCHES: 0,
+  });
   const [showCleared, setShowCleared] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -147,6 +155,9 @@ export default function FinancePortal() {
         ).length;
         setStats((prev) => ({ ...prev, quoteAccepted: quoteAcceptedCount }));
       }
+
+      const counts = await getTransactionStatusCounts();
+      setTabCounts(counts);
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
@@ -385,27 +396,27 @@ export default function FinancePortal() {
                 <TabsTrigger value="partially_paid" className="flex items-center gap-2">
                   <Wallet className="h-4 w-4" />
                   Partially Paid
-                  <Badge variant="secondary" className="ml-1 bg-warning/15 text-warning border-warning/30">0</Badge>
+                  <Badge variant="secondary" className="ml-1 bg-warning/15 text-warning border-warning/30">{tabCounts.PARTIALLY_PAID}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="fully_paid" className="flex items-center gap-2">
                   <CheckCheck className="h-4 w-4" />
                   Fully Paid
-                  <Badge variant="secondary" className="ml-1 bg-success/15 text-success border-success/30">0</Badge>
+                  <Badge variant="secondary" className="ml-1 bg-success/15 text-success border-success/30">{tabCounts.FULLY_PAID}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="overdue" className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
                   Overdue (30+)
-                  <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">0</Badge>
+                  <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">{tabCounts.OVERDUE}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="reimbursements" className="flex items-center gap-2">
                   <Undo2 className="h-4 w-4" />
                   Reimbursements
-                  <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">0</Badge>
+                  <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">{tabCounts.REIMBURSEMENTS}</Badge>
                 </TabsTrigger>
                 <TabsTrigger value="batches" className="flex items-center gap-2">
                   <Layers className="h-4 w-4" />
                   Batches
-                  <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">0</Badge>
+                  <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
                 </TabsTrigger>
               </TabsList>
 
