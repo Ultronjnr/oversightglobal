@@ -414,15 +414,27 @@ export default function PRHistory() {
                         {format(new Date(pr.created_at), "MMM dd, yyyy")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleViewDetails(pr)}
-                          className="gap-1"
-                        >
-                          <Eye className="h-4 w-4" />
-                          View
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(pr)}
+                            className="gap-1"
+                          >
+                            <Eye className="h-4 w-4" />
+                            View
+                          </Button>
+                          <PRChatButton
+                            prId={pr.id}
+                            onClick={() =>
+                              setChatPanel({
+                                open: true,
+                                prId: pr.id,
+                                transactionId: pr.transaction_id,
+                              })
+                            }
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
