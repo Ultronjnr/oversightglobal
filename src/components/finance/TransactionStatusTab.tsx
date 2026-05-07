@@ -16,10 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import {
-  getInvoicesAwaitingPayment,
-  type InvoiceWithDetails,
-} from "@/services/invoice.service";
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
@@ -377,26 +373,80 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     }
 
     if (filter === "OVERDUE") {
-      const result = await getInvoicesAwaitingPayment();
-      if (!result.success) return [];
-      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-      return result.data
-        .filter((inv: InvoiceWithDetails) => new Date(inv.created_at).getTime() < cutoff)
-        .map((inv: InvoiceWithDetails) => {
-          const total = inv.quote?.amount || 0;
-          return {
-            id: inv.id,
-            transactionId: inv.pr?.transaction_id || "-",
-            party: inv.supplier?.company_name || "-",
-            partySub: inv.supplier?.contact_email,
-            totalAmount: total,
-            amountPaid: 0,
-            remaining: total,
-            status: "Overdue 30+ days",
-            date: inv.created_at,
-            currency: inv.pr?.currency,
-          };
+      const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const cutoffMs = cutoffDate.getTime();
+
+      // 1. Invoices: UPLOADED / AWAITING_PAYMENT / PARTIALLY_PAID with PR.payment_due_date < cutoff
+      const { data: invData } = await supabase
+        .from("invoices")
+        .select(
+          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency, payment_due_date), quote:quotes(amount)"
+        )
+        .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]);
+      const invoices = (invData || []) as any[];
+      const invIds = invoices.map((i) => i.id);
+      const paidMap: Record<string, number> = {};
+      if (invIds.length > 0) {
+        const { data: allocs } = await supabase
+          .from("payment_allocations")
+          .select("invoice_id, amount_paid")
+          .in("invoice_id", invIds);
+        (allocs || []).forEach((a: any) => {
+          paidMap[a.invoice_id] = (paidMap[a.invoice_id] || 0) + Number(a.amount_paid || 0);
         });
+      }
+
+      const invoiceRows: TransactionRow[] = invoices
+        .map((inv) => {
+          const total = Number(inv.quote?.amount || 0);
+          const paid = paidMap[inv.id] || 0;
+          const remaining = Math.max(total - paid, 0);
+          const dueStr = inv.pr?.payment_due_date;
+          const dueMs = dueStr ? new Date(dueStr).getTime() : NaN;
+          return { inv, total, paid, remaining, dueMs, dueStr };
+        })
+        .filter((x) => Number.isFinite(x.dueMs) && x.dueMs < cutoffMs && x.remaining > 0)
+        .map(({ inv, total, paid, remaining, dueStr }) => ({
+          id: inv.id,
+          transactionId: inv.pr?.transaction_id || "-",
+          party: inv.supplier?.company_name || "-",
+          partySub: inv.supplier?.contact_email,
+          totalAmount: total,
+          amountPaid: paid,
+          remaining,
+          status: "Overdue 30+ days",
+          date: dueStr,
+          currency: inv.pr?.currency,
+        }));
+
+      // 2. Reimbursements: APPROVED but not yet PAID, approved over 30 days ago
+      const { data: reimbData } = await supabase
+        .from("reimbursements")
+        .select("id, employee_name, amount, currency, status, approved_at, created_at")
+        .eq("status", "APPROVED");
+      const reimbRows: TransactionRow[] = (reimbData || [])
+        .map((r: any) => {
+          const refDate = r.approved_at || r.created_at;
+          const refMs = refDate ? new Date(refDate).getTime() : NaN;
+          return { r, refMs, refDate };
+        })
+        .filter((x) => Number.isFinite(x.refMs) && x.refMs < cutoffMs)
+        .map(({ r, refDate }) => ({
+          id: r.id,
+          transactionId: r.id.slice(0, 8),
+          party: r.employee_name || "Reimbursement",
+          partySub: "Employee reimbursement",
+          totalAmount: Number(r.amount || 0),
+          amountPaid: 0,
+          remaining: Number(r.amount || 0),
+          status: "Overdue 30+ days",
+          date: refDate,
+          currency: r.currency || "ZAR",
+        }));
+
+      return [...invoiceRows, ...reimbRows].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
     }
 
     // Partially Paid, Reimbursements, Batches: not modeled yet — return empty
