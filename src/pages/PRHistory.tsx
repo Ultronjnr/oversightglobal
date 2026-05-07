@@ -50,6 +50,8 @@ import {
   type PRHistoryFilters,
 } from "@/services/pr-history.service";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRChatButton } from "@/components/pr/PRChatButton";
+import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import type { PurchaseRequisition, PRStatus, UrgencyLevel, PRItem } from "@/types/pr.types";
 
 const STATUS_OPTIONS: { value: PRStatus | "ALL"; label: string }[] = [
