@@ -334,9 +334,9 @@ export default function FinancePortal() {
 
   return (
     <DashboardLayout title="Finance Dashboard" navItems={navItems}>
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label="Pending Review"
             value={stats.pending}
@@ -364,7 +364,7 @@ export default function FinancePortal() {
         </div>
 
         {/* Amount Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
             label="Total Approved Not Paid"
             value={formatCurrency(amountStats.approvedNotPaid)}
@@ -392,9 +392,9 @@ export default function FinancePortal() {
         </div>
 
         {/* Action Buttons Row */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center gap-2 sm:gap-3">
           <Button
-            className="bg-foreground text-background hover:bg-foreground/90 gap-2"
+            className="bg-foreground text-background hover:bg-foreground/90 gap-2 w-full lg:w-auto justify-center"
             onClick={() => navigate("/analytics")}
           >
             <BarChart3 className="h-4 w-4" />
@@ -402,7 +402,7 @@ export default function FinancePortal() {
           </Button>
           <Button
             variant="outline"
-            className="gap-2 bg-white hover:bg-muted/50"
+            className="gap-2 bg-white hover:bg-muted/50 w-full lg:w-auto justify-center"
             onClick={() => setShowPRModal(true)}
           >
             <ShoppingCart className="h-4 w-4" />
@@ -411,11 +411,11 @@ export default function FinancePortal() {
           
           {/* Prominent blue circled button */}
           <Button
-            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6"
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full px-6 w-full lg:w-auto justify-center sm:col-span-2 lg:col-span-1"
             onClick={() => setShowIncomingModal(true)}
           >
             <Inbox className="h-4 w-4" />
-            Incoming Purchase Requisitions
+            <span className="truncate">Incoming Purchase Requisitions</span>
             {stats.pending > 0 && (
               <Badge variant="secondary" className="ml-1 bg-white text-primary">
                 {stats.pending}
@@ -425,7 +425,7 @@ export default function FinancePortal() {
 
           <Button
             variant="outline"
-            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 bg-destructive/5"
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/5 bg-destructive/5 w-full lg:w-auto justify-center"
             onClick={handleClearDashboard}
           >
             <X className="h-4 w-4" />
@@ -433,7 +433,7 @@ export default function FinancePortal() {
           </Button>
           <Button
             variant="outline"
-            className="gap-2 text-success border-success/30 hover:bg-success/5 bg-success/5"
+            className="gap-2 text-success border-success/30 hover:bg-success/5 bg-success/5 w-full lg:w-auto justify-center"
             onClick={handleRefreshDashboard}
           >
             <RefreshCw className="h-4 w-4" />
@@ -454,7 +454,8 @@ export default function FinancePortal() {
             />
           ) : (
             <Tabs defaultValue="approvals" className="space-y-4">
-              <TabsList className="flex w-full overflow-x-auto justify-start h-auto flex-wrap gap-1">
+              <div className="-mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto scroll-smooth scrollbar-thin">
+              <TabsList className="inline-flex w-max min-w-full justify-start h-auto gap-1">
                 <TabsTrigger value="approvals" className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
                   Approvals
