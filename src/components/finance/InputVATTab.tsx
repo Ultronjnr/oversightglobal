@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, Percent, AlertTriangle } from "lucide-react";
+import { Loader2, Percent } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { StatCard } from "@/components/ui/stat-card";
@@ -18,13 +18,26 @@ interface VATRow {
   transactionId: string;
   supplier: string;
   vatNumber: string;
-  totalAmount: number;
+  inclusive: number;
+  exclusive: number;
   vatAmount: number;
   date: string;
   currency: string;
 }
 
 const VAT_RATE = 0.15;
+
+/**
+ * SARS-compliant VAT split for a VAT-inclusive gross amount.
+ * exclusive = gross / 1.15
+ * vat       = gross - exclusive
+ * effective rate (vat / exclusive) is always exactly 15%.
+ */
+function splitInclusive(gross: number) {
+  const exclusive = gross / (1 + VAT_RATE);
+  const vat = gross - exclusive;
+  return { exclusive, vat };
+}
 
 const formatCurrency = (amount: number, currency: string = "ZAR") =>
   new Intl.NumberFormat("en-ZA", { style: "currency", currency }).format(amount);
@@ -48,15 +61,15 @@ export function InputVATTab() {
         const mapped: VATRow[] = (data || [])
           .filter((inv: any) => inv.supplier?.vat_number && String(inv.supplier.vat_number).trim() !== "")
           .map((inv: any) => {
-            const total = Number(inv.quote?.amount || 0);
-            // VAT-inclusive total: VAT = total * 15/115
-            const vat = total * (VAT_RATE / (1 + VAT_RATE));
+            const gross = Number(inv.quote?.amount || 0);
+            const { exclusive, vat } = splitInclusive(gross);
             return {
               id: inv.id,
               transactionId: inv.pr?.transaction_id || "-",
               supplier: inv.supplier?.company_name || "-",
               vatNumber: inv.supplier?.vat_number,
-              totalAmount: total,
+              inclusive: gross,
+              exclusive,
               vatAmount: vat,
               date: inv.updated_at || inv.created_at,
               currency: inv.pr?.currency || "ZAR",
@@ -71,10 +84,13 @@ export function InputVATTab() {
     })();
   }, []);
 
+  const totalInclusive = rows.reduce((s, r) => s + r.inclusive, 0);
+  const totalExclusive = rows.reduce((s, r) => s + r.exclusive, 0);
   const totalVAT = rows.reduce((s, r) => s + r.vatAmount, 0);
-  const totalExVAT = rows.reduce((s, r) => s + (r.totalAmount - r.vatAmount), 0);
-  const vatPercent = totalExVAT > 0 ? (totalVAT / totalExVAT) * 100 : 0;
-  const belowOptimal = rows.length > 0 && vatPercent < 15;
+  // SARS standard: VAT / Net Exclusive == 15% by definition. Round for display safety.
+  const vatPercent = totalExclusive > 0
+    ? Math.round(((totalVAT / totalExclusive) * 100) * 100) / 100
+    : 0;
 
   if (loading) {
     return (
@@ -86,28 +102,29 @@ export function InputVATTab() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          label="VAT Inclusive Total"
+          value={formatCurrency(totalInclusive)}
+          valueColor="default"
+        />
+        <StatCard
+          label="VAT Exclusive (Net)"
+          value={formatCurrency(totalExclusive)}
+          valueColor="primary"
+        />
         <StatCard
           label="Total VAT Claimable"
           value={formatCurrency(totalVAT)}
           valueColor="success"
         />
         <StatCard
-          label="VAT % vs Expected (15%)"
+          label="VAT Percentage"
           value={`${vatPercent.toFixed(2)}%`}
-          valueColor={belowOptimal ? "warning" : "success"}
+          valueColor="success"
           icon={<Percent className="h-5 w-5" />}
         />
       </div>
-
-      {belowOptimal && (
-        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
-          <p>
-            Your VAT claim is below optimal. Consider using VAT-registered suppliers.
-          </p>
-        </div>
-      )}
 
       {rows.length === 0 ? (
         <EmptyState
@@ -122,8 +139,9 @@ export function InputVATTab() {
               <TableRow className="bg-muted/30">
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>Supplier</TableHead>
-                <TableHead className="text-right">VAT Amount</TableHead>
-                <TableHead className="text-right">Total Amount</TableHead>
+                <TableHead className="text-right">Inclusive</TableHead>
+                <TableHead className="text-right">Exclusive</TableHead>
+                <TableHead className="text-right">VAT (15%)</TableHead>
                 <TableHead>Date</TableHead>
               </TableRow>
             </TableHeader>
@@ -137,11 +155,14 @@ export function InputVATTab() {
                       <p className="text-xs text-muted-foreground">VAT: {r.vatNumber}</p>
                     </div>
                   </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(r.inclusive, r.currency)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(r.exclusive, r.currency)}
+                  </TableCell>
                   <TableCell className="text-right font-semibold text-success">
                     {formatCurrency(r.vatAmount, r.currency)}
-                  </TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {formatCurrency(r.totalAmount, r.currency)}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {r.date ? format(new Date(r.date), "dd MMM yyyy") : "-"}
