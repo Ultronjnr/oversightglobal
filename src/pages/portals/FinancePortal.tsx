@@ -101,6 +101,12 @@ export default function FinancePortal() {
   const [loading, setLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [stats, setStats] = useState({ pending: 0, quotes: 0, approved: 0, declined: 0, quoteAccepted: 0 });
+  const [amountStats, setAmountStats] = useState({
+    approvedNotPaid: 0,
+    partiallyPaid: 0,
+    outstanding: 0,
+    paidThisMonth: 0,
+  });
   const [tabCounts, setTabCounts] = useState<TransactionStatusCounts>({
     PARTIALLY_PAID: 0,
     FULLY_PAID: 0,
@@ -160,10 +166,54 @@ export default function FinancePortal() {
 
       const counts = await getTransactionStatusCounts();
       setTabCounts(counts);
+      await fetchAmountStats();
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAmountStats = async () => {
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const [{ data: invoices }, { data: allocs }] = await Promise.all([
+        supabase
+          .from("invoices")
+          .select("id, status, quote:quotes(amount)")
+          .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]),
+        supabase
+          .from("payment_allocations")
+          .select("invoice_id, amount_paid, created_at"),
+      ]);
+
+      const paidByInvoice: Record<string, number> = {};
+      (allocs || []).forEach((a: any) => {
+        paidByInvoice[a.invoice_id] = (paidByInvoice[a.invoice_id] || 0) + Number(a.amount_paid || 0);
+      });
+
+      let approvedNotPaid = 0;
+      let partiallyPaid = 0;
+      let outstanding = 0;
+      (invoices || []).forEach((inv: any) => {
+        const total = Number(inv.quote?.amount || 0);
+        const paid = paidByInvoice[inv.id] || 0;
+        const remaining = Math.max(total - paid, 0);
+        outstanding += remaining;
+        if (inv.status === "PARTIALLY_PAID") partiallyPaid += remaining;
+        else approvedNotPaid += remaining;
+      });
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const paidThisMonth = (allocs || []).reduce((sum: number, a: any) => {
+        const t = new Date(a.created_at).getTime();
+        return t >= monthStart ? sum + Number(a.amount_paid || 0) : sum;
+      }, 0);
+
+      setAmountStats({ approvedNotPaid, partiallyPaid, outstanding, paidThisMonth });
+    } catch (e) {
+      console.error("fetchAmountStats error", e);
     }
   };
 
@@ -307,6 +357,34 @@ export default function FinancePortal() {
             label="Declined Today"
             value={stats.declined}
             valueColor="destructive"
+            isLoading={loading}
+          />
+        </div>
+
+        {/* Amount Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Approved Not Paid"
+            value={formatCurrency(amountStats.approvedNotPaid)}
+            valueColor="destructive"
+            isLoading={loading}
+          />
+          <StatCard
+            label="Total Partially Paid"
+            value={formatCurrency(amountStats.partiallyPaid)}
+            valueColor="warning"
+            isLoading={loading}
+          />
+          <StatCard
+            label="Total Outstanding Amount"
+            value={formatCurrency(amountStats.outstanding)}
+            valueColor="destructive"
+            isLoading={loading}
+          />
+          <StatCard
+            label="Total Paid This Month"
+            value={formatCurrency(amountStats.paidThisMonth)}
+            valueColor="success"
             isLoading={loading}
           />
         </div>
