@@ -21,6 +21,7 @@ import {
   type InvoiceWithDetails,
 } from "@/services/invoice.service";
 import { supabase } from "@/integrations/supabase/client";
+import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 export type TransactionStatusFilter =
   | "PARTIALLY_PAID"
@@ -107,6 +108,8 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   const [rows, setRows] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const meta = filterMeta[filter];
   const supportsBatch = filter === "PARTIALLY_PAID";
 
@@ -125,7 +128,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
     return () => {
       cancelled = true;
     };
-  }, [filter]);
+  }, [filter, reloadKey]);
 
   const selectedRows = useMemo(
     () => rows.filter((r) => selectedIds.has(r.id)),
@@ -148,12 +151,17 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
       prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
     );
 
-  const handleCreateBatch = () => {
-    toast.success("Payment batch created", {
-      description: `${selectedRows.length} transaction(s) grouped for processing.`,
-    });
-    setSelectedIds(new Set());
-  };
+  const handleCreateBatch = () => setBatchOpen(true);
+
+  const batchItems: BatchPaymentItem[] = selectedRows.map((r) => ({
+    invoiceId: r.id,
+    party: r.party,
+    partySub: r.partySub,
+    totalAmount: r.totalAmount,
+    amountPaid: r.amountPaid,
+    remaining: r.remaining,
+    currency: r.currency,
+  }));
 
   if (loading) {
     return (
@@ -257,12 +265,59 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
         </TableBody>
       </Table>
     </div>
+    {supportsBatch && (
+      <BatchPaymentModal
+        open={batchOpen}
+        onOpenChange={setBatchOpen}
+        items={batchItems}
+        onConfirmed={() => {
+          setSelectedIds(new Set());
+          setReloadKey((k) => k + 1);
+        }}
+      />
+    )}
     </div>
   );
 }
 
 async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow[]> {
   try {
+    if (filter === "PARTIALLY_PAID") {
+      const { data } = await supabase
+        .from("invoices")
+        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)")
+        .eq("status", "PARTIALLY_PAID")
+        .order("updated_at", { ascending: false });
+      const invoices = (data || []) as any[];
+      const ids = invoices.map((i) => i.id);
+      let paidMap: Record<string, number> = {};
+      if (ids.length > 0) {
+        const { data: allocs } = await supabase
+          .from("payment_allocations")
+          .select("invoice_id, amount_paid")
+          .in("invoice_id", ids);
+        (allocs || []).forEach((a: any) => {
+          paidMap[a.invoice_id] = (paidMap[a.invoice_id] || 0) + Number(a.amount_paid);
+        });
+      }
+      return invoices.map((inv) => {
+        const total = inv.quote?.amount || 0;
+        const paid = paidMap[inv.id] || 0;
+        return {
+          id: inv.id,
+          transactionId: inv.pr?.transaction_id || "-",
+          party: inv.supplier?.company_name || "-",
+          partySub: inv.supplier?.contact_email,
+          totalAmount: total,
+          amountPaid: paid,
+          remaining: Math.max(total - paid, 0),
+          status: "Partially Paid",
+          date: inv.updated_at || inv.created_at,
+          currency: inv.pr?.currency,
+        };
+      });
+    }
+
     if (filter === "FULLY_PAID") {
       const { data } = await supabase
         .from("invoices")

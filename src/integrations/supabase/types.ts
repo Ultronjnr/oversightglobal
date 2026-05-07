@@ -258,6 +258,71 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_allocations: {
+        Row: {
+          amount_paid: number
+          batch_id: string
+          created_at: string
+          id: string
+          invoice_id: string
+          organization_id: string
+        }
+        Insert: {
+          amount_paid: number
+          batch_id: string
+          created_at?: string
+          id?: string
+          invoice_id: string
+          organization_id: string
+        }
+        Update: {
+          amount_paid?: number
+          batch_id?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payment_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_batches: {
+        Row: {
+          created_at: string
+          created_by: string
+          currency: string
+          id: string
+          notes: string | null
+          organization_id: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
       pr_message_attachments: {
         Row: {
           created_at: string
@@ -807,6 +872,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      create_payment_batch: {
+        Args: { _allocations: Json; _notes?: string }
+        Returns: Json
       }
       create_supplier_invitation: {
         Args: { _company_name: string; _email: string }
