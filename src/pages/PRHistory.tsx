@@ -640,6 +640,14 @@ export default function PRHistory() {
           prId={documentModal.prId}
           transactionId={documentModal.transactionId}
         />
+
+        {/* PR Chat Slide Panel — available to every role on every PR */}
+        <PRChatSlidePanel
+          open={chatPanel.open}
+          onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
+          prId={chatPanel.prId}
+          transactionId={chatPanel.transactionId}
+        />
       </div>
     </DashboardLayout>
   );
