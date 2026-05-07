@@ -282,6 +282,24 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
 
 async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow[]> {
   try {
+    if (filter === "BATCHES") {
+      const { data } = await supabase
+        .from("payment_batches")
+        .select("id")
+        .order("created_at", { ascending: false });
+      // Return placeholder rows just for count purposes; actual UI uses BatchesTab.
+      return (data || []).map((b: any) => ({
+        id: b.id,
+        transactionId: b.id.slice(0, 8),
+        party: "",
+        totalAmount: 0,
+        amountPaid: 0,
+        remaining: 0,
+        status: "Batch",
+        date: "",
+      }));
+    }
+
     if (filter === "PARTIALLY_PAID") {
       const { data } = await supabase
         .from("invoices")
