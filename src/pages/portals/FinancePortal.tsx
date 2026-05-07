@@ -506,6 +506,7 @@ export default function FinancePortal() {
                   Input VAT
                 </TabsTrigger>
               </TabsList>
+              </div>
 
               <TabsContent value="approvals">
                 {prsWithQuoteStatus.length === 0 ? (
