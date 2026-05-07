@@ -24,6 +24,11 @@ import {
   Receipt,
   Banknote,
   MessageSquare,
+  Wallet,
+  CheckCheck,
+  AlertCircle,
+  Undo2,
+  Layers,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -56,6 +61,7 @@ import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
+import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import {
   getFinancePendingPRs,
@@ -376,6 +382,31 @@ export default function FinancePortal() {
                   <Banknote className="h-4 w-4" />
                   Approved – Not Paid
                 </TabsTrigger>
+                <TabsTrigger value="partially_paid" className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Partially Paid
+                  <Badge variant="secondary" className="ml-1 bg-warning/15 text-warning border-warning/30">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="fully_paid" className="flex items-center gap-2">
+                  <CheckCheck className="h-4 w-4" />
+                  Fully Paid
+                  <Badge variant="secondary" className="ml-1 bg-success/15 text-success border-success/30">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="overdue" className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Overdue (30+)
+                  <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="reimbursements" className="flex items-center gap-2">
+                  <Undo2 className="h-4 w-4" />
+                  Reimbursements
+                  <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">0</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="batches" className="flex items-center gap-2">
+                  <Layers className="h-4 w-4" />
+                  Batches
+                  <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">0</Badge>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -480,6 +511,22 @@ export default function FinancePortal() {
 
               <TabsContent value="payments">
                 <PaymentPreparationTab onPaymentComplete={() => setRefreshTrigger(prev => prev + 1)} />
+              </TabsContent>
+
+              <TabsContent value="partially_paid">
+                <TransactionStatusTab filter="PARTIALLY_PAID" />
+              </TabsContent>
+              <TabsContent value="fully_paid">
+                <TransactionStatusTab filter="FULLY_PAID" />
+              </TabsContent>
+              <TabsContent value="overdue">
+                <TransactionStatusTab filter="OVERDUE" />
+              </TabsContent>
+              <TabsContent value="reimbursements">
+                <TransactionStatusTab filter="REIMBURSEMENTS" />
+              </TabsContent>
+              <TabsContent value="batches">
+                <TransactionStatusTab filter="BATCHES" />
               </TabsContent>
             </Tabs>
           )}
