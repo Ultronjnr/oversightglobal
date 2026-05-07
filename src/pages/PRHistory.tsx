@@ -110,6 +110,12 @@ export default function PRHistory() {
     prId: string;
   }>({ isOpen: false, url: "", transactionId: "", prId: "" });
 
+  const [chatPanel, setChatPanel] = useState<{
+    open: boolean;
+    prId: string;
+    transactionId: string;
+  }>({ open: false, prId: "", transactionId: "" });
+
   const openDocumentViewer = (url: string, transactionId: string, prId: string) => {
     setDocumentModal({ isOpen: true, url, transactionId, prId });
   };
