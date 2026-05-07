@@ -16,10 +16,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import {
-  getInvoicesAwaitingPayment,
-  type InvoiceWithDetails,
-} from "@/services/invoice.service";
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
