@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Loader2, Wallet, CheckCheck, AlertCircle, Undo2, Layers } from "lucide-react";
+import { Loader2, Wallet, CheckCheck, AlertCircle, Undo2, Layers, Banknote } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -103,7 +106,9 @@ const filterMeta: Record<TransactionStatusFilter, {
 export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilter }) {
   const [rows, setRows] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const meta = filterMeta[filter];
+  const supportsBatch = filter === "PARTIALLY_PAID";
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +117,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
       const data = await loadRows(filter);
       if (!cancelled) {
         setRows(data);
+        setSelectedIds(new Set());
         setLoading(false);
       }
     };
@@ -120,6 +126,34 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
       cancelled = true;
     };
   }, [filter]);
+
+  const selectedRows = useMemo(
+    () => rows.filter((r) => selectedIds.has(r.id)),
+    [rows, selectedIds],
+  );
+  const totalSelected = useMemo(
+    () => selectedRows.reduce((sum, r) => sum + r.remaining, 0),
+    [selectedRows],
+  );
+
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  const toggleAll = () =>
+    setSelectedIds((prev) =>
+      prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id)),
+    );
+
+  const handleCreateBatch = () => {
+    toast.success("Payment batch created", {
+      description: `${selectedRows.length} transaction(s) grouped for processing.`,
+    });
+    setSelectedIds(new Set());
+  };
 
   if (loading) {
     return (
@@ -134,10 +168,43 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   }
 
   return (
+    <div className="space-y-4">
+      {supportsBatch && (
+        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+          <div className="flex items-center gap-3 text-sm">
+            {selectedIds.size > 0 ? (
+              <>
+                <Badge variant="secondary" className="font-mono">{selectedIds.size} selected</Badge>
+                <span className="text-muted-foreground">•</span>
+                <span className="font-medium text-primary">Total: {formatCurrency(totalSelected)}</span>
+              </>
+            ) : (
+              <span className="text-muted-foreground">Select transactions to create a payment batch.</span>
+            )}
+          </div>
+          <Button onClick={handleCreateBatch} disabled={selectedIds.size === 0} className="gap-2">
+            <Banknote className="h-4 w-4" />
+            Create Batch
+            {selectedIds.size > 0 && (
+              <Badge variant="secondary" className="ml-1 bg-primary-foreground/20">{selectedIds.size}</Badge>
+            )}
+          </Button>
+        </div>
+      )}
+
     <div className="rounded-lg border border-border/50 overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
+            {supportsBatch && (
+              <TableHead className="w-12">
+                <Checkbox
+                  checked={selectedIds.size === rows.length && rows.length > 0}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+            )}
             <TableHead>Transaction ID</TableHead>
             <TableHead>Requester / Supplier</TableHead>
             <TableHead className="text-right">Total Amount</TableHead>
@@ -149,7 +216,18 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
         </TableHeader>
         <TableBody>
           {rows.map((row) => (
-            <TableRow key={row.id} className="hover:bg-muted/20">
+            <TableRow
+              key={row.id}
+              className={`${selectedIds.has(row.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/20"}`}
+            >
+              {supportsBatch && (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(row.id)}
+                    onCheckedChange={() => toggleOne(row.id)}
+                  />
+                </TableCell>
+              )}
               <TableCell className="font-mono text-sm font-medium">{row.transactionId}</TableCell>
               <TableCell>
                 <p className="font-medium">{row.party}</p>
@@ -178,6 +256,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
           ))}
         </TableBody>
       </Table>
+    </div>
     </div>
   );
 }
