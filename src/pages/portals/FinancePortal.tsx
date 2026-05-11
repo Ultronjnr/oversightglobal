@@ -158,6 +158,8 @@ export default function FinancePortal() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Auto-flag invoices unpaid for 30+ days as OVERDUE (idempotent, RPC enforces role+org).
+      void supabase.rpc("recompute_overdue_invoices");
       const [prsResult, quotesResult, prsWithStatusResult] = await Promise.all([
         getFinancePendingPRs(),
         getQuotes(),
