@@ -301,10 +301,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          invoice_id: string
+          invoice_id: string | null
           organization_id: string
           payment_date: string | null
           payment_reference: string | null
+          reimbursement_id: string | null
         }
         Insert: {
           amount_paid: number
@@ -312,10 +313,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          invoice_id: string
+          invoice_id?: string | null
           organization_id: string
           payment_date?: string | null
           payment_reference?: string | null
+          reimbursement_id?: string | null
         }
         Update: {
           amount_paid?: number
@@ -323,10 +325,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          invoice_id?: string
+          invoice_id?: string | null
           organization_id?: string
           payment_date?: string | null
           payment_reference?: string | null
+          reimbursement_id?: string | null
         }
         Relationships: [
           {
@@ -576,6 +579,7 @@ export type Database = {
           requested_by: string
           requested_by_department: string | null
           requested_by_name: string
+          requires_reimbursement: boolean
           status: Database["public"]["Enums"]["pr_status"]
           total_amount: number
           transaction_id: string
@@ -599,6 +603,7 @@ export type Database = {
           requested_by: string
           requested_by_department?: string | null
           requested_by_name: string
+          requires_reimbursement?: boolean
           status?: Database["public"]["Enums"]["pr_status"]
           total_amount?: number
           transaction_id: string
@@ -622,6 +627,7 @@ export type Database = {
           requested_by?: string
           requested_by_department?: string | null
           requested_by_name?: string
+          requires_reimbursement?: boolean
           status?: Database["public"]["Enums"]["pr_status"]
           total_amount?: number
           transaction_id?: string
@@ -797,6 +803,42 @@ export type Database = {
           },
         ]
       }
+      reimbursement_audit_log: {
+        Row: {
+          action: string
+          id: string
+          new_status: string | null
+          notes: string | null
+          old_status: string | null
+          organization_id: string
+          performed_at: string
+          performed_by: string | null
+          reimbursement_id: string
+        }
+        Insert: {
+          action: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          organization_id: string
+          performed_at?: string
+          performed_by?: string | null
+          reimbursement_id: string
+        }
+        Update: {
+          action?: string
+          id?: string
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          organization_id?: string
+          performed_at?: string
+          performed_by?: string | null
+          reimbursement_id?: string
+        }
+        Relationships: []
+      }
       reimbursements: {
         Row: {
           amount: number
@@ -812,7 +854,11 @@ export type Database = {
           organization_id: string
           paid_at: string | null
           paid_by_employee: boolean
+          payment_method: string | null
+          pr_id: string | null
           proof_document_url: string | null
+          reimbursement_date: string | null
+          reimbursement_reference: string | null
           status: Database["public"]["Enums"]["reimbursement_status"]
           updated_at: string
         }
@@ -830,7 +876,11 @@ export type Database = {
           organization_id: string
           paid_at?: string | null
           paid_by_employee?: boolean
+          payment_method?: string | null
+          pr_id?: string | null
           proof_document_url?: string | null
+          reimbursement_date?: string | null
+          reimbursement_reference?: string | null
           status?: Database["public"]["Enums"]["reimbursement_status"]
           updated_at?: string
         }
@@ -848,7 +898,11 @@ export type Database = {
           organization_id?: string
           paid_at?: string | null
           paid_by_employee?: boolean
+          payment_method?: string | null
+          pr_id?: string | null
           proof_document_url?: string | null
+          reimbursement_date?: string | null
+          reimbursement_reference?: string | null
           status?: Database["public"]["Enums"]["reimbursement_status"]
           updated_at?: string
         }
@@ -1047,6 +1101,10 @@ export type Database = {
         Args: { _token: string; _user_id: string }
         Returns: boolean
       }
+      approve_reimbursement: {
+        Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
       assign_invitation_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1095,12 +1153,37 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
       }
+      mark_reimbursement_paid: {
+        Args: {
+          _payment_date?: string
+          _payment_reference?: string
+          _reimbursement_id: string
+        }
+        Returns: Json
+      }
       organization_has_active_hod: {
         Args: { _org_id: string }
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
       recompute_overdue_invoices: { Args: never; Returns: number }
+      reject_reimbursement: {
+        Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
+      submit_reimbursement_for_pr: {
+        Args: {
+          _amount: number
+          _description: string
+          _notes?: string
+          _payment_method: string
+          _pr_id: string
+          _proof_url?: string
+          _reference?: string
+          _reimbursement_date?: string
+        }
+        Returns: Json
+      }
       update_batch_draft: {
         Args: { _add?: Json; _batch_id: string; _remove?: string[] }
         Returns: Json
@@ -1151,7 +1234,12 @@ export type Database = {
         | "ACCEPTED"
         | "REJECTED"
         | "EXPIRED"
-      reimbursement_status: "PENDING" | "APPROVED" | "DECLINED" | "PAID"
+      reimbursement_status:
+        | "PENDING"
+        | "APPROVED"
+        | "DECLINED"
+        | "PAID"
+        | "AWAITING_PAYMENT"
       subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
@@ -1310,7 +1398,13 @@ export const Constants = {
         "SPLIT",
       ],
       quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
-      reimbursement_status: ["PENDING", "APPROVED", "DECLINED", "PAID"],
+      reimbursement_status: [
+        "PENDING",
+        "APPROVED",
+        "DECLINED",
+        "PAID",
+        "AWAITING_PAYMENT",
+      ],
       subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
