@@ -38,6 +38,7 @@ export interface CreatePRInput {
   due_date?: string;
   payment_due_date?: string;
   document_url?: string;
+  requires_reimbursement?: boolean;
 }
 
 export interface PurchaseRequisition {

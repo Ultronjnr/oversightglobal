@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
+import { SubmitReimbursementModal } from "./SubmitReimbursementModal";
 
 const formSchema = z.object({
   department: z.string().min(1, "Department is required"),
@@ -46,6 +47,12 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [requiresReimbursement, setRequiresReimbursement] = useState(false);
+  const [pendingReimbursementPR, setPendingReimbursementPR] = useState<{
+    id: string;
+    transaction_id: string;
+    total: number;
+  } | null>(null);
 
   const vatRate = includeVAT ? 15 : 0;
 
@@ -216,6 +223,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         due_date: data.due_date || undefined,
         payment_due_date: data.payment_due_date || undefined,
         document_url: documentUrl,
+        requires_reimbursement: requiresReimbursement,
       });
 
       if (!result.success) {
@@ -229,8 +237,17 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
       reset();
       setItems([{ id: uuidv4(), description: "", quantity: 1, unit_price: 0, total: 0 }]);
       setUploadedFile(null);
-      
-      onSuccess?.();
+
+      if (requiresReimbursement && result.data) {
+        setPendingReimbursementPR({
+          id: result.data.id,
+          transaction_id: result.data.transaction_id,
+          total: Number(result.data.total_amount),
+        });
+      } else {
+        onSuccess?.();
+      }
+      setRequiresReimbursement(false);
     } catch (error: any) {
       console.error("Submit error:", error);
       toast.error("An error occurred while creating the PR");
@@ -308,6 +325,25 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         <Label htmlFor="vat" className="cursor-pointer">
           Include VAT ({includeVAT ? "15%" : "0%"})
         </Label>
+      </div>
+
+      {/* Reimbursement Toggle */}
+      <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+        <Switch
+          id="reimbursement"
+          checked={requiresReimbursement}
+          onCheckedChange={setRequiresReimbursement}
+          className="mt-1"
+        />
+        <div className="flex-1">
+          <Label htmlFor="reimbursement" className="cursor-pointer font-medium">
+            This transaction requires employee reimbursement
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            Toggle on if you paid for this out-of-pocket and need to be reimbursed by Finance.
+            After submitting the requisition, you'll be prompted for payment proof and details.
+          </p>
+        </div>
       </div>
 
       {/* Line Items */}
@@ -416,6 +452,25 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
           "Submit Purchase Requisition"
         )}
       </Button>
+
+      {pendingReimbursementPR && (
+        <SubmitReimbursementModal
+          open={!!pendingReimbursementPR}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPendingReimbursementPR(null);
+              onSuccess?.();
+            }
+          }}
+          prId={pendingReimbursementPR.id}
+          prTotal={pendingReimbursementPR.total}
+          prTransactionId={pendingReimbursementPR.transaction_id}
+          onSubmitted={() => {
+            setPendingReimbursementPR(null);
+            onSuccess?.();
+          }}
+        />
+      )}
     </form>
   );
 }

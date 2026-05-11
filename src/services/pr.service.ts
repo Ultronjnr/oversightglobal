@@ -137,6 +137,7 @@ export async function createPurchaseRequisition(
       payment_due_date: input.payment_due_date || null,
       document_url: input.document_url || null,
       history: [historyEntry] as unknown as Json,
+      requires_reimbursement: input.requires_reimbursement ?? false,
     };
 
     const { data: prData, error: insertError } = await supabase

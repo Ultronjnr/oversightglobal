@@ -24,6 +24,11 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  approveReimbursement,
+  rejectReimbursement,
+  markReimbursementPaid,
+} from "@/services/reimbursement.service";
 
 interface Reimbursement {
   id: string;
@@ -33,16 +38,21 @@ interface Reimbursement {
   currency: string;
   description: string;
   proof_document_url: string | null;
-  status: "PENDING" | "APPROVED" | "DECLINED" | "PAID";
+  status: "PENDING" | "APPROVED" | "AWAITING_PAYMENT" | "DECLINED" | "REJECTED" | "PAID";
   paid_by_employee: boolean;
   created_at: string;
+  pr_id?: string | null;
+  payment_method?: string | null;
+  reimbursement_reference?: string | null;
 }
 
 const statusConfig: Record<Reimbursement["status"], { label: string; className: string }> = {
   PENDING: { label: "Pending", className: "bg-warning/10 text-warning border-warning/30" },
   APPROVED: { label: "Approved", className: "bg-primary/10 text-primary border-primary/30" },
+  AWAITING_PAYMENT: { label: "Awaiting Payment", className: "bg-accent/40 text-foreground border-border" },
   PAID: { label: "Paid", className: "bg-success/10 text-success border-success/30" },
   DECLINED: { label: "Declined", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  REJECTED: { label: "Rejected", className: "bg-destructive/10 text-destructive border-destructive/30" },
 };
 
 export function ReimbursementsTab() {
@@ -82,36 +92,24 @@ export function ReimbursementsTab() {
 
   const handleApprove = async (r: Reimbursement) => {
     setActingId(r.id);
-    const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("reimbursements")
-      .update({
-        status: "APPROVED",
-        paid_by_employee: true,
-        approved_by: user?.id || null,
-        approved_at: new Date().toISOString(),
-      })
-      .eq("id", r.id);
+    const res = await approveReimbursement(r.id);
     setActingId(null);
-    if (error) {
-      toast.error("Approval failed", { description: error.message });
+    if (!res.success) {
+      toast.error("Approval failed", { description: res.error });
       return;
     }
     toast.success("Reimbursement approved", {
-      description: "Moved to Approved – Not Paid queue.",
+      description: "Moved to Awaiting Payment queue.",
     });
     fetchItems();
   };
 
   const handleDecline = async (r: Reimbursement) => {
     setActingId(r.id);
-    const { error } = await supabase
-      .from("reimbursements")
-      .update({ status: "DECLINED" })
-      .eq("id", r.id);
+    const res = await rejectReimbursement(r.id);
     setActingId(null);
-    if (error) {
-      toast.error("Decline failed", { description: error.message });
+    if (!res.success) {
+      toast.error("Decline failed", { description: res.error });
       return;
     }
     toast.success("Reimbursement declined");
@@ -120,13 +118,10 @@ export function ReimbursementsTab() {
 
   const handleMarkPaid = async (r: Reimbursement) => {
     setActingId(r.id);
-    const { error } = await supabase
-      .from("reimbursements")
-      .update({ status: "PAID", paid_at: new Date().toISOString() })
-      .eq("id", r.id);
+    const res = await markReimbursementPaid(r.id);
     setActingId(null);
-    if (error) {
-      toast.error("Mark as paid failed", { description: error.message });
+    if (!res.success) {
+      toast.error("Mark as paid failed", { description: res.error });
       return;
     }
     toast.success("Reimbursement marked as paid");
@@ -236,7 +231,7 @@ export function ReimbursementsTab() {
                       </Button>
                     </div>
                   )}
-                  {r.status === "APPROVED" && (
+                  {(r.status === "APPROVED" || r.status === "AWAITING_PAYMENT") && (
                     <Button
                       size="sm"
                       variant="outline"
