@@ -299,25 +299,34 @@ export type Database = {
           amount_paid: number
           batch_id: string
           created_at: string
+          created_by: string | null
           id: string
           invoice_id: string
           organization_id: string
+          payment_date: string | null
+          payment_reference: string | null
         }
         Insert: {
           amount_paid: number
           batch_id: string
           created_at?: string
+          created_by?: string | null
           id?: string
           invoice_id: string
           organization_id: string
+          payment_date?: string | null
+          payment_reference?: string | null
         }
         Update: {
           amount_paid?: number
           batch_id?: string
           created_at?: string
+          created_by?: string | null
           id?: string
           invoice_id?: string
           organization_id?: string
+          payment_date?: string | null
+          payment_reference?: string | null
         }
         Relationships: [
           {
@@ -329,32 +338,89 @@ export type Database = {
           },
         ]
       }
+      payment_audit_log: {
+        Row: {
+          action: string
+          amount: number | null
+          batch_id: string | null
+          id: string
+          invoice_id: string | null
+          new_status: string | null
+          notes: string | null
+          old_status: string | null
+          organization_id: string
+          performed_at: string
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          amount?: number | null
+          batch_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          organization_id: string
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          amount?: number | null
+          batch_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          new_status?: string | null
+          notes?: string | null
+          old_status?: string | null
+          organization_id?: string
+          performed_at?: string
+          performed_by?: string | null
+        }
+        Relationships: []
+      }
       payment_batches: {
         Row: {
+          batch_number: string
+          confirmed_at: string | null
           created_at: string
           created_by: string
           currency: string
           id: string
           notes: string | null
           organization_id: string
+          paid_at: string | null
+          payment_reference: string | null
+          status: string
           total_amount: number
         }
         Insert: {
+          batch_number: string
+          confirmed_at?: string | null
           created_at?: string
           created_by: string
           currency?: string
           id?: string
           notes?: string | null
           organization_id: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          status?: string
           total_amount?: number
         }
         Update: {
+          batch_number?: string
+          confirmed_at?: string | null
           created_at?: string
           created_by?: string
           currency?: string
           id?: string
           notes?: string | null
           organization_id?: string
+          paid_at?: string | null
+          payment_reference?: string | null
+          status?: string
           total_amount?: number
         }
         Relationships: []
@@ -988,7 +1054,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      cancel_batch_draft: { Args: { _batch_id: string }; Returns: Json }
+      confirm_batch_paid: {
+        Args: {
+          _batch_id: string
+          _payment_date?: string
+          _payment_reference?: string
+        }
+        Returns: Json
+      }
       create_payment_batch: {
+        Args: { _allocations: Json; _notes?: string }
+        Returns: Json
+      }
+      create_payment_batch_draft: {
         Args: { _allocations: Json; _notes?: string }
         Returns: Json
       }
@@ -1021,6 +1100,11 @@ export type Database = {
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
+      recompute_overdue_invoices: { Args: never; Returns: number }
+      update_batch_draft: {
+        Args: { _add?: Json; _batch_id: string; _remove?: string[] }
+        Returns: Json
+      }
       validate_invitation: {
         Args: { _email: string; _token: string }
         Returns: {

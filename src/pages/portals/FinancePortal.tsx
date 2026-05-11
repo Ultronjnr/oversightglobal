@@ -69,6 +69,7 @@ import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getFinancePendingPRs,
   getQuotes,
@@ -158,6 +159,8 @@ export default function FinancePortal() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Auto-flag invoices unpaid for 30+ days as OVERDUE (idempotent, RPC enforces role+org).
+      void supabase.rpc("recompute_overdue_invoices");
       const [prsResult, quotesResult, prsWithStatusResult] = await Promise.all([
         getFinancePendingPRs(),
         getQuotes(),

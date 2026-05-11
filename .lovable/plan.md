@@ -1,159 +1,70 @@
+## Goal
 
-## Database Foundation: PR Transaction-Level Messaging
+Add a stable Payment Status Engine + Batch Payment Management to the Finance portal **without breaking** existing approval flows, supplier uploads, chats, notifications, or realtime. All work is additive.
 
-### Current State
+## Current state (verified)
 
-The database already has a `pr_messages` table, but it was built with a lighter schema. Here is a direct comparison:
+- `invoices.status` already supports `UPLOADED → AWAITING_PAYMENT → PARTIALLY_PAID → PAID`.
+- `payment_allocations` already track partial amounts; `create_payment_batch` RPC validates that allocations cannot exceed the invoice total (defensive checks already exist).
+- `TransactionStatusTab` already renders Partially Paid / Fully Paid / Overdue / Reimbursements / Batches tabs.
+- `BatchPaymentModal` + `BatchesTab` exist but a batch immediately marks invoices `PAID` / `PARTIALLY_PAID` — there is **no Draft → Confirmed lifecycle**.
+- No explicit "Approved But Not Paid" counter, no overdue auto-detection, no payment audit log.
 
-```text
-EXISTING pr_messages columns      REQUESTED columns
-────────────────────────────────  ──────────────────────────────────
-id (uuid, PK)                     id (uuid, PK) ✓
-pr_id (uuid)                      purchase_requisition_id (uuid) ← different name
-sender_id (uuid)                  sender_user_id (uuid) ← different name
-sender_name (text)                [not requested]
-sender_role (text)                sender_role (text) ✓
-message (text, NOT NULL)          message_text (text, nullable) ← different name + nullable
-created_at (timestamp)            created_at (timestamp) ✓
-[missing]                         organization_id (uuid) ← new required column
-[missing]                         is_system_note (boolean) ← new required column
-```
+## Schema changes (additive only)
 
-The `pr_message_attachments` table does not yet exist at all.
+New migration:
 
-### Approach
+1. `payment_batches`: add `status text default 'DRAFT'` (`DRAFT | CONFIRMED | PAID | CANCELLED`), `batch_number text` (auto-generated `PB-YYYYMMDD-####`), `confirmed_at`, `paid_at`, `payment_reference text`.
+2. `payment_allocations`: add `payment_date date`, `payment_reference text`, `created_by uuid`.
+3. New table `payment_audit_log` (id, organization_id, invoice_id, batch_id nullable, action text, old_status text, new_status text, amount numeric, performed_by uuid, performed_at, notes text) + RLS: Finance/Admin select within org, inserted only by SECURITY DEFINER RPCs.
+4. New RPCs (all `SECURITY DEFINER`, granted to `authenticated`):
+   - `create_payment_batch_draft(_allocations jsonb, _notes)` — replaces immediate-paid behavior; creates batch in `DRAFT`, inserts allocations but **does not** update invoice status yet.
+   - `update_batch_draft(_batch_id, _add jsonb, _remove uuid[])` — modify draft allocations.
+   - `confirm_batch_paid(_batch_id, _payment_reference, _payment_date)` — flips batch → `PAID`, updates each invoice to `PAID` / `PARTIALLY_PAID` based on cumulative `amount_paid`, writes `payment_audit_log` rows, fires existing trigger notifications.
+   - `cancel_batch_draft(_batch_id)` — deletes draft allocations, sets batch `CANCELLED`.
+   - `recompute_overdue_invoices()` — marks invoices `OVERDUE` (new logical status, stored as `status='OVERDUE'`) when `AWAITING_PAYMENT` and `created_at + 30 days < now()`. Run on read (cheap) — called from Finance portal load.
+5. Keep the existing `create_payment_batch` RPC available (deprecated path) so any legacy callers don't break.
 
-Because you said "Do NOT modify existing PR tables," and because `pr_messages` currently backs live functionality (the PR chat panel uses `pr_id`, `sender_id`, `message`), the safest path is:
+## Frontend changes (additive, no refactors)
 
-**Augment the existing table** — add only the missing columns (`organization_id`, `is_system_note`) without renaming or removing existing columns. This preserves all current functionality while making the table comply with the new spec. The existing RLS policies and indexes remain intact and are extended.
+### `FinancePortal.tsx`
+- Add a new "Approved Not Paid" KPI card in the existing summary grid (already wired for counters).
+- Add tab `Approved Not Paid` BEFORE the existing Payments tab (do not remove anything). The tab lists invoices with `status='AWAITING_PAYMENT'` and < 30 days old.
+- Wire overdue invoices to the existing Overdue tab (already in `TransactionStatusTab`).
 
-The `pr_message_attachments` table is created fresh with full RLS.
+### `PaymentPreparationTab` + `TransactionStatusTab` (Partially Paid sub-tab)
+- Replace "Mark as Paid" with "Create Batch (Draft)" calling `create_payment_batch_draft`.
+- Existing "Create Payment Batch" path remains for partial-payment flow but now creates DRAFT batches.
 
----
+### `BatchesTab`
+- Show new `status` column with badges Draft/Confirmed/Paid/Cancelled.
+- Row expand for Draft batches: "Add/Remove transactions", "Confirm Paid" (prompts payment reference + date), "Cancel".
+- Show payment reference + timestamps in expanded view.
 
-### Migration Steps
+### Realtime
+- Keep all existing realtime hooks. Add a subscription on `payment_batches` in `useNotificationCounts` so batch counters refresh.
 
-**Step 1 — Extend `pr_messages` with missing columns**
+## Defensive validation (server-side, enforced in RPCs)
+- Allocation amount > 0 and ≤ remaining balance (already enforced; preserved).
+- Cannot confirm a batch that is not `DRAFT`.
+- Cannot modify a `CONFIRMED` or `PAID` batch.
+- Outstanding balance derived from sum of allocations of `PAID`/`CONFIRMED` batches only (drafts excluded) so drafts don't prematurely lock funds.
 
-```sql
-ALTER TABLE public.pr_messages
-  ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES public.organizations(id),
-  ADD COLUMN IF NOT EXISTS is_system_note boolean NOT NULL DEFAULT false;
+## Notifications
+- Use existing `tg_batch_notifications` trigger; extend it to send distinct titles for `DRAFT` (created), and add an explicit `INSERT` into notifications inside `confirm_batch_paid` ("Batch confirmed paid"). Reuse the existing `notification_type` enum values (`batch_created`, `partial_payment`, `full_payment`) — no enum changes needed.
 
--- Back-fill organization_id from the linked PR
-UPDATE public.pr_messages m
-SET organization_id = pr.organization_id
-FROM public.purchase_requisitions pr
-WHERE pr.id = m.pr_id;
+## Out of scope (per instructions)
+- No routing changes.
+- No changes to approval RLS, PR flow, chat, or supplier uploads.
+- No Netcash / Yoco wiring — schema simply leaves `payment_reference` as a free text field for future API integration.
 
--- Make organization_id NOT NULL after back-fill
-ALTER TABLE public.pr_messages
-  ALTER COLUMN organization_id SET NOT NULL;
-```
+## Risk mitigation
+- All schema changes are `ADD COLUMN ... DEFAULT ...` / new tables → existing data unaffected.
+- Existing `create_payment_batch` RPC retained.
+- Each new RPC enforces `has_role('FINANCE')` + organization scoping (identical to current security model).
+- Audit log writes are inside the SECURITY DEFINER RPCs, so they cannot be bypassed by direct client writes.
 
-**Step 2 — Add missing index on `organization_id`**
-
-An index on `pr_id` and `created_at` already exists. Only `organization_id` is missing.
-
-```sql
-CREATE INDEX IF NOT EXISTS idx_pr_messages_organization_id
-  ON public.pr_messages(organization_id);
-```
-
-**Step 3 — Add organization-scoped RLS policies to `pr_messages`**
-
-The existing policies filter by PR membership. A new, broader SELECT policy is added so that `organization_id`-based access is explicitly available for future service queries.
-
-```sql
--- Suppliers can view messages for PRs they have a quote request on
-CREATE POLICY "Suppliers can view PR messages in their org"
-  ON public.pr_messages FOR SELECT
-  USING (
-    organization_id = get_user_organization(auth.uid())
-    AND has_role(auth.uid(), 'SUPPLIER'::app_role)
-    AND EXISTS (
-      SELECT 1 FROM public.quote_requests qr
-      JOIN public.suppliers s ON s.id = qr.supplier_id
-      WHERE qr.pr_id = pr_messages.pr_id AND s.user_id = auth.uid()
-    )
-  );
-```
-
-No DELETE policies are created on `pr_messages` (audit integrity preserved).
-
-**Step 4 — Create `pr_message_attachments` table**
-
-```sql
-CREATE TABLE public.pr_message_attachments (
-  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  message_id  uuid NOT NULL REFERENCES public.pr_messages(id) ON DELETE CASCADE,
-  file_url    text NOT NULL,
-  file_name   text NOT NULL,
-  created_at  timestamp with time zone NOT NULL DEFAULT now()
-);
-
-ALTER TABLE public.pr_message_attachments ENABLE ROW LEVEL SECURITY;
-```
-
-**Step 5 — Indexes on `pr_message_attachments`**
-
-```sql
-CREATE INDEX idx_pr_message_attachments_message_id
-  ON public.pr_message_attachments(message_id);
-```
-
-**Step 6 — RLS policies on `pr_message_attachments`**
-
-Attachments inherit access through the parent message. A user who can see a message can see its attachments; a user who can post a message can attach files.
-
-```sql
--- SELECT: same org as the message's PR
-CREATE POLICY "Users can view attachments in their org"
-  ON public.pr_message_attachments FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.pr_messages m
-      JOIN public.purchase_requisitions pr ON pr.id = m.pr_id
-      WHERE m.id = pr_message_attachments.message_id
-        AND pr.organization_id = get_user_organization(auth.uid())
-    )
-  );
-
--- INSERT: user must own the parent message
-CREATE POLICY "Users can attach files to their own messages"
-  ON public.pr_message_attachments FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.pr_messages m
-      WHERE m.id = pr_message_attachments.message_id
-        AND m.sender_id = auth.uid()
-    )
-  );
-
--- No DELETE policy (audit integrity)
-```
-
----
-
-### What Is NOT Changed
-
-- `purchase_requisitions` table — untouched
-- Existing `pr_messages` columns (`pr_id`, `sender_id`, `sender_name`, `sender_role`, `message`) — untouched
-- All existing RLS policies on `pr_messages` — preserved
-- No UI components created
-- No service files created
-
----
-
-### Migration Summary Output
-
-| Item | Action |
-|---|---|
-| `pr_messages.organization_id` | Added (NOT NULL, back-filled, indexed) |
-| `pr_messages.is_system_note` | Added (boolean, default false) |
-| `pr_message_attachments` | Created fresh with RLS |
-| Indexes | `organization_id` on messages, `message_id` on attachments |
-| RLS — Supplier SELECT on messages | Added |
-| RLS — SELECT on attachments | Added (org-scoped via parent PR) |
-| RLS — INSERT on attachments | Added (sender ownership) |
-| DELETE policies | None created (audit integrity) |
+After approval I will:
+1. Run one migration with all schema + RPC changes.
+2. Update `FinancePortal.tsx`, `BatchesTab.tsx`, `BatchPaymentModal.tsx`, `PaymentPreparationTab.tsx` and `TransactionStatusTab.tsx` minimally.
+3. Verify build, then summarize.

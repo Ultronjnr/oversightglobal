@@ -37,9 +37,9 @@ import {
 import {
   getInvoicesAwaitingPayment,
   getInvoiceDocumentUrl,
-  markInvoicesAsPaid,
   type InvoiceWithDetails,
 } from "@/services/invoice.service";
+import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 
 interface PaymentPreparationTabProps {
@@ -122,19 +122,26 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     if (selectedIds.size === 0) return;
 
     setIsProcessing(true);
-    const result = await markInvoicesAsPaid(Array.from(selectedIds));
-    
-    if (result.success) {
-      toast.success("Payment batch completed", {
-        description: `${selectedIds.size} invoice(s) have been marked as paid.`,
+    const allocations = selectedInvoices.map((inv) => ({
+      invoice_id: inv.id,
+      amount: Number(inv.quote?.amount || 0),
+    }));
+    const { data, error } = await supabase.rpc("create_payment_batch_draft", {
+      _allocations: allocations as any,
+      _notes: null,
+    });
+    const result: any = data;
+    if (!error && result?.success) {
+      toast.success("Draft batch created", {
+        description: `Batch ${result.batch_number} — confirm payment from the Batches tab.`,
       });
       setSelectedIds(new Set());
       setShowBatchModal(false);
       fetchInvoices();
       onPaymentComplete?.();
     } else {
-      toast.error("Failed to process payment batch", {
-        description: result.error || "Some invoices may not have been updated.",
+      toast.error("Failed to create draft batch", {
+        description: error?.message || result?.error || "Please try again.",
       });
     }
     setIsProcessing(false);
@@ -286,11 +293,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Banknote className="h-5 w-5 text-primary" />
-              Payment Batch Confirmation
+              Create Draft Payment Batch
             </DialogTitle>
             <DialogDescription>
-              Review the selected invoices before marking them as paid. This action is for
-              record-keeping purposes only - no actual payment will be processed.
+              Review the selected invoices before creating a draft batch. The batch will be created
+              in <strong>Draft</strong> status — invoices remain unpaid until you confirm the batch
+              from the Batches tab.
             </DialogDescription>
           </DialogHeader>
 
@@ -337,11 +345,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             </div>
 
             {/* Warning */}
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
-              <AlertCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-warning">
-                This action will mark these invoices as paid in the system. Ensure payment has
-                been processed through your banking system before confirming.
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-foreground/80">
+                Creating a draft does <strong>not</strong> mark these invoices as paid. You can
+                review, add, or remove transactions in the Batches tab, then click
+                <em> Confirm Paid </em> once payment has been processed.
               </p>
             </div>
           </div>
@@ -362,12 +371,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               {isProcessing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing...
+                  Creating...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="h-4 w-4" />
-                  Mark as Paid
+                  Create Draft Batch
                 </>
               )}
             </Button>
