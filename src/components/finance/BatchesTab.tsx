@@ -358,6 +358,49 @@ export function BatchesTab() {
           })}
         </TableBody>
       </Table>
+      <Dialog open={!!confirmBatch} onOpenChange={(o) => !o && setConfirmBatch(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Confirm Batch Paid
+            </DialogTitle>
+            <DialogDescription>
+              Confirming will mark all invoices in batch{" "}
+              <span className="font-mono font-semibold">{confirmBatch?.batch_number}</span>{" "}
+              as paid or partially paid. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <label className="text-xs text-muted-foreground">Payment reference</label>
+              <Input
+                value={confirmRef}
+                onChange={(e) => setConfirmRef(e.target.value)}
+                placeholder="Bank ref / EFT number"
+                maxLength={120}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Payment date</label>
+              <Input
+                type="date"
+                value={confirmDate}
+                onChange={(e) => setConfirmDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmBatch(null)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmBatch} disabled={submitting} className="gap-2">
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Confirm Paid
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
