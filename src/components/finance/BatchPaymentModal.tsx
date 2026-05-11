@@ -81,7 +81,7 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
       .filter((p) => p.amount > 0)
       .map((p) => ({ invoice_id: p.item.invoiceId, amount: p.amount }));
 
-    const { data, error } = await supabase.rpc("create_payment_batch", {
+    const { data, error } = await supabase.rpc("create_payment_batch_draft", {
       _allocations: allocations as any,
       _notes: notes || null,
     });
@@ -98,8 +98,8 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
       return;
     }
 
-    toast.success("Payment batch created", {
-      description: `Batch total: ${formatCurrency(result.total || totalBatch)}`,
+    toast.success("Draft batch created", {
+      description: `Batch ${result.batch_number || ""} — confirm it as paid from the Batches tab.`,
     });
     onOpenChange(false);
     onConfirmed();
