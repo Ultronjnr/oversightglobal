@@ -69,6 +69,7 @@ import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
+import { supabase } from "@/integrations/supabase/client";
 import {
   getFinancePendingPRs,
   getQuotes,
