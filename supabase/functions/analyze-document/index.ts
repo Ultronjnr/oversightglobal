@@ -106,7 +106,9 @@ Deno.serve(async (req) => {
     if (!document_type || !bucket || !storage_path) {
       return json({ error: "Missing document_type, bucket or storage_path" }, 400);
     }
-    if (!["pr-documents", "reimbursement-documents"].includes(bucket)) {
+    if (
+      !["pr-documents", "reimbursement-documents", "invoice-documents"].includes(bucket)
+    ) {
       return json({ error: "Invalid bucket" }, 400);
     }
 
