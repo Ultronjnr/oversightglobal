@@ -264,6 +264,95 @@ export type Database = {
         }
         Relationships: []
       }
+      ocr_analyses: {
+        Row: {
+          bucket: string
+          confidence: number | null
+          created_at: string
+          created_by: string
+          document_type: Database["public"]["Enums"]["ocr_document_type"]
+          error_message: string | null
+          extracted: Json | null
+          id: string
+          invoice_id: string | null
+          model: string | null
+          organization_id: string
+          pr_id: string | null
+          raw_text: string | null
+          reimbursement_id: string | null
+          status: Database["public"]["Enums"]["ocr_status"]
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          bucket: string
+          confidence?: number | null
+          created_at?: string
+          created_by: string
+          document_type: Database["public"]["Enums"]["ocr_document_type"]
+          error_message?: string | null
+          extracted?: Json | null
+          id?: string
+          invoice_id?: string | null
+          model?: string | null
+          organization_id: string
+          pr_id?: string | null
+          raw_text?: string | null
+          reimbursement_id?: string | null
+          status?: Database["public"]["Enums"]["ocr_status"]
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string
+          document_type?: Database["public"]["Enums"]["ocr_document_type"]
+          error_message?: string | null
+          extracted?: Json | null
+          id?: string
+          invoice_id?: string | null
+          model?: string | null
+          organization_id?: string
+          pr_id?: string | null
+          raw_text?: string | null
+          reimbursement_id?: string | null
+          status?: Database["public"]["Enums"]["ocr_status"]
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ocr_analyses_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_analyses_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_analyses_reimbursement_id_fkey"
+            columns: ["reimbursement_id"]
+            isOneToOne: false
+            referencedRelation: "reimbursements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -1219,6 +1308,8 @@ export type Database = {
         | "overdue_transaction"
         | "invoice_uploaded"
         | "ai_receipt_matched"
+      ocr_document_type: "INVOICE" | "REIMBURSEMENT_PROOF" | "PR_DOCUMENT"
+      ocr_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
       pr_status:
         | "PENDING_HOD_APPROVAL"
@@ -1387,6 +1478,8 @@ export const Constants = {
         "invoice_uploaded",
         "ai_receipt_matched",
       ],
+      ocr_document_type: ["INVOICE", "REIMBURSEMENT_PROOF", "PR_DOCUMENT"],
+      ocr_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
       org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
       pr_status: [
         "PENDING_HOD_APPROVAL",

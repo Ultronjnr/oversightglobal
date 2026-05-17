@@ -38,6 +38,7 @@ import { getInvoiceSignedUrl } from "@/services/invoice-export.service";
 import { InvoiceExportControls } from "@/components/finance/InvoiceExportControls";
 import type { InvoiceExportRow } from "@/services/invoice-export.service";
 import { format } from "date-fns";
+import { OcrAnalysisPanel } from "@/components/ocr/OcrAnalysisPanel";
 
 export function InvoicesTable() {
   const [invoices, setInvoices] = useState<InvoiceWithSupplier[]>([]);
@@ -49,7 +50,8 @@ export function InvoicesTable() {
     isOpen: boolean;
     url: string;
     title: string;
-  }>({ isOpen: false, url: "", title: "" });
+    invoice: Invoice | null;
+  }>({ isOpen: false, url: "", title: "", invoice: null });
 
   useEffect(() => {
     fetchInvoices();
@@ -76,6 +78,7 @@ export function InvoicesTable() {
         isOpen: true,
         url: result.url,
         title: `Invoice – ${format(new Date(invoice.created_at), "dd MMM yyyy")}`,
+        invoice,
       });
     } else {
       toast.error("Failed to load document");
@@ -338,12 +341,26 @@ export function InvoicesTable() {
               {documentModal.title}
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 h-full min-h-[500px]">
-            <iframe
-              src={documentModal.url}
-              className="w-full h-full rounded-lg border"
-              title="Invoice Document"
-            />
+          <div className="flex-1 overflow-y-auto space-y-3">
+            <div className="h-[50vh] min-h-[400px]">
+              <iframe
+                src={documentModal.url}
+                className="w-full h-full rounded-lg border"
+                title="Invoice Document"
+              />
+            </div>
+            {documentModal.invoice && (
+              <OcrAnalysisPanel
+                title="AI invoice analysis"
+                input={{
+                  document_type: "INVOICE",
+                  bucket: "invoice-documents",
+                  storage_path: documentModal.invoice.document_url,
+                  invoice_id: documentModal.invoice.id,
+                  pr_id: documentModal.invoice.pr_id,
+                }}
+              />
+            )}
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button
