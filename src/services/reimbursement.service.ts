@@ -165,3 +165,61 @@ export const REIMBURSEMENT_PAYMENT_METHODS = [
   { value: "EFT", label: "EFT / Bank Transfer" },
   { value: "OTHER", label: "Other" },
 ] as const;
+
+// ---------- Finance sub-tab buckets ----------
+
+export type ReimbursementBucket = "PENDING" | "AWAITING_PAYMENT" | "PAID";
+
+/**
+ * Canonical mapping of UI buckets -> underlying statuses.
+ * - PENDING: newly submitted, awaiting finance review
+ * - AWAITING_PAYMENT: finance-approved, not yet paid (covers both APPROVED and
+ *   the explicit AWAITING_PAYMENT transitional state)
+ * - PAID: completed payouts only
+ * DECLINED/REJECTED are intentionally excluded from active sub-tabs.
+ */
+export const REIMBURSEMENT_BUCKET_STATUSES: Record<ReimbursementBucket, ReimbursementStatus[]> = {
+  PENDING: ["PENDING"],
+  AWAITING_PAYMENT: ["APPROVED", "AWAITING_PAYMENT"],
+  PAID: ["PAID"],
+};
+
+export interface ReimbursementPage {
+  rows: Reimbursement[];
+  total: number;
+}
+
+export async function getOrgReimbursementsByBucket(
+  bucket: ReimbursementBucket,
+  opts: { limit?: number; offset?: number } = {}
+): Promise<ReimbursementPage> {
+  const { limit = 25, offset = 0 } = opts;
+  const statuses = REIMBURSEMENT_BUCKET_STATUSES[bucket];
+  const { data, error, count } = await supabase
+    .from("reimbursements")
+    .select("*", { count: "exact" })
+    .in("status", statuses as any)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) {
+    logError("getOrgReimbursementsByBucket", error);
+    return { rows: [], total: 0 };
+  }
+  return { rows: (data || []) as unknown as Reimbursement[], total: count ?? 0 };
+}
+
+export async function getOrgReimbursementBucketCounts(): Promise<
+  Record<ReimbursementBucket, number>
+> {
+  const buckets: ReimbursementBucket[] = ["PENDING", "AWAITING_PAYMENT", "PAID"];
+  const results = await Promise.all(
+    buckets.map(async (b) => {
+      const { count } = await supabase
+        .from("reimbursements")
+        .select("id", { count: "exact", head: true })
+        .in("status", REIMBURSEMENT_BUCKET_STATUSES[b] as any);
+      return [b, count ?? 0] as const;
+    })
+  );
+  return Object.fromEntries(results) as Record<ReimbursementBucket, number>;
+}
