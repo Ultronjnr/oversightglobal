@@ -1,17 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { format } from "date-fns";
-import { Send, Loader2, Paperclip } from "lucide-react";
+import { Send, Loader2, Paperclip, Camera, X, FileText, ImageIcon } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { getPRMessages, sendPRMessage } from "@/services/pr-messaging.service";
-import type { PRMessage } from "@/types/pr-message.types";
+import type { PRMessage, PRMessageAttachmentInput } from "@/types/pr-message.types";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
+import { PRChatAttachment } from "@/components/pr/PRChatAttachment";
+import { analyzeDocument } from "@/services/ocr.service";
+
+const ACCEPTED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+];
+const MAX_FILE_MB = 15;
+const MAX_ATTACHMENTS = 5;
 
 const roleColors: Record<string, string> = {
   EMPLOYEE: "bg-primary/10 text-primary border-primary/20",
@@ -39,6 +53,9 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [staged, setStaged] = useState<File[]>([]);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   const scrollToBottom = () => {
     scrollAnchorRef.current?.scrollIntoView({ behavior: "auto" });
@@ -103,12 +120,34 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
 
   const handleSend = async () => {
     const text = newMessage.trim();
-    if (!text) return;
+    if (!text && staged.length === 0) return;
 
     setSending(true);
+
+    // 1. Upload staged files to pr-documents/chat/<prId>/...
+    const uploaded: PRMessageAttachmentInput[] = [];
+    const ocrPaths: { storage_path: string }[] = [];
+    for (const f of staged) {
+      const ext = f.name.split(".").pop() || "bin";
+      const path = `chat/${prId}/${Date.now()}-${uuidv4()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("pr-documents")
+        .upload(path, f, { contentType: f.type, upsert: false });
+      if (upErr) {
+        toast.error(`Failed to upload ${f.name}`);
+        setSending(false);
+        return;
+      }
+      uploaded.push({ fileUrl: `pr-documents/${path}`, fileName: f.name });
+      if (/^image\//.test(f.type) || /\.pdf$/i.test(f.name)) {
+        ocrPaths.push({ storage_path: path });
+      }
+    }
+
     const result = await sendPRMessage({
       purchaseRequisitionId: prId,
-      messageText: text,
+      messageText: text || undefined,
+      attachments: uploaded.length ? uploaded : undefined,
     });
 
     if (result.success && result.data) {
@@ -117,13 +156,50 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
         prev.some((m) => m.id === result.data!.id) ? prev : [...prev, result.data!]
       );
       setNewMessage("");
+      setStaged([]);
       // Refresh from server to ensure consistency with both participants
       fetchMessages(true);
+
+      // Fire-and-forget OCR queueing for image/PDF attachments
+      for (const o of ocrPaths) {
+        void analyzeDocument({
+          document_type: "PR_DOCUMENT",
+          bucket: "pr-documents",
+          storage_path: o.storage_path,
+          pr_id: prId,
+        }).catch(() => {
+          /* swallow — OCR is best-effort, do not interrupt chat */
+        });
+      }
     } else {
       toast.error(result.error || "Failed to send message");
     }
     setSending(false);
   };
+
+  const validateAndStage = (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const next: File[] = [...staged];
+    for (const f of arr) {
+      if (next.length >= MAX_ATTACHMENTS) {
+        toast.error(`Max ${MAX_ATTACHMENTS} attachments per message`);
+        break;
+      }
+      if (!ACCEPTED_TYPES.includes(f.type)) {
+        toast.error(`Unsupported file type: ${f.name}`);
+        continue;
+      }
+      if (f.size > MAX_FILE_MB * 1024 * 1024) {
+        toast.error(`${f.name} exceeds ${MAX_FILE_MB}MB`);
+        continue;
+      }
+      next.push(f);
+    }
+    setStaged(next);
+  };
+
+  const removeStaged = (idx: number) =>
+    setStaged((s) => s.filter((_, i) => i !== idx));
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -215,21 +291,12 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
                       {msg.attachments.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {msg.attachments.map((att) => (
-                            <a
+                            <PRChatAttachment
                               key={att.id}
-                              href={att.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={cn(
-                                "inline-flex items-center gap-1.5 text-xs rounded px-2 py-1 border",
-                                isMine
-                                  ? "bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground hover:underline"
-                                  : "bg-background border-border text-primary hover:underline"
-                              )}
-                            >
-                              <Paperclip className="h-3 w-3" />
-                              {att.fileName}
-                            </a>
+                              fileUrl={att.fileUrl}
+                              fileName={att.fileName}
+                              mine={isMine}
+                            />
                           ))}
                         </div>
                       )}
@@ -250,9 +317,68 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
 
       {/* Input area */}
       <div className="p-3 border-t border-border bg-muted/10 shrink-0">
-        <div className="flex gap-2 items-end">
+        {staged.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {staged.map((f, i) => {
+              const isImg = /^image\//.test(f.type);
+              return (
+                <div
+                  key={`${f.name}-${i}`}
+                  className="relative group flex items-center gap-1.5 rounded-md border border-border bg-background pl-2 pr-7 py-1 text-xs max-w-[200px]"
+                >
+                  {isImg ? (
+                    <ImageIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                  ) : (
+                    <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                  )}
+                  <span className="truncate" title={f.name}>{f.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${f.name}`}
+                    onClick={() => removeStaged(i)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-muted"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div className="flex gap-1.5 items-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_TYPES.join(",")}
+            hidden
+            onChange={(e) => {
+              if (e.target.files) validateAndStage(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={sending}
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Attach file"
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={sending}
+            onClick={() => setCameraOpen(true)}
+            className="shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Take photo"
+          >
+            <Camera className="h-4 w-4" />
+          </Button>
           <Textarea
-            placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+            placeholder="Message… (Enter to send, Shift+Enter for new line)"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -262,7 +388,7 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
           />
           <Button
             onClick={handleSend}
-            disabled={sending || !newMessage.trim()}
+            disabled={sending || (!newMessage.trim() && staged.length === 0)}
             size="icon"
             className="shrink-0"
           >
@@ -274,6 +400,16 @@ export function PRChatPanel({ prId, transactionId }: PRChatPanelProps) {
           </Button>
         </div>
       </div>
+
+      <CameraCaptureModal
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={(file) => {
+          setCameraOpen(false);
+          validateAndStage([file]);
+        }}
+        fileNamePrefix={`chat-${transactionId}`}
+      />
     </div>
   );
 }
