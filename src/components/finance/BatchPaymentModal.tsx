@@ -17,7 +17,12 @@ import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface BatchPaymentItem {
-  invoiceId: string;
+  /** Discriminator. Defaults to "invoice" for backward compatibility. */
+  kind?: "invoice" | "reimbursement";
+  /** Invoice id (when kind === "invoice"). */
+  invoiceId?: string;
+  /** Reimbursement id (when kind === "reimbursement"). */
+  reimbursementId?: string;
   party: string;
   partySub?: string;
   totalAmount: number;
@@ -38,14 +43,15 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const keyOf = (it: BatchPaymentItem) =>
+    (it.kind === "reimbursement" ? `r:${it.reimbursementId}` : `i:${it.invoiceId}`) as string;
+
   // Initialize amounts when items change / modal opens.
-  // NOTE: previously this used useMemo, which is an anti-pattern for state
-  // updates and could trigger render loops in strict mode.
   useEffect(() => {
     if (open) {
       const init: Record<string, string> = {};
       items.forEach((it) => {
-        init[it.invoiceId] = it.remaining.toFixed(2);
+        init[keyOf(it)] = it.remaining.toFixed(2);
       });
       setAmounts(init);
       setNotes("");
@@ -53,7 +59,7 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
   }, [open, items]);
 
   const parsed = items.map((it) => {
-    const raw = amounts[it.invoiceId] ?? "0";
+    const raw = amounts[keyOf(it)] ?? "0";
     const num = Number(raw);
     const valid = !isNaN(num) && num >= 0 && num <= it.remaining;
     return { item: it, amount: isNaN(num) ? 0 : num, valid };
@@ -79,7 +85,11 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
     setSubmitting(true);
     const allocations = parsed
       .filter((p) => p.amount > 0)
-      .map((p) => ({ invoice_id: p.item.invoiceId, amount: p.amount }));
+      .map((p) =>
+        p.item.kind === "reimbursement"
+          ? { reimbursement_id: p.item.reimbursementId!, amount: p.amount }
+          : { invoice_id: p.item.invoiceId!, amount: p.amount },
+      );
 
     const { data, error } = await supabase.rpc("create_payment_batch_draft", {
       _allocations: allocations as any,
@@ -121,15 +131,27 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
 
         <div className="space-y-3 py-2">
           {items.map((it) => {
-            const p = parsed.find((x) => x.item.invoiceId === it.invoiceId)!;
+            const k = keyOf(it);
+            const p = parsed.find((x) => keyOf(x.item) === k)!;
             return (
               <div
-                key={it.invoiceId}
+                key={k}
                 className="rounded-lg border border-border/50 p-3 bg-muted/10"
               >
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <p className="font-medium text-sm">{it.party}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{it.party}</p>
+                      <span
+                        className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${
+                          it.kind === "reimbursement"
+                            ? "bg-warning/10 text-warning border-warning/30"
+                            : "bg-primary/10 text-primary border-primary/30"
+                        }`}
+                      >
+                        {it.kind === "reimbursement" ? "Reimbursement" : "Invoice"}
+                      </span>
+                    </div>
                     {it.partySub && (
                       <p className="text-xs text-muted-foreground">{it.partySub}</p>
                     )}
@@ -160,8 +182,8 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
                     min={0}
                     max={it.remaining}
                     step="0.01"
-                    value={amounts[it.invoiceId] ?? ""}
-                    onChange={(e) => handleAmountChange(it.invoiceId, e.target.value)}
+                    value={amounts[k] ?? ""}
+                    onChange={(e) => handleAmountChange(k, e.target.value)}
                     className={`h-8 ${!p.valid ? "border-destructive" : ""}`}
                   />
                 </div>
