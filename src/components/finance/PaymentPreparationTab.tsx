@@ -9,15 +9,12 @@ import {
   Banknote,
   ExternalLink,
   Building2,
-  AlertCircle,
-  CheckCircle2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -27,124 +24,169 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   getInvoicesAwaitingPayment,
   getInvoiceDocumentUrl,
   type InvoiceWithDetails,
 } from "@/services/invoice.service";
-import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
+import {
+  getOrgReimbursementsByBucket,
+  getReimbursementProofUrl,
+  type Reimbursement,
+} from "@/services/reimbursement.service";
+import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
 }
 
+type PayRow =
+  | {
+      kind: "invoice";
+      key: string;
+      id: string;
+      party: string;
+      partySub?: string;
+      transactionId: string;
+      amount: number;
+      currency?: string;
+      createdAt: string;
+      documentUrl: string | null;
+      status: string;
+    }
+  | {
+      kind: "reimbursement";
+      key: string;
+      id: string;
+      party: string;
+      partySub?: string;
+      transactionId: string;
+      amount: number;
+      currency?: string;
+      createdAt: string;
+      documentUrl: string | null;
+      status: string;
+    };
+
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([]);
+  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [viewingInvoiceUrl, setViewingInvoiceUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchInvoices();
+    void fetchAll();
   }, []);
 
-  const fetchInvoices = async () => {
+  const fetchAll = async () => {
     setLoading(true);
-    const result = await getInvoicesAwaitingPayment();
-    if (result.success) {
-      setInvoices(result.data);
-    } else {
-      toast.error(result.error || "Failed to load invoices");
-    }
+    const [invRes, reimbRes] = await Promise.all([
+      getInvoicesAwaitingPayment(),
+      getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
+    ]);
+    if (invRes.success) setInvoices(invRes.data);
+    else toast.error(invRes.error || "Failed to load invoices");
+    setReimbursements(reimbRes.rows);
     setLoading(false);
   };
 
-  const selectedInvoices = useMemo(() => {
-    return invoices.filter((inv) => selectedIds.has(inv.id));
-  }, [invoices, selectedIds]);
+  const rows = useMemo<PayRow[]>(() => {
+    const invRows: PayRow[] = invoices.map((inv) => ({
+      kind: "invoice",
+      key: `i:${inv.id}`,
+      id: inv.id,
+      party: inv.supplier?.company_name || "Unknown supplier",
+      partySub: inv.supplier?.contact_email,
+      transactionId: inv.pr?.transaction_id || "-",
+      amount: Number(inv.quote?.amount || 0),
+      currency: inv.pr?.currency,
+      createdAt: inv.created_at,
+      documentUrl: inv.document_url,
+      status: inv.status,
+    }));
+    const reimbRows: PayRow[] = reimbursements.map((r) => ({
+      kind: "reimbursement",
+      key: `r:${r.id}`,
+      id: r.id,
+      party: r.employee_name,
+      partySub: r.description,
+      transactionId: r.reimbursement_reference || r.id.slice(0, 8).toUpperCase(),
+      amount: Number(r.amount || 0),
+      currency: r.currency,
+      createdAt: r.created_at,
+      documentUrl: r.proof_document_url,
+      status: r.status,
+    }));
+    return [...invRows, ...reimbRows].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [invoices, reimbursements]);
 
-  const totalSelectedAmount = useMemo(() => {
-    return selectedInvoices.reduce((sum, inv) => sum + (inv.quote?.amount || 0), 0);
-  }, [selectedInvoices]);
+  const selectedRows = useMemo(
+    () => rows.filter((r) => selectedIds.has(r.key)),
+    [rows, selectedIds],
+  );
+  const totalSelectedAmount = useMemo(
+    () => selectedRows.reduce((s, r) => s + r.amount, 0),
+    [selectedRows],
+  );
 
-  const handleToggleSelect = (id: string) => {
+  const batchItems: BatchPaymentItem[] = selectedRows.map((r) => ({
+    kind: r.kind,
+    invoiceId: r.kind === "invoice" ? r.id : undefined,
+    reimbursementId: r.kind === "reimbursement" ? r.id : undefined,
+    party: r.party,
+    partySub: r.partySub,
+    totalAmount: r.amount,
+    amountPaid: 0,
+    remaining: r.amount,
+    currency: r.currency,
+  }));
+
+  const handleToggleSelect = (key: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.size === invoices.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(invoices.map((inv) => inv.id)));
-    }
+    if (selectedIds.size === rows.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(rows.map((r) => r.key)));
   };
 
-  const handleViewInvoice = async (documentUrl: string) => {
-    const result = await getInvoiceDocumentUrl(documentUrl);
-    if (result.success && result.url) {
-      window.open(result.url, "_blank");
+  const handleViewDocument = async (row: PayRow) => {
+    if (!row.documentUrl) {
+      toast.error("No document attached");
+      return;
+    }
+    if (row.kind === "invoice") {
+      const res = await getInvoiceDocumentUrl(row.documentUrl);
+      if (res.success && res.url) window.open(res.url, "_blank");
+      else toast.error("Failed to load document", { description: res.error });
     } else {
-      toast.error("Failed to load document", {
-        description: result.error || "The invoice document could not be retrieved.",
-      });
+      const url = await getReimbursementProofUrl(row.documentUrl);
+      if (url) window.open(url, "_blank");
+      else toast.error("Failed to load proof");
     }
   };
 
   const handleCreateBatch = () => {
     if (selectedIds.size === 0) {
-      toast.error("No invoices selected", {
-        description: "Please select at least one invoice to create a payment batch.",
+      toast.error("Nothing selected", {
+        description: "Select at least one invoice or reimbursement to create a payment batch.",
       });
       return;
     }
     setShowBatchModal(true);
   };
 
-  const handleMarkAsPaid = async () => {
-    if (selectedIds.size === 0) return;
-
-    setIsProcessing(true);
-    const allocations = selectedInvoices.map((inv) => ({
-      invoice_id: inv.id,
-      amount: Number(inv.quote?.amount || 0),
-    }));
-    const { data, error } = await supabase.rpc("create_payment_batch_draft", {
-      _allocations: allocations as any,
-      _notes: null,
-    });
-    const result: any = data;
-    if (!error && result?.success) {
-      toast.success("Draft batch created", {
-        description: `Batch ${result.batch_number} — confirm payment from the Batches tab.`,
-      });
-      setSelectedIds(new Set());
-      setShowBatchModal(false);
-      fetchInvoices();
-      onPaymentComplete?.();
-    } else {
-      toast.error("Failed to create draft batch", {
-        description: error?.message || result?.error || "Please try again.",
-      });
-    }
-    setIsProcessing(false);
+  const handleBatchConfirmed = () => {
+    setSelectedIds(new Set());
+    void fetchAll();
+    onPaymentComplete?.();
   };
 
   if (loading) {
@@ -155,12 +197,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     );
   }
 
-  if (invoices.length === 0) {
+  if (rows.length === 0) {
     return (
       <EmptyState
         icon={<Banknote className="h-16 w-16" />}
         title="No Pending Payments"
-        description="All invoices have been paid. New invoices will appear here when suppliers upload them for approved PRs."
+        description="All invoices and reimbursements are settled. New items will appear here once approved."
       />
     );
   }
@@ -176,12 +218,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             onClick={handleSelectAll}
             className="gap-2"
           >
-            {selectedIds.size === invoices.length ? (
+            {selectedIds.size === rows.length ? (
               <CheckSquare className="h-4 w-4" />
             ) : (
               <Square className="h-4 w-4" />
             )}
-            {selectedIds.size === invoices.length ? "Deselect All" : "Select All"}
+            {selectedIds.size === rows.length ? "Deselect All" : "Select All"}
           </Button>
           
           {selectedIds.size > 0 && (
@@ -212,74 +254,89 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         </Button>
       </div>
 
-      {/* Invoices Table */}
+      {/* Combined Table */}
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
               <TableHead className="w-12"></TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Transaction ID</TableHead>
-              <TableHead>Supplier</TableHead>
+              <TableHead>Payee</TableHead>
               <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Uploaded</TableHead>
-              <TableHead className="text-right">Invoice</TableHead>
+              <TableHead className="text-right">Document</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((invoice) => (
+            {rows.map((row) => (
               <TableRow
-                key={invoice.id}
+                key={row.key}
                 className={`cursor-pointer transition-colors ${
-                  selectedIds.has(invoice.id)
+                  selectedIds.has(row.key)
                     ? "bg-primary/5 hover:bg-primary/10"
                     : "hover:bg-muted/20"
                 }`}
-                onClick={() => handleToggleSelect(invoice.id)}
+                onClick={() => handleToggleSelect(row.key)}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
-                    checked={selectedIds.has(invoice.id)}
-                    onCheckedChange={() => handleToggleSelect(invoice.id)}
+                    checked={selectedIds.has(row.key)}
+                    onCheckedChange={() => handleToggleSelect(row.key)}
                   />
                 </TableCell>
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={
+                      row.kind === "reimbursement"
+                        ? "bg-warning/10 text-warning border-warning/30"
+                        : "bg-primary/10 text-primary border-primary/30"
+                    }
+                  >
+                    {row.kind === "reimbursement" ? "Reimbursement" : "Invoice"}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-mono text-sm">
-                  {invoice.pr?.transaction_id || "-"}
+                  {row.transactionId}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">{invoice.supplier?.company_name || "-"}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {invoice.supplier?.contact_email}
-                      </p>
+                      <p className="font-medium">{row.party}</p>
+                      {row.partySub && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {row.partySub}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="text-right font-semibold">
-                  {formatCurrency(invoice.quote?.amount || 0, invoice.pr?.currency)}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge type="invoice" status={invoice.status} />
+                  {formatCurrency(row.amount, row.currency)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
-                  {format(new Date(invoice.created_at), "dd MMM yyyy")}
+                  {format(new Date(row.createdAt), "dd MMM yyyy")}
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewInvoice(invoice.document_url);
-                    }}
-                    className="gap-1 text-primary hover:text-primary"
-                  >
-                    <FileText className="h-4 w-4" />
-                    View
-                    <ExternalLink className="h-3 w-3" />
-                  </Button>
+                  {row.documentUrl ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void handleViewDocument(row);
+                      }}
+                      className="gap-1 text-primary hover:text-primary"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View
+                      <ExternalLink className="h-3 w-3" />
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -287,102 +344,13 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         </Table>
       </div>
 
-      {/* Payment Batch Confirmation Modal */}
-      <Dialog open={showBatchModal} onOpenChange={setShowBatchModal}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Banknote className="h-5 w-5 text-primary" />
-              Create Draft Payment Batch
-            </DialogTitle>
-            <DialogDescription>
-              Review the selected invoices before creating a draft batch. The batch will be created
-              in <strong>Draft</strong> status — invoices remain unpaid until you confirm the batch
-              from the Batches tab.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            {/* Batch Summary */}
-            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Invoices in Batch</span>
-                <span className="text-lg font-semibold">{selectedInvoices.length}</span>
-              </div>
-              <div className="flex items-center justify-between border-t border-border/50 pt-3">
-                <span className="text-sm text-muted-foreground">Total Amount</span>
-                <span className="text-xl font-bold text-primary">
-                  {formatCurrency(totalSelectedAmount)}
-                </span>
-              </div>
-            </div>
-
-            {/* Invoice List */}
-            <div className="max-h-[200px] overflow-y-auto rounded-lg border border-border/50">
-              {selectedInvoices.map((invoice, index) => (
-                <div
-                  key={invoice.id}
-                  className={`flex items-center justify-between p-3 ${
-                    index > 0 ? "border-t border-border/30" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{invoice.supplier?.company_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {invoice.pr?.transaction_id}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="font-medium">
-                    {formatCurrency(invoice.quote?.amount || 0)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* Warning */}
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <AlertCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-foreground/80">
-                Creating a draft does <strong>not</strong> mark these invoices as paid. You can
-                review, add, or remove transactions in the Batches tab, then click
-                <em> Confirm Paid </em> once payment has been processed.
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              variant="outline"
-              onClick={() => setShowBatchModal(false)}
-              disabled={isProcessing}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleMarkAsPaid}
-              disabled={isProcessing}
-              className="gap-2"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Create Draft Batch
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Batch creation modal (supports both invoices & reimbursements) */}
+      <BatchPaymentModal
+        open={showBatchModal}
+        onOpenChange={setShowBatchModal}
+        items={batchItems}
+        onConfirmed={handleBatchConfirmed}
+      />
     </div>
   );
 }
