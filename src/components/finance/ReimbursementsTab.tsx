@@ -160,7 +160,11 @@ export function ReimbursementsTab() {
   // Programmatic tab switch (state + URL) — used after state-changing actions
   // so the user is never left staring at an empty bucket.
   const goToTab = (next: ReimbursementBucket) => {
-    if (next === subTab) return;
+    if (next === subTab) {
+      // Already there — just refresh the current page so the row is reflected.
+      void fetchPage();
+      return;
+    }
     setSubTab(next);
     setPage(0);
     const params = new URLSearchParams(searchParams);
