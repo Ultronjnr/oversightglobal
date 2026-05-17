@@ -48,7 +48,7 @@ export interface OcrAnalysis {
 
 export interface AnalyzeDocumentInput {
   document_type: OcrDocumentType;
-  bucket: "pr-documents" | "reimbursement-documents";
+  bucket: "pr-documents" | "reimbursement-documents" | "invoice-documents";
   storage_path: string;
   invoice_id?: string;
   reimbursement_id?: string;
