@@ -39,7 +39,6 @@ import { InvoiceExportControls } from "@/components/finance/InvoiceExportControl
 import type { InvoiceExportRow } from "@/services/invoice-export.service";
 import { format } from "date-fns";
 import { OcrAnalysisPanel } from "@/components/ocr/OcrAnalysisPanel";
-import { extractStoragePath } from "@/services/document.service";
 
 export function InvoicesTable() {
   const [invoices, setInvoices] = useState<InvoiceWithSupplier[]>([]);
@@ -355,8 +354,8 @@ export function InvoicesTable() {
                 title="AI invoice analysis"
                 input={{
                   document_type: "INVOICE",
-                  bucket: "pr-documents",
-                  storage_path: extractStoragePath(documentModal.invoice.document_url),
+                  bucket: "invoice-documents",
+                  storage_path: documentModal.invoice.document_url,
                   invoice_id: documentModal.invoice.id,
                   pr_id: documentModal.invoice.pr_id,
                 }}
