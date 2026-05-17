@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  MessageSquarePlus,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ import {
 } from "@/services/reimbursement.service";
 import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
 import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
+import { AddCommentDialog } from "@/components/reimbursement/AddCommentDialog";
 
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = [
@@ -106,6 +108,7 @@ export function ReimbursementsTab() {
   const [actingId, setActingId] = useState<string | null>(null);
   const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
   const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
+  const [commentTarget, setCommentTarget] = useState<Reimbursement | null>(null);
 
   // Sync URL <-> state when user switches sub-tab
   const handleTabChange = (v: string) => {
@@ -252,6 +255,17 @@ export function ReimbursementsTab() {
                   {format(new Date(r.created_at), "dd MMM yyyy")}
                 </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setCommentTarget(r)}
+                      className="gap-1"
+                      aria-label="Add internal comment"
+                    >
+                      <MessageSquarePlus className="h-4 w-4" />
+                      Comment
+                    </Button>
                   {r.status === "PENDING" && (
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -287,6 +301,7 @@ export function ReimbursementsTab() {
                       Mark as Paid
                     </Button>
                   )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -378,6 +393,12 @@ export function ReimbursementsTab() {
       open={!!detailsItem}
       onOpenChange={(o) => !o && setDetailsItem(null)}
       reimbursement={detailsItem}
+    />
+    <AddCommentDialog
+      open={!!commentTarget}
+      onOpenChange={(o) => !o && setCommentTarget(null)}
+      reimbursementId={commentTarget?.id ?? null}
+      onAdded={reloadAll}
     />
     </>
   );
