@@ -642,14 +642,19 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-foreground">Preferred Supplier</Label>
-                      <Select onValueChange={(value) => setValue("supplier_preference", value)}>
-                        <SelectTrigger className="bg-white border-border h-11">
-                          <SelectValue placeholder="Select a supplier or type manually..." />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
-                          <SelectItem value="manual">Type manually...</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                        <Input
+                          {...register("supplier_preference")}
+                          placeholder="Enter supplier name manually..."
+                          maxLength={120}
+                          autoComplete="off"
+                          className="bg-white border-border h-11 pl-9 rounded-md"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Type any supplier name — existing or new. New suppliers can be invited to register later.
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-foreground">Supplier Address</Label>
