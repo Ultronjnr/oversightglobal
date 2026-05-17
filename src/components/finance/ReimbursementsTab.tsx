@@ -287,6 +287,7 @@ export function ReimbursementsTab() {
   );
 
   return (
+    <>
     <Tabs value={subTab} onValueChange={handleTabChange} className="space-y-4">
       <TabsList className="grid w-full grid-cols-3 max-w-xl">
         <TabsTrigger value="PENDING" className="gap-2">
@@ -352,5 +353,18 @@ export function ReimbursementsTab() {
         )}
       </TabsContent>
     </Tabs>
+    <ReimbursementProofModal
+      open={!!proofItem}
+      onOpenChange={(o) => !o && setProofItem(null)}
+      proofPath={proofItem?.proof_document_url ?? null}
+      title="Proof of Payment"
+      subtitle={proofItem ? `${proofItem.employee_name} — ${formatCurrency(Number(proofItem.amount), proofItem.currency)}` : undefined}
+    />
+    <ReimbursementDetailsModal
+      open={!!detailsItem}
+      onOpenChange={(o) => !o && setDetailsItem(null)}
+      reimbursement={detailsItem}
+    />
+    </>
   );
 }
