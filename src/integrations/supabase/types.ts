@@ -949,6 +949,7 @@ export type Database = {
           reimbursement_date: string | null
           reimbursement_reference: string | null
           status: Database["public"]["Enums"]["reimbursement_status"]
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -971,6 +972,7 @@ export type Database = {
           reimbursement_date?: string | null
           reimbursement_reference?: string | null
           status?: Database["public"]["Enums"]["reimbursement_status"]
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -993,6 +995,7 @@ export type Database = {
           reimbursement_date?: string | null
           reimbursement_reference?: string | null
           status?: Database["public"]["Enums"]["reimbursement_status"]
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1190,6 +1193,10 @@ export type Database = {
         Args: { _token: string; _user_id: string }
         Returns: boolean
       }
+      add_reimbursement_comment: {
+        Args: { _comment: string; _reimbursement_id: string }
+        Returns: Json
+      }
       approve_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
         Returns: Json
@@ -1258,6 +1265,20 @@ export type Database = {
       recompute_overdue_invoices: { Args: never; Returns: number }
       reject_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
+      submit_reimbursement: {
+        Args: {
+          _amount: number
+          _description: string
+          _notes?: string
+          _payment_method: string
+          _pr_id?: string
+          _proof_url: string
+          _reference?: string
+          _reimbursement_date?: string
+          _title: string
+        }
         Returns: Json
       }
       submit_reimbursement_for_pr: {
