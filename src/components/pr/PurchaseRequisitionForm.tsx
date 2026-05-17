@@ -402,37 +402,15 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
       {/* File Upload */}
       <div className="space-y-3">
         <Label>Supporting Document</Label>
-        {uploadedFile ? (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="flex-1 text-sm truncate">{uploadedFile.name}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={removeFile}
-              className="h-8 w-8"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/20 transition-colors">
-            <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-            <span className="text-sm text-muted-foreground">
-              Click to upload or drag and drop
-            </span>
-            <span className="text-xs text-muted-foreground mt-1">
-              PDF, DOC, DOCX, XLS, XLSX (max 10MB)
-            </span>
-            <input
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx"
-              onChange={handleFileChange}
-            />
-          </label>
-        )}
+        <DocumentCaptureField
+          file={uploadedFile}
+          onChange={setUploadedFile}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+          maxSizeMB={10}
+          helperText="PDF, DOC, XLS or photo (max 10MB)"
+          fileNamePrefix="pr-document"
+          onError={(m) => toast.error(m)}
+        />
       </div>
 
       {/* Submit */}
