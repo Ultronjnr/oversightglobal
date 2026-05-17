@@ -157,6 +157,17 @@ export function ReimbursementsTab() {
     await Promise.all([fetchPage(), refreshCounts()]);
   };
 
+  // Programmatic tab switch (state + URL) — used after state-changing actions
+  // so the user is never left staring at an empty bucket.
+  const goToTab = (next: ReimbursementBucket) => {
+    if (next === subTab) return;
+    setSubTab(next);
+    setPage(0);
+    const params = new URLSearchParams(searchParams);
+    params.set(URL_KEY, next);
+    setSearchParams(params, { replace: true });
+  };
+
   const openProof = (r: Reimbursement) => setProofItem(r);
   const openDetails = (r: Reimbursement) => setDetailsItem(r);
 
@@ -166,7 +177,8 @@ export function ReimbursementsTab() {
     setActingId(null);
     if (!res.success) return toast.error("Approval failed", { description: res.error });
     toast.success("Reimbursement approved", { description: "Moved to Awaiting Payment queue." });
-    reloadAll();
+    await refreshCounts();
+    goToTab("AWAITING_PAYMENT");
   };
 
   const handleDecline = async (r: Reimbursement) => {
@@ -175,7 +187,8 @@ export function ReimbursementsTab() {
     setActingId(null);
     if (!res.success) return toast.error("Decline failed", { description: res.error });
     toast.success("Reimbursement declined");
-    reloadAll();
+    await refreshCounts();
+    goToTab("REJECTED");
   };
 
   const handleMarkPaid = async (r: Reimbursement) => {
@@ -184,7 +197,8 @@ export function ReimbursementsTab() {
     setActingId(null);
     if (!res.success) return toast.error("Mark as paid failed", { description: res.error });
     toast.success("Reimbursement marked as paid");
-    reloadAll();
+    await refreshCounts();
+    goToTab("PAID");
   };
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
