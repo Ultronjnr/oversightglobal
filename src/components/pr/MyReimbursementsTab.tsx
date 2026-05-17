@@ -11,6 +11,7 @@ import {
   CircleDollarSign,
   CheckCircle2,
   XCircle,
+  Plus,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
 } from "@/services/reimbursement.service";
 import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
 import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
+import { SubmitStandaloneReimbursementModal } from "@/components/pr/SubmitStandaloneReimbursementModal";
 
 type EmpSubView = "SUBMITTED" | "APPROVED" | "AWAITING_PAYMENT" | "PAID";
 const EMP_TABS: EmpSubView[] = ["SUBMITTED", "APPROVED", "AWAITING_PAYMENT", "PAID"];
@@ -136,6 +138,12 @@ export function MyReimbursementsTab() {
   const [loading, setLoading] = useState(true);
   const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
   const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
+  const [submitOpen, setSubmitOpen] = useState(false);
+
+  const reload = async () => {
+    const data = await getMyReimbursements();
+    setItems(data);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -199,7 +207,10 @@ export function MyReimbursementsTab() {
         >
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <p className="font-medium leading-tight">{r.description}</p>
+              <p className="font-medium leading-tight">{r.title || r.description}</p>
+              {r.title && r.description && r.title !== r.description && (
+                <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
+              )}
               <p className="text-xs text-muted-foreground mt-0.5">
                 Submitted {format(new Date(r.created_at), "dd MMM yyyy")}
                 {r.pr_id && <span className="ml-1">• PR linked</span>}
@@ -257,6 +268,19 @@ export function MyReimbursementsTab() {
 
   return (
     <>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold">My Reimbursements</h2>
+          <p className="text-sm text-muted-foreground">
+            Track every claim you've submitted and its status.
+          </p>
+        </div>
+        <Button onClick={() => setSubmitOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Submit Reimbursement
+        </Button>
+      </div>
+
       <Tabs value={view} onValueChange={handleViewChange} className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 max-w-2xl">
           {EMP_TABS.map((t) => (
@@ -290,6 +314,12 @@ export function MyReimbursementsTab() {
         open={!!detailsItem}
         onOpenChange={(o) => !o && setDetailsItem(null)}
         reimbursement={detailsItem}
+      />
+
+      <SubmitStandaloneReimbursementModal
+        open={submitOpen}
+        onOpenChange={setSubmitOpen}
+        onSubmitted={reload}
       />
     </>
   );

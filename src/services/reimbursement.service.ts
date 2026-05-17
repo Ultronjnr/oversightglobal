@@ -31,6 +31,7 @@ export interface Reimbursement {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  title?: string | null;
 }
 
 export interface SubmitReimbursementInput {
@@ -41,6 +42,18 @@ export interface SubmitReimbursementInput {
   reference?: string;
   reimbursement_date?: string;
   proof_file: File;
+  notes?: string;
+}
+
+export interface SubmitStandaloneReimbursementInput {
+  title: string;
+  amount: number;
+  description: string;
+  payment_method: string;
+  proof_file: File;
+  pr_id?: string | null;
+  reference?: string;
+  reimbursement_date?: string;
   notes?: string;
 }
 
@@ -87,6 +100,70 @@ export async function submitReimbursementForPR(input: SubmitReimbursementInput) 
   } catch (e) {
     return { success: false, error: getSafeErrorMessage(e) };
   }
+}
+
+export async function submitReimbursement(input: SubmitStandaloneReimbursementInput) {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const proofPath = await uploadProof(input.proof_file, user.id);
+    if (!proofPath) return { success: false, error: "Failed to upload proof document" };
+
+    const { data, error } = await supabase.rpc(
+      "submit_reimbursement" as any,
+      {
+        _title: input.title,
+        _amount: input.amount,
+        _description: input.description,
+        _payment_method: input.payment_method,
+        _proof_url: proofPath,
+        _pr_id: input.pr_id ?? null,
+        _reference: input.reference ?? null,
+        _reimbursement_date: input.reimbursement_date ?? null,
+        _notes: input.notes ?? null,
+      } as any
+    );
+    if (error) return { success: false, error: getSafeErrorMessage(error) };
+    const result = data as any;
+    if (!result?.success) return { success: false, error: result?.error || "Failed" };
+    return { success: true, reimbursement_id: result.reimbursement_id as string };
+  } catch (e) {
+    return { success: false, error: getSafeErrorMessage(e) };
+  }
+}
+
+export async function addReimbursementComment(id: string, comment: string) {
+  const { data, error } = await supabase.rpc("add_reimbursement_comment" as any, {
+    _reimbursement_id: id,
+    _comment: comment,
+  } as any);
+  if (error) return { success: false, error: getSafeErrorMessage(error) };
+  const r = data as any;
+  return r?.success ? { success: true } : { success: false, error: r?.error || "Failed" };
+}
+
+/** Lightweight list of the current employee's own PRs, used by the standalone modal selector. */
+export async function getMyRequisitionsForLinking(): Promise<
+  Array<{ id: string; transaction_id: string; total_amount: number; currency: string }>
+> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("purchase_requisitions")
+    .select("id, transaction_id, total_amount, currency")
+    .eq("requested_by", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) {
+    logError("getMyRequisitionsForLinking", error);
+    return [];
+  }
+  return (data || []) as any;
 }
 
 export async function approveReimbursement(id: string, notes?: string) {
@@ -209,14 +286,18 @@ export async function getLinkedPRSummary(prId: string): Promise<LinkedPRSummary 
 
 export const REIMBURSEMENT_PAYMENT_METHODS = [
   { value: "CASH", label: "Cash" },
-  { value: "PERSONAL_CARD", label: "Personal Card" },
+  { value: "CARD", label: "Card" },
   { value: "EFT", label: "EFT / Bank Transfer" },
   { value: "OTHER", label: "Other" },
 ] as const;
 
 // ---------- Finance sub-tab buckets ----------
 
-export type ReimbursementBucket = "PENDING" | "AWAITING_PAYMENT" | "PAID";
+export type ReimbursementBucket =
+  | "PENDING"
+  | "AWAITING_PAYMENT"
+  | "PAID"
+  | "REJECTED";
 
 /**
  * Canonical mapping of UI buckets -> underlying statuses.
@@ -230,6 +311,7 @@ export const REIMBURSEMENT_BUCKET_STATUSES: Record<ReimbursementBucket, Reimburs
   PENDING: ["PENDING"],
   AWAITING_PAYMENT: ["APPROVED", "AWAITING_PAYMENT"],
   PAID: ["PAID"],
+  REJECTED: ["REJECTED", "DECLINED"],
 };
 
 export interface ReimbursementPage {
@@ -259,7 +341,12 @@ export async function getOrgReimbursementsByBucket(
 export async function getOrgReimbursementBucketCounts(): Promise<
   Record<ReimbursementBucket, number>
 > {
-  const buckets: ReimbursementBucket[] = ["PENDING", "AWAITING_PAYMENT", "PAID"];
+  const buckets: ReimbursementBucket[] = [
+    "PENDING",
+    "AWAITING_PAYMENT",
+    "PAID",
+    "REJECTED",
+  ];
   const results = await Promise.all(
     buckets.map(async (b) => {
       const { count } = await supabase

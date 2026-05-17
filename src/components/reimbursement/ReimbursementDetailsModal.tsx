@@ -120,6 +120,7 @@ export function ReimbursementDetailsModal({
                     </span>
                   }
                 />
+                {r.title && <Field label="Title" value={r.title} />}
                 <Field label="Description" value={r.description} />
                 <Field label="Payment Method" value={r.payment_method} />
                 <Field label="Reference" value={r.reimbursement_reference} />
