@@ -40,7 +40,12 @@ import { ReimbursementProofModal } from "@/components/reimbursement/Reimbursemen
 import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
 
 const PAGE_SIZE = 25;
-const VALID_TABS: ReimbursementBucket[] = ["PENDING", "AWAITING_PAYMENT", "PAID"];
+const VALID_TABS: ReimbursementBucket[] = [
+  "PENDING",
+  "AWAITING_PAYMENT",
+  "PAID",
+  "REJECTED",
+];
 const URL_KEY = "rtab";
 
 const statusConfig: Record<Reimbursement["status"], { label: string; className: string }> = {
@@ -74,6 +79,10 @@ const emptyMeta: Record<ReimbursementBucket, { title: string; description: strin
     title: "No Paid Reimbursements",
     description: "Completed reimbursement payouts will appear here.",
   },
+  REJECTED: {
+    title: "No Rejected Reimbursements",
+    description: "Reimbursements that Finance has declined or rejected will appear here.",
+  },
 };
 
 export function ReimbursementsTab() {
@@ -91,6 +100,7 @@ export function ReimbursementsTab() {
     PENDING: 0,
     AWAITING_PAYMENT: 0,
     PAID: 0,
+    REJECTED: 0,
   });
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
@@ -289,7 +299,7 @@ export function ReimbursementsTab() {
   return (
     <>
     <Tabs value={subTab} onValueChange={handleTabChange} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-3 max-w-xl">
+      <TabsList className="grid w-full grid-cols-4 max-w-2xl">
         <TabsTrigger value="PENDING" className="gap-2">
           Pending
           <Badge variant="secondary" className="ml-1">{counts.PENDING}</Badge>
@@ -301,6 +311,10 @@ export function ReimbursementsTab() {
         <TabsTrigger value="PAID" className="gap-2">
           Paid
           <Badge variant="secondary" className="ml-1">{counts.PAID}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="REJECTED" className="gap-2">
+          Rejected
+          <Badge variant="secondary" className="ml-1">{counts.REJECTED}</Badge>
         </TabsTrigger>
       </TabsList>
       <TabsContent value={subTab} className="mt-0 space-y-3">
