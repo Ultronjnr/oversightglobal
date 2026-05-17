@@ -159,6 +159,54 @@ export async function getReimbursementProofUrl(path: string): Promise<string | n
   return data.signedUrl;
 }
 
+export interface ReimbursementAuditEntry {
+  id: string;
+  action: string;
+  old_status: string | null;
+  new_status: string | null;
+  notes: string | null;
+  performed_at: string;
+  performed_by: string | null;
+}
+
+export async function getReimbursementAuditLog(
+  reimbursementId: string,
+): Promise<ReimbursementAuditEntry[]> {
+  const { data, error } = await supabase
+    .from("reimbursement_audit_log")
+    .select("id, action, old_status, new_status, notes, performed_at, performed_by")
+    .eq("reimbursement_id", reimbursementId)
+    .order("performed_at", { ascending: true });
+  if (error) {
+    logError("getReimbursementAuditLog", error);
+    return [];
+  }
+  return (data || []) as ReimbursementAuditEntry[];
+}
+
+export interface LinkedPRSummary {
+  id: string;
+  transaction_id: string;
+  total_amount: number;
+  currency: string;
+  status: string;
+  requested_by_name: string;
+  created_at: string;
+}
+
+export async function getLinkedPRSummary(prId: string): Promise<LinkedPRSummary | null> {
+  const { data, error } = await supabase
+    .from("purchase_requisitions")
+    .select("id, transaction_id, total_amount, currency, status, requested_by_name, created_at")
+    .eq("id", prId)
+    .maybeSingle();
+  if (error) {
+    logError("getLinkedPRSummary", error);
+    return null;
+  }
+  return (data as unknown as LinkedPRSummary) || null;
+}
+
 export const REIMBURSEMENT_PAYMENT_METHODS = [
   { value: "CASH", label: "Cash" },
   { value: "PERSONAL_CARD", label: "Personal Card" },
