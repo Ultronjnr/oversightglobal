@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Upload, X, FileText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   submitReimbursementForPR,
   REIMBURSEMENT_PAYMENT_METHODS,
 } from "@/services/reimbursement.service";
+import { DocumentCaptureField } from "@/components/capture/DocumentCaptureField";
 
 interface Props {
   open: boolean;
@@ -173,34 +174,15 @@ export function SubmitReimbursementModal({
 
           <div className="space-y-1.5">
             <Label>Proof of Payment *</Label>
-            {file ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                <FileText className="h-5 w-5 text-primary" />
-                <span className="flex-1 text-sm truncate">{file.name}</span>
-                <Button variant="ghost" size="icon" onClick={() => setFile(null)} className="h-8 w-8">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center p-5 border-2 border-dashed border-border/50 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-muted/20 transition-colors">
-                <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                <span className="text-sm text-muted-foreground">Upload receipt or proof</span>
-                <span className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG (max 10MB)</span>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.webp"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f && f.size > 10 * 1024 * 1024) {
-                      toast.error("File too large (max 10MB)");
-                      return;
-                    }
-                    setFile(f || null);
-                  }}
-                />
-              </label>
-            )}
+            <DocumentCaptureField
+              file={file}
+              onChange={setFile}
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              maxSizeMB={10}
+              helperText="PDF, JPG, PNG (max 10MB)"
+              fileNamePrefix="reimbursement-proof"
+              onError={(m) => toast.error(m)}
+            />
           </div>
         </div>
 
