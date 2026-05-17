@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
+import { GlobalScanFAB } from "./capture/GlobalScanFAB";
 
 interface NavItem {
   label: string;
@@ -141,6 +142,9 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
           {children}
         </div>
       </main>
+
+      {/* Global floating receipt/invoice capture */}
+      <GlobalScanFAB />
     </div>
   );
 }
