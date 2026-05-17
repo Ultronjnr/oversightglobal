@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -16,13 +17,41 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/utils";
 import {
   getMyReimbursements,
-  getReimbursementProofUrl,
   type Reimbursement,
   type ReimbursementStatus,
 } from "@/services/reimbursement.service";
+import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
+import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
+
+type EmpSubView = "SUBMITTED" | "APPROVED" | "AWAITING_PAYMENT" | "PAID";
+const EMP_TABS: EmpSubView[] = ["SUBMITTED", "APPROVED", "AWAITING_PAYMENT", "PAID"];
+const URL_KEY = "ertab";
+
+const tabLabel: Record<EmpSubView, string> = {
+  SUBMITTED: "Submitted",
+  APPROVED: "Approved",
+  AWAITING_PAYMENT: "Awaiting Payment",
+  PAID: "Paid",
+};
+
+function bucketOf(status: ReimbursementStatus): EmpSubView | null {
+  switch (status) {
+    case "PENDING":
+      return "SUBMITTED";
+    case "APPROVED":
+      return "APPROVED";
+    case "AWAITING_PAYMENT":
+      return "AWAITING_PAYMENT";
+    case "PAID":
+      return "PAID";
+    default:
+      return null; // declined/rejected hidden from sub-views
+  }
+}
 
 const STEPS: { key: ReimbursementStatus; label: string; icon: React.ReactNode }[] = [
   { key: "PENDING", label: "Submitted", icon: <Clock className="h-3.5 w-3.5" /> },
@@ -98,8 +127,16 @@ function Timeline({ r }: { r: Reimbursement }) {
 }
 
 export function MyReimbursementsTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get(URL_KEY);
+  const initialView: EmpSubView =
+    urlTab && (EMP_TABS as string[]).includes(urlTab) ? (urlTab as EmpSubView) : "SUBMITTED";
+
+  const [view, setView] = useState<EmpSubView>(initialView);
   const [items, setItems] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
+  const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -116,14 +153,22 @@ export function MyReimbursementsTab() {
     };
   }, []);
 
-  const handleViewProof = async (path: string) => {
-    const url = await getReimbursementProofUrl(path);
-    if (!url) {
-      toast.error("Failed to load proof document");
-      return;
-    }
-    window.open(url, "_blank");
+  // Sync URL when changed via UI
+  const handleViewChange = (v: string) => {
+    const next = v as EmpSubView;
+    setView(next);
+    const params = new URLSearchParams(searchParams);
+    params.set(URL_KEY, next);
+    setSearchParams(params, { replace: true });
   };
+
+  // Re-sync if URL changes externally (back/forward)
+  useEffect(() => {
+    const t = searchParams.get(URL_KEY);
+    if (t && (EMP_TABS as string[]).includes(t) && t !== view) {
+      setView(t as EmpSubView);
+    }
+  }, [searchParams, view]);
 
   if (loading) {
     return (
@@ -133,22 +178,25 @@ export function MyReimbursementsTab() {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<Undo2 className="h-16 w-16" />}
-        title="No Reimbursements Yet"
-        description="When you submit a purchase requisition that requires reimbursement, it will appear here with live status."
-      />
-    );
-  }
+  const counts: Record<EmpSubView, number> = {
+    SUBMITTED: 0,
+    APPROVED: 0,
+    AWAITING_PAYMENT: 0,
+    PAID: 0,
+  };
+  items.forEach((r) => {
+    const b = bucketOf(r.status);
+    if (b) counts[b] += 1;
+  });
+  const visible = items.filter((r) => bucketOf(r.status) === view);
 
-  return (
+  const renderList = () => (
     <div className="space-y-3">
-      {items.map((r) => (
+      {visible.map((r) => (
         <div
           key={r.id}
-          className="rounded-lg border border-border/60 bg-card p-4 space-y-3 shadow-sm"
+          className="rounded-lg border border-border/60 bg-card p-4 space-y-3 shadow-sm cursor-pointer hover:bg-muted/20 transition-colors"
+          onClick={() => setDetailsItem(r)}
         >
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
@@ -191,7 +239,10 @@ export function MyReimbursementsTab() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleViewProof(r.proof_document_url!)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProofItem(r);
+                }}
                 className="gap-1"
               >
                 <FileText className="h-4 w-4" />
@@ -204,4 +255,44 @@ export function MyReimbursementsTab() {
       ))}
     </div>
   );
+
+  return (
+    <>
+      <Tabs value={view} onValueChange={handleViewChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          {EMP_TABS.map((t) => (
+            <TabsTrigger key={t} value={t} className="gap-2">
+              {tabLabel[t]}
+              <Badge variant="secondary" className="ml-1">{counts[t]}</Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value={view} className="mt-0">
+          {visible.length === 0 ? (
+            <EmptyState
+              icon={<Undo2 className="h-16 w-16" />}
+              title={`No ${tabLabel[view]} Reimbursements`}
+              description="Reimbursements in this stage will appear here as their status changes."
+            />
+          ) : (
+            renderList()
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <ReimbursementProofModal
+        open={!!proofItem}
+        onOpenChange={(o) => !o && setProofItem(null)}
+        proofPath={proofItem?.proof_document_url ?? null}
+        title="Proof of Payment"
+        subtitle={proofItem ? formatCurrency(Number(proofItem.amount), proofItem.currency) : undefined}
+      />
+      <ReimbursementDetailsModal
+        open={!!detailsItem}
+        onOpenChange={(o) => !o && setDetailsItem(null)}
+        reimbursement={detailsItem}
+      />
+    </>
+  );
+}
 }
