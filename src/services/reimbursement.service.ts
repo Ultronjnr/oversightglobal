@@ -31,6 +31,7 @@ export interface Reimbursement {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  title?: string | null;
 }
 
 export interface SubmitReimbursementInput {
@@ -41,6 +42,18 @@ export interface SubmitReimbursementInput {
   reference?: string;
   reimbursement_date?: string;
   proof_file: File;
+  notes?: string;
+}
+
+export interface SubmitStandaloneReimbursementInput {
+  title: string;
+  amount: number;
+  description: string;
+  payment_method: string;
+  proof_file: File;
+  pr_id?: string | null;
+  reference?: string;
+  reimbursement_date?: string;
   notes?: string;
 }
 
@@ -209,14 +222,18 @@ export async function getLinkedPRSummary(prId: string): Promise<LinkedPRSummary 
 
 export const REIMBURSEMENT_PAYMENT_METHODS = [
   { value: "CASH", label: "Cash" },
-  { value: "PERSONAL_CARD", label: "Personal Card" },
+  { value: "CARD", label: "Card" },
   { value: "EFT", label: "EFT / Bank Transfer" },
   { value: "OTHER", label: "Other" },
 ] as const;
 
 // ---------- Finance sub-tab buckets ----------
 
-export type ReimbursementBucket = "PENDING" | "AWAITING_PAYMENT" | "PAID";
+export type ReimbursementBucket =
+  | "PENDING"
+  | "AWAITING_PAYMENT"
+  | "PAID"
+  | "REJECTED";
 
 /**
  * Canonical mapping of UI buckets -> underlying statuses.
@@ -230,6 +247,7 @@ export const REIMBURSEMENT_BUCKET_STATUSES: Record<ReimbursementBucket, Reimburs
   PENDING: ["PENDING"],
   AWAITING_PAYMENT: ["APPROVED", "AWAITING_PAYMENT"],
   PAID: ["PAID"],
+  REJECTED: ["REJECTED", "DECLINED"],
 };
 
 export interface ReimbursementPage {
@@ -259,7 +277,12 @@ export async function getOrgReimbursementsByBucket(
 export async function getOrgReimbursementBucketCounts(): Promise<
   Record<ReimbursementBucket, number>
 > {
-  const buckets: ReimbursementBucket[] = ["PENDING", "AWAITING_PAYMENT", "PAID"];
+  const buckets: ReimbursementBucket[] = [
+    "PENDING",
+    "AWAITING_PAYMENT",
+    "PAID",
+    "REJECTED",
+  ];
   const results = await Promise.all(
     buckets.map(async (b) => {
       const { count } = await supabase
