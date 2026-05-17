@@ -14,7 +14,6 @@ import {
   FileText,
   ExternalLink,
   Link2,
-  Receipt,
   History,
   Info,
 } from "lucide-react";
