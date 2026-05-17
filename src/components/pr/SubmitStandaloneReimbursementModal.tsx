@@ -31,6 +31,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmitted?: () => void;
+  /** Optional file to preload as the receipt/proof (e.g. from a global scan). */
+  initialFile?: File | null;
 }
 
 const NONE_VALUE = "__none__";
@@ -39,6 +41,7 @@ export function SubmitStandaloneReimbursementModal({
   open,
   onOpenChange,
   onSubmitted,
+  initialFile = null,
 }: Props) {
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -58,6 +61,11 @@ export function SubmitStandaloneReimbursementModal({
     if (!open) return;
     getMyRequisitionsForLinking().then(setPrs);
   }, [open]);
+
+  // Preload an externally-captured file (e.g. from the global Scan FAB).
+  useEffect(() => {
+    if (open && initialFile) setFile(initialFile);
+  }, [open, initialFile]);
 
   const reset = () => {
     setTitle("");
