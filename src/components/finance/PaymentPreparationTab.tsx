@@ -9,15 +9,12 @@ import {
   Banknote,
   ExternalLink,
   Building2,
-  AlertCircle,
-  CheckCircle2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
   TableBody,
@@ -27,19 +24,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   getInvoicesAwaitingPayment,
   getInvoiceDocumentUrl,
   type InvoiceWithDetails,
 } from "@/services/invoice.service";
-import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/utils";
 import {
   getOrgReimbursementsByBucket,
