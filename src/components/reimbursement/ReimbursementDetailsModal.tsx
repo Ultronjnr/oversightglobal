@@ -98,7 +98,7 @@ export function ReimbursementDetailsModal({
                 </p>
               </div>
               <Badge variant="outline" className={statusClass[r.status] || ""}>
-                {r.status.replaceAll("_", " ")}
+                {r.status.replace(/_/g, " ")}
               </Badge>
             </div>
           </DialogHeader>
@@ -175,7 +175,7 @@ export function ReimbursementDetailsModal({
                     label="Transaction ID"
                     value={<span className="font-mono">{linkedPR.transaction_id}</span>}
                   />
-                  <Field label="PR Status" value={linkedPR.status.replaceAll("_", " ")} />
+                  <Field label="PR Status" value={linkedPR.status.replace(/_/g, " ")} />
                   <Field label="Requested By" value={linkedPR.requested_by_name} />
                   <Field
                     label="PR Total"
@@ -221,7 +221,7 @@ export function ReimbursementDetailsModal({
                           {a.new_status && (
                             <span className="text-muted-foreground font-normal">
                               {" "}
-                              → {a.new_status.replaceAll("_", " ")}
+                              → {a.new_status.replace(/_/g, " ")}
                             </span>
                           )}
                         </p>
