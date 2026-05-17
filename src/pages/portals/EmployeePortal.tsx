@@ -8,6 +8,8 @@ import { SectionCard } from "@/components/ui/section-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
+import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
 import { toast } from "sonner";
@@ -136,7 +138,18 @@ export default function EmployeePortal() {
               description="Your dashboard is now clean. All PRs are saved in Purchase Requisition History."
             />
           ) : (
-            <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
+            <Tabs defaultValue="prs" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2 max-w-md">
+                <TabsTrigger value="prs">Requisitions</TabsTrigger>
+                <TabsTrigger value="reimbursements">My Reimbursements</TabsTrigger>
+              </TabsList>
+              <TabsContent value="prs" className="mt-0">
+                <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
+              </TabsContent>
+              <TabsContent value="reimbursements" className="mt-0">
+                <MyReimbursementsTab />
+              </TabsContent>
+            </Tabs>
           )}
         </SectionCard>
       </div>
