@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -59,6 +60,9 @@ export function ReimbursementsTab() {
   const [items, setItems] = useState<Reimbursement[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [subTab, setSubTab] = useState<"PENDING" | "AWAITING_PAYMENT" | "PAID">(
+    "PENDING",
+  );
 
   useEffect(() => {
     void fetchItems();
@@ -136,17 +140,32 @@ export function ReimbursementsTab() {
     );
   }
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<Undo2 className="h-16 w-16" />}
-        title="No Reimbursements"
-        description="Employee reimbursement requests will appear here once submitted."
-      />
-    );
-  }
+  const buckets = {
+    PENDING: items.filter((r) => r.status === "PENDING"),
+    AWAITING_PAYMENT: items.filter(
+      (r) => r.status === "APPROVED" || r.status === "AWAITING_PAYMENT",
+    ),
+    PAID: items.filter((r) => r.status === "PAID"),
+  } as const;
 
-  return (
+  const emptyMeta: Record<typeof subTab, { title: string; description: string }> = {
+    PENDING: {
+      title: "No Pending Reimbursements",
+      description: "New employee reimbursement requests awaiting your review will appear here.",
+    },
+    AWAITING_PAYMENT: {
+      title: "No Reimbursements Awaiting Payment",
+      description: "Approved reimbursements waiting to be paid out will appear here.",
+    },
+    PAID: {
+      title: "No Paid Reimbursements",
+      description: "Completed reimbursement payouts will appear here.",
+    },
+  };
+
+  const visible = buckets[subTab];
+
+  const renderTable = () => (
     <div className="rounded-lg border border-border/50 overflow-hidden">
       <Table>
         <TableHeader>
@@ -160,7 +179,7 @@ export function ReimbursementsTab() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((r) => {
+          {visible.map((r) => {
             const cfg = statusConfig[r.status];
             return (
               <TableRow key={r.id} className="hover:bg-muted/20">
@@ -250,5 +269,35 @@ export function ReimbursementsTab() {
         </TableBody>
       </Table>
     </div>
+  );
+
+  return (
+    <Tabs value={subTab} onValueChange={(v) => setSubTab(v as typeof subTab)} className="space-y-4">
+      <TabsList className="grid w-full grid-cols-3 max-w-xl">
+        <TabsTrigger value="PENDING" className="gap-2">
+          Pending
+          <Badge variant="secondary" className="ml-1">{buckets.PENDING.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="AWAITING_PAYMENT" className="gap-2">
+          Awaiting Payment
+          <Badge variant="secondary" className="ml-1">{buckets.AWAITING_PAYMENT.length}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="PAID" className="gap-2">
+          Paid
+          <Badge variant="secondary" className="ml-1">{buckets.PAID.length}</Badge>
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value={subTab} className="mt-0">
+        {visible.length === 0 ? (
+          <EmptyState
+            icon={<Undo2 className="h-16 w-16" />}
+            title={emptyMeta[subTab].title}
+            description={emptyMeta[subTab].description}
+          />
+        ) : (
+          renderTable()
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
