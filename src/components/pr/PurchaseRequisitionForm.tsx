@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { SubmitReimbursementModal } from "./SubmitReimbursementModal";
+import { DocumentCaptureField } from "@/components/capture/DocumentCaptureField";
 
 const formSchema = z.object({
   department: z.string().min(1, "Department is required"),
