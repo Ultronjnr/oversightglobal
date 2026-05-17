@@ -169,6 +169,15 @@ export function MyReimbursementsTab() {
     setSearchParams(params, { replace: true });
   };
 
+  const goToView = (next: EmpSubView) => {
+    if (next !== view) {
+      setView(next);
+      const params = new URLSearchParams(searchParams);
+      params.set(URL_KEY, next);
+      setSearchParams(params, { replace: true });
+    }
+  };
+
   // Re-sync if URL changes externally (back/forward)
   useEffect(() => {
     const t = searchParams.get(URL_KEY);
@@ -319,7 +328,10 @@ export function MyReimbursementsTab() {
       <SubmitStandaloneReimbursementModal
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        onSubmitted={reload}
+        onSubmitted={async () => {
+          await reload();
+          goToView("SUBMITTED");
+        }}
       />
     </>
   );
