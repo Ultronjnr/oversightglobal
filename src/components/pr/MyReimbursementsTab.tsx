@@ -207,7 +207,10 @@ export function MyReimbursementsTab() {
         >
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div>
-              <p className="font-medium leading-tight">{r.description}</p>
+              <p className="font-medium leading-tight">{r.title || r.description}</p>
+              {r.title && r.description && r.title !== r.description && (
+                <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>
+              )}
               <p className="text-xs text-muted-foreground mt-0.5">
                 Submitted {format(new Date(r.created_at), "dd MMM yyyy")}
                 {r.pr_id && <span className="ml-1">• PR linked</span>}
