@@ -26,6 +26,7 @@ import {
   type LinkedPRSummary,
 } from "@/services/reimbursement.service";
 import { ReimbursementProofModal } from "./ReimbursementProofModal";
+import { OcrAnalysisPanel } from "@/components/ocr/OcrAnalysisPanel";
 
 interface ReimbursementDetailsModalProps {
   open: boolean;
@@ -154,6 +155,21 @@ export function ReimbursementDetailsModal({
                 </Button>
               )}
             </section>
+
+            {r.proof_document_url && (
+              <section className="space-y-3">
+                <OcrAnalysisPanel
+                  title="AI proof analysis"
+                  input={{
+                    document_type: "REIMBURSEMENT_PROOF",
+                    bucket: "reimbursement-documents",
+                    storage_path: r.proof_document_url,
+                    reimbursement_id: r.id,
+                    pr_id: r.pr_id ?? undefined,
+                  }}
+                />
+              </section>
+            )}
 
             <Separator />
 
