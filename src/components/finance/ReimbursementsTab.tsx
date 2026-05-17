@@ -27,7 +27,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import {
   approveReimbursement,
   rejectReimbursement,
@@ -37,6 +36,8 @@ import {
   type Reimbursement,
   type ReimbursementBucket,
 } from "@/services/reimbursement.service";
+import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
+import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
 
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = ["PENDING", "AWAITING_PAYMENT", "PAID"];
@@ -93,6 +94,8 @@ export function ReimbursementsTab() {
   });
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
+  const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
+  const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
 
   // Sync URL <-> state when user switches sub-tab
   const handleTabChange = (v: string) => {
@@ -141,16 +144,8 @@ export function ReimbursementsTab() {
     await Promise.all([fetchPage(), refreshCounts()]);
   };
 
-  const handleViewProof = async (path: string) => {
-    const { data, error } = await supabase.storage
-      .from("reimbursement-documents")
-      .createSignedUrl(path, 600);
-    if (error || !data?.signedUrl) {
-      toast.error("Failed to load proof document", { description: error?.message });
-      return;
-    }
-    window.open(data.signedUrl, "_blank");
-  };
+  const openProof = (r: Reimbursement) => setProofItem(r);
+  const openDetails = (r: Reimbursement) => setDetailsItem(r);
 
   const handleApprove = async (r: Reimbursement) => {
     setActingId(r.id);
@@ -198,7 +193,11 @@ export function ReimbursementsTab() {
           {rows.map((r) => {
             const cfg = statusConfig[r.status];
             return (
-              <TableRow key={r.id} className="hover:bg-muted/20">
+              <TableRow
+                key={r.id}
+                className="hover:bg-muted/20 cursor-pointer"
+                onClick={() => openDetails(r)}
+              >
                 <TableCell>
                   <div>
                     <p className="font-medium">{r.employee_name}</p>
@@ -208,12 +207,12 @@ export function ReimbursementsTab() {
                 <TableCell className="text-right font-semibold">
                   {formatCurrency(Number(r.amount), r.currency)}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   {r.proof_document_url ? (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleViewProof(r.proof_document_url!)}
+                      onClick={() => openProof(r)}
                       className="gap-1 text-primary hover:text-primary h-8 px-2"
                     >
                       <FileText className="h-4 w-4" />
@@ -242,7 +241,7 @@ export function ReimbursementsTab() {
                 <TableCell className="text-muted-foreground text-sm">
                   {format(new Date(r.created_at), "dd MMM yyyy")}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   {r.status === "PENDING" && (
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -288,6 +287,7 @@ export function ReimbursementsTab() {
   );
 
   return (
+    <>
     <Tabs value={subTab} onValueChange={handleTabChange} className="space-y-4">
       <TabsList className="grid w-full grid-cols-3 max-w-xl">
         <TabsTrigger value="PENDING" className="gap-2">
@@ -353,5 +353,18 @@ export function ReimbursementsTab() {
         )}
       </TabsContent>
     </Tabs>
+    <ReimbursementProofModal
+      open={!!proofItem}
+      onOpenChange={(o) => !o && setProofItem(null)}
+      proofPath={proofItem?.proof_document_url ?? null}
+      title="Proof of Payment"
+      subtitle={proofItem ? `${proofItem.employee_name} — ${formatCurrency(Number(proofItem.amount), proofItem.currency)}` : undefined}
+    />
+    <ReimbursementDetailsModal
+      open={!!detailsItem}
+      onOpenChange={(o) => !o && setDetailsItem(null)}
+      reimbursement={detailsItem}
+    />
+    </>
   );
 }
