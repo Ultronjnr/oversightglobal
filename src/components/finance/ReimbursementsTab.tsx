@@ -40,6 +40,9 @@ import {
 import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
 import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
 import { AddCommentDialog } from "@/components/reimbursement/AddCommentDialog";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Paperclip } from "lucide-react";
 
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = [
