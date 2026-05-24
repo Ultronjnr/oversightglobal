@@ -50,8 +50,7 @@ const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className
 };
 
 export default function ExpenseHistory() {
-  const { user } = useAuth();
-  const role = (user as any)?.role || "EMPLOYEE";
+  const { role } = useAuth();
 
   const navItems = useMemo(() => {
     const base = role === "FINANCE"
