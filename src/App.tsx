@@ -18,6 +18,7 @@ import JoinSupplier from "./pages/JoinSupplier";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import PRHistory from "./pages/PRHistory";
+import ExpenseHistory from "./pages/ExpenseHistory";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -62,6 +63,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
                   <PRHistory />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Expense History */}
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
+                  <ExpenseHistory />
                 </ProtectedRoute>
               }
             />
