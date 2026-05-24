@@ -68,13 +68,24 @@ const EXTRACTION_TOOL = {
 };
 
 function systemPromptFor(docType: DocType): string {
+  const lineItemRules = [
+    "",
+    "LINE ITEM RULES (strict):",
+    "- Extract EVERY line item visible on the document.",
+    "- Always populate unit_price (price per single item). If only a line total and quantity are shown, compute unit_price = total_price / quantity.",
+    "- Never omit unit_price. If it cannot be derived, set it to 0 and set needs_review to true on that item.",
+    "- Do NOT confuse unit_price with total_price. total_price is quantity * unit_price.",
+    "- If quantity is missing, set quantity to null and needs_review to true.",
+    "- Return numbers only — no currency symbols, no thousands separators.",
+    "- If anything is uncertain on a line, set needs_review to true.",
+  ].join("\n");
   if (docType === "REIMBURSEMENT_PROOF") {
-    return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols.";
+    return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols." + lineItemRules;
   }
   if (docType === "INVOICE") {
-    return "You are an OCR assistant analysing supplier tax invoices for a South African finance team. Extract supplier, VAT number, invoice number, dates, line items and totals. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return numeric amounts only.";
+    return "You are an invoice data extraction engine for a South African finance system. Extract supplier legal name, VAT number, invoice serial number, invoice date, every line item, subtotal, VAT amount and grand total from supplier tax invoices. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero)." + lineItemRules;
   }
-  return "You are an OCR assistant analysing a purchase requisition supporting document. Extract any supplier, totals, dates or reference numbers you can read.";
+  return "You are an OCR assistant analysing a purchase requisition supporting document. Extract any supplier, totals, dates or reference numbers you can read." + lineItemRules;
 }
 
 Deno.serve(async (req) => {
