@@ -17,7 +17,7 @@ interface ApprovalResult {
 export interface Supplier {
   id: string;
   company_name: string;
-  contact_email: string;
+  contact_email: string | null;
   contact_person: string | null;
   registration_number: string | null;
   is_verified: boolean;
@@ -25,6 +25,8 @@ export interface Supplier {
   address: string | null;
   industry: string | null;
   vat_number: string | null;
+  is_manual?: boolean;
+  user_id?: string | null;
 }
 
 export interface QuoteRequest {
@@ -99,7 +101,8 @@ function generateSplitTransactionId(parentId: string, index: number): string {
 export async function financeApprovePR(
   prId: string,
   comments: string,
-  categoryId?: string
+  categoryId?: string,
+  supplierId?: string,
 ): Promise<ApprovalResult> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -160,6 +163,22 @@ export async function financeApprovePR(
     if (updateError) {
       logError("financeApprovePR", updateError);
       return { success: false, error: getSafeErrorMessage(updateError) };
+    }
+
+    // Link supplier to the auto-created transaction if Finance picked one
+    if (supplierId) {
+      const { data: sup } = await supabase
+        .from("suppliers")
+        .select("company_name")
+        .eq("id", supplierId)
+        .maybeSingle();
+      await supabase
+        .from("transactions" as any)
+        .update({
+          supplier_id: supplierId,
+          supplier_name: sup?.company_name ?? null,
+        })
+        .eq("pr_id", prId);
     }
 
     // Post immutable system note for audit trail (non-fatal)
@@ -470,6 +489,59 @@ export async function getAllSuppliers(): Promise<{
   } catch (error: any) {
     logError("getAllSuppliers", error);
     return { success: false, error: getSafeErrorMessage(error), data: [] };
+  }
+}
+
+/**
+ * Create a manual (account-less) supplier record. Finance can later link
+ * transactions to it. Does not provision a login account.
+ */
+export async function createManualSupplier(input: {
+  company_name: string;
+  vat_number?: string;
+  contact_email?: string;
+  phone?: string;
+}): Promise<{ success: boolean; data?: Supplier; error?: string }> {
+  try {
+    const name = input.company_name.trim();
+    if (!name) return { success: false, error: "Supplier name is required" };
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Not authenticated" };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+    if (!profile?.organization_id) {
+      return { success: false, error: "Organization not found" };
+    }
+
+    const { data, error } = await supabase
+      .from("suppliers")
+      .insert({
+        company_name: name,
+        vat_number: input.vat_number?.trim() || null,
+        contact_email: input.contact_email?.trim() || null,
+        phone: input.phone?.trim() || null,
+        organization_id: profile.organization_id,
+        user_id: null,
+        is_manual: true,
+        is_verified: false,
+        created_by: user.id,
+      } as any)
+      .select("*")
+      .single();
+
+    if (error) {
+      logError("createManualSupplier", error);
+      return { success: false, error: getSafeErrorMessage(error) };
+    }
+    return { success: true, data: data as unknown as Supplier };
+  } catch (error: any) {
+    logError("createManualSupplier", error);
+    return { success: false, error: getSafeErrorMessage(error) };
   }
 }
 

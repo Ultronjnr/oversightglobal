@@ -1058,52 +1058,58 @@ export type Database = {
         Row: {
           address: string | null
           company_name: string
-          contact_email: string
+          contact_email: string | null
           contact_person: string | null
           created_at: string
+          created_by: string | null
           id: string
           industry: string | null
           invited_by_admin_id: string | null
+          is_manual: boolean
           is_public: boolean
           is_verified: boolean
           organization_id: string
           phone: string | null
           registration_number: string | null
-          user_id: string
+          user_id: string | null
           vat_number: string | null
         }
         Insert: {
           address?: string | null
           company_name: string
-          contact_email: string
+          contact_email?: string | null
           contact_person?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           industry?: string | null
           invited_by_admin_id?: string | null
+          is_manual?: boolean
           is_public?: boolean
           is_verified?: boolean
           organization_id: string
           phone?: string | null
           registration_number?: string | null
-          user_id: string
+          user_id?: string | null
           vat_number?: string | null
         }
         Update: {
           address?: string | null
           company_name?: string
-          contact_email?: string
+          contact_email?: string | null
           contact_person?: string | null
           created_at?: string
+          created_by?: string | null
           id?: string
           industry?: string | null
           invited_by_admin_id?: string | null
+          is_manual?: boolean
           is_public?: boolean
           is_verified?: boolean
           organization_id?: string
           phone?: string | null
           registration_number?: string | null
-          user_id?: string
+          user_id?: string | null
           vat_number?: string | null
         }
         Relationships: [
