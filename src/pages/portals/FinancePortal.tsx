@@ -928,6 +928,13 @@ export default function FinancePortal() {
         onSuccess={handlePRFormSuccess}
       />
 
+      {/* Scan Invoice (AI OCR) Modal */}
+      <ScanInvoiceModal
+        open={showScanModal}
+        onOpenChange={setShowScanModal}
+        onCreated={handleRefreshDashboard}
+      />
+
       {/* Category Selection Modal for Approvals */}
       <CategorySelectionModal
         pr={selectedPR}
