@@ -47,7 +47,8 @@ import {
 
 interface BatchAllocation {
   id: string;
-  invoice_id: string;
+  invoice_id: string | null;
+  transaction_id: string | null;
   amount_paid: number;
   invoice?: {
     id: string;
@@ -56,7 +57,17 @@ interface BatchAllocation {
     quote?: { amount: number };
     supplier?: { company_name: string; contact_email: string };
     pr?: { transaction_id: string; currency: string };
-  };
+  } | null;
+  transaction?: {
+    id: string;
+    supplier_name: string | null;
+    amount: number | null;
+    amount_paid: number | null;
+    currency: string | null;
+    status: string | null;
+    supplier?: { company_name: string; contact_email: string } | null;
+    pr?: { transaction_id: string; currency: string } | null;
+  } | null;
 }
 
 interface BatchRow {
@@ -93,10 +104,15 @@ export function BatchesTab() {
       .select(
         `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at,
          allocations:payment_allocations (
-           id, invoice_id, amount_paid,
+           id, invoice_id, transaction_id, amount_paid,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
+             supplier:suppliers ( company_name, contact_email ),
+             pr:purchase_requisitions ( transaction_id, currency )
+           ),
+           transaction:transactions (
+             id, supplier_name, amount, amount_paid, currency, status,
              supplier:suppliers ( company_name, contact_email ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
