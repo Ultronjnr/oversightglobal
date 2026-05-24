@@ -359,6 +359,8 @@ export interface InvoiceWithDetails extends Invoice {
     total_amount: number;
     currency: string;
     requested_by_name: string;
+    items?: any;
+    document_url?: string | null;
   };
   quote?: {
     id: string;
@@ -425,7 +427,9 @@ export async function getInvoicesAwaitingPayment(): Promise<{
           transaction_id,
           total_amount,
           currency,
-          requested_by_name
+          requested_by_name,
+          items,
+          document_url
         ),
         quote:quotes (
           id,
