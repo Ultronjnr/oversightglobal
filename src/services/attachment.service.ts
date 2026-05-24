@@ -120,7 +120,7 @@ export async function uploadAttachment(
       return { success: false, error: insErr.message };
     }
 
-    return { success: true, attachment: data as Attachment };
+    return { success: true, attachment: data as unknown as Attachment };
   } catch (err: any) {
     console.error("[attachment] unexpected:", err);
     return { success: false, error: err.message || "Unexpected error" };
