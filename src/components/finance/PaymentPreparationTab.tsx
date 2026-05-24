@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   AlertCircle,
+  Download,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   type OrgTransaction,
 } from "@/services/transaction.service";
 import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
+import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
@@ -456,34 +458,77 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     url: string | null;
     type: "pdf" | "image" | "other";
     error: string | null;
-  }>({ loading: !!row.documentUrl, url: null, type: "other", error: null });
+    fileName: string | null;
+  }>({ loading: true, url: null, type: "other", error: null, fileName: null });
 
   useEffect(() => {
     let cancelled = false;
-    if (!row.documentUrl) {
-      setDocState({ loading: false, url: null, type: "other", error: null });
-      return;
-    }
+    setDocState({ loading: true, url: null, type: "other", error: null, fileName: null });
+
+    const loadAttachmentFallback = async () => {
+      const filter: any = {};
+      if (row.kind === "transaction") {
+        filter.transaction_id = row.id;
+      } else if (row.kind === "invoice") {
+        filter.pr_id = row.prId;
+      } else if (row.kind === "reimbursement") {
+        filter.reimbursement_id = row.id;
+      }
+      if (row.kind === "transaction" && row.prId && !filter.transaction_id) {
+        filter.pr_id = row.prId;
+      }
+      const res = await listAttachments(filter);
+      if (!res.success || res.data.length === 0) {
+        // Try by pr_id as a secondary fallback for transactions
+        if (row.kind === "transaction" && row.prId) {
+          const res2 = await listAttachments({ pr_id: row.prId });
+          if (res2.success && res2.data.length > 0) {
+            const att = res2.data[0];
+            const signed = await getAttachmentSignedUrl(att.file_path);
+            if (signed.success && signed.url) {
+              return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+            }
+          }
+        }
+        return null;
+      }
+      const att = res.data[0];
+      const signed = await getAttachmentSignedUrl(att.file_path);
+      if (signed.success && signed.url) {
+        return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+      }
+      return null;
+    };
+
     (async () => {
       try {
-        if (row.kind === "invoice") {
+        if (row.documentUrl && row.kind === "invoice") {
           const res = await getInvoiceDocumentUrl(row.documentUrl!);
           if (cancelled) return;
           if (res.success && res.url) {
-            setDocState({ loading: false, url: res.url, type: getFileType(row.documentUrl!), error: null });
-          } else {
-            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
-          }
-        } else if (row.kind === "reimbursement") {
-          const url = await getReimbursementProofUrl(row.documentUrl!);
-          if (cancelled) return;
-          if (url) setDocState({ loading: false, url, type: getFileType(row.documentUrl!), error: null });
-          else setDocState({ loading: false, url: null, type: "other", error: "Failed to load proof" });
-        } else {
-          if (!row.prId) {
-            setDocState({ loading: false, url: null, type: "other", error: "Missing PR reference" });
+            setDocState({
+              loading: false,
+              url: res.url,
+              type: getFileType(row.documentUrl!),
+              error: null,
+              fileName: row.documentUrl!.split("/").pop() || "document",
+            });
             return;
           }
+        } else if (row.documentUrl && row.kind === "reimbursement") {
+          const url = await getReimbursementProofUrl(row.documentUrl!);
+          if (cancelled) return;
+          if (url) {
+            setDocState({
+              loading: false,
+              url,
+              type: getFileType(row.documentUrl!),
+              error: null,
+              fileName: row.documentUrl!.split("/").pop() || "document",
+            });
+            return;
+          }
+        } else if (row.documentUrl && row.kind === "transaction" && row.prId) {
           const res = await getDocumentSignedUrl(row.documentUrl!, row.prId);
           if (cancelled) return;
           if (res.success && res.signed_url) {
@@ -492,19 +537,28 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               url: res.signed_url,
               type: res.file_type || getFileType(row.documentUrl!),
               error: null,
+              fileName: row.documentUrl!.split("/").pop() || "document",
             });
-          } else {
-            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
+            return;
           }
         }
+
+        // Fallback: look in attachments table
+        const fb = await loadAttachmentFallback();
+        if (cancelled) return;
+        if (fb) {
+          setDocState({ loading: false, url: fb.url, type: fb.type, error: null, fileName: fb.fileName });
+        } else {
+          setDocState({ loading: false, url: null, type: "other", error: null, fileName: null });
+        }
       } catch (e: any) {
-        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error" });
+        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error", fileName: null });
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [row.documentUrl, row.prId, row.kind]);
+  }, [row.documentUrl, row.prId, row.kind, row.id]);
 
   const items = row.items || [];
 
@@ -576,28 +630,39 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             Document
           </div>
           {docState.url && (
-            <a
-              href={docState.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
-            >
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
+            <div className="flex items-center gap-1">
+              <a
+                href={docState.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary inline-flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-primary/10"
+              >
+                Open <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href={docState.url}
+                download={docState.fileName || "document"}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary inline-flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-primary/10"
+              >
+                <Download className="h-3 w-3" /> Download
+              </a>
+            </div>
           )}
         </div>
         <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
-          {!row.documentUrl ? (
-            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
-              <FileText className="h-8 w-8 opacity-50" />
-              <p className="text-sm">No document attached</p>
-            </div>
-          ) : docState.loading ? (
+          {docState.loading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : docState.error ? (
             <div className="flex flex-col items-center gap-2 text-destructive p-4 text-center">
               <AlertCircle className="h-8 w-8" />
               <p className="text-sm">{docState.error}</p>
+            </div>
+          ) : !docState.url ? (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">No document attached</p>
             </div>
           ) : docState.type === "image" ? (
             <img src={docState.url!} alt="Document" className="max-h-full max-w-full object-contain" />
