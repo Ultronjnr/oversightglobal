@@ -5,6 +5,34 @@ import { postSystemNote } from "@/services/pr-messaging.service";
 const BUCKET_NAME = "invoice-documents";
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
+function normalizeInvoiceDocumentPath(pathOrUrl: string): string[] {
+  const raw = (pathOrUrl || "").trim();
+  if (!raw) return [];
+
+  let path = raw;
+  const storageMatch = raw.match(/\/storage\/v1\/object\/(?:sign|public)\/invoice-documents\/([^?]+)/);
+  if (storageMatch?.[1]) {
+    path = storageMatch[1];
+  } else if (raw.startsWith("invoice-documents/")) {
+    path = raw.replace(/^invoice-documents\//, "");
+  }
+
+  const candidates = new Set<string>();
+  const addCandidate = (value: string) => {
+    const cleaned = value.replace(/^\/+/, "").replace(/^invoice-documents\//, "");
+    if (cleaned) candidates.add(cleaned);
+  };
+
+  addCandidate(path);
+  try {
+    addCandidate(decodeURIComponent(path));
+  } catch {
+    // Keep the original path when decoding fails.
+  }
+
+  return Array.from(candidates);
+}
+
 export interface Invoice {
   id: string;
   quote_id: string;
@@ -254,16 +282,24 @@ export async function getInvoiceDocumentUrl(
   path: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(path, 600); // 10-minute expiry
-
-    if (error) {
-      console.error("Signed URL error:", error);
-      return { success: false, error: error.message };
+    const candidates = normalizeInvoiceDocumentPath(path);
+    if (candidates.length === 0) {
+      return { success: false, error: "Invoice document path is missing" };
     }
 
-    return { success: true, url: data.signedUrl };
+    let lastError: string | undefined;
+    for (const candidate of candidates) {
+      const { data, error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .createSignedUrl(candidate, 600); // 10-minute expiry
+
+      if (data?.signedUrl) {
+        return { success: true, url: data.signedUrl };
+      }
+      lastError = error?.message;
+    }
+
+    return { success: false, error: lastError || "Invoice document not found" };
   } catch (error: any) {
     console.error("getInvoiceDocumentUrl error:", error);
     return { success: false, error: error.message };
