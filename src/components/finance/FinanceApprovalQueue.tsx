@@ -93,11 +93,16 @@ export function FinanceApprovalQueue() {
     setExpandedRows(newExpanded);
   };
 
-  const handleApprove = async (comments: string) => {
+  const handleApprove = async (comments: string, supplierId?: string) => {
     if (!approveModalPR) return;
     setActionLoading(true);
     try {
-      const result = await financeApprovePR(approveModalPR.id, comments);
+      const result = await financeApprovePR(
+        approveModalPR.id,
+        comments,
+        undefined,
+        supplierId,
+      );
       if (result.success) {
         toast.success("PR approved successfully");
         setApproveModalPR(null);
@@ -418,9 +423,10 @@ export function FinanceApprovalQueue() {
           open={!!approveModalPR}
           pr={approveModalPR}
           action="approve"
+          showSupplierPicker
           onClose={() => setApproveModalPR(null)}
-          onConfirm={async (prId, action, comments) => {
-            await handleApprove(comments);
+          onConfirm={async (_prId, _action, comments, supplierId) => {
+            await handleApprove(comments, supplierId);
           }}
         />
       )}
