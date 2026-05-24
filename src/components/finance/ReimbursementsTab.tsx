@@ -432,6 +432,23 @@ export function ReimbursementsTab() {
       reimbursementId={commentTarget?.id ?? null}
       onAdded={reloadAll}
     />
+    <Dialog open={!!attachTarget} onOpenChange={(o) => !o && setAttachTarget(null)}>
+      <DialogContent className="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>
+            Attachments — {attachTarget?.employee_name}
+          </DialogTitle>
+        </DialogHeader>
+        {attachTarget && (
+          <AttachmentsPanel
+            filter={{ reimbursement_id: attachTarget.id }}
+            targets={{ reimbursement_id: attachTarget.id, pr_id: attachTarget.pr_id ?? null }}
+            title="Receipts & Invoices"
+            canDelete
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
