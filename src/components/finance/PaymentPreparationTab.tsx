@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -335,9 +335,8 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             {rows.map((row) => {
               const isExpanded = expandedKey === row.key;
               return (
-              <>
+              <Fragment key={row.key}>
               <TableRow
-                key={row.key}
                 className={`cursor-pointer transition-colors ${
                   selectedIds.has(row.key)
                     ? "bg-primary/5 hover:bg-primary/10"
@@ -427,13 +426,13 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                 </TableCell>
               </TableRow>
               {isExpanded && (
-                <TableRow key={`${row.key}:expand`} className="bg-muted/10 hover:bg-muted/10">
+                <TableRow className="bg-muted/10 hover:bg-muted/10">
                   <TableCell colSpan={8} className="p-0">
                     <ExpandedDetails row={row} />
                   </TableCell>
                 </TableRow>
               )}
-              </>
+              </Fragment>
               );
             })}
           </TableBody>
