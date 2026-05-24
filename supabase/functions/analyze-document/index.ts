@@ -234,6 +234,7 @@ Deno.serve(async (req) => {
       } catch {
         throw new Error("AI returned invalid JSON");
       }
+      normalizeLineItems(extracted);
       const confidence = typeof extracted.confidence === "number" ? extracted.confidence : null;
 
       const { data: updated, error: updateErr } = await admin
