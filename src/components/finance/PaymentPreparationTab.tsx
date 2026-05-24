@@ -321,6 +321,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
+              <TableHead className="w-8"></TableHead>
               <TableHead className="w-12"></TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Transaction ID</TableHead>
@@ -331,7 +332,10 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const isExpanded = expandedKey === row.key;
+              return (
+              <>
               <TableRow
                 key={row.key}
                 className={`cursor-pointer transition-colors ${
@@ -341,6 +345,21 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                 }`}
                 onClick={() => handleToggleSelect(row.key)}
               >
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setExpandedKey(isExpanded ? null : row.key)}
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedIds.has(row.key)}
@@ -407,7 +426,16 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              {isExpanded && (
+                <TableRow key={`${row.key}:expand`} className="bg-muted/10 hover:bg-muted/10">
+                  <TableCell colSpan={8} className="p-0">
+                    <ExpandedDetails row={row} />
+                  </TableCell>
+                </TableRow>
+              )}
+              </>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
