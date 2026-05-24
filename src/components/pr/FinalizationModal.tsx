@@ -14,13 +14,21 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { PurchaseRequisition } from "@/types/pr.types";
+import { SupplierPicker } from "@/components/finance/SupplierPicker";
 
 interface FinalizationModalProps {
   pr: PurchaseRequisition | null;
   action: "approve" | "decline" | null;
   open: boolean;
   onClose: () => void;
-  onConfirm: (prId: string, action: "approve" | "decline", comments: string) => Promise<void>;
+  onConfirm: (
+    prId: string,
+    action: "approve" | "decline",
+    comments: string,
+    supplierId?: string,
+  ) => Promise<void>;
+  /** When true, show supplier picker on approve */
+  showSupplierPicker?: boolean;
 }
 
 export function FinalizationModal({
@@ -29,9 +37,11 @@ export function FinalizationModal({
   open,
   onClose,
   onConfirm,
+  showSupplierPicker = false,
 }: FinalizationModalProps) {
   const [comments, setComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [supplierId, setSupplierId] = useState<string | undefined>(undefined);
 
   const handleConfirm = async () => {
     if (!pr || !action) return;
@@ -43,8 +53,9 @@ export function FinalizationModal({
 
     setIsSubmitting(true);
     try {
-      await onConfirm(pr.id, action, comments);
+      await onConfirm(pr.id, action, comments, supplierId);
       setComments("");
+      setSupplierId(undefined);
       onClose();
     } catch (error) {
       console.error("Finalization error:", error);
@@ -56,6 +67,7 @@ export function FinalizationModal({
   const handleClose = () => {
     if (!isSubmitting) {
       setComments("");
+      setSupplierId(undefined);
       onClose();
     }
   };
@@ -94,6 +106,21 @@ export function FinalizationModal({
               {pr.currency} {pr.total_amount.toLocaleString()}
             </p>
           </div>
+
+          {isApprove && showSupplierPicker && (
+            <div className="space-y-2">
+              <Label>Supplier (optional)</Label>
+              <SupplierPicker
+                value={supplierId}
+                onChange={(id) => setSupplierId(id)}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                Pick an existing supplier or create one manually. You can leave
+                this blank and link a supplier later.
+              </p>
+            </div>
+          )}
 
           {/* Comments */}
           <div className="space-y-2">
