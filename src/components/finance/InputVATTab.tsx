@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDocumentSignedUrl } from "@/services/document.service";
+import { getInvoiceDocumentUrl } from "@/services/invoice.service";
 
 type VATStatus =
   | "CLAIMABLE"
@@ -224,21 +224,28 @@ export function InputVATTab() {
       }
       const zip = new JSZip();
       let fetched = 0;
+      let skipped = 0;
       for (const r of docRows) {
         try {
-          const res = await getDocumentSignedUrl(r.documentUrl!, r.prId);
-          if (!res.success || !res.signed_url) continue;
-          const fileRes = await fetch(res.signed_url);
-          if (!fileRes.ok) continue;
+          const res = await getInvoiceDocumentUrl(r.documentUrl!);
+          if (!res.success || !res.url) {
+            skipped += 1;
+            continue;
+          }
+          const fileRes = await fetch(res.url);
+          if (!fileRes.ok) {
+            skipped += 1;
+            continue;
+          }
           const blob = await fileRes.blob();
           const ext =
-            res.file_name?.split(".").pop() ||
             r.documentUrl!.split(".").pop() ||
             "pdf";
           const safeSupplier = r.supplier.replace(/[^\w-]+/g, "_").slice(0, 40);
           zip.file(`${r.transactionId}_${safeSupplier}.${ext}`, blob);
           fetched += 1;
         } catch (e) {
+          skipped += 1;
           console.warn("ZIP fetch failed for", r.id, e);
         }
       }
@@ -249,7 +256,7 @@ export function InputVATTab() {
       }
       const blob = await zip.generateAsync({ type: "blob" });
       saveAs(blob, `vat-invoices-${datePart()}.zip`);
-      toast.success(`Downloaded ${fetched} invoice(s)`);
+      toast.success(`Downloaded ${fetched} invoice(s)${skipped ? `, skipped ${skipped} unavailable file(s)` : ""}`);
     } catch (e: any) {
       console.error(e);
       toast.error("Failed to build ZIP");
