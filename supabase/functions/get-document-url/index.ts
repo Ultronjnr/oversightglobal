@@ -155,20 +155,56 @@ Deno.serve(async (req) => {
     }
 
     // URL decode the path in case it has encoded characters
-    storagePath = decodeURIComponent(storagePath);
+    try {
+      storagePath = decodeURIComponent(storagePath);
+    } catch {
+      // keep as-is
+    }
+    storagePath = storagePath.replace(/^\/+/, "");
 
-    // Generate a fresh signed URL (10 minute expiry)
-    const { data: signedUrlData, error: signedUrlError } = await adminClient.storage
-      .from("pr-documents")
-      .createSignedUrl(storagePath, 600); // 10 minutes
+    // Build candidate paths to try, in order
+    const candidates = Array.from(
+      new Set(
+        [
+          storagePath,
+          storagePath.replace(/^pr-documents\//, ""),
+          // sometimes paths are double-encoded
+          (() => {
+            try { return decodeURIComponent(storagePath); } catch { return storagePath; }
+          })(),
+        ].filter(Boolean)
+      )
+    );
 
-    if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error("Signed URL generation failed:", signedUrlError);
+    let signedUrl: string | null = null;
+    let lastError: unknown = null;
+    let resolvedPath = storagePath;
+    for (const candidate of candidates) {
+      const { data, error } = await adminClient.storage
+        .from("pr-documents")
+        .createSignedUrl(candidate, 600);
+      if (data?.signedUrl) {
+        signedUrl = data.signedUrl;
+        resolvedPath = candidate;
+        break;
+      }
+      lastError = error;
+    }
+
+    if (!signedUrl) {
+      console.error(
+        "Signed URL generation failed for all candidates",
+        { candidates, lastError, pr_id, document_url }
+      );
       return new Response(
-        JSON.stringify({ error: "Unable to access document" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Document file not found in storage",
+          attempted_path: storagePath,
+        }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    storagePath = resolvedPath;
 
     // Extract file info from path
     const fileName = storagePath.split("/").pop() || "document";
@@ -185,7 +221,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        signed_url: signedUrlData.signedUrl,
+        signed_url: signedUrl,
         file_name: fileName,
         file_type: fileType,
         expires_in: 600,
