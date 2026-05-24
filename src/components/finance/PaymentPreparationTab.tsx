@@ -219,10 +219,19 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       const res = await getInvoiceDocumentUrl(row.documentUrl);
       if (res.success && res.url) window.open(res.url, "_blank");
       else toast.error("Failed to load document", { description: res.error });
-    } else {
+    } else if (row.kind === "reimbursement") {
       const url = await getReimbursementProofUrl(row.documentUrl);
       if (url) window.open(url, "_blank");
       else toast.error("Failed to load proof");
+    } else {
+      // transaction: signed URL through PR document endpoint
+      if (!row.prId) {
+        toast.error("Missing PR reference");
+        return;
+      }
+      const res = await getDocumentSignedUrl(row.documentUrl, row.prId);
+      if (res.success && res.signed_url) window.open(res.signed_url, "_blank");
+      else toast.error("Failed to load document", { description: res.error });
     }
   };
 
