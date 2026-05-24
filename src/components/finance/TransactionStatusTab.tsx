@@ -362,7 +362,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "PARTIALLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)")
+        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const invoices = (data || []) as any[];
@@ -418,7 +418,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "FULLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)")
+        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PAID")
         .order("updated_at", { ascending: false });
       const invRows = (data || []).map((inv: any) => {
@@ -434,11 +434,12 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Fully Paid",
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
-        .select("id, amount, amount_paid, currency, paid_at, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
+        .select("id, pr_id, amount, amount_paid, currency, paid_at, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
         .eq("status", "FULLY_PAID")
         .order("paid_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
@@ -451,6 +452,8 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         status: "Fully Paid",
         date: t.paid_at || t.updated_at,
         currency: t.currency,
+        prId: t.pr_id ?? null,
+        txnId: t.id,
       }));
       return [...invRows, ...txnRows];
     }
