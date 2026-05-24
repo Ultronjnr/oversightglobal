@@ -466,7 +466,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
       const { data: invData } = await supabase
         .from("invoices")
         .select(
-          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency, payment_due_date), quote:quotes(amount)"
+          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency, payment_due_date), quote:quotes(amount)"
         )
         .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]);
       const invoices = (invData || []) as any[];
@@ -503,6 +503,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Overdue 30+ days",
           date: dueStr,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         }));
 
       // 2. Reimbursements: APPROVED but not yet PAID, approved over 30 days ago
@@ -528,6 +529,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Overdue 30+ days",
           date: refDate,
           currency: r.currency || "ZAR",
+          reimbursementId: r.id,
         }));
 
       return [...invoiceRows, ...reimbRows].sort(
