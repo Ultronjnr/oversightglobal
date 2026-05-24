@@ -49,9 +49,10 @@ const EXTRACTION_TOOL = {
               unit_price: { type: "number" },
               amount: { type: "number" },
               total_price: { type: "number" },
+              vat_amount: { type: "number" },
               needs_review: { type: "boolean" },
             },
-            required: ["description", "unit_price"],
+            required: ["description", "quantity", "unit_price", "total_price"],
             additionalProperties: false,
           },
         },
@@ -68,27 +69,36 @@ const EXTRACTION_TOOL = {
 };
 
 function systemPromptFor(docType: DocType): string {
-  const lineItemRules = [
+  const base = [
+    "You are an expert South African tax invoice OCR extractor for SARS-compliant receipts.",
+    "Extract structured data from the receipt image/PDF.",
     "",
-    "LINE ITEM RULES (CRITICAL — do not violate):",
-    "- Extract EVERY line item visible on the document. Never skip a line.",
-    "- Every item MUST include: description, quantity, unit_price, total_price (and amount = total_price).",
-    "- Do NOT return null, empty or missing fields for these four.",
-    "- If unit_price is NOT explicitly shown: compute unit_price = total_price / quantity, rounded to 2 decimals.",
-    "- If quantity is missing: assume quantity = 1.",
-    "- If total_price is missing: compute total_price = unit_price * quantity, rounded to 2 decimals.",
+    "RULES:",
+    "- ALWAYS extract EVERY line item as a separate object. Never skip a line.",
+    "- For each line item, ALWAYS output:",
+    "  * description (string, clean item name)",
+    "  * quantity (number, default 1 if missing)",
+    "  * unit_price (number, in ZAR, WITHOUT the 'R' symbol. MUST be present. If only total is shown, calculate unit_price = total_price / quantity, rounded to 2 decimals.)",
+    "  * total_price (number, in ZAR, the line total)",
+    "  * vat_amount (number or null)",
+    "- If unit_price is not explicitly printed, derive it: unit_price = total_price / quantity.",
+    "- Never return null for unit_price. Always compute it.",
     "- Do NOT confuse unit_price with total_price. total_price = quantity * unit_price.",
-    "- Ensure mathematical consistency: sum(line total_price) should equal subtotal when shown; subtotal + vat_amount should equal total_amount when applicable.",
+    "- Ensure math consistency: sum(line total_price) ≈ subtotal; subtotal + vat_amount ≈ total_amount.",
     "- Return numbers only — no currency symbols, no thousands separators.",
-    "- Do NOT guess values randomly — only infer using the math rules above. If a value is truly unreadable and cannot be inferred, set needs_review=true on that line (but still provide best-effort numeric values, never null).",
+    "- Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero).",
+    "- Map fields when calling extract_document_data:",
+    "  receipt_number → document_number, date → document_date, supplier_vat → supplier_vat_number,",
+    "  vat_total → vat_amount, total → total_amount.",
+    "- Be extremely precise with numbers.",
   ].join("\n");
   if (docType === "REIMBURSEMENT_PROOF") {
-    return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols." + lineItemRules;
+    return base + "\n\nContext: this is an employee proof-of-payment (receipt, till slip, EFT confirmation).";
   }
   if (docType === "INVOICE") {
-    return "You are an invoice data extraction engine for a South African finance system. Extract supplier legal name, VAT number, invoice serial number, invoice date, every line item, subtotal, VAT amount and grand total from supplier tax invoices. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero)." + lineItemRules;
+    return base + "\n\nContext: this is a supplier tax invoice. Extract supplier legal name, VAT number, invoice serial number and invoice date.";
   }
-  return "You are an OCR assistant analysing a purchase requisition supporting document. Extract any supplier, totals, dates or reference numbers you can read." + lineItemRules;
+  return base + "\n\nContext: this is a purchase requisition supporting document.";
 }
 
 Deno.serve(async (req) => {
