@@ -268,14 +268,6 @@ export function InputVATTab() {
     );
   }
 
-  const totalInclusive = rows.reduce((s, r) => s + r.inclusive, 0);
-  const totalExclusive = rows.reduce((s, r) => s + r.exclusive, 0);
-  const totalVAT = rows.reduce((s, r) => s + r.vatAmount, 0);
-  // SARS standard: VAT / Net Exclusive == 15% by definition. Round for display safety.
-  const vatPercent = totalExclusive > 0
-    ? Math.round(((totalVAT / totalExclusive) * 100) * 100) / 100
-    : 0;
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
