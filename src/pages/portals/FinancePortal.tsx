@@ -311,10 +311,11 @@ export default function FinancePortal() {
   const handleCategoryApproval = async (
     prId: string,
     categoryId: string,
-    comments: string
+    comments: string,
+    supplierId?: string,
   ) => {
     try {
-      const result = await financeApprovePR(prId, comments, categoryId);
+      const result = await financeApprovePR(prId, comments, categoryId, supplierId);
 
       if (result.success) {
         toast.success("PR approved and categorized successfully");
