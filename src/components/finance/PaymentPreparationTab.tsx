@@ -630,28 +630,39 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             Document
           </div>
           {docState.url && (
-            <a
-              href={docState.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
-            >
-              Open <ExternalLink className="h-3 w-3" />
-            </a>
+            <div className="flex items-center gap-1">
+              <a
+                href={docState.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary inline-flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-primary/10"
+              >
+                Open <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href={docState.url}
+                download={docState.fileName || "document"}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary inline-flex items-center gap-1 hover:underline px-2 py-1 rounded hover:bg-primary/10"
+              >
+                <Download className="h-3 w-3" /> Download
+              </a>
+            </div>
           )}
         </div>
         <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
-          {!row.documentUrl ? (
-            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
-              <FileText className="h-8 w-8 opacity-50" />
-              <p className="text-sm">No document attached</p>
-            </div>
-          ) : docState.loading ? (
+          {docState.loading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           ) : docState.error ? (
             <div className="flex flex-col items-center gap-2 text-destructive p-4 text-center">
               <AlertCircle className="h-8 w-8" />
               <p className="text-sm">{docState.error}</p>
+            </div>
+          ) : !docState.url ? (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">No document attached</p>
             </div>
           ) : docState.type === "image" ? (
             <img src={docState.url!} alt="Document" className="max-h-full max-w-full object-contain" />
