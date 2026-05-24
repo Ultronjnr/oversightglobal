@@ -450,3 +450,171 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     </div>
   );
 }
+
+function ExpandedDetails({ row }: { row: PayRow }) {
+  const [docState, setDocState] = useState<{
+    loading: boolean;
+    url: string | null;
+    type: "pdf" | "image" | "other";
+    error: string | null;
+  }>({ loading: !!row.documentUrl, url: null, type: "other", error: null });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!row.documentUrl) {
+      setDocState({ loading: false, url: null, type: "other", error: null });
+      return;
+    }
+    (async () => {
+      try {
+        if (row.kind === "invoice") {
+          const res = await getInvoiceDocumentUrl(row.documentUrl!);
+          if (cancelled) return;
+          if (res.success && res.url) {
+            setDocState({ loading: false, url: res.url, type: getFileType(row.documentUrl!), error: null });
+          } else {
+            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
+          }
+        } else if (row.kind === "reimbursement") {
+          const url = await getReimbursementProofUrl(row.documentUrl!);
+          if (cancelled) return;
+          if (url) setDocState({ loading: false, url, type: getFileType(row.documentUrl!), error: null });
+          else setDocState({ loading: false, url: null, type: "other", error: "Failed to load proof" });
+        } else {
+          if (!row.prId) {
+            setDocState({ loading: false, url: null, type: "other", error: "Missing PR reference" });
+            return;
+          }
+          const res = await getDocumentSignedUrl(row.documentUrl!, row.prId);
+          if (cancelled) return;
+          if (res.success && res.signed_url) {
+            setDocState({
+              loading: false,
+              url: res.signed_url,
+              type: res.file_type || getFileType(row.documentUrl!),
+              error: null,
+            });
+          } else {
+            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
+          }
+        }
+      } catch (e: any) {
+        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [row.documentUrl, row.prId, row.kind]);
+
+  const items = row.items || [];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4">
+      {/* Left: context / line items */}
+      <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <FileText className="h-4 w-4 text-primary" />
+          Line Items
+          <Badge variant="outline" className="ml-1">{items.length}</Badge>
+        </div>
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md border border-border/40">
+            No line items captured for this transaction.
+          </div>
+        ) : (
+          <div className="rounded-md border border-border/40 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40">
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((it: any, idx: number) => {
+                  const qty = Number(it.quantity ?? it.qty ?? 1) || 1;
+                  const unit = Number(it.unit_price ?? it.price ?? 0) || 0;
+                  const total = Number(it.total_price ?? it.total ?? unit * qty) || 0;
+                  const desc = it.description || it.name || it.item_name || "Item";
+                  return (
+                    <TableRow key={idx}>
+                      <TableCell className="text-sm">{desc}</TableCell>
+                      <TableCell className="text-right text-sm">{qty}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {formatCurrency(unit, row.currency)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">
+                        {formatCurrency(total, row.currency)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 pt-1 text-sm">
+          <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="font-medium">{row.status}</p>
+          </div>
+          <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="font-medium">{formatCurrency(row.amount, row.currency)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: document preview */}
+      <div className="lg:col-span-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            Document
+          </div>
+          {docState.url && (
+            <a
+              href={docState.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              Open <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+        <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
+          {!row.documentUrl ? (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">No document attached</p>
+            </div>
+          ) : docState.loading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          ) : docState.error ? (
+            <div className="flex flex-col items-center gap-2 text-destructive p-4 text-center">
+              <AlertCircle className="h-8 w-8" />
+              <p className="text-sm">{docState.error}</p>
+            </div>
+          ) : docState.type === "image" ? (
+            <img src={docState.url!} alt="Document" className="max-h-full max-w-full object-contain" />
+          ) : docState.type === "pdf" ? (
+            <iframe src={docState.url!} title="Document" className="w-full h-full" />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">Preview not available</p>
+              <a href={docState.url!} target="_blank" rel="noreferrer" className="text-primary text-xs inline-flex items-center gap-1 hover:underline">
+                Download <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
