@@ -11,6 +11,8 @@ import {
   Building2,
   CheckCircle2,
   X as XIcon,
+  FileSpreadsheet,
+  FileDown,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +38,12 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvoiceDocumentUrl } from "@/services/invoice.service";
+import {
+  exportBatchToExcel,
+  exportBatchToPdf,
+  batchStatusLabel,
+  type BatchExportData,
+} from "@/services/batch-export.service";
 
 interface BatchAllocation {
   id: string;
@@ -136,6 +144,26 @@ export function BatchesTab() {
     }
   };
 
+  const buildExportData = (b: BatchRow): BatchExportData => ({
+    batch_number: b.batch_number || b.id.slice(0, 8).toUpperCase(),
+    created_at: b.created_at,
+    status: b.status || "DRAFT",
+    payment_reference: b.payment_reference,
+    paid_at: b.paid_at,
+    notes: b.notes,
+    currency: b.currency || "ZAR",
+    total_amount: Number(b.total_amount || 0),
+    allocations: b.allocations.map((a) => ({
+      supplier: a.invoice?.supplier?.company_name || "—",
+      contact: a.invoice?.supplier?.contact_email ?? null,
+      transaction_ref: a.invoice?.pr?.transaction_id || a.invoice_id?.slice(0, 8) || "—",
+      amount_paid: Number(a.amount_paid || 0),
+      total_amount: Number(a.invoice?.quote?.amount || 0),
+      type: a.invoice?.status === "PAID" ? "Full" : "Partial",
+      currency: a.invoice?.pr?.currency,
+    })),
+  });
+
   const handleCancelBatch = async (batchId: string) => {
     if (!window.confirm("Cancel this draft batch? All allocations will be removed.")) return;
     const { data, error } = await supabase.rpc("cancel_batch_draft", { _batch_id: batchId });
@@ -228,7 +256,7 @@ export function BatchesTab() {
                   <TableCell className="text-right">{b.allocations.length}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={statusBadgeClass(status)}>
-                      {status.charAt(0) + status.slice(1).toLowerCase()}
+                      {batchStatusLabel(status)}
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -250,8 +278,9 @@ export function BatchesTab() {
                           )}
                         </div>
                       )}
-                      {status === "DRAFT" && (
-                        <div className="flex gap-2 mb-3">
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        {status === "DRAFT" && (
+                          <>
                           <Button
                             size="sm"
                             onClick={(e) => { e.stopPropagation(); setConfirmBatch(b); }}
@@ -269,8 +298,27 @@ export function BatchesTab() {
                             <XIcon className="h-4 w-4" />
                             Cancel Batch
                           </Button>
-                        </div>
-                      )}
+                          </>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => { e.stopPropagation(); exportBatchToExcel(buildExportData(b)); }}
+                          className="gap-1"
+                        >
+                          <FileSpreadsheet className="h-4 w-4" />
+                          Export Excel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => { e.stopPropagation(); exportBatchToPdf(buildExportData(b)); }}
+                          className="gap-1"
+                        >
+                          <FileDown className="h-4 w-4" />
+                          Export PDF
+                        </Button>
+                      </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
                           <TableHeader>
