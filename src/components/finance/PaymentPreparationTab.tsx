@@ -9,6 +9,10 @@ import {
   Banknote,
   ExternalLink,
   Building2,
+  ChevronDown,
+  ChevronRight,
+  Image as ImageIcon,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,7 @@ import {
   getTransactionsByStatus,
   type OrgTransaction,
 } from "@/services/transaction.service";
+import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
@@ -57,6 +62,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     }
   | {
       kind: "reimbursement";
@@ -70,6 +77,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     }
   | {
       kind: "transaction";
@@ -83,6 +92,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
@@ -92,6 +103,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchAll();
@@ -122,8 +134,10 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       amount: Number(inv.quote?.amount || 0),
       currency: inv.pr?.currency,
       createdAt: inv.created_at,
-      documentUrl: inv.document_url,
+      documentUrl: inv.document_url || inv.pr?.document_url || null,
       status: inv.status,
+      prId: inv.pr?.id,
+      items: Array.isArray(inv.pr?.items) ? (inv.pr?.items as any[]) : [],
     }));
     const reimbRows: PayRow[] = reimbursements.map((r) => ({
       kind: "reimbursement",
@@ -150,8 +164,10 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         amount: remaining,
         currency: t.currency,
         createdAt: t.approved_at,
-        documentUrl: null,
+        documentUrl: t.pr?.document_url || null,
         status: t.status,
+        prId: t.pr?.id || t.pr_id,
+        items: Array.isArray(t.pr?.items) ? (t.pr?.items as any[]) : [],
       };
     });
     return [...invRows, ...reimbRows, ...txnRows].sort(
