@@ -112,6 +112,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchOpen, setBatchOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [attachRow, setAttachRow] = useState<TransactionRow | null>(null);
   const meta = filterMeta[filter];
   const supportsBatch = filter === "PARTIALLY_PAID";
 
@@ -222,6 +223,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
             <TableHead className="text-right">Remaining Balance</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Date</TableHead>
+            <TableHead className="w-20 text-right">Files</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -262,6 +264,18 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
               <TableCell className="text-muted-foreground text-sm">
                 {row.date ? format(new Date(row.date), "dd MMM yyyy") : "-"}
               </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachRow(row)}
+                  className="gap-1 h-8 px-2"
+                  aria-label="Attachments"
+                  disabled={!row.prId && !row.txnId && !row.reimbursementId}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -278,6 +292,31 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
         }}
       />
     )}
+    <Dialog open={!!attachRow} onOpenChange={(o) => !o && setAttachRow(null)}>
+      <DialogContent className="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>Attachments — {attachRow?.transactionId}</DialogTitle>
+        </DialogHeader>
+        {attachRow && (
+          <AttachmentsPanel
+            filter={
+              attachRow.reimbursementId
+                ? { reimbursement_id: attachRow.reimbursementId }
+                : attachRow.prId
+                ? { pr_id: attachRow.prId }
+                : { transaction_id: attachRow.txnId ?? undefined }
+            }
+            targets={{
+              pr_id: attachRow.prId ?? null,
+              transaction_id: attachRow.txnId ?? null,
+              reimbursement_id: attachRow.reimbursementId ?? null,
+            }}
+            defaultSupplierName={attachRow.party}
+            canDelete
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }
