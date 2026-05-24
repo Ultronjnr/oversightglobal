@@ -34,6 +34,10 @@ import {
   getReimbursementProofUrl,
   type Reimbursement,
 } from "@/services/reimbursement.service";
+import {
+  getTransactionsByStatus,
+  type OrgTransaction,
+} from "@/services/transaction.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
@@ -66,11 +70,25 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+    }
+  | {
+      kind: "transaction";
+      key: string;
+      id: string;
+      party: string;
+      partySub?: string;
+      transactionId: string;
+      amount: number;
+      currency?: string;
+      createdAt: string;
+      documentUrl: string | null;
+      status: string;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([]);
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
+  const [transactions, setTransactions] = useState<OrgTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
@@ -81,13 +99,15 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
 
   const fetchAll = async () => {
     setLoading(true);
-    const [invRes, reimbRes] = await Promise.all([
+    const [invRes, reimbRes, txnRes] = await Promise.all([
       getInvoicesAwaitingPayment(),
       getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
+      getTransactionsByStatus(["APPROVED_NOT_PAID", "PARTIALLY_PAID"]),
     ]);
     if (invRes.success) setInvoices(invRes.data);
     else toast.error(invRes.error || "Failed to load invoices");
     setReimbursements(reimbRes.rows);
+    setTransactions(txnRes);
     setLoading(false);
   };
 
@@ -118,10 +138,26 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       documentUrl: r.proof_document_url,
       status: r.status,
     }));
-    return [...invRows, ...reimbRows].sort(
+    const txnRows: PayRow[] = transactions.map((t) => {
+      const remaining = Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0);
+      return {
+        kind: "transaction" as const,
+        key: `t:${t.id}`,
+        id: t.id,
+        party: t.supplier_name || t.pr?.requested_by_name || "Approved Transaction",
+        partySub: t.pr?.requested_by_department || undefined,
+        transactionId: t.pr?.transaction_id || t.id.slice(0, 8).toUpperCase(),
+        amount: remaining,
+        currency: t.currency,
+        createdAt: t.approved_at,
+        documentUrl: null,
+        status: t.status,
+      };
+    });
+    return [...invRows, ...reimbRows, ...txnRows].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [invoices, reimbursements]);
+  }, [invoices, reimbursements, transactions]);
 
   const selectedRows = useMemo(
     () => rows.filter((r) => selectedIds.has(r.key)),
@@ -136,6 +172,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     kind: r.kind,
     invoiceId: r.kind === "invoice" ? r.id : undefined,
     reimbursementId: r.kind === "reimbursement" ? r.id : undefined,
+    transactionId: r.kind === "transaction" ? r.id : undefined,
     party: r.party,
     partySub: r.partySub,
     totalAmount: r.amount,
@@ -291,10 +328,16 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     className={
                       row.kind === "reimbursement"
                         ? "bg-warning/10 text-warning border-warning/30"
+                        : row.kind === "transaction"
+                        ? "bg-success/10 text-success border-success/30"
                         : "bg-primary/10 text-primary border-primary/30"
                     }
                   >
-                    {row.kind === "reimbursement" ? "Reimbursement" : "Invoice"}
+                    {row.kind === "reimbursement"
+                      ? "Reimbursement"
+                      : row.kind === "transaction"
+                      ? "Approved"
+                      : "Invoice"}
                   </Badge>
                 </TableCell>
                 <TableCell className="font-mono text-sm">
