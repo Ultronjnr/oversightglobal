@@ -70,14 +70,17 @@ const EXTRACTION_TOOL = {
 function systemPromptFor(docType: DocType): string {
   const lineItemRules = [
     "",
-    "LINE ITEM RULES (strict):",
-    "- Extract EVERY line item visible on the document.",
-    "- Always populate unit_price (price per single item). If only a line total and quantity are shown, compute unit_price = total_price / quantity.",
-    "- Never omit unit_price. If it cannot be derived, set it to 0 and set needs_review to true on that item.",
-    "- Do NOT confuse unit_price with total_price. total_price is quantity * unit_price.",
-    "- If quantity is missing, set quantity to null and needs_review to true.",
+    "LINE ITEM RULES (CRITICAL — do not violate):",
+    "- Extract EVERY line item visible on the document. Never skip a line.",
+    "- Every item MUST include: description, quantity, unit_price, total_price (and amount = total_price).",
+    "- Do NOT return null, empty or missing fields for these four.",
+    "- If unit_price is NOT explicitly shown: compute unit_price = total_price / quantity, rounded to 2 decimals.",
+    "- If quantity is missing: assume quantity = 1.",
+    "- If total_price is missing: compute total_price = unit_price * quantity, rounded to 2 decimals.",
+    "- Do NOT confuse unit_price with total_price. total_price = quantity * unit_price.",
+    "- Ensure mathematical consistency: sum(line total_price) should equal subtotal when shown; subtotal + vat_amount should equal total_amount when applicable.",
     "- Return numbers only — no currency symbols, no thousands separators.",
-    "- If anything is uncertain on a line, set needs_review to true.",
+    "- Do NOT guess values randomly — only infer using the math rules above. If a value is truly unreadable and cannot be inferred, set needs_review=true on that line (but still provide best-effort numeric values, never null).",
   ].join("\n");
   if (docType === "REIMBURSEMENT_PROOF") {
     return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols." + lineItemRules;
@@ -307,27 +310,37 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
   for (const raw of items) {
     if (!raw || typeof raw !== "object") continue;
     const item = raw as Record<string, unknown>;
-    const qty = toNum(item.quantity);
+    let qty = toNum(item.quantity);
     let unit = toNum(item.unit_price);
-    const total = toNum(item.total_price) ?? toNum(item.amount);
+    let total = toNum(item.total_price) ?? toNum(item.amount);
     let needsReview = item.needs_review === true;
 
-    if (unit == null && total != null && qty && qty > 0) {
-      unit = Number((total / qty).toFixed(4));
+    // Default quantity to 1 if missing
+    if (qty == null || qty <= 0) {
+      qty = 1;
+      if (item.quantity == null) needsReview = true;
     }
+    // Derive unit_price from total / qty when missing
+    if (unit == null && total != null) {
+      unit = Number((total / qty).toFixed(2));
+    }
+    // Derive total from unit * qty when missing
+    if (total == null && unit != null) {
+      total = Number((unit * qty).toFixed(2));
+    }
+    // Last-resort defaults — never null
     if (unit == null) {
       unit = 0;
       needsReview = true;
     }
-    if (qty == null) {
-      item.quantity = null;
-      needsReview = true;
-    } else {
-      item.quantity = qty;
+    if (total == null) {
+      total = Number((unit * qty).toFixed(2));
     }
+
+    item.quantity = qty;
     item.unit_price = unit;
-    if (total != null) item.total_price = total;
-    if (item.amount == null && total != null) item.amount = total;
+    item.total_price = total;
+    item.amount = total;
     item.needs_review = needsReview;
   }
 }
