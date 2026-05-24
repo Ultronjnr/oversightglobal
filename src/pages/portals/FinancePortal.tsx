@@ -31,6 +31,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Percent } from "lucide-react";
+import { ScanLine } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/comp
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
+import { ScanInvoiceModal } from "@/components/finance/ScanInvoiceModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +132,7 @@ export default function FinancePortal() {
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
+  const [showScanModal, setShowScanModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const notifCounts = useNotificationCounts();
   const approvalsNotif =
@@ -431,6 +434,14 @@ export default function FinancePortal() {
           >
             <ShoppingCart className="h-4 w-4" />
             New Purchase Requisition
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
+            onClick={() => setShowScanModal(true)}
+          >
+            <ScanLine className="h-4 w-4" />
+            Scan Invoice (AI)
           </Button>
           
           {/* Prominent blue circled button */}
@@ -915,6 +926,13 @@ export default function FinancePortal() {
         open={showPRModal}
         onOpenChange={setShowPRModal}
         onSuccess={handlePRFormSuccess}
+      />
+
+      {/* Scan Invoice (AI OCR) Modal */}
+      <ScanInvoiceModal
+        open={showScanModal}
+        onOpenChange={setShowScanModal}
+        onCreated={handleRefreshDashboard}
       />
 
       {/* Category Selection Modal for Approvals */}

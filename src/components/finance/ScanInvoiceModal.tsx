@@ -1,0 +1,428 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import {
+  Loader2,
+  Sparkles,
+  Upload,
+  CheckCircle2,
+  AlertTriangle,
+  Receipt,
+  ScanLine,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
+import { SupplierPicker } from "@/components/finance/SupplierPicker";
+import { getCategories, type Category } from "@/services/category.service";
+import {
+  createTransactionFromInvoice,
+  validateSarsInvoice,
+  type SarsValidationCode,
+} from "@/services/scan-invoice.service";
+
+const ACCEPT = ".pdf,application/pdf,image/jpeg,image/jpg,image/png";
+const MAX_SIZE = 15 * 1024 * 1024;
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated?: () => void;
+}
+
+const codeLabels: Record<SarsValidationCode, string> = {
+  VALID: "Valid SARS Tax Invoice",
+  MISSING_VAT_NUMBER: "Missing VAT Number",
+  MISSING_SUPPLIER_DETAILS: "Missing Supplier Details",
+  MISSING_INVOICE_NUMBER: "Missing Invoice Number",
+  MISSING_INVOICE_DATE: "Missing Invoice Date",
+  MISSING_VAT_AMOUNT: "Missing VAT Amount",
+};
+
+export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
+  const [file, setFile] = useState<File | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
+  const [scanPath, setScanPath] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Editable fields
+  const [supplierName, setSupplierName] = useState("");
+  const [supplierVat, setSupplierVat] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState("");
+  const [subtotal, setSubtotal] = useState<string>("");
+  const [vatAmount, setVatAmount] = useState<string>("");
+  const [totalAmount, setTotalAmount] = useState<string>("");
+  const [supplierId, setSupplierId] = useState<string | undefined>(undefined);
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    getCategories().then((r) => r.success && setCategories(r.data));
+  }, [open]);
+
+  const reset = () => {
+    setFile(null);
+    setAnalysis(null);
+    setScanPath(null);
+    setSupplierName("");
+    setSupplierVat("");
+    setInvoiceNumber("");
+    setInvoiceDate("");
+    setSubtotal("");
+    setVatAmount("");
+    setTotalAmount("");
+    setSupplierId(undefined);
+    setCategoryId("");
+  };
+
+  const handleClose = () => {
+    if (scanning || submitting) return;
+    reset();
+    onOpenChange(false);
+  };
+
+  const onFile = (f: File | null) => {
+    if (!f) return;
+    if (f.size > MAX_SIZE) {
+      toast.error("File must be smaller than 15MB");
+      return;
+    }
+    setFile(f);
+    setAnalysis(null);
+  };
+
+  const runScan = async () => {
+    if (!file) return;
+    setScanning(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Not authenticated");
+        return;
+      }
+      const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
+      const path = `${user.id}/scan/${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("invoice-documents")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) {
+        toast.error(`Upload failed: ${upErr.message}`);
+        return;
+      }
+      setScanPath(path);
+
+      const res = await analyzeDocument({
+        document_type: "INVOICE",
+        bucket: "invoice-documents",
+        storage_path: path,
+        force: true,
+      });
+      if (!res.success || !res.analysis) {
+        toast.error(res.error || "AI scan failed");
+        return;
+      }
+      setAnalysis(res.analysis);
+      const e = res.analysis.extracted || {};
+      setSupplierName(e.supplier_name ?? "");
+      setSupplierVat(e.supplier_vat_number ?? "");
+      setInvoiceNumber(e.document_number ?? "");
+      setInvoiceDate(e.document_date ?? "");
+      setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
+      setVatAmount(typeof e.vat_amount === "number" ? String(e.vat_amount) : "");
+      setTotalAmount(typeof e.total_amount === "number" ? String(e.total_amount) : "");
+      toast.success("Invoice scanned. Review and confirm.");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const sars = useMemo(() => {
+    return validateSarsInvoice({
+      supplier_name: supplierName,
+      supplier_vat_number: supplierVat,
+      document_number: invoiceNumber,
+      document_date: invoiceDate,
+      vat_amount: vatAmount ? Number(vatAmount) : undefined,
+    });
+  }, [supplierName, supplierVat, invoiceNumber, invoiceDate, vatAmount]);
+
+  const confidence = analysis?.confidence ?? null;
+
+  const handleCreate = async () => {
+    const total = Number(totalAmount);
+    if (!Number.isFinite(total) || total <= 0) {
+      toast.error("Enter a valid total amount");
+      return;
+    }
+    if (!supplierName.trim()) {
+      toast.error("Supplier name is required");
+      return;
+    }
+    if (!categoryId) {
+      toast.error("Select a category");
+      return;
+    }
+    setSubmitting(true);
+    const res = await createTransactionFromInvoice({
+      file,
+      supplier_name: supplierName.trim(),
+      supplier_id: supplierId ?? null,
+      supplier_vat_number: supplierVat.trim() || null,
+      document_number: invoiceNumber.trim() || null,
+      document_date: invoiceDate || null,
+      subtotal: subtotal ? Number(subtotal) : null,
+      vat_amount: vatAmount ? Number(vatAmount) : null,
+      total_amount: total,
+      category_id: categoryId,
+      ocr_analysis_id: analysis?.id ?? null,
+    });
+    // best-effort cleanup of the scan staging file
+    if (scanPath) {
+      supabase.storage.from("invoice-documents").remove([scanPath]).catch(() => {});
+    }
+    setSubmitting(false);
+    if (!res.success) {
+      toast.error(res.error || "Failed to create transaction");
+      return;
+    }
+    toast.success("Transaction created from invoice");
+    onCreated?.();
+    reset();
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : handleClose())}>
+      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ScanLine className="h-5 w-5 text-primary" />
+            Scan Invoice with AI
+          </DialogTitle>
+          <DialogDescription>
+            Upload a supplier invoice. AI will extract the fields, validate SARS
+            compliance and let you create a transaction.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* File upload */}
+          <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+            <Input
+              id="scan-file"
+              type="file"
+              accept={ACCEPT}
+              className="hidden"
+              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+            />
+            <Label htmlFor="scan-file" className="cursor-pointer flex flex-col items-center gap-2">
+              <div className="p-2 rounded-full bg-muted">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+              </div>
+              {file ? (
+                <div>
+                  <p className="font-medium text-primary text-sm">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium text-sm">Select an invoice file</p>
+                  <p className="text-xs text-muted-foreground">PDF, JPG, PNG · max 15MB</p>
+                </div>
+              )}
+            </Label>
+          </div>
+
+          <Button
+            onClick={runScan}
+            disabled={!file || scanning}
+            className="w-full gap-2"
+          >
+            {scanning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {analysis ? "Re-scan invoice" : "Scan with AI"}
+          </Button>
+
+          {analysis && (
+            <>
+              {/* Confidence + SARS validation */}
+              <Card className="p-3 space-y-2 bg-indigo-50/40 border-indigo-100">
+                <div className="flex flex-wrap items-center gap-2">
+                  {typeof confidence === "number" && (
+                    <Badge variant="outline" className="gap-1">
+                      <Sparkles className="h-3 w-3 text-indigo-600" />
+                      {Math.round(confidence * 100)}% confidence
+                    </Badge>
+                  )}
+                  {sars.isValid ? (
+                    <Badge className="bg-success/15 text-success border-success/30 gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> {codeLabels.VALID}
+                    </Badge>
+                  ) : (
+                    sars.codes.map((c) => (
+                      <Badge
+                        key={c}
+                        variant="outline"
+                        className="gap-1 border-destructive/40 text-destructive"
+                      >
+                        <AlertTriangle className="h-3 w-3" /> {codeLabels[c]}
+                      </Badge>
+                    ))
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Review and correct any fields before creating the transaction.
+                </p>
+              </Card>
+
+              {/* Editable fields */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs">Supplier</Label>
+                  <SupplierPicker
+                    value={supplierId}
+                    onChange={(id, s) => {
+                      setSupplierId(id);
+                      if (s) {
+                        setSupplierName(s.company_name);
+                        if (s.vat_number) setSupplierVat(s.vat_number);
+                      }
+                    }}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-name" className="text-xs">Supplier Name</Label>
+                  <Input
+                    id="si-name"
+                    value={supplierName}
+                    onChange={(e) => setSupplierName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-vat" className="text-xs">VAT Number</Label>
+                  <Input
+                    id="si-vat"
+                    value={supplierVat}
+                    onChange={(e) => setSupplierVat(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-invno" className="text-xs">Invoice Number</Label>
+                  <Input
+                    id="si-invno"
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-invdate" className="text-xs">Invoice Date</Label>
+                  <Input
+                    id="si-invdate"
+                    type="date"
+                    value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-sub" className="text-xs">Subtotal (ZAR)</Label>
+                  <Input
+                    id="si-sub"
+                    type="number"
+                    step="0.01"
+                    value={subtotal}
+                    onChange={(e) => setSubtotal(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-vata" className="text-xs">VAT Amount (ZAR)</Label>
+                  <Input
+                    id="si-vata"
+                    type="number"
+                    step="0.01"
+                    value={vatAmount}
+                    onChange={(e) => setVatAmount(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-total" className="text-xs">
+                    Total (ZAR) <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="si-total"
+                    type="number"
+                    step="0.01"
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">
+                    Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={categoryId} onValueChange={setCategoryId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}{" "}
+                          <span className="text-xs text-muted-foreground">
+                            ({c.type === "EXPENSE" ? "Expense" : "Fixed Asset"})
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={handleClose} disabled={submitting || scanning}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={submitting || !analysis}
+              className="gap-2"
+            >
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Receipt className="h-4 w-4" />
+              )}
+              Create Transaction from Invoice
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
