@@ -20,10 +20,15 @@ export interface OrgTransaction {
   created_at: string;
   updated_at: string;
   pr?: {
+    id: string;
     transaction_id: string;
     requested_by_name: string;
     requested_by_department: string | null;
     payment_due_date: string | null;
+    items: any;
+    document_url: string | null;
+    total_amount: number;
+    currency: string;
   } | null;
 }
 
@@ -33,7 +38,7 @@ export async function getTransactionsByStatus(
   const { data, error } = await supabase
     .from("transactions" as any)
     .select(
-      "*, pr:purchase_requisitions(transaction_id, requested_by_name, requested_by_department, payment_due_date)",
+      "*, pr:purchase_requisitions(id, transaction_id, requested_by_name, requested_by_department, payment_due_date, items, document_url, total_amount, currency)",
     )
     .in("status", statuses)
     .order("approved_at", { ascending: false });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -9,6 +9,10 @@ import {
   Banknote,
   ExternalLink,
   Building2,
+  ChevronDown,
+  ChevronRight,
+  Image as ImageIcon,
+  AlertCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +42,7 @@ import {
   getTransactionsByStatus,
   type OrgTransaction,
 } from "@/services/transaction.service";
+import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
@@ -57,6 +62,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     }
   | {
       kind: "reimbursement";
@@ -70,6 +77,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     }
   | {
       kind: "transaction";
@@ -83,6 +92,8 @@ type PayRow =
       createdAt: string;
       documentUrl: string | null;
       status: string;
+      prId?: string;
+      items?: any[];
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
@@ -92,6 +103,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchAll();
@@ -122,8 +134,10 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       amount: Number(inv.quote?.amount || 0),
       currency: inv.pr?.currency,
       createdAt: inv.created_at,
-      documentUrl: inv.document_url,
+      documentUrl: inv.document_url || inv.pr?.document_url || null,
       status: inv.status,
+      prId: inv.pr?.id,
+      items: Array.isArray(inv.pr?.items) ? (inv.pr?.items as any[]) : [],
     }));
     const reimbRows: PayRow[] = reimbursements.map((r) => ({
       kind: "reimbursement",
@@ -150,8 +164,10 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         amount: remaining,
         currency: t.currency,
         createdAt: t.approved_at,
-        documentUrl: null,
+        documentUrl: t.pr?.document_url || null,
         status: t.status,
+        prId: t.pr?.id || t.pr_id,
+        items: Array.isArray(t.pr?.items) ? (t.pr?.items as any[]) : [],
       };
     });
     return [...invRows, ...reimbRows, ...txnRows].sort(
@@ -203,10 +219,19 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       const res = await getInvoiceDocumentUrl(row.documentUrl);
       if (res.success && res.url) window.open(res.url, "_blank");
       else toast.error("Failed to load document", { description: res.error });
-    } else {
+    } else if (row.kind === "reimbursement") {
       const url = await getReimbursementProofUrl(row.documentUrl);
       if (url) window.open(url, "_blank");
       else toast.error("Failed to load proof");
+    } else {
+      // transaction: signed URL through PR document endpoint
+      if (!row.prId) {
+        toast.error("Missing PR reference");
+        return;
+      }
+      const res = await getDocumentSignedUrl(row.documentUrl, row.prId);
+      if (res.success && res.signed_url) window.open(res.signed_url, "_blank");
+      else toast.error("Failed to load document", { description: res.error });
     }
   };
 
@@ -296,6 +321,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
+              <TableHead className="w-8"></TableHead>
               <TableHead className="w-12"></TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Transaction ID</TableHead>
@@ -306,9 +332,11 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              const isExpanded = expandedKey === row.key;
+              return (
+              <Fragment key={row.key}>
               <TableRow
-                key={row.key}
                 className={`cursor-pointer transition-colors ${
                   selectedIds.has(row.key)
                     ? "bg-primary/5 hover:bg-primary/10"
@@ -316,6 +344,21 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                 }`}
                 onClick={() => handleToggleSelect(row.key)}
               >
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setExpandedKey(isExpanded ? null : row.key)}
+                    aria-label={isExpanded ? "Collapse" : "Expand"}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TableCell>
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedIds.has(row.key)}
@@ -382,7 +425,16 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                   )}
                 </TableCell>
               </TableRow>
-            ))}
+              {isExpanded && (
+                <TableRow className="bg-muted/10 hover:bg-muted/10">
+                  <TableCell colSpan={8} className="p-0">
+                    <ExpandedDetails row={row} />
+                  </TableCell>
+                </TableRow>
+              )}
+              </Fragment>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -394,6 +446,174 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         items={batchItems}
         onConfirmed={handleBatchConfirmed}
       />
+    </div>
+  );
+}
+
+function ExpandedDetails({ row }: { row: PayRow }) {
+  const [docState, setDocState] = useState<{
+    loading: boolean;
+    url: string | null;
+    type: "pdf" | "image" | "other";
+    error: string | null;
+  }>({ loading: !!row.documentUrl, url: null, type: "other", error: null });
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!row.documentUrl) {
+      setDocState({ loading: false, url: null, type: "other", error: null });
+      return;
+    }
+    (async () => {
+      try {
+        if (row.kind === "invoice") {
+          const res = await getInvoiceDocumentUrl(row.documentUrl!);
+          if (cancelled) return;
+          if (res.success && res.url) {
+            setDocState({ loading: false, url: res.url, type: getFileType(row.documentUrl!), error: null });
+          } else {
+            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
+          }
+        } else if (row.kind === "reimbursement") {
+          const url = await getReimbursementProofUrl(row.documentUrl!);
+          if (cancelled) return;
+          if (url) setDocState({ loading: false, url, type: getFileType(row.documentUrl!), error: null });
+          else setDocState({ loading: false, url: null, type: "other", error: "Failed to load proof" });
+        } else {
+          if (!row.prId) {
+            setDocState({ loading: false, url: null, type: "other", error: "Missing PR reference" });
+            return;
+          }
+          const res = await getDocumentSignedUrl(row.documentUrl!, row.prId);
+          if (cancelled) return;
+          if (res.success && res.signed_url) {
+            setDocState({
+              loading: false,
+              url: res.signed_url,
+              type: res.file_type || getFileType(row.documentUrl!),
+              error: null,
+            });
+          } else {
+            setDocState({ loading: false, url: null, type: "other", error: res.error || "Failed to load document" });
+          }
+        }
+      } catch (e: any) {
+        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [row.documentUrl, row.prId, row.kind]);
+
+  const items = row.items || [];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4">
+      {/* Left: context / line items */}
+      <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <FileText className="h-4 w-4 text-primary" />
+          Line Items
+          <Badge variant="outline" className="ml-1">{items.length}</Badge>
+        </div>
+        {items.length === 0 ? (
+          <div className="text-sm text-muted-foreground p-3 bg-muted/30 rounded-md border border-border/40">
+            No line items captured for this transaction.
+          </div>
+        ) : (
+          <div className="rounded-md border border-border/40 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40">
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Qty</TableHead>
+                  <TableHead className="text-right">Unit Price</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((it: any, idx: number) => {
+                  const qty = Number(it.quantity ?? it.qty ?? 1) || 1;
+                  const unit = Number(it.unit_price ?? it.price ?? 0) || 0;
+                  const total = Number(it.total_price ?? it.total ?? unit * qty) || 0;
+                  const desc = it.description || it.name || it.item_name || "Item";
+                  return (
+                    <TableRow key={idx}>
+                      <TableCell className="text-sm">{desc}</TableCell>
+                      <TableCell className="text-right text-sm">{qty}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {formatCurrency(unit, row.currency)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-medium">
+                        {formatCurrency(total, row.currency)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 pt-1 text-sm">
+          <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <p className="font-medium">{row.status}</p>
+          </div>
+          <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="font-medium">{formatCurrency(row.amount, row.currency)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right: document preview */}
+      <div className="lg:col-span-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <ImageIcon className="h-4 w-4 text-primary" />
+            Document
+          </div>
+          {docState.url && (
+            <a
+              href={docState.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              Open <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+        </div>
+        <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
+          {!row.documentUrl ? (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">No document attached</p>
+            </div>
+          ) : docState.loading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          ) : docState.error ? (
+            <div className="flex flex-col items-center gap-2 text-destructive p-4 text-center">
+              <AlertCircle className="h-8 w-8" />
+              <p className="text-sm">{docState.error}</p>
+            </div>
+          ) : docState.type === "image" ? (
+            <img src={docState.url!} alt="Document" className="max-h-full max-w-full object-contain" />
+          ) : docState.type === "pdf" ? (
+            <iframe src={docState.url!} title="Document" className="w-full h-full" />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-muted-foreground p-4 text-center">
+              <FileText className="h-8 w-8 opacity-50" />
+              <p className="text-sm">Preview not available</p>
+              <a href={docState.url!} target="_blank" rel="noreferrer" className="text-primary text-xs inline-flex items-center gap-1 hover:underline">
+                Download <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
