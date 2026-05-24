@@ -48,8 +48,10 @@ const EXTRACTION_TOOL = {
               quantity: { type: "number" },
               unit_price: { type: "number" },
               amount: { type: "number" },
+              total_price: { type: "number" },
+              needs_review: { type: "boolean" },
             },
-            required: ["description"],
+            required: ["description", "unit_price"],
             additionalProperties: false,
           },
         },
@@ -66,13 +68,24 @@ const EXTRACTION_TOOL = {
 };
 
 function systemPromptFor(docType: DocType): string {
+  const lineItemRules = [
+    "",
+    "LINE ITEM RULES (strict):",
+    "- Extract EVERY line item visible on the document.",
+    "- Always populate unit_price (price per single item). If only a line total and quantity are shown, compute unit_price = total_price / quantity.",
+    "- Never omit unit_price. If it cannot be derived, set it to 0 and set needs_review to true on that item.",
+    "- Do NOT confuse unit_price with total_price. total_price is quantity * unit_price.",
+    "- If quantity is missing, set quantity to null and needs_review to true.",
+    "- Return numbers only — no currency symbols, no thousands separators.",
+    "- If anything is uncertain on a line, set needs_review to true.",
+  ].join("\n");
   if (docType === "REIMBURSEMENT_PROOF") {
-    return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols.";
+    return "You are an OCR assistant analysing employee proof-of-payment documents (receipts, till slips, EFT confirmations) for a South African finance team. Extract every field you can read. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return all amounts as numbers without currency symbols." + lineItemRules;
   }
   if (docType === "INVOICE") {
-    return "You are an OCR assistant analysing supplier tax invoices for a South African finance team. Extract supplier, VAT number, invoice number, dates, line items and totals. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero). Return numeric amounts only.";
+    return "You are an invoice data extraction engine for a South African finance system. Extract supplier legal name, VAT number, invoice serial number, invoice date, every line item, subtotal, VAT amount and grand total from supplier tax invoices. Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero)." + lineItemRules;
   }
-  return "You are an OCR assistant analysing a purchase requisition supporting document. Extract any supplier, totals, dates or reference numbers you can read.";
+  return "You are an OCR assistant analysing a purchase requisition supporting document. Extract any supplier, totals, dates or reference numbers you can read." + lineItemRules;
 }
 
 Deno.serve(async (req) => {
@@ -221,6 +234,7 @@ Deno.serve(async (req) => {
       } catch {
         throw new Error("AI returned invalid JSON");
       }
+      normalizeLineItems(extracted);
       const confidence = typeof extracted.confidence === "number" ? extracted.confidence : null;
 
       const { data: updated, error: updateErr } = await admin
@@ -276,4 +290,44 @@ function encodeBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(binary);
+}
+
+function toNum(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^\d.\-]/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function normalizeLineItems(extracted: Record<string, unknown>) {
+  const items = extracted?.line_items;
+  if (!Array.isArray(items)) return;
+  for (const raw of items) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const qty = toNum(item.quantity);
+    let unit = toNum(item.unit_price);
+    const total = toNum(item.total_price) ?? toNum(item.amount);
+    let needsReview = item.needs_review === true;
+
+    if (unit == null && total != null && qty && qty > 0) {
+      unit = Number((total / qty).toFixed(4));
+    }
+    if (unit == null) {
+      unit = 0;
+      needsReview = true;
+    }
+    if (qty == null) {
+      item.quantity = null;
+      needsReview = true;
+    } else {
+      item.quantity = qty;
+    }
+    item.unit_price = unit;
+    if (total != null) item.total_price = total;
+    if (item.amount == null && total != null) item.amount = total;
+    item.needs_review = needsReview;
+  }
 }
