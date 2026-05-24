@@ -40,6 +40,9 @@ import {
 import { ReimbursementProofModal } from "@/components/reimbursement/ReimbursementProofModal";
 import { ReimbursementDetailsModal } from "@/components/reimbursement/ReimbursementDetailsModal";
 import { AddCommentDialog } from "@/components/reimbursement/AddCommentDialog";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Paperclip } from "lucide-react";
 
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = [
@@ -109,6 +112,7 @@ export function ReimbursementsTab() {
   const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
   const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
   const [commentTarget, setCommentTarget] = useState<Reimbursement | null>(null);
+  const [attachTarget, setAttachTarget] = useState<Reimbursement | null>(null);
 
   // Sync URL <-> state when user switches sub-tab
   const handleTabChange = (v: string) => {
@@ -284,6 +288,16 @@ export function ReimbursementsTab() {
                       <MessageSquarePlus className="h-4 w-4" />
                       Comment
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setAttachTarget(r)}
+                      className="gap-1"
+                      aria-label="Attach invoice or receipt"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      Attach
+                    </Button>
                   {r.status === "PENDING" && (
                     <div className="flex items-center justify-end gap-2">
                       <Button
@@ -418,6 +432,23 @@ export function ReimbursementsTab() {
       reimbursementId={commentTarget?.id ?? null}
       onAdded={reloadAll}
     />
+    <Dialog open={!!attachTarget} onOpenChange={(o) => !o && setAttachTarget(null)}>
+      <DialogContent className="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>
+            Attachments — {attachTarget?.employee_name}
+          </DialogTitle>
+        </DialogHeader>
+        {attachTarget && (
+          <AttachmentsPanel
+            filter={{ reimbursement_id: attachTarget.id }}
+            targets={{ reimbursement_id: attachTarget.id, pr_id: attachTarget.pr_id ?? null }}
+            title="Receipts & Invoices"
+            canDelete
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

@@ -18,6 +18,9 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Paperclip } from "lucide-react";
 
 export type TransactionStatusFilter =
   | "PARTIALLY_PAID"
@@ -54,6 +57,9 @@ interface TransactionRow {
   status: string;
   date: string;
   currency?: string;
+  prId?: string | null;
+  txnId?: string | null;
+  reimbursementId?: string | null;
 }
 
 const filterMeta: Record<TransactionStatusFilter, {
@@ -106,6 +112,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchOpen, setBatchOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [attachRow, setAttachRow] = useState<TransactionRow | null>(null);
   const meta = filterMeta[filter];
   const supportsBatch = filter === "PARTIALLY_PAID";
 
@@ -216,6 +223,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
             <TableHead className="text-right">Remaining Balance</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Date</TableHead>
+            <TableHead className="w-20 text-right">Files</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -256,6 +264,18 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
               <TableCell className="text-muted-foreground text-sm">
                 {row.date ? format(new Date(row.date), "dd MMM yyyy") : "-"}
               </TableCell>
+              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachRow(row)}
+                  className="gap-1 h-8 px-2"
+                  aria-label="Attachments"
+                  disabled={!row.prId && !row.txnId && !row.reimbursementId}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -272,6 +292,31 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
         }}
       />
     )}
+    <Dialog open={!!attachRow} onOpenChange={(o) => !o && setAttachRow(null)}>
+      <DialogContent className="sm:max-w-[640px]">
+        <DialogHeader>
+          <DialogTitle>Attachments — {attachRow?.transactionId}</DialogTitle>
+        </DialogHeader>
+        {attachRow && (
+          <AttachmentsPanel
+            filter={
+              attachRow.reimbursementId
+                ? { reimbursement_id: attachRow.reimbursementId }
+                : attachRow.prId
+                ? { pr_id: attachRow.prId }
+                : { transaction_id: attachRow.txnId ?? undefined }
+            }
+            targets={{
+              pr_id: attachRow.prId ?? null,
+              transaction_id: attachRow.txnId ?? null,
+              reimbursement_id: attachRow.reimbursementId ?? null,
+            }}
+            defaultSupplierName={attachRow.party}
+            canDelete
+          />
+        )}
+      </DialogContent>
+    </Dialog>
     </div>
   );
 }
@@ -292,6 +337,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         remaining: 0,
         status: "Pending",
         date: "",
+        reimbursementId: r.id,
       }));
     }
 
@@ -316,7 +362,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "PARTIALLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)")
+        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const invoices = (data || []) as any[];
@@ -345,11 +391,12 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Partially Paid",
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
-        .select("id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
+        .select("id, pr_id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
@@ -362,6 +409,8 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         status: "Partially Paid",
         date: t.updated_at,
         currency: t.currency,
+        prId: t.pr_id ?? null,
+        txnId: t.id,
       }));
       return [...invRows, ...txnRows];
     }
@@ -369,7 +418,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "FULLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)")
+        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PAID")
         .order("updated_at", { ascending: false });
       const invRows = (data || []).map((inv: any) => {
@@ -385,11 +434,12 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Fully Paid",
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
-        .select("id, amount, amount_paid, currency, paid_at, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
+        .select("id, pr_id, amount, amount_paid, currency, paid_at, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
         .eq("status", "FULLY_PAID")
         .order("paid_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
@@ -402,6 +452,8 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         status: "Fully Paid",
         date: t.paid_at || t.updated_at,
         currency: t.currency,
+        prId: t.pr_id ?? null,
+        txnId: t.id,
       }));
       return [...invRows, ...txnRows];
     }
@@ -414,7 +466,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
       const { data: invData } = await supabase
         .from("invoices")
         .select(
-          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(transaction_id, currency, payment_due_date), quote:quotes(amount)"
+          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency, payment_due_date), quote:quotes(amount)"
         )
         .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]);
       const invoices = (invData || []) as any[];
@@ -451,6 +503,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Overdue 30+ days",
           date: dueStr,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         }));
 
       // 2. Reimbursements: APPROVED but not yet PAID, approved over 30 days ago
@@ -476,6 +529,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Overdue 30+ days",
           date: refDate,
           currency: r.currency || "ZAR",
+          reimbursementId: r.id,
         }));
 
       return [...invoiceRows, ...reimbRows].sort(

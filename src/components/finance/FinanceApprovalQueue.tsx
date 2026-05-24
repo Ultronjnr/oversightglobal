@@ -40,6 +40,7 @@ import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 
 export function FinanceApprovalQueue() {
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
@@ -403,6 +404,15 @@ export function FinanceApprovalQueue() {
                                     </button>
                                   </div>
                                 )}
+
+                                {/* Attachments (invoices, receipts) */}
+                                <div className="pt-3 border-t">
+                                  <AttachmentsPanel
+                                    filter={{ pr_id: pr.id }}
+                                    targets={{ pr_id: pr.id }}
+                                    title="Invoices & Receipts"
+                                  />
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
