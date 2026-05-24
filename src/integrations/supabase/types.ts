@@ -1145,12 +1145,15 @@ export type Database = {
           id: string
           industry: string | null
           invited_by_admin_id: string | null
+          is_active: boolean
           is_manual: boolean
           is_public: boolean
           is_verified: boolean
           organization_id: string
           phone: string | null
           registration_number: string | null
+          supplier_code: string | null
+          supplier_type: Database["public"]["Enums"]["supplier_type"]
           user_id: string | null
           vat_number: string | null
         }
@@ -1164,12 +1167,15 @@ export type Database = {
           id?: string
           industry?: string | null
           invited_by_admin_id?: string | null
+          is_active?: boolean
           is_manual?: boolean
           is_public?: boolean
           is_verified?: boolean
           organization_id: string
           phone?: string | null
           registration_number?: string | null
+          supplier_code?: string | null
+          supplier_type?: Database["public"]["Enums"]["supplier_type"]
           user_id?: string | null
           vat_number?: string | null
         }
@@ -1183,12 +1189,15 @@ export type Database = {
           id?: string
           industry?: string | null
           invited_by_admin_id?: string | null
+          is_active?: boolean
           is_manual?: boolean
           is_public?: boolean
           is_verified?: boolean
           organization_id?: string
           phone?: string | null
           registration_number?: string | null
+          supplier_code?: string | null
+          supplier_type?: Database["public"]["Enums"]["supplier_type"]
           user_id?: string | null
           vat_number?: string | null
         }
@@ -1520,6 +1529,7 @@ export type Database = {
         | "PAID"
         | "AWAITING_PAYMENT"
       subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
+      supplier_type: "REGISTERED" | "PREFERRED" | "ONE_TIME"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
       vat_cycle: "MONTHLY" | "BI_MONTHLY"
@@ -1688,6 +1698,7 @@ export const Constants = {
         "AWAITING_PAYMENT",
       ],
       subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
+      supplier_type: ["REGISTERED", "PREFERRED", "ONE_TIME"],
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
       vat_cycle: ["MONTHLY", "BI_MONTHLY"],
