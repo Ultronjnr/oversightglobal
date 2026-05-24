@@ -493,6 +493,59 @@ export async function getAllSuppliers(): Promise<{
 }
 
 /**
+ * Create a manual (account-less) supplier record. Finance can later link
+ * transactions to it. Does not provision a login account.
+ */
+export async function createManualSupplier(input: {
+  company_name: string;
+  vat_number?: string;
+  contact_email?: string;
+  phone?: string;
+}): Promise<{ success: boolean; data?: Supplier; error?: string }> {
+  try {
+    const name = input.company_name.trim();
+    if (!name) return { success: false, error: "Supplier name is required" };
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Not authenticated" };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single();
+    if (!profile?.organization_id) {
+      return { success: false, error: "Organization not found" };
+    }
+
+    const { data, error } = await supabase
+      .from("suppliers")
+      .insert({
+        company_name: name,
+        vat_number: input.vat_number?.trim() || null,
+        contact_email: input.contact_email?.trim() || null,
+        phone: input.phone?.trim() || null,
+        organization_id: profile.organization_id,
+        user_id: null,
+        is_manual: true,
+        is_verified: false,
+        created_by: user.id,
+      } as any)
+      .select("*")
+      .single();
+
+    if (error) {
+      logError("createManualSupplier", error);
+      return { success: false, error: getSafeErrorMessage(error) };
+    }
+    return { success: true, data: data as unknown as Supplier };
+  } catch (error: any) {
+    logError("createManualSupplier", error);
+    return { success: false, error: getSafeErrorMessage(error) };
+  }
+}
+
+/**
  * Send quote request to supplier
  */
 export async function sendQuoteRequest(
