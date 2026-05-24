@@ -1,111 +1,70 @@
-# OVASYT Triple Extension Plan
+# Approval → Payment Workflow Fix
 
-This is a very large body of work spanning three independent feature suites. I want to confirm scope and sequencing **before** writing any code, because each suite involves schema, edge functions, and multi-portal UI changes. Nothing here removes existing logic — every change is additive.
+## Problem
 
----
+Today, when Finance approves a PR, nothing enters payment processing on its own. The "Approved But Not Paid" queue only contains supplier-uploaded **invoices**, which require:
+- an accepted **quote**
+- a **supplier account** (`invoices.supplier_id NOT NULL`)
+- a supplier-uploaded invoice document
 
-## Suite 1 — Linked Employee Reimbursement System
+So PRs without a registered supplier (e.g. manually-typed supplier names) get stuck after Finance approval and never appear in the payment queue, batch processing, or expense history.
 
-Extend `purchase_requisitions` and the existing `reimbursements` table so a reimbursement is **always linked to a PR**, inherits its approval chain, and plugs into the new payment-batch lifecycle.
+## Goal
 
-### Schema (one migration, additive)
-- `purchase_requisitions`: add `requires_reimbursement boolean default false`.
-- `reimbursements`: add
-  - `pr_id uuid` (link to originating PR)
-  - `payment_method text` (CASH / PERSONAL_CARD / EFT / OTHER)
-  - `reimbursement_reference text`
-  - `reimbursement_date date`
-  - extend `status` enum with `AWAITING_PAYMENT` (keep PENDING/APPROVED/REJECTED/PAID)
-  - `approved_by`, `approved_at`, `paid_at` already exist.
-- New `reimbursement_audit_log` (id, reimbursement_id, action, old_status, new_status, performed_by, performed_at, notes) + RLS (Finance/Admin select scoped to org).
-- RPC `submit_reimbursement_from_pr(_pr_id, _amount, _method, _reference, _date, _proof_url, _notes)` — creates reimbursement tied to PR after finance approval.
-- RPC `approve_reimbursement` / `reject_reimbursement` (Finance only, writes audit log + notifications).
-- Extend `confirm_batch_paid` so batches can include reimbursement allocations alongside invoice allocations. Add nullable `reimbursement_id` to `payment_allocations`.
+Treat **Finance approval** as the moment a financial obligation is recognized. Auto-create a **Transaction** record at that point, regardless of supplier account or invoice upload, and feed it through the same Payment Preparation → Batch → Paid lifecycle.
 
-### Frontend
-- `PurchaseRequisitionForm.tsx`: add "This transaction requires employee reimbursement" toggle + collapsed fields (method, amount, reference, date, notes, proof upload to existing `pr-documents` bucket sub-path).
-- `EmployeePortal`: new "My Reimbursements" tab listing rows joined to PRs.
-- `FinancePortal`: new tabs **Pending Reimbursements**, **Approved Reimbursements**, **Awaiting Payment**, **Paid Reimbursements** (additive — Payments / Batches stays intact).
-- `BatchPaymentModal`: allow selecting approved reimbursements alongside invoices; show "Reimbursement" badge.
-- Finance Review modal: shows linked PR, proof image preview, employee details, timestamps, audit log.
-- Validation: reimbursement amount ≤ PR total unless finance override flag.
+## Approach
 
-### Notifications & Realtime
-- Reuse existing `notifications` table + `useNotificationCounts`. Add channel subscription on `reimbursements` for finance and employee.
+Introduce a lightweight `transactions` ledger that runs in parallel to (not instead of) `invoices`. Invoices keep working as today for supplier-driven flows; transactions cover Finance-approved PRs.
 
----
+### 1. New table: `public.transactions`
 
-## Suite 2 — AI OCR Invoice / Receipt Analysis
+Columns:
+- `pr_id` (unique, FK → purchase_requisitions)
+- `organization_id`
+- `supplier_id` (nullable)
+- `supplier_name` (text — captures manual supplier name)
+- `amount`, `currency`
+- `status`: `APPROVED_NOT_PAID` | `PARTIALLY_PAID` | `FULLY_PAID`
+- `amount_paid` (running total)
+- `approved_at`, `paid_at`
+- standard timestamps + RLS (org-scoped, Finance/Admin)
 
-Asynchronous assistant. **Never blocks uploads.** Manual workflows remain primary.
+### 2. Trigger on `purchase_requisitions`
 
-### Schema
-- New `document_ai_analyses` (id, organization_id, document_url, document_type {INVOICE|RECEIPT|REIMBURSEMENT_PROOF|TAX_INVOICE}, status {PENDING|PROCESSING|READY|FAILED}, extracted_fields jsonb, confidence numeric, suggested_pr_id uuid nullable, suggested_invoice_id uuid nullable, vat_inclusive boolean, vat_amount numeric, total numeric, ai_notes text, created_at). RLS scoped to org (Finance/Admin/owner).
-- Trigger: after insert into `invoices`, `reimbursements.proof_document_url`, or PR `document_url`, enqueue an analysis row in PENDING status.
+`AFTER UPDATE` — when `status` transitions to `FINANCE_APPROVED`, upsert a `transactions` row with `APPROVED_NOT_PAID`, copying amount/currency/supplier hints from the PR.
 
-### Edge function `analyze-document`
-- Invoked via Supabase realtime trigger or DB hook (queued).
-- Fetches signed URL → calls Lovable AI Gateway (`google/gemini-3-flash-preview` for text, image input) with structured tool-calling schema (supplier, invoice number, date, subtotal, VAT, total, line items).
-- Computes match candidates: query org PRs/invoices by supplier name fuzzy + total amount within 1% → score High/Medium/Low.
-- Writes back to `document_ai_analyses`. Never auto-links — only suggests.
+### 3. Extend payment batches
 
-### Frontend
-- New `AIAnalysisCard` component: shows "Processing" / "Ready" / "Failed" with extracted fields, confidence badges, suggested matches, "Link to existing transaction" or "Create new" buttons.
-- Embedded in `InvoicesTable`, supplier upload modal, reimbursement view, and PR detail modal.
-- Duplicate-detection warning when invoice number or (supplier + amount) already exists.
+- Add nullable `payment_allocations.transaction_id`.
+- Update `create_payment_batch_draft`, `update_batch_draft`, `confirm_batch_paid`, `cancel_batch_draft` to accept and process `transaction_id` allocations the same way they handle invoice/reimbursement allocations:
+  - On confirm → sum allocations, set `transactions.status` to `PARTIALLY_PAID` or `FULLY_PAID`, update `amount_paid` and `paid_at`.
 
-### Safety
-- File upload completes first; analysis is fire-and-forget.
-- If AI fails or returns low confidence, show "AI could not confidently analyze — use manual entry" and leave manual workflow intact.
+### 4. UI wiring (no redesign)
 
----
+- **PaymentPreparationTab** ("Approved But Not Paid"): add a third source — open transactions (`APPROVED_NOT_PAID` + `PARTIALLY_PAID`) — into the existing combined rows list. Reuse current row UI and BatchPaymentModal (new `kind: "transaction"`).
+- **TransactionStatusTab**:
+  - `PARTIALLY_PAID` and `FULLY_PAID` filters: include matching transactions alongside invoices.
+  - New status surface in the same component using existing badges.
+- **Expense History** (PRHistory): already lists FINANCE_APPROVED PRs; ensure the transaction status badge is reflected.
 
-## Suite 3 — Mobile Camera Capture & Smart Scanning
+### 5. Workflow guarantees verified after build
 
-Pure frontend extension; no backend changes.
+- Finance approve PR → row appears in `transactions` (`APPROVED_NOT_PAID`).
+- Add to batch → still `APPROVED_NOT_PAID` until batch is confirmed.
+- Confirm batch with partial amount → `PARTIALLY_PAID`, `amount_paid` updated.
+- Confirm batch with remaining amount → `FULLY_PAID`, `paid_at` set.
+- Works for PRs with **no supplier account** (manual supplier name preserved).
 
-### New `DocumentCapture` component
-- Uses `<input type="file" accept="image/*" capture="environment">` for mobile camera. Detects mobile via `useIsMobile` hook (already exists).
-- Live preview, retake, crop adjust (use `react-easy-crop`).
-- Brightness/contrast boost + edge detection via OpenCV.js loaded on demand, or simpler `canvas` perspective correction.
-- Multi-page capture: append pages to an in-memory array, merge to single PDF via `pdf-lib` before upload.
-- Compression with `browser-image-compression` keeping ≥1500px longest edge for OCR quality.
+## What stays untouched
 
-### Integration points
-- `PurchaseRequisitionForm` upload area, supplier `UploadInvoiceModal`, reimbursement proof upload.
-- Desktop: existing drag-drop unchanged. Mobile: "Take Photo" / "Upload File" choice.
-- After upload completes, trigger the same OCR pipeline from Suite 2 automatically.
+- Existing PR statuses (`PENDING_HOD_APPROVAL` … `FINANCE_APPROVED`) unchanged.
+- Supplier RFQ → quote → invoice flow unchanged.
+- Reimbursements flow unchanged.
+- All existing RLS, role permissions, and UI styling preserved.
 
-### UI
-- Camera overlay with edge-detection guides, scan animation, confidence dot, upload progress bar — themed with indigo glass tokens already in `index.css`.
+## Risk / non-goals
 
----
-
-## Sequencing & Risk
-
-I recommend shipping these as three sequential migrations + PRs to keep diffs reviewable and reversible:
-
-1. **Suite 1** first (schema + UI). Self-contained, unlocks reimbursement→batch flow.
-2. **Suite 2** second (depends on file uploads existing — needs no Suite 1 schema, but benefits from reimbursement upload hook).
-3. **Suite 3** last (UI-only, plugs into upload paths used by both Suite 1 and Suite 2).
-
-Each suite is one DB migration + a small set of new files + minimal edits to existing forms/portals. No existing tables, RLS, RPCs, chat, batch, or supplier code will be removed or refactored.
-
----
-
-## Confirmation Needed
-
-This is roughly **8–12 hours of focused implementation** across the three suites and will require:
-
-- 3 separate migrations
-- 1 new edge function (`analyze-document`) with Lovable AI calls
-- ~6 new components + 4 edited components
-- 2 new libraries (`pdf-lib`, `browser-image-compression`, optionally `react-easy-crop`)
-
-**Please confirm:**
-
-1. Ship all three suites now, or sequentially in three separate approvals?
-2. For OCR: confirm I should use **Lovable AI Gateway** (no extra API key, no Tesseract) — Gemini handles images directly. OK?
-3. For mobile scanning: confirm the lightweight stack (browser camera + canvas/pdf-lib) is acceptable instead of pulling in a heavy native scanner SDK.
-
-On approval I'll start with Suite 1's migration.
+- No redesign, no new tabs, no changes to approval UI.
+- No changes to invoice or reimbursement schemas.
+- Backfill of historical FINANCE_APPROVED PRs is included in the migration so existing approved-but-stuck PRs surface immediately.

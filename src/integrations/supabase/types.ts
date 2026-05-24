@@ -395,6 +395,7 @@ export type Database = {
           payment_date: string | null
           payment_reference: string | null
           reimbursement_id: string | null
+          transaction_id: string | null
         }
         Insert: {
           amount_paid: number
@@ -407,6 +408,7 @@ export type Database = {
           payment_date?: string | null
           payment_reference?: string | null
           reimbursement_id?: string | null
+          transaction_id?: string | null
         }
         Update: {
           amount_paid?: number
@@ -419,6 +421,7 @@ export type Database = {
           payment_date?: string | null
           payment_reference?: string | null
           reimbursement_id?: string | null
+          transaction_id?: string | null
         }
         Relationships: [
           {
@@ -426,6 +429,13 @@ export type Database = {
             columns: ["batch_id"]
             isOneToOne: false
             referencedRelation: "payment_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -1102,6 +1112,76 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          amount_paid: number
+          approved_at: string
+          created_at: string
+          currency: string
+          id: string
+          organization_id: string
+          paid_at: string | null
+          pr_id: string
+          status: string
+          supplier_id: string | null
+          supplier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          amount_paid?: number
+          approved_at?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          organization_id: string
+          paid_at?: string | null
+          pr_id: string
+          status?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number
+          approved_at?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          organization_id?: string
+          paid_at?: string | null
+          pr_id?: string
+          status?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: true
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
