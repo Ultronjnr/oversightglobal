@@ -112,6 +112,7 @@ export function ReimbursementsTab() {
   const [proofItem, setProofItem] = useState<Reimbursement | null>(null);
   const [detailsItem, setDetailsItem] = useState<Reimbursement | null>(null);
   const [commentTarget, setCommentTarget] = useState<Reimbursement | null>(null);
+  const [attachTarget, setAttachTarget] = useState<Reimbursement | null>(null);
 
   // Sync URL <-> state when user switches sub-tab
   const handleTabChange = (v: string) => {
@@ -286,6 +287,16 @@ export function ReimbursementsTab() {
                     >
                       <MessageSquarePlus className="h-4 w-4" />
                       Comment
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setAttachTarget(r)}
+                      className="gap-1"
+                      aria-label="Attach invoice or receipt"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      Attach
                     </Button>
                   {r.status === "PENDING" && (
                     <div className="flex items-center justify-end gap-2">
