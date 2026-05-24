@@ -1,5 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, Tag, Plus, Check, Search, FolderTree, Package } from "lucide-react";
+import {
+  Loader2,
+  Tag,
+  Plus,
+  Check,
+  Search,
+  FolderTree,
+  Package,
+  Building2,
+  Star,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -38,12 +49,23 @@ import {
   type Category,
   type CategoryType,
 } from "@/services/category.service";
+import {
+  getAllSuppliers,
+  createManualSupplier,
+  type Supplier,
+} from "@/services/finance.service";
+import { Badge } from "@/components/ui/badge";
 
 interface CategorySelectionModalProps {
   pr: PurchaseRequisition | null;
   open: boolean;
   onClose: () => void;
-  onConfirm: (prId: string, categoryId: string, comments: string) => Promise<void>;
+  onConfirm: (
+    prId: string,
+    categoryId: string,
+    comments: string,
+    supplierId: string,
+  ) => Promise<void>;
 }
 
 export function CategorySelectionModal({
@@ -66,9 +88,28 @@ export function CategorySelectionModal({
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
+  // Suppliers
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
+  const [isCreatingSupplier, setIsCreatingSupplier] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    company_name: "",
+    registration_number: "",
+    vat_number: "",
+    contact_person: "",
+    contact_email: "",
+    phone: "",
+    address: "",
+    supplier_type: "REGISTERED" as "REGISTERED" | "PREFERRED" | "ONE_TIME",
+  });
+
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchSuppliers();
       // Reset state when modal opens
       setSelectedCategoryId(null);
       setComments("");
@@ -77,6 +118,19 @@ export function CategorySelectionModal({
       setNewCategoryName("");
       setNewCategoryType("EXPENSE");
       setNewCategoryDescription("");
+      setSelectedSupplierId(null);
+      setSupplierQuery("");
+      setShowNewSupplierForm(false);
+      setNewSupplier({
+        company_name: "",
+        registration_number: "",
+        vat_number: "",
+        contact_person: "",
+        contact_email: "",
+        phone: "",
+        address: "",
+        supplier_type: "REGISTERED",
+      });
     }
   }, [open]);
 
@@ -89,6 +143,17 @@ export function CategorySelectionModal({
       toast.error(result.error || "Failed to load categories");
     }
     setLoading(false);
+  };
+
+  const fetchSuppliers = async () => {
+    setLoadingSuppliers(true);
+    const result = await getAllSuppliers();
+    if (result.success) {
+      setSuppliers(result.data);
+    } else {
+      toast.error(result.error || "Failed to load suppliers");
+    }
+    setLoadingSuppliers(false);
   };
 
   const groupedCategories = useMemo(() => {
@@ -110,6 +175,46 @@ export function CategorySelectionModal({
   const selectedCategory = useMemo(() => {
     return categories.find((c) => c.id === selectedCategoryId);
   }, [categories, selectedCategoryId]);
+
+  const selectedSupplier = useMemo(
+    () => suppliers.find((s) => s.id === selectedSupplierId),
+    [suppliers, selectedSupplierId],
+  );
+
+  const groupedSuppliers = useMemo(() => {
+    const q = supplierQuery.trim().toLowerCase();
+    const match = (s: Supplier) => {
+      if (!q) return true;
+      return (
+        s.company_name.toLowerCase().includes(q) ||
+        (s.supplier_code ?? "").toLowerCase().includes(q) ||
+        (s.contact_person ?? "").toLowerCase().includes(q)
+      );
+    };
+    const filtered = suppliers.filter(match).filter((s) => s.is_active !== false);
+    const recent = [...filtered]
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.created_at ?? 0).getTime() -
+          new Date(a.created_at ?? 0).getTime(),
+      )
+      .slice(0, 3);
+    const recentIds = new Set(recent.map((s) => s.id));
+    return {
+      preferred: filtered.filter(
+        (s) => s.supplier_type === "PREFERRED" && !recentIds.has(s.id),
+      ),
+      registered: filtered.filter(
+        (s) =>
+          (s.supplier_type === "REGISTERED" || !s.supplier_type) &&
+          !recentIds.has(s.id),
+      ),
+      oneTime: filtered.filter(
+        (s) => s.supplier_type === "ONE_TIME" && !recentIds.has(s.id),
+      ),
+      recent,
+    };
+  }, [suppliers, supplierQuery]);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -137,9 +242,42 @@ export function CategorySelectionModal({
     setIsCreatingCategory(false);
   };
 
+  const handleCreateSupplier = async () => {
+    const name = newSupplier.company_name.trim();
+    if (!name) {
+      toast.error("Supplier name is required");
+      return;
+    }
+    // Duplicate detection (case-insensitive on name)
+    const dup = suppliers.find(
+      (s) => s.company_name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (dup) {
+      toast.error(`Supplier "${dup.company_name}" already exists`);
+      setSelectedSupplierId(dup.id);
+      setShowNewSupplierForm(false);
+      return;
+    }
+    setIsCreatingSupplier(true);
+    const result = await createManualSupplier(newSupplier);
+    if (result.success && result.data) {
+      setSuppliers((prev) => [result.data!, ...prev]);
+      setSelectedSupplierId(result.data.id);
+      setShowNewSupplierForm(false);
+      toast.success("Supplier created successfully");
+    } else {
+      toast.error(result.error || "Failed to create supplier");
+    }
+    setIsCreatingSupplier(false);
+  };
+
   const handleConfirm = async () => {
     if (!pr || !selectedCategoryId) {
       toast.error("Please select a category");
+      return;
+    }
+    if (!selectedSupplierId) {
+      toast.error("Please select a supplier");
       return;
     }
 
@@ -150,7 +288,7 @@ export function CategorySelectionModal({
 
     setIsSubmitting(true);
     try {
-      await onConfirm(pr.id, selectedCategoryId, comments);
+      await onConfirm(pr.id, selectedCategoryId, comments, selectedSupplierId);
     } catch (error) {
       console.error("Category selection error:", error);
     } finally {
@@ -159,7 +297,7 @@ export function CategorySelectionModal({
   };
 
   const handleClose = () => {
-    if (!isSubmitting && !isCreatingCategory) {
+    if (!isSubmitting && !isCreatingCategory && !isCreatingSupplier) {
       onClose();
     }
   };
@@ -386,8 +524,310 @@ export function CategorySelectionModal({
             </div>
           )}
 
-          {/* Approval Comments */}
+          {/* Supplier Assignment Section */}
           {!showNewCategoryForm && (
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              {showNewSupplierForm ? (
+                <div className="space-y-4 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create New Supplier
+                    </h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowNewSupplierForm(false)}
+                      disabled={isCreatingSupplier}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="sup_name">
+                        Supplier Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="sup_name"
+                        value={newSupplier.company_name}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, company_name: e.target.value }))
+                        }
+                        placeholder="e.g., ABC Office Supplies"
+                        className="bg-background"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sup_reg">Reg. Number</Label>
+                      <Input
+                        id="sup_reg"
+                        value={newSupplier.registration_number}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, registration_number: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sup_vat">VAT Number</Label>
+                      <Input
+                        id="sup_vat"
+                        value={newSupplier.vat_number}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, vat_number: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sup_contact">Contact Person</Label>
+                      <Input
+                        id="sup_contact"
+                        value={newSupplier.contact_person}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, contact_person: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sup_email">Email</Label>
+                      <Input
+                        id="sup_email"
+                        type="email"
+                        value={newSupplier.contact_email}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, contact_email: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="sup_phone">Phone</Label>
+                      <Input
+                        id="sup_phone"
+                        value={newSupplier.phone}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, phone: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="sup_addr">Physical Address</Label>
+                      <Input
+                        id="sup_addr"
+                        value={newSupplier.address}
+                        onChange={(e) =>
+                          setNewSupplier((s) => ({ ...s, address: e.target.value }))
+                        }
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="sup_type">Supplier Type</Label>
+                      <Select
+                        value={newSupplier.supplier_type}
+                        onValueChange={(v) =>
+                          setNewSupplier((s) => ({
+                            ...s,
+                            supplier_type: v as "REGISTERED" | "PREFERRED" | "ONE_TIME",
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="REGISTERED">Registered Vendor</SelectItem>
+                          <SelectItem value="PREFERRED">Preferred Vendor</SelectItem>
+                          <SelectItem value="ONE_TIME">One-Time Supplier</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowNewSupplierForm(false)}
+                      disabled={isCreatingSupplier}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleCreateSupplier}
+                      disabled={isCreatingSupplier || !newSupplier.company_name.trim()}
+                      className="flex-1"
+                    >
+                      {isCreatingSupplier ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Save Supplier
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>
+                      Supplier <span className="text-destructive">*</span>
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select or create a supplier for this PR before approval.
+                    </p>
+                  </div>
+
+                  {loadingSuppliers ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <Command className="rounded-lg border border-border" shouldFilter={false}>
+                      <div className="flex items-center border-b border-border px-3">
+                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                        <input
+                          className="flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Search suppliers..."
+                          value={supplierQuery}
+                          onChange={(e) => setSupplierQuery(e.target.value)}
+                        />
+                      </div>
+                      <CommandList className="max-h-[220px]">
+                        <CommandEmpty>
+                          <p className="text-sm text-muted-foreground py-2">
+                            No suppliers found.
+                          </p>
+                        </CommandEmpty>
+
+                        {groupedSuppliers.recent.length > 0 && (
+                          <CommandGroup heading="Recently Used">
+                            {groupedSuppliers.recent.map((s) => (
+                              <SupplierRow
+                                key={s.id}
+                                supplier={s}
+                                icon={<Clock className="h-4 w-4 text-muted-foreground" />}
+                                selected={selectedSupplierId === s.id}
+                                onSelect={() => setSelectedSupplierId(s.id)}
+                              />
+                            ))}
+                          </CommandGroup>
+                        )}
+
+                        {groupedSuppliers.preferred.length > 0 && (
+                          <>
+                            {groupedSuppliers.recent.length > 0 && <CommandSeparator />}
+                            <CommandGroup heading="Preferred Vendors">
+                              {groupedSuppliers.preferred.map((s) => (
+                                <SupplierRow
+                                  key={s.id}
+                                  supplier={s}
+                                  icon={<Star className="h-4 w-4 text-warning" />}
+                                  selected={selectedSupplierId === s.id}
+                                  onSelect={() => setSelectedSupplierId(s.id)}
+                                />
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+
+                        {groupedSuppliers.registered.length > 0 && (
+                          <>
+                            {(groupedSuppliers.recent.length > 0 ||
+                              groupedSuppliers.preferred.length > 0) && <CommandSeparator />}
+                            <CommandGroup heading="Registered Suppliers">
+                              {groupedSuppliers.registered.map((s) => (
+                                <SupplierRow
+                                  key={s.id}
+                                  supplier={s}
+                                  icon={<Building2 className="h-4 w-4 text-primary" />}
+                                  selected={selectedSupplierId === s.id}
+                                  onSelect={() => setSelectedSupplierId(s.id)}
+                                />
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+
+                        {groupedSuppliers.oneTime.length > 0 && (
+                          <>
+                            <CommandSeparator />
+                            <CommandGroup heading="One-Time Suppliers">
+                              {groupedSuppliers.oneTime.map((s) => (
+                                <SupplierRow
+                                  key={s.id}
+                                  supplier={s}
+                                  icon={<Building2 className="h-4 w-4 text-muted-foreground" />}
+                                  selected={selectedSupplierId === s.id}
+                                  onSelect={() => setSelectedSupplierId(s.id)}
+                                />
+                              ))}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  )}
+
+                  {selectedSupplier && (
+                    <div className="p-3 rounded-lg bg-success/10 border border-success/30 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          {selectedSupplier.company_name}
+                        </span>
+                        {selectedSupplier.supplier_code && (
+                          <Badge variant="outline" className="ml-auto text-[10px]">
+                            {selectedSupplier.supplier_code}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {selectedSupplier.supplier_type && (
+                          <span>
+                            {selectedSupplier.supplier_type === "PREFERRED"
+                              ? "Preferred Vendor"
+                              : selectedSupplier.supplier_type === "ONE_TIME"
+                              ? "One-Time Supplier"
+                              : "Registered Vendor"}
+                          </span>
+                        )}
+                        {selectedSupplier.contact_email && (
+                          <span>• {selectedSupplier.contact_email}</span>
+                        )}
+                        {selectedSupplier.vat_number && (
+                          <span>• VAT {selectedSupplier.vat_number}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowNewSupplierForm(true)}
+                    className="w-full border-dashed"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Supplier
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Approval Comments */}
+          {!showNewCategoryForm && !showNewSupplierForm && (
             <div className="space-y-2">
               <Label htmlFor="comments">
                 Approval Comments <span className="text-destructive">*</span>
@@ -410,7 +850,14 @@ export function CategorySelectionModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isSubmitting || !selectedCategoryId || !comments.trim() || showNewCategoryForm}
+            disabled={
+              isSubmitting ||
+              !selectedCategoryId ||
+              !selectedSupplierId ||
+              !comments.trim() ||
+              showNewCategoryForm ||
+              showNewSupplierForm
+            }
           >
             {isSubmitting ? (
               <>
@@ -420,12 +867,44 @@ export function CategorySelectionModal({
             ) : (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                Approve with Category
+                Approve &amp; Assign Supplier
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SupplierRow({
+  supplier,
+  icon,
+  selected,
+  onSelect,
+}: {
+  supplier: Supplier;
+  icon: React.ReactNode;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <CommandItem
+      value={`${supplier.company_name} ${supplier.supplier_code ?? ""} ${supplier.contact_person ?? ""}`}
+      onSelect={onSelect}
+      className="cursor-pointer"
+    >
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {icon}
+        <div className="flex flex-col min-w-0">
+          <span className="truncate text-sm">{supplier.company_name}</span>
+          <span className="text-[11px] text-muted-foreground truncate">
+            {supplier.supplier_code ? `${supplier.supplier_code} • ` : ""}
+            {supplier.contact_email || supplier.contact_person || "—"}
+          </span>
+        </div>
+      </div>
+      {selected && <Check className="h-4 w-4 text-success shrink-0" />}
+    </CommandItem>
   );
 }

@@ -27,6 +27,9 @@ export interface Supplier {
   vat_number: string | null;
   is_manual?: boolean;
   user_id?: string | null;
+  supplier_type?: "REGISTERED" | "PREFERRED" | "ONE_TIME" | null;
+  supplier_code?: string | null;
+  is_active?: boolean | null;
 }
 
 export interface QuoteRequest {
@@ -501,6 +504,10 @@ export async function createManualSupplier(input: {
   vat_number?: string;
   contact_email?: string;
   phone?: string;
+  registration_number?: string;
+  contact_person?: string;
+  address?: string;
+  supplier_type?: "REGISTERED" | "PREFERRED" | "ONE_TIME";
 }): Promise<{ success: boolean; data?: Supplier; error?: string }> {
   try {
     const name = input.company_name.trim();
@@ -525,6 +532,10 @@ export async function createManualSupplier(input: {
         vat_number: input.vat_number?.trim() || null,
         contact_email: input.contact_email?.trim() || null,
         phone: input.phone?.trim() || null,
+        registration_number: input.registration_number?.trim() || null,
+        contact_person: input.contact_person?.trim() || null,
+        address: input.address?.trim() || null,
+        supplier_type: input.supplier_type || "REGISTERED",
         organization_id: profile.organization_id,
         user_id: null,
         is_manual: true,
