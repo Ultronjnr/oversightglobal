@@ -291,3 +291,43 @@ function encodeBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+function toNum(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^\d.\-]/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function normalizeLineItems(extracted: Record<string, unknown>) {
+  const items = extracted?.line_items;
+  if (!Array.isArray(items)) return;
+  for (const raw of items) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const qty = toNum(item.quantity);
+    let unit = toNum(item.unit_price);
+    const total = toNum(item.total_price) ?? toNum(item.amount);
+    let needsReview = item.needs_review === true;
+
+    if (unit == null && total != null && qty && qty > 0) {
+      unit = Number((total / qty).toFixed(4));
+    }
+    if (unit == null) {
+      unit = 0;
+      needsReview = true;
+    }
+    if (qty == null) {
+      item.quantity = null;
+      needsReview = true;
+    } else {
+      item.quantity = qty;
+    }
+    item.unit_price = unit;
+    if (total != null) item.total_price = total;
+    if (item.amount == null && total != null) item.amount = total;
+    item.needs_review = needsReview;
+  }
+}
