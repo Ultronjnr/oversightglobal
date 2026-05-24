@@ -18,11 +18,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface BatchPaymentItem {
   /** Discriminator. Defaults to "invoice" for backward compatibility. */
-  kind?: "invoice" | "reimbursement";
+  kind?: "invoice" | "reimbursement" | "transaction";
   /** Invoice id (when kind === "invoice"). */
   invoiceId?: string;
   /** Reimbursement id (when kind === "reimbursement"). */
   reimbursementId?: string;
+  /** Transaction id (when kind === "transaction"). */
+  transactionId?: string;
   party: string;
   partySub?: string;
   totalAmount: number;
@@ -44,7 +46,11 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
   const [submitting, setSubmitting] = useState(false);
 
   const keyOf = (it: BatchPaymentItem) =>
-    (it.kind === "reimbursement" ? `r:${it.reimbursementId}` : `i:${it.invoiceId}`) as string;
+    (it.kind === "reimbursement"
+      ? `r:${it.reimbursementId}`
+      : it.kind === "transaction"
+      ? `t:${it.transactionId}`
+      : `i:${it.invoiceId}`) as string;
 
   // Initialize amounts when items change / modal opens.
   useEffect(() => {
@@ -88,6 +94,8 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
       .map((p) =>
         p.item.kind === "reimbursement"
           ? { reimbursement_id: p.item.reimbursementId!, amount: p.amount }
+          : p.item.kind === "transaction"
+          ? { transaction_id: p.item.transactionId!, amount: p.amount }
           : { invoice_id: p.item.invoiceId!, amount: p.amount },
       );
 
@@ -146,10 +154,16 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
                         className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${
                           it.kind === "reimbursement"
                             ? "bg-warning/10 text-warning border-warning/30"
+                            : it.kind === "transaction"
+                            ? "bg-success/10 text-success border-success/30"
                             : "bg-primary/10 text-primary border-primary/30"
                         }`}
                       >
-                        {it.kind === "reimbursement" ? "Reimbursement" : "Invoice"}
+                        {it.kind === "reimbursement"
+                          ? "Reimbursement"
+                          : it.kind === "transaction"
+                          ? "Transaction"
+                          : "Invoice"}
                       </span>
                     </div>
                     {it.partySub && (
