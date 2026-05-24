@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Image as ImageIcon,
   AlertCircle,
+  Download,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ import {
   type OrgTransaction,
 } from "@/services/transaction.service";
 import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
+import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 
 interface PaymentPreparationTabProps {
