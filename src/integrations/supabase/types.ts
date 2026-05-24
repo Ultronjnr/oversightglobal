@@ -982,6 +982,163 @@ export type Database = {
           },
         ]
       }
+      receipt_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          message: string | null
+          organization_id: string
+          performed_by: string | null
+          receipt_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          organization_id: string
+          performed_by?: string | null
+          receipt_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          organization_id?: string
+          performed_by?: string | null
+          receipt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_audit_log_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipt_items: {
+        Row: {
+          calculated_total: number | null
+          calculated_unit_price: number | null
+          created_at: string
+          id: string
+          is_valid: boolean
+          item_name: string
+          organization_id: string
+          quantity: number
+          receipt_id: string
+          total: number
+          unit_price: number | null
+          updated_at: string
+          warning: string | null
+        }
+        Insert: {
+          calculated_total?: number | null
+          calculated_unit_price?: number | null
+          created_at?: string
+          id?: string
+          is_valid?: boolean
+          item_name: string
+          organization_id: string
+          quantity?: number
+          receipt_id: string
+          total?: number
+          unit_price?: number | null
+          updated_at?: string
+          warning?: string | null
+        }
+        Update: {
+          calculated_total?: number | null
+          calculated_unit_price?: number | null
+          created_at?: string
+          id?: string
+          is_valid?: boolean
+          item_name?: string
+          organization_id?: string
+          quantity?: number
+          receipt_id?: string
+          total?: number
+          unit_price?: number | null
+          updated_at?: string
+          warning?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receipts: {
+        Row: {
+          created_at: string
+          created_by: string
+          currency: string
+          grand_total: number
+          id: string
+          invoice_number: string | null
+          ocr_analysis_id: string | null
+          organization_id: string
+          raw_json: Json | null
+          raw_text: string | null
+          receipt_date: string | null
+          source_bucket: string | null
+          source_path: string | null
+          status: string
+          store_name: string | null
+          subtotal: number
+          updated_at: string
+          vat: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          currency?: string
+          grand_total?: number
+          id?: string
+          invoice_number?: string | null
+          ocr_analysis_id?: string | null
+          organization_id: string
+          raw_json?: Json | null
+          raw_text?: string | null
+          receipt_date?: string | null
+          source_bucket?: string | null
+          source_path?: string | null
+          status?: string
+          store_name?: string | null
+          subtotal?: number
+          updated_at?: string
+          vat?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          currency?: string
+          grand_total?: number
+          id?: string
+          invoice_number?: string | null
+          ocr_analysis_id?: string | null
+          organization_id?: string
+          raw_json?: Json | null
+          raw_text?: string | null
+          receipt_date?: string | null
+          source_bucket?: string | null
+          source_path?: string | null
+          status?: string
+          store_name?: string | null
+          subtotal?: number
+          updated_at?: string
+          vat?: number
+        }
+        Relationships: []
+      }
       reimbursement_audit_log: {
         Row: {
           action: string
@@ -1301,7 +1458,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      clean_receipt_items: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_valid: boolean | null
+          item_name: string | null
+          organization_id: string | null
+          quantity: number | null
+          receipt_id: string | null
+          total: number | null
+          unit_price: number | null
+          warning: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_valid?: boolean | null
+          item_name?: string | null
+          organization_id?: string | null
+          quantity?: number | null
+          receipt_id?: string | null
+          total?: number | null
+          unit_price?: never
+          warning?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_valid?: boolean | null
+          item_name?: string | null
+          organization_id?: string | null
+          quantity?: number | null
+          receipt_id?: string | null
+          total?: number | null
+          unit_price?: never
+          warning?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _notify_role: {
