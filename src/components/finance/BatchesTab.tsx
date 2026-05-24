@@ -169,15 +169,38 @@ export function BatchesTab() {
     notes: b.notes,
     currency: b.currency || "ZAR",
     total_amount: Number(b.total_amount || 0),
-    allocations: b.allocations.map((a) => ({
-      supplier: a.invoice?.supplier?.company_name || "—",
-      contact: a.invoice?.supplier?.contact_email ?? null,
-      transaction_ref: a.invoice?.pr?.transaction_id || a.invoice_id?.slice(0, 8) || "—",
-      amount_paid: Number(a.amount_paid || 0),
-      total_amount: Number(a.invoice?.quote?.amount || 0),
-      type: a.invoice?.status === "PAID" ? "Full" : "Partial",
-      currency: a.invoice?.pr?.currency,
-    })),
+    allocations: b.allocations.map((a) => {
+      const supplierName =
+        a.invoice?.supplier?.company_name ||
+        a.transaction?.supplier?.company_name ||
+        a.transaction?.supplier_name ||
+        "—";
+      const contact =
+        a.invoice?.supplier?.contact_email ||
+        a.transaction?.supplier?.contact_email ||
+        null;
+      const txnRef =
+        a.invoice?.pr?.transaction_id ||
+        a.transaction?.pr?.transaction_id ||
+        a.transaction_id?.slice(0, 8) ||
+        a.invoice_id?.slice(0, 8) ||
+        "—";
+      const total =
+        Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+      const currency =
+        a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
+      const isFull =
+        a.invoice?.status === "PAID" || a.transaction?.status === "PAID";
+      return {
+        supplier: supplierName,
+        contact,
+        transaction_ref: txnRef,
+        amount_paid: Number(a.amount_paid || 0),
+        total_amount: total,
+        type: isFull ? "Full" : "Partial",
+        currency,
+      };
+    }),
   });
 
   const handleCancelBatch = async (batchId: string) => {
