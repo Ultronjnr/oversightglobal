@@ -27,6 +27,9 @@ export interface Supplier {
   vat_number: string | null;
   is_manual?: boolean;
   user_id?: string | null;
+  supplier_type?: "REGISTERED" | "PREFERRED" | "ONE_TIME" | null;
+  supplier_code?: string | null;
+  is_active?: boolean | null;
 }
 
 export interface QuoteRequest {
