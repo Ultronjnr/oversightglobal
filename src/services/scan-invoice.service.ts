@@ -123,6 +123,7 @@ export async function createTransactionFromInvoice(
       {
         description: desc,
         quantity: 1,
+        unit_price: total,
         price: total,
         supplier_preference: input.supplier_name.trim(),
       },
