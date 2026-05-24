@@ -371,8 +371,27 @@ export function BatchesTab() {
                           </TableHeader>
                           <TableBody>
                             {b.allocations.map((a) => {
-                              const total = a.invoice?.quote?.amount || 0;
-                              const isFull = a.invoice?.status === "PAID";
+                              const total =
+                                Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+                              const isFull =
+                                a.invoice?.status === "PAID" ||
+                                a.transaction?.status === "PAID";
+                              const supplierName =
+                                a.invoice?.supplier?.company_name ||
+                                a.transaction?.supplier?.company_name ||
+                                a.transaction?.supplier_name ||
+                                "-";
+                              const supplierEmail =
+                                a.invoice?.supplier?.contact_email ||
+                                a.transaction?.supplier?.contact_email;
+                              const txnRef =
+                                a.invoice?.pr?.transaction_id ||
+                                a.transaction?.pr?.transaction_id ||
+                                "-";
+                              const currency =
+                                a.invoice?.pr?.currency ||
+                                a.transaction?.currency ||
+                                a.transaction?.pr?.currency;
                               return (
                                 <TableRow key={a.id}>
                                   <TableCell>
@@ -380,24 +399,24 @@ export function BatchesTab() {
                                       <Building2 className="h-4 w-4 text-muted-foreground" />
                                       <div>
                                         <p className="font-medium text-sm">
-                                          {a.invoice?.supplier?.company_name || "-"}
+                                          {supplierName}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                          {a.invoice?.supplier?.contact_email}
+                                          {supplierEmail}
                                         </p>
                                       </div>
                                     </div>
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
-                                    {a.invoice?.pr?.transaction_id || "-"}
+                                    {txnRef}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {formatCurrency(
                                       Number(a.amount_paid),
-                                      a.invoice?.pr?.currency,
+                                      currency,
                                     )}
                                     <p className="text-xs text-muted-foreground font-normal">
-                                      of {formatCurrency(total, a.invoice?.pr?.currency)}
+                                      of {formatCurrency(total, currency)}
                                     </p>
                                   </TableCell>
                                   <TableCell>
