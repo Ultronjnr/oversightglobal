@@ -47,7 +47,8 @@ import {
 
 interface BatchAllocation {
   id: string;
-  invoice_id: string;
+  invoice_id: string | null;
+  transaction_id: string | null;
   amount_paid: number;
   invoice?: {
     id: string;
@@ -56,7 +57,17 @@ interface BatchAllocation {
     quote?: { amount: number };
     supplier?: { company_name: string; contact_email: string };
     pr?: { transaction_id: string; currency: string };
-  };
+  } | null;
+  transaction?: {
+    id: string;
+    supplier_name: string | null;
+    amount: number | null;
+    amount_paid: number | null;
+    currency: string | null;
+    status: string | null;
+    supplier?: { company_name: string; contact_email: string } | null;
+    pr?: { transaction_id: string; currency: string } | null;
+  } | null;
 }
 
 interface BatchRow {
@@ -93,10 +104,15 @@ export function BatchesTab() {
       .select(
         `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at,
          allocations:payment_allocations (
-           id, invoice_id, amount_paid,
+           id, invoice_id, transaction_id, amount_paid,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
+             supplier:suppliers ( company_name, contact_email ),
+             pr:purchase_requisitions ( transaction_id, currency )
+           ),
+           transaction:transactions (
+             id, supplier_name, amount, amount_paid, currency, status,
              supplier:suppliers ( company_name, contact_email ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
@@ -153,15 +169,38 @@ export function BatchesTab() {
     notes: b.notes,
     currency: b.currency || "ZAR",
     total_amount: Number(b.total_amount || 0),
-    allocations: b.allocations.map((a) => ({
-      supplier: a.invoice?.supplier?.company_name || "—",
-      contact: a.invoice?.supplier?.contact_email ?? null,
-      transaction_ref: a.invoice?.pr?.transaction_id || a.invoice_id?.slice(0, 8) || "—",
-      amount_paid: Number(a.amount_paid || 0),
-      total_amount: Number(a.invoice?.quote?.amount || 0),
-      type: a.invoice?.status === "PAID" ? "Full" : "Partial",
-      currency: a.invoice?.pr?.currency,
-    })),
+    allocations: b.allocations.map((a) => {
+      const supplierName =
+        a.invoice?.supplier?.company_name ||
+        a.transaction?.supplier?.company_name ||
+        a.transaction?.supplier_name ||
+        "—";
+      const contact =
+        a.invoice?.supplier?.contact_email ||
+        a.transaction?.supplier?.contact_email ||
+        null;
+      const txnRef =
+        a.invoice?.pr?.transaction_id ||
+        a.transaction?.pr?.transaction_id ||
+        a.transaction_id?.slice(0, 8) ||
+        a.invoice_id?.slice(0, 8) ||
+        "—";
+      const total =
+        Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+      const currency =
+        a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
+      const isFull =
+        a.invoice?.status === "PAID" || a.transaction?.status === "PAID";
+      return {
+        supplier: supplierName,
+        contact,
+        transaction_ref: txnRef,
+        amount_paid: Number(a.amount_paid || 0),
+        total_amount: total,
+        type: isFull ? "Full" : "Partial",
+        currency,
+      };
+    }),
   });
 
   const handleCancelBatch = async (batchId: string) => {
@@ -332,8 +371,27 @@ export function BatchesTab() {
                           </TableHeader>
                           <TableBody>
                             {b.allocations.map((a) => {
-                              const total = a.invoice?.quote?.amount || 0;
-                              const isFull = a.invoice?.status === "PAID";
+                              const total =
+                                Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+                              const isFull =
+                                a.invoice?.status === "PAID" ||
+                                a.transaction?.status === "PAID";
+                              const supplierName =
+                                a.invoice?.supplier?.company_name ||
+                                a.transaction?.supplier?.company_name ||
+                                a.transaction?.supplier_name ||
+                                "-";
+                              const supplierEmail =
+                                a.invoice?.supplier?.contact_email ||
+                                a.transaction?.supplier?.contact_email;
+                              const txnRef =
+                                a.invoice?.pr?.transaction_id ||
+                                a.transaction?.pr?.transaction_id ||
+                                "-";
+                              const currency =
+                                a.invoice?.pr?.currency ||
+                                a.transaction?.currency ||
+                                a.transaction?.pr?.currency;
                               return (
                                 <TableRow key={a.id}>
                                   <TableCell>
@@ -341,24 +399,24 @@ export function BatchesTab() {
                                       <Building2 className="h-4 w-4 text-muted-foreground" />
                                       <div>
                                         <p className="font-medium text-sm">
-                                          {a.invoice?.supplier?.company_name || "-"}
+                                          {supplierName}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                          {a.invoice?.supplier?.contact_email}
+                                          {supplierEmail}
                                         </p>
                                       </div>
                                     </div>
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
-                                    {a.invoice?.pr?.transaction_id || "-"}
+                                    {txnRef}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {formatCurrency(
                                       Number(a.amount_paid),
-                                      a.invoice?.pr?.currency,
+                                      currency,
                                     )}
                                     <p className="text-xs text-muted-foreground font-normal">
-                                      of {formatCurrency(total, a.invoice?.pr?.currency)}
+                                      of {formatCurrency(total, currency)}
                                     </p>
                                   </TableCell>
                                   <TableCell>
