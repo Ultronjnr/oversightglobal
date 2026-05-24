@@ -101,7 +101,8 @@ function generateSplitTransactionId(parentId: string, index: number): string {
 export async function financeApprovePR(
   prId: string,
   comments: string,
-  categoryId?: string
+  categoryId?: string,
+  supplierId?: string,
 ): Promise<ApprovalResult> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -162,6 +163,22 @@ export async function financeApprovePR(
     if (updateError) {
       logError("financeApprovePR", updateError);
       return { success: false, error: getSafeErrorMessage(updateError) };
+    }
+
+    // Link supplier to the auto-created transaction if Finance picked one
+    if (supplierId) {
+      const { data: sup } = await supabase
+        .from("suppliers")
+        .select("company_name")
+        .eq("id", supplierId)
+        .maybeSingle();
+      await supabase
+        .from("transactions" as any)
+        .update({
+          supplier_id: supplierId,
+          supplier_name: sup?.company_name ?? null,
+        })
+        .eq("pr_id", prId);
     }
 
     // Post immutable system note for audit trail (non-fatal)
