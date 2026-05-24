@@ -391,11 +391,12 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           status: "Partially Paid",
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
+          prId: inv.pr?.id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
-        .select("id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
+        .select("id, pr_id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
@@ -408,6 +409,8 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         status: "Partially Paid",
         date: t.updated_at,
         currency: t.currency,
+        prId: t.pr_id ?? null,
+        txnId: t.id,
       }));
       return [...invRows, ...txnRows];
     }
