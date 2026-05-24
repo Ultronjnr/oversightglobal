@@ -498,6 +498,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payment_allocations_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_reimbursement_id_fkey"
+            columns: ["reimbursement_id"]
+            isOneToOne: false
+            referencedRelation: "reimbursements"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payment_allocations_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
