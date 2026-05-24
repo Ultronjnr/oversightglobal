@@ -17,7 +17,7 @@ interface ApprovalResult {
 export interface Supplier {
   id: string;
   company_name: string;
-  contact_email: string;
+  contact_email: string | null;
   contact_person: string | null;
   registration_number: string | null;
   is_verified: boolean;
@@ -25,6 +25,8 @@ export interface Supplier {
   address: string | null;
   industry: string | null;
   vat_number: string | null;
+  is_manual?: boolean;
+  user_id?: string | null;
 }
 
 export interface QuoteRequest {
