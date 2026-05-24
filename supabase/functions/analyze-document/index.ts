@@ -310,27 +310,37 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
   for (const raw of items) {
     if (!raw || typeof raw !== "object") continue;
     const item = raw as Record<string, unknown>;
-    const qty = toNum(item.quantity);
+    let qty = toNum(item.quantity);
     let unit = toNum(item.unit_price);
-    const total = toNum(item.total_price) ?? toNum(item.amount);
+    let total = toNum(item.total_price) ?? toNum(item.amount);
     let needsReview = item.needs_review === true;
 
-    if (unit == null && total != null && qty && qty > 0) {
-      unit = Number((total / qty).toFixed(4));
+    // Default quantity to 1 if missing
+    if (qty == null || qty <= 0) {
+      qty = 1;
+      if (item.quantity == null) needsReview = true;
     }
+    // Derive unit_price from total / qty when missing
+    if (unit == null && total != null) {
+      unit = Number((total / qty).toFixed(2));
+    }
+    // Derive total from unit * qty when missing
+    if (total == null && unit != null) {
+      total = Number((unit * qty).toFixed(2));
+    }
+    // Last-resort defaults — never null
     if (unit == null) {
       unit = 0;
       needsReview = true;
     }
-    if (qty == null) {
-      item.quantity = null;
-      needsReview = true;
-    } else {
-      item.quantity = qty;
+    if (total == null) {
+      total = Number((unit * qty).toFixed(2));
     }
+
+    item.quantity = qty;
     item.unit_price = unit;
-    if (total != null) item.total_price = total;
-    if (item.amount == null && total != null) item.amount = total;
+    item.total_price = total;
+    item.amount = total;
     item.needs_review = needsReview;
   }
 }
