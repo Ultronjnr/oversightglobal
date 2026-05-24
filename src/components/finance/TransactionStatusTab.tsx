@@ -18,6 +18,9 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Paperclip } from "lucide-react";
 
 export type TransactionStatusFilter =
   | "PARTIALLY_PAID"
@@ -54,6 +57,9 @@ interface TransactionRow {
   status: string;
   date: string;
   currency?: string;
+  prId?: string | null;
+  txnId?: string | null;
+  reimbursementId?: string | null;
 }
 
 const filterMeta: Record<TransactionStatusFilter, {
