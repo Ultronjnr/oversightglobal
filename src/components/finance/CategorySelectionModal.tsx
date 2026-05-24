@@ -1,5 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, Tag, Plus, Check, Search, FolderTree, Package } from "lucide-react";
+import {
+  Loader2,
+  Tag,
+  Plus,
+  Check,
+  Search,
+  FolderTree,
+  Package,
+  Building2,
+  Star,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -38,12 +49,23 @@ import {
   type Category,
   type CategoryType,
 } from "@/services/category.service";
+import {
+  getAllSuppliers,
+  createManualSupplier,
+  type Supplier,
+} from "@/services/finance.service";
+import { Badge } from "@/components/ui/badge";
 
 interface CategorySelectionModalProps {
   pr: PurchaseRequisition | null;
   open: boolean;
   onClose: () => void;
-  onConfirm: (prId: string, categoryId: string, comments: string) => Promise<void>;
+  onConfirm: (
+    prId: string,
+    categoryId: string,
+    comments: string,
+    supplierId: string,
+  ) => Promise<void>;
 }
 
 export function CategorySelectionModal({
@@ -66,9 +88,28 @@ export function CategorySelectionModal({
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
+  // Suppliers
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
+  const [supplierQuery, setSupplierQuery] = useState("");
+  const [showNewSupplierForm, setShowNewSupplierForm] = useState(false);
+  const [isCreatingSupplier, setIsCreatingSupplier] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({
+    company_name: "",
+    registration_number: "",
+    vat_number: "",
+    contact_person: "",
+    contact_email: "",
+    phone: "",
+    address: "",
+    supplier_type: "REGISTERED" as "REGISTERED" | "PREFERRED" | "ONE_TIME",
+  });
+
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchSuppliers();
       // Reset state when modal opens
       setSelectedCategoryId(null);
       setComments("");
@@ -77,6 +118,19 @@ export function CategorySelectionModal({
       setNewCategoryName("");
       setNewCategoryType("EXPENSE");
       setNewCategoryDescription("");
+      setSelectedSupplierId(null);
+      setSupplierQuery("");
+      setShowNewSupplierForm(false);
+      setNewSupplier({
+        company_name: "",
+        registration_number: "",
+        vat_number: "",
+        contact_person: "",
+        contact_email: "",
+        phone: "",
+        address: "",
+        supplier_type: "REGISTERED",
+      });
     }
   }, [open]);
 
@@ -89,6 +143,17 @@ export function CategorySelectionModal({
       toast.error(result.error || "Failed to load categories");
     }
     setLoading(false);
+  };
+
+  const fetchSuppliers = async () => {
+    setLoadingSuppliers(true);
+    const result = await getAllSuppliers();
+    if (result.success) {
+      setSuppliers(result.data);
+    } else {
+      toast.error(result.error || "Failed to load suppliers");
+    }
+    setLoadingSuppliers(false);
   };
 
   const groupedCategories = useMemo(() => {
@@ -110,6 +175,46 @@ export function CategorySelectionModal({
   const selectedCategory = useMemo(() => {
     return categories.find((c) => c.id === selectedCategoryId);
   }, [categories, selectedCategoryId]);
+
+  const selectedSupplier = useMemo(
+    () => suppliers.find((s) => s.id === selectedSupplierId),
+    [suppliers, selectedSupplierId],
+  );
+
+  const groupedSuppliers = useMemo(() => {
+    const q = supplierQuery.trim().toLowerCase();
+    const match = (s: Supplier) => {
+      if (!q) return true;
+      return (
+        s.company_name.toLowerCase().includes(q) ||
+        (s.supplier_code ?? "").toLowerCase().includes(q) ||
+        (s.contact_person ?? "").toLowerCase().includes(q)
+      );
+    };
+    const filtered = suppliers.filter(match).filter((s) => s.is_active !== false);
+    const recent = [...filtered]
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.created_at ?? 0).getTime() -
+          new Date(a.created_at ?? 0).getTime(),
+      )
+      .slice(0, 3);
+    const recentIds = new Set(recent.map((s) => s.id));
+    return {
+      preferred: filtered.filter(
+        (s) => s.supplier_type === "PREFERRED" && !recentIds.has(s.id),
+      ),
+      registered: filtered.filter(
+        (s) =>
+          (s.supplier_type === "REGISTERED" || !s.supplier_type) &&
+          !recentIds.has(s.id),
+      ),
+      oneTime: filtered.filter(
+        (s) => s.supplier_type === "ONE_TIME" && !recentIds.has(s.id),
+      ),
+      recent,
+    };
+  }, [suppliers, supplierQuery]);
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
@@ -137,9 +242,42 @@ export function CategorySelectionModal({
     setIsCreatingCategory(false);
   };
 
+  const handleCreateSupplier = async () => {
+    const name = newSupplier.company_name.trim();
+    if (!name) {
+      toast.error("Supplier name is required");
+      return;
+    }
+    // Duplicate detection (case-insensitive on name)
+    const dup = suppliers.find(
+      (s) => s.company_name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (dup) {
+      toast.error(`Supplier "${dup.company_name}" already exists`);
+      setSelectedSupplierId(dup.id);
+      setShowNewSupplierForm(false);
+      return;
+    }
+    setIsCreatingSupplier(true);
+    const result = await createManualSupplier(newSupplier);
+    if (result.success && result.data) {
+      setSuppliers((prev) => [result.data!, ...prev]);
+      setSelectedSupplierId(result.data.id);
+      setShowNewSupplierForm(false);
+      toast.success("Supplier created successfully");
+    } else {
+      toast.error(result.error || "Failed to create supplier");
+    }
+    setIsCreatingSupplier(false);
+  };
+
   const handleConfirm = async () => {
     if (!pr || !selectedCategoryId) {
       toast.error("Please select a category");
+      return;
+    }
+    if (!selectedSupplierId) {
+      toast.error("Please select a supplier");
       return;
     }
 
@@ -150,7 +288,7 @@ export function CategorySelectionModal({
 
     setIsSubmitting(true);
     try {
-      await onConfirm(pr.id, selectedCategoryId, comments);
+      await onConfirm(pr.id, selectedCategoryId, comments, selectedSupplierId);
     } catch (error) {
       console.error("Category selection error:", error);
     } finally {
@@ -159,7 +297,7 @@ export function CategorySelectionModal({
   };
 
   const handleClose = () => {
-    if (!isSubmitting && !isCreatingCategory) {
+    if (!isSubmitting && !isCreatingCategory && !isCreatingSupplier) {
       onClose();
     }
   };
