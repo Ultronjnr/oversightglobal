@@ -337,6 +337,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         remaining: 0,
         status: "Pending",
         date: "",
+        reimbursementId: r.id,
       }));
     }
 
