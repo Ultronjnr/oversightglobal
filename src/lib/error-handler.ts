@@ -9,6 +9,10 @@
 
 // Map of PostgreSQL error codes to user-friendly messages
 const USER_ERROR_MESSAGES: Record<string, string> = {
+  // Auth validation errors
+  'weak_password': 'This password is too common or has appeared in a data breach. Please choose a stronger password.',
+  'email_exists': 'This email is already registered. Please log in or use a different email.',
+  'signup_disabled': 'New signups are currently disabled.',
   // Unique constraint violations
   '23505': 'This information is already in use. Please try different values.',
   // Foreign key violations
@@ -30,7 +34,7 @@ const BUSINESS_ERROR_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
   { pattern: /email.*already.*exists/i, message: 'This email is already registered.' },
   { pattern: /user.*already.*registered/i, message: 'This email is already registered. Please log in or use a different email.' },
   { pattern: /already.*registered/i, message: 'This email is already registered. Please log in or use a different email.' },
-  { pattern: /weak.?password|password.*should.*be|password.*at least/i, message: 'Password is too weak. Use at least 8 characters with a mix of letters and numbers.' },
+  { pattern: /weak.?password|password.*weak|known.*weak|easy to guess|password.*should.*be|password.*at least/i, message: 'This password is too common or easy to guess. Please choose a stronger password.' },
   { pattern: /pwned|leaked.*password|compromised/i, message: 'This password has appeared in a data breach. Please choose a different one.' },
   { pattern: /signups.*disabled|signup.*not.*allowed/i, message: 'New signups are currently disabled.' },
   { pattern: /invalid.*email|email.*invalid/i, message: 'Please enter a valid email address.' },

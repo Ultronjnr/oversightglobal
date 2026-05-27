@@ -41,7 +41,12 @@ const signupSchema = z
     vatNumber: z.string().optional(),
     vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
     nextVatSubmissionDate: z.date().optional(),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must include an uppercase letter")
+      .regex(/[a-z]/, "Password must include a lowercase letter")
+      .regex(/[0-9]/, "Password must include a number"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -130,7 +135,7 @@ export default function SignupCompany() {
 
         if (existingProfile?.organization_id) {
           toast.success("Welcome back!");
-          navigate("/dashboard");
+          navigate("/admin/portal");
           return;
         }
 
@@ -173,7 +178,7 @@ export default function SignupCompany() {
       }
       createdOrgId = orgData.id;
 
-      // STEP 3: Create profile (tier defaults to FREEMIUM in DB; set explicitly).
+      // STEP 3: Create profile and open the full admin workspace immediately.
       // Upsert so a re-attempt after a prior partial signup still works.
       const { error: profileError } = await supabase.from("profiles").upsert(
         {
@@ -184,7 +189,7 @@ export default function SignupCompany() {
           organization_id: createdOrgId,
           phone: data.companyPhone || null,
           status: "ACTIVE",
-          tier: "FREEMIUM",
+          tier: "ADMIN",
         },
         { onConflict: "id" }
       );
@@ -214,7 +219,7 @@ export default function SignupCompany() {
       // STEP 5: Create freemium business profile
       const { error: bpError } = await supabase
         .from("freemium_business_profiles")
-        .insert({
+        .upsert({
           user_id: authData.user.id,
           full_name: `${data.name} ${data.surname}`.trim(),
           company_name: data.companyName,
@@ -227,7 +232,7 @@ export default function SignupCompany() {
             data.vatRegistered && data.nextVatSubmissionDate
               ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
               : null,
-        });
+        }, { onConflict: "user_id" });
 
       if (bpError) {
         logError("createBusinessProfile", bpError);
@@ -238,7 +243,7 @@ export default function SignupCompany() {
       }
 
       toast.success("Company registered successfully!");
-      navigate("/dashboard");
+      navigate("/admin/portal");
     } catch (error: unknown) {
       logError("signup", error);
       if (createdOrgId) {
@@ -454,7 +459,7 @@ export default function SignupCompany() {
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-xs text-muted-foreground">
               <strong className="text-foreground">Note:</strong> You will be registered as the Administrator for this
-              company on the FREEMIUM tier. Only one admin is allowed per company.
+              company and taken straight to the Admin portal.
             </p>
           </div>
 
