@@ -27,6 +27,7 @@ const USER_ERROR_MESSAGES: Record<string, string> = {
   '42501': 'You do not have permission to perform this action.',
   // Invalid input
   '22P02': 'The provided input format is invalid.',
+  '22023': 'Some information is invalid. Please check the form and try again.',
 };
 
 // Common business logic error patterns
@@ -40,6 +41,9 @@ const BUSINESS_ERROR_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
   { pattern: /invalid.*email|email.*invalid/i, message: 'Please enter a valid email address.' },
   { pattern: /rate.?limit|too many requests/i, message: 'Too many attempts. Please wait a moment and try again.' },
   { pattern: /company_email/i, message: 'This company email is already registered.' },
+  { pattern: /company.*email.*already|company.*already.*exists/i, message: 'A company with this email already exists.' },
+  { pattern: /valid company email|valid email/i, message: 'Please enter a valid company email address.' },
+  { pattern: /VAT number.*VAT cycle.*next VAT submission/i, message: 'Please complete all VAT fields or turn VAT Registered off.' },
   { pattern: /unique.*violation/i, message: 'This record already exists.' },
   { pattern: /not.*authenticated/i, message: 'Please log in to continue.' },
   { pattern: /organization.*not.*found/i, message: 'Organization not found.' },
