@@ -261,46 +261,47 @@ export default function SignupCompany() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <fieldset disabled={isLoading || isSuccess} className="space-y-4 disabled:opacity-70">
           {/* Personal */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">First Name *</Label>
-              <Input id="name" placeholder="John" {...register("name")} />
+              <Input id="name" placeholder="John" autoComplete="given-name" {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="surname">Surname *</Label>
-              <Input id="surname" placeholder="Doe" {...register("surname")} />
+              <Input id="surname" placeholder="Doe" autoComplete="family-name" {...register("surname")} />
               {errors.surname && <p className="text-sm text-destructive">{errors.surname.message}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Company Email *</Label>
-            <Input id="email" type="email" placeholder="john@company.com" {...register("email")} />
+            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           {/* Company */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
-            <Input id="companyName" placeholder="Acme Corporation" {...register("companyName")} />
+            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" {...register("companyName")} />
             {errors.companyName && <p className="text-sm text-destructive">{errors.companyName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyAddress">Company Address *</Label>
-            <Input id="companyAddress" placeholder="123 Business Street, City" {...register("companyAddress")} />
+            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" {...register("companyAddress")} />
             {errors.companyAddress && <p className="text-sm text-destructive">{errors.companyAddress.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyPhone">Company Phone (Optional)</Label>
-            <Input id="companyPhone" placeholder="+27 12 345 6789" {...register("companyPhone")} />
+            <Input id="companyPhone" placeholder="+27 12 345 6789" autoComplete="tel" {...register("companyPhone")} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="registrationNumber">Registration Number *</Label>
               <Input id="registrationNumber" placeholder="2023/123456/07" {...register("registrationNumber")} />
