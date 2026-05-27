@@ -95,6 +95,7 @@ export default function SignupCompany() {
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     let createdOrgId: string | null = null;
+    let createdUserId: string | null = null;
 
     try {
       // STEP 1: Sign up user
@@ -134,9 +135,25 @@ export default function SignupCompany() {
           .maybeSingle();
 
         if (existingProfile?.organization_id) {
-          toast.success("Welcome back!");
-          navigate("/admin/portal");
-          return;
+          // Verify the referenced organization still exists.
+          const { data: orgStillThere } = await supabase
+            .from("organizations")
+            .select("id")
+            .eq("id", existingProfile.organization_id)
+            .maybeSingle();
+
+          if (orgStillThere) {
+            toast.success("Welcome back!");
+            navigate("/admin/portal");
+            return;
+          }
+
+          // Stale reference from a failed previous attempt — clear it so
+          // the organizations INSERT RLS policy allows a fresh org.
+          await supabase
+            .from("profiles")
+            .update({ organization_id: null })
+            .eq("id", signInData.user.id);
         }
 
         // Continue onboarding with the existing auth user
@@ -152,6 +169,7 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
+      createdUserId = authData.user.id;
 
       // STEP 2: Create organization
       const { data: orgData, error: orgError } = await supabase
@@ -196,6 +214,11 @@ export default function SignupCompany() {
 
       if (profileError) {
         logError("createProfile", profileError);
+        // Detach profile from org before deleting it (FK-safe cleanup).
+        await supabase
+          .from("profiles")
+          .update({ organization_id: null })
+          .eq("id", authData.user.id);
         await supabase.from("organizations").delete().eq("id", createdOrgId);
         toast.error(getSafeErrorMessage(profileError));
         setIsLoading(false);
@@ -210,6 +233,10 @@ export default function SignupCompany() {
 
       if (roleError || !roleAssigned) {
         logError("assignRole", roleError);
+        await supabase
+          .from("profiles")
+          .update({ organization_id: null })
+          .eq("id", authData.user.id);
         await supabase.from("organizations").delete().eq("id", createdOrgId);
         toast.error(getSafeErrorMessage(roleError));
         setIsLoading(false);
@@ -247,6 +274,12 @@ export default function SignupCompany() {
     } catch (error: unknown) {
       logError("signup", error);
       if (createdOrgId) {
+        if (createdUserId) {
+          await supabase
+            .from("profiles")
+            .update({ organization_id: null })
+            .eq("id", createdUserId);
+        }
         await supabase.from("organizations").delete().eq("id", createdOrgId);
       }
       toast.error(getSafeErrorMessage(error));
