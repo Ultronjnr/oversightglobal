@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon } from "lucide-react";
+import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -26,27 +26,29 @@ import { getSafeErrorMessage, logError } from "@/lib/error-handler";
 
 const signupSchema = z
   .object({
-    name: z.string().min(2, "Name is required"),
-    surname: z.string().min(2, "Surname is required"),
-    email: z.string().email("Invalid email address"),
-    companyName: z.string().min(2, "Company name is required"),
-    companyAddress: z.string().min(5, "Company address is required"),
-    companyPhone: z.string().optional(),
-    registrationNumber: z.string().min(2, "Registration number is required"),
-    taxNumber: z.string().min(2, "Tax number is required"),
+    name: z.string().trim().min(2, "Name is required").max(100, "Name is too long"),
+    surname: z.string().trim().min(2, "Surname is required").max(100, "Surname is too long"),
+    email: z.string().trim().toLowerCase().email("Invalid email address").max(255, "Email is too long"),
+    companyName: z.string().trim().min(2, "Company name is required").max(160, "Company name is too long"),
+    companyAddress: z.string().trim().min(5, "Company address is required").max(500, "Company address is too long"),
+    companyPhone: z.string().trim().max(40, "Phone number is too long").optional(),
+    registrationNumber: z.string().trim().min(2, "Registration number is required").max(80, "Registration number is too long"),
+    taxNumber: z.string().trim().min(2, "Tax number is required").max(80, "Tax number is too long"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
     }),
     vatRegistered: z.boolean().default(false),
-    vatNumber: z.string().optional(),
+    vatNumber: z.string().trim().max(40, "VAT number is too long").optional(),
     vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
     nextVatSubmissionDate: z.date().optional(),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(128, "Password is too long")
       .regex(/[A-Z]/, "Password must include an uppercase letter")
       .regex(/[a-z]/, "Password must include a lowercase letter")
-      .regex(/[0-9]/, "Password must include a number"),
+      .regex(/[0-9]/, "Password must include a number")
+      .regex(/[^A-Za-z0-9]/, "Password must include a special character"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
