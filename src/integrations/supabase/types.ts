@@ -1587,6 +1587,26 @@ export type Database = {
         Returns: boolean
       }
       cancel_batch_draft: { Args: { _batch_id: string }; Returns: Json }
+      complete_company_registration: {
+        Args: {
+          _company_address: string
+          _company_name: string
+          _company_type: Database["public"]["Enums"]["company_type"]
+          _email: string
+          _name: string
+          _next_vat_submission_date?: string
+          _organization_id: string
+          _phone: string
+          _registration_number: string
+          _surname: string
+          _tax_number: string
+          _user_id: string
+          _vat_cycle?: Database["public"]["Enums"]["vat_cycle"]
+          _vat_number?: string
+          _vat_registered: boolean
+        }
+        Returns: Json
+      }
       confirm_batch_paid: {
         Args: {
           _batch_id: string
