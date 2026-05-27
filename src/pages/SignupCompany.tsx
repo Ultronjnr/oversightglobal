@@ -95,6 +95,7 @@ export default function SignupCompany() {
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     let createdOrgId: string | null = null;
+    let createdUserId: string | null = null;
 
     try {
       // STEP 1: Sign up user
@@ -168,6 +169,7 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
+      createdUserId = authData.user.id;
 
       // STEP 2: Create organization
       const { data: orgData, error: orgError } = await supabase
@@ -272,11 +274,11 @@ export default function SignupCompany() {
     } catch (error: unknown) {
       logError("signup", error);
       if (createdOrgId) {
-        if (authData?.user?.id) {
+        if (createdUserId) {
           await supabase
             .from("profiles")
             .update({ organization_id: null })
-            .eq("id", authData.user.id);
+            .eq("id", createdUserId);
         }
         await supabase.from("organizations").delete().eq("id", createdOrgId);
       }
