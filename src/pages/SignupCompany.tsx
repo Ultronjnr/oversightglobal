@@ -171,18 +171,19 @@ export default function SignupCompany() {
       }
       createdUserId = authData.user.id;
 
-      // STEP 2: Create organization
-      const { data: orgData, error: orgError } = await supabase
+      // STEP 2: Create organization. Generate the ID client-side so we do not
+      // need an INSERT ... RETURNING read before the user's profile is linked.
+      const newOrgId = crypto.randomUUID();
+      const { error: orgError } = await supabase
         .from("organizations")
         .insert({
+          id: newOrgId,
           name: data.companyName,
           company_email: data.email,
           address: data.companyAddress,
           registration_number: data.registrationNumber,
           tax_number: data.taxNumber,
-        })
-        .select("id")
-        .single();
+        });
 
       if (orgError) {
         logError("createOrganization", orgError);
@@ -194,7 +195,7 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
-      createdOrgId = orgData.id;
+      createdOrgId = newOrgId;
 
       // STEP 3: Create profile and open the full admin workspace immediately.
       // Upsert so a re-attempt after a prior partial signup still works.
