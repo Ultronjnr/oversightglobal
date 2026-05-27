@@ -52,20 +52,29 @@ const BUSINESS_ERROR_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
 
 const GENERIC_ERROR = 'An error occurred. Please try again or contact support.';
 
+function getErrorValue(error: unknown, key: 'code' | 'message'): string | undefined {
+  if (typeof error === 'object' && error !== null && key in error) {
+    const value = (error as Record<string, unknown>)[key];
+    return typeof value === 'string' ? value : undefined;
+  }
+
+  return undefined;
+}
+
 /**
  * Get a safe, user-friendly error message
  * In production, this sanitizes error details to prevent information leakage
  * In development, it provides more detail for debugging
  */
-export function getSafeErrorMessage(error: any): string {
+export function getSafeErrorMessage(error: unknown): string {
   // In development, show the actual error for debugging
   if (import.meta.env.DEV) {
-    return error?.message || GENERIC_ERROR;
+    return getErrorValue(error, 'message') || GENERIC_ERROR;
   }
 
   // In production, sanitize the error message
-  const errorCode = error?.code;
-  const errorMessage = error?.message || '';
+  const errorCode = getErrorValue(error, 'code');
+  const errorMessage = getErrorValue(error, 'message') || '';
 
   // Check for known PostgreSQL error codes
   if (errorCode && USER_ERROR_MESSAGES[errorCode]) {
@@ -88,7 +97,7 @@ export function getSafeErrorMessage(error: any): string {
  * Only logs detailed errors in development
  * In production, logs are minimized to prevent information exposure
  */
-export function logError(context: string, error: any): void {
+export function logError(context: string, error: unknown): void {
   if (import.meta.env.DEV) {
     console.error(`[${context}]`, error);
   }
@@ -101,7 +110,7 @@ export function logError(context: string, error: any): void {
  * Handle API/service errors with consistent pattern
  * Returns a sanitized error message suitable for display
  */
-export function handleServiceError(context: string, error: any): string {
+export function handleServiceError(context: string, error: unknown): string {
   logError(context, error);
   return getSafeErrorMessage(error);
 }
@@ -109,19 +118,19 @@ export function handleServiceError(context: string, error: any): string {
 /**
  * Check if an error is an authentication error
  */
-export function isAuthError(error: any): boolean {
-  const errorMessage = error?.message?.toLowerCase() || '';
+export function isAuthError(error: unknown): boolean {
+  const errorMessage = getErrorValue(error, 'message')?.toLowerCase() || '';
   return (
     errorMessage.includes('not authenticated') ||
     errorMessage.includes('jwt') ||
     errorMessage.includes('token') ||
-    error?.code === '42501'
+    getErrorValue(error, 'code') === '42501'
   );
 }
 
 /**
  * Check if an error is a not found error
  */
-export function isNotFoundError(error: any): boolean {
-  return error?.code === 'PGRST116';
+export function isNotFoundError(error: unknown): boolean {
+  return getErrorValue(error, 'code') === 'PGRST116';
 }
