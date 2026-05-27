@@ -106,16 +106,26 @@ export default function SignupCompany() {
 
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
-    let createdOrgId: string | null = null;
-    let createdUserId: string | null = null;
+    setIsSuccess(false);
 
     try {
+      const normalizedEmail = data.email.trim().toLowerCase();
+      const organizationId = crypto.randomUUID();
+
+      if (import.meta.env.DEV) {
+        console.log("FORM DATA:", data);
+      }
+
       // STEP 1: Sign up user
       let { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
+        email: normalizedEmail,
         password: data.password,
         options: { emailRedirectTo: window.location.origin },
       });
+
+      if (import.meta.env.DEV) {
+        console.log("AUTH ERROR:", authError);
+      }
 
       // Recovery: if a prior signup attempt created the auth user but failed
       // before saving the profile/org, try to sign in with the supplied password
@@ -127,7 +137,7 @@ export default function SignupCompany() {
       if (alreadyRegistered) {
         const { data: signInData, error: signInError } =
           await supabase.auth.signInWithPassword({
-            email: data.email,
+            email: normalizedEmail,
             password: data.password,
           });
 
@@ -181,119 +191,54 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
-      createdUserId = authData.user.id;
+      const payload = {
+        _user_id: authData.user.id,
+        _email: normalizedEmail,
+        _name: data.name.trim(),
+        _surname: data.surname.trim(),
+        _phone: data.companyPhone?.trim() || "",
+        _organization_id: organizationId,
+        _company_name: data.companyName.trim(),
+        _company_address: data.companyAddress.trim(),
+        _registration_number: data.registrationNumber.trim(),
+        _tax_number: data.taxNumber.trim(),
+        _company_type: data.companyType,
+        _vat_registered: data.vatRegistered,
+        _vat_number: data.vatRegistered ? data.vatNumber?.trim() || null : null,
+        _vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
+        _next_vat_submission_date:
+          data.vatRegistered && data.nextVatSubmissionDate
+            ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
+            : null,
+      };
 
-      // STEP 2: Create organization. Generate the ID client-side so we do not
-      // need an INSERT ... RETURNING read before the user's profile is linked.
-      const newOrgId = crypto.randomUUID();
-      const { error: orgError } = await supabase
-        .from("organizations")
-        .insert({
-          id: newOrgId,
-          name: data.companyName,
-          company_email: data.email,
-          address: data.companyAddress,
-          registration_number: data.registrationNumber,
-          tax_number: data.taxNumber,
-        });
-
-      if (orgError) {
-        logError("createOrganization", orgError);
-        if (orgError.code === "23505") {
-          toast.error("A company with this email already exists.");
-        } else {
-          toast.error(getSafeErrorMessage(orgError));
-        }
-        setIsLoading(false);
-        return;
+      if (import.meta.env.DEV) {
+        console.log("API PAYLOAD:", payload);
       }
-      createdOrgId = newOrgId;
 
-      // STEP 3: Create profile and open the full admin workspace immediately.
-      // Upsert so a re-attempt after a prior partial signup still works.
-      const { error: profileError } = await supabase.from("profiles").upsert(
-        {
-          id: authData.user.id,
-          email: data.email,
-          name: data.name,
-          surname: data.surname,
-          organization_id: createdOrgId,
-          phone: data.companyPhone || null,
-          status: "ACTIVE",
-          tier: "ADMIN",
-        },
-        { onConflict: "id" }
+      const { data: response, error: registrationError } = await supabase.rpc(
+        "complete_company_registration",
+        payload
       );
 
-      if (profileError) {
-        logError("createProfile", profileError);
-        // Detach profile from org before deleting it (FK-safe cleanup).
-        await supabase
-          .from("profiles")
-          .update({ organization_id: null })
-          .eq("id", authData.user.id);
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error(getSafeErrorMessage(profileError));
-        setIsLoading(false);
+      if (import.meta.env.DEV) {
+        console.log("SERVER RESPONSE:", response);
+        console.log("AUTH ERROR:", registrationError);
+      }
+
+      if (registrationError) {
+        logError("completeCompanyRegistration", registrationError);
+        toast.error(getSafeErrorMessage(registrationError));
         return;
       }
 
-      // STEP 4: Assign ADMIN role
-      const { data: roleAssigned, error: roleError } = await supabase.rpc(
-        "assign_invitation_role",
-        { _user_id: authData.user.id, _role: "ADMIN" }
-      );
-
-      if (roleError || !roleAssigned) {
-        logError("assignRole", roleError);
-        await supabase
-          .from("profiles")
-          .update({ organization_id: null })
-          .eq("id", authData.user.id);
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error(getSafeErrorMessage(roleError));
-        setIsLoading(false);
-        return;
-      }
-
-      // STEP 5: Create freemium business profile
-      const { error: bpError } = await supabase
-        .from("freemium_business_profiles")
-        .upsert({
-          user_id: authData.user.id,
-          full_name: `${data.name} ${data.surname}`.trim(),
-          company_name: data.companyName,
-          registration_number: data.registrationNumber,
-          company_type: data.companyType,
-          vat_registered: data.vatRegistered,
-          vat_number: data.vatRegistered ? data.vatNumber || null : null,
-          vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
-          next_vat_submission_date:
-            data.vatRegistered && data.nextVatSubmissionDate
-              ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
-              : null,
-        }, { onConflict: "user_id" });
-
-      if (bpError) {
-        logError("createBusinessProfile", bpError);
-        // Non-fatal: account exists, continue
-        toast.warning(
-          "Account created, but we couldn't save your business profile. You can complete it from your dashboard."
-        );
-      }
-
+      setIsSuccess(true);
       toast.success("Company registered successfully!");
-      navigate("/admin/portal");
+      setTimeout(() => navigate("/admin/portal"), 500);
     } catch (error: unknown) {
       logError("signup", error);
-      if (createdOrgId) {
-        if (createdUserId) {
-          await supabase
-            .from("profiles")
-            .update({ organization_id: null })
-            .eq("id", createdUserId);
-        }
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
+      if (import.meta.env.DEV) {
+        console.log("AUTH ERROR:", error);
       }
       toast.error(getSafeErrorMessage(error));
     } finally {
