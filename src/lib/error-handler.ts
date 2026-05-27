@@ -28,6 +28,13 @@ const USER_ERROR_MESSAGES: Record<string, string> = {
 // Common business logic error patterns
 const BUSINESS_ERROR_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
   { pattern: /email.*already.*exists/i, message: 'This email is already registered.' },
+  { pattern: /user.*already.*registered/i, message: 'This email is already registered. Please log in or use a different email.' },
+  { pattern: /already.*registered/i, message: 'This email is already registered. Please log in or use a different email.' },
+  { pattern: /weak.?password|password.*should.*be|password.*at least/i, message: 'Password is too weak. Use at least 8 characters with a mix of letters and numbers.' },
+  { pattern: /pwned|leaked.*password|compromised/i, message: 'This password has appeared in a data breach. Please choose a different one.' },
+  { pattern: /signups.*disabled|signup.*not.*allowed/i, message: 'New signups are currently disabled.' },
+  { pattern: /invalid.*email|email.*invalid/i, message: 'Please enter a valid email address.' },
+  { pattern: /rate.?limit|too many requests/i, message: 'Too many attempts. Please wait a moment and try again.' },
   { pattern: /company_email/i, message: 'This company email is already registered.' },
   { pattern: /unique.*violation/i, message: 'This record already exists.' },
   { pattern: /not.*authenticated/i, message: 'Please log in to continue.' },

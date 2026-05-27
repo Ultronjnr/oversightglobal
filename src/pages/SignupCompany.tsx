@@ -93,13 +93,51 @@ export default function SignupCompany() {
 
     try {
       // STEP 1: Sign up user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      let { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: { emailRedirectTo: window.location.origin },
       });
 
-      if (authError) {
+      // Recovery: if a prior signup attempt created the auth user but failed
+      // before saving the profile/org, try to sign in with the supplied password
+      // and continue the onboarding flow from where it stopped.
+      const alreadyRegistered =
+        authError &&
+        /already.*registered|already.*exists|user.*exists/i.test(authError.message || "");
+
+      if (alreadyRegistered) {
+        const { data: signInData, error: signInError } =
+          await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password,
+          });
+
+        if (signInError || !signInData.user) {
+          toast.error(
+            "This email is already registered. Please log in or use a different email."
+          );
+          setIsLoading(false);
+          return;
+        }
+
+        // Check whether onboarding already completed
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id, organization_id")
+          .eq("id", signInData.user.id)
+          .maybeSingle();
+
+        if (existingProfile?.organization_id) {
+          toast.success("Welcome back!");
+          navigate("/dashboard");
+          return;
+        }
+
+        // Continue onboarding with the existing auth user
+        authData = { user: signInData.user, session: signInData.session } as typeof authData;
+        authError = null;
+      } else if (authError) {
         toast.error(getSafeErrorMessage(authError));
         setIsLoading(false);
         return;
@@ -135,17 +173,21 @@ export default function SignupCompany() {
       }
       createdOrgId = orgData.id;
 
-      // STEP 3: Create profile (tier defaults to FREEMIUM in DB; set explicitly)
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: authData.user.id,
-        email: data.email,
-        name: data.name,
-        surname: data.surname,
-        organization_id: createdOrgId,
-        phone: data.companyPhone || null,
-        status: "ACTIVE",
-        tier: "FREEMIUM",
-      });
+      // STEP 3: Create profile (tier defaults to FREEMIUM in DB; set explicitly).
+      // Upsert so a re-attempt after a prior partial signup still works.
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          id: authData.user.id,
+          email: data.email,
+          name: data.name,
+          surname: data.surname,
+          organization_id: createdOrgId,
+          phone: data.companyPhone || null,
+          status: "ACTIVE",
+          tier: "FREEMIUM",
+        },
+        { onConflict: "id" }
+      );
 
       if (profileError) {
         logError("createProfile", profileError);
