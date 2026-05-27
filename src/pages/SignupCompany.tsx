@@ -413,6 +413,8 @@ export default function SignupCompany() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
+                autoComplete="new-password"
+                aria-describedby="password-strength"
                 {...register("password")}
               />
               <button
@@ -422,6 +424,14 @@ export default function SignupCompany() {
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
+            </div>
+            <div id="password-strength" className="grid grid-cols-2 gap-1 text-xs text-muted-foreground sm:grid-cols-5">
+              {passwordChecks.map((check) => (
+                <span key={check.label} className={cn("flex items-center gap-1", check.valid && "text-success")}>
+                  <CheckCircle2 className="h-3 w-3" />
+                  {check.label}
+                </span>
+              ))}
             </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
@@ -433,6 +443,7 @@ export default function SignupCompany() {
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 {...register("confirmPassword")}
               />
               <button
@@ -456,7 +467,19 @@ export default function SignupCompany() {
           </div>
 
           <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading || isSuccess}>
-            {isLoading ? "Creating Company..." : "Register Company →"}
+            {isLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating Company...
+              </span>
+            ) : isSuccess ? (
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Success! Opening Admin Portal...
+              </span>
+            ) : (
+              "Register Company →"
+            )}
           </Button>
           </fieldset>
         </form>
