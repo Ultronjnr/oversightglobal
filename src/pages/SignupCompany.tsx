@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon } from "lucide-react";
+import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -26,27 +26,29 @@ import { getSafeErrorMessage, logError } from "@/lib/error-handler";
 
 const signupSchema = z
   .object({
-    name: z.string().min(2, "Name is required"),
-    surname: z.string().min(2, "Surname is required"),
-    email: z.string().email("Invalid email address"),
-    companyName: z.string().min(2, "Company name is required"),
-    companyAddress: z.string().min(5, "Company address is required"),
-    companyPhone: z.string().optional(),
-    registrationNumber: z.string().min(2, "Registration number is required"),
-    taxNumber: z.string().min(2, "Tax number is required"),
+    name: z.string().trim().min(2, "Name is required").max(100, "Name is too long"),
+    surname: z.string().trim().min(2, "Surname is required").max(100, "Surname is too long"),
+    email: z.string().trim().toLowerCase().email("Invalid email address").max(255, "Email is too long"),
+    companyName: z.string().trim().min(2, "Company name is required").max(160, "Company name is too long"),
+    companyAddress: z.string().trim().min(5, "Company address is required").max(500, "Company address is too long"),
+    companyPhone: z.string().trim().max(40, "Phone number is too long").optional(),
+    registrationNumber: z.string().trim().min(2, "Registration number is required").max(80, "Registration number is too long"),
+    taxNumber: z.string().trim().min(2, "Tax number is required").max(80, "Tax number is too long"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
     }),
     vatRegistered: z.boolean().default(false),
-    vatNumber: z.string().optional(),
+    vatNumber: z.string().trim().max(40, "VAT number is too long").optional(),
     vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
     nextVatSubmissionDate: z.date().optional(),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
+      .max(128, "Password is too long")
       .regex(/[A-Z]/, "Password must include an uppercase letter")
       .regex(/[a-z]/, "Password must include a lowercase letter")
-      .regex(/[0-9]/, "Password must include a number"),
+      .regex(/[0-9]/, "Password must include a number")
+      .regex(/[^A-Za-z0-9]/, "Password must include a special character"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -72,6 +74,7 @@ type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -91,19 +94,38 @@ export default function SignupCompany() {
   const companyType = watch("companyType");
   const vatCycle = watch("vatCycle");
   const nextVatDate = watch("nextVatSubmissionDate");
+  const password = watch("password") || "";
+
+  const passwordChecks = [
+    { label: "8+ characters", valid: password.length >= 8 },
+    { label: "Uppercase", valid: /[A-Z]/.test(password) },
+    { label: "Lowercase", valid: /[a-z]/.test(password) },
+    { label: "Number", valid: /[0-9]/.test(password) },
+    { label: "Special character", valid: /[^A-Za-z0-9]/.test(password) },
+  ];
 
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
-    let createdOrgId: string | null = null;
-    let createdUserId: string | null = null;
+    setIsSuccess(false);
 
     try {
+      const normalizedEmail = data.email.trim().toLowerCase();
+      const organizationId = crypto.randomUUID();
+
+      if (import.meta.env.DEV) {
+        console.log("FORM DATA:", data);
+      }
+
       // STEP 1: Sign up user
       let { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
+        email: normalizedEmail,
         password: data.password,
         options: { emailRedirectTo: window.location.origin },
       });
+
+      if (import.meta.env.DEV) {
+        console.log("AUTH ERROR:", authError);
+      }
 
       // Recovery: if a prior signup attempt created the auth user but failed
       // before saving the profile/org, try to sign in with the supplied password
@@ -115,7 +137,7 @@ export default function SignupCompany() {
       if (alreadyRegistered) {
         const { data: signInData, error: signInError } =
           await supabase.auth.signInWithPassword({
-            email: data.email,
+            email: normalizedEmail,
             password: data.password,
           });
 
@@ -169,119 +191,54 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
-      createdUserId = authData.user.id;
+      const payload = {
+        _user_id: authData.user.id,
+        _email: normalizedEmail,
+        _name: data.name.trim(),
+        _surname: data.surname.trim(),
+        _phone: data.companyPhone?.trim() || "",
+        _organization_id: organizationId,
+        _company_name: data.companyName.trim(),
+        _company_address: data.companyAddress.trim(),
+        _registration_number: data.registrationNumber.trim(),
+        _tax_number: data.taxNumber.trim(),
+        _company_type: data.companyType,
+        _vat_registered: data.vatRegistered,
+        _vat_number: data.vatRegistered ? data.vatNumber?.trim() || null : null,
+        _vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
+        _next_vat_submission_date:
+          data.vatRegistered && data.nextVatSubmissionDate
+            ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
+            : null,
+      };
 
-      // STEP 2: Create organization. Generate the ID client-side so we do not
-      // need an INSERT ... RETURNING read before the user's profile is linked.
-      const newOrgId = crypto.randomUUID();
-      const { error: orgError } = await supabase
-        .from("organizations")
-        .insert({
-          id: newOrgId,
-          name: data.companyName,
-          company_email: data.email,
-          address: data.companyAddress,
-          registration_number: data.registrationNumber,
-          tax_number: data.taxNumber,
-        });
-
-      if (orgError) {
-        logError("createOrganization", orgError);
-        if (orgError.code === "23505") {
-          toast.error("A company with this email already exists.");
-        } else {
-          toast.error(getSafeErrorMessage(orgError));
-        }
-        setIsLoading(false);
-        return;
+      if (import.meta.env.DEV) {
+        console.log("API PAYLOAD:", payload);
       }
-      createdOrgId = newOrgId;
 
-      // STEP 3: Create profile and open the full admin workspace immediately.
-      // Upsert so a re-attempt after a prior partial signup still works.
-      const { error: profileError } = await supabase.from("profiles").upsert(
-        {
-          id: authData.user.id,
-          email: data.email,
-          name: data.name,
-          surname: data.surname,
-          organization_id: createdOrgId,
-          phone: data.companyPhone || null,
-          status: "ACTIVE",
-          tier: "ADMIN",
-        },
-        { onConflict: "id" }
+      const { data: response, error: registrationError } = await supabase.rpc(
+        "complete_company_registration",
+        payload
       );
 
-      if (profileError) {
-        logError("createProfile", profileError);
-        // Detach profile from org before deleting it (FK-safe cleanup).
-        await supabase
-          .from("profiles")
-          .update({ organization_id: null })
-          .eq("id", authData.user.id);
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error(getSafeErrorMessage(profileError));
-        setIsLoading(false);
+      if (import.meta.env.DEV) {
+        console.log("SERVER RESPONSE:", response);
+        console.log("AUTH ERROR:", registrationError);
+      }
+
+      if (registrationError) {
+        logError("completeCompanyRegistration", registrationError);
+        toast.error(getSafeErrorMessage(registrationError));
         return;
       }
 
-      // STEP 4: Assign ADMIN role
-      const { data: roleAssigned, error: roleError } = await supabase.rpc(
-        "assign_invitation_role",
-        { _user_id: authData.user.id, _role: "ADMIN" }
-      );
-
-      if (roleError || !roleAssigned) {
-        logError("assignRole", roleError);
-        await supabase
-          .from("profiles")
-          .update({ organization_id: null })
-          .eq("id", authData.user.id);
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
-        toast.error(getSafeErrorMessage(roleError));
-        setIsLoading(false);
-        return;
-      }
-
-      // STEP 5: Create freemium business profile
-      const { error: bpError } = await supabase
-        .from("freemium_business_profiles")
-        .upsert({
-          user_id: authData.user.id,
-          full_name: `${data.name} ${data.surname}`.trim(),
-          company_name: data.companyName,
-          registration_number: data.registrationNumber,
-          company_type: data.companyType,
-          vat_registered: data.vatRegistered,
-          vat_number: data.vatRegistered ? data.vatNumber || null : null,
-          vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
-          next_vat_submission_date:
-            data.vatRegistered && data.nextVatSubmissionDate
-              ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
-              : null,
-        }, { onConflict: "user_id" });
-
-      if (bpError) {
-        logError("createBusinessProfile", bpError);
-        // Non-fatal: account exists, continue
-        toast.warning(
-          "Account created, but we couldn't save your business profile. You can complete it from your dashboard."
-        );
-      }
-
+      setIsSuccess(true);
       toast.success("Company registered successfully!");
-      navigate("/admin/portal");
+      setTimeout(() => navigate("/admin/portal"), 500);
     } catch (error: unknown) {
       logError("signup", error);
-      if (createdOrgId) {
-        if (createdUserId) {
-          await supabase
-            .from("profiles")
-            .update({ organization_id: null })
-            .eq("id", createdUserId);
-        }
-        await supabase.from("organizations").delete().eq("id", createdOrgId);
+      if (import.meta.env.DEV) {
+        console.log("AUTH ERROR:", error);
       }
       toast.error(getSafeErrorMessage(error));
     } finally {
@@ -304,46 +261,47 @@ export default function SignupCompany() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <fieldset disabled={isLoading || isSuccess} className="space-y-4 disabled:opacity-70">
           {/* Personal */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">First Name *</Label>
-              <Input id="name" placeholder="John" {...register("name")} />
+              <Input id="name" placeholder="John" autoComplete="given-name" {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="surname">Surname *</Label>
-              <Input id="surname" placeholder="Doe" {...register("surname")} />
+              <Input id="surname" placeholder="Doe" autoComplete="family-name" {...register("surname")} />
               {errors.surname && <p className="text-sm text-destructive">{errors.surname.message}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Company Email *</Label>
-            <Input id="email" type="email" placeholder="john@company.com" {...register("email")} />
+            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           {/* Company */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
-            <Input id="companyName" placeholder="Acme Corporation" {...register("companyName")} />
+            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" {...register("companyName")} />
             {errors.companyName && <p className="text-sm text-destructive">{errors.companyName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyAddress">Company Address *</Label>
-            <Input id="companyAddress" placeholder="123 Business Street, City" {...register("companyAddress")} />
+            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" {...register("companyAddress")} />
             {errors.companyAddress && <p className="text-sm text-destructive">{errors.companyAddress.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyPhone">Company Phone (Optional)</Label>
-            <Input id="companyPhone" placeholder="+27 12 345 6789" {...register("companyPhone")} />
+            <Input id="companyPhone" placeholder="+27 12 345 6789" autoComplete="tel" {...register("companyPhone")} />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="registrationNumber">Registration Number *</Label>
               <Input id="registrationNumber" placeholder="2023/123456/07" {...register("registrationNumber")} />
@@ -455,6 +413,8 @@ export default function SignupCompany() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
+                autoComplete="new-password"
+                aria-describedby="password-strength"
                 {...register("password")}
               />
               <button
@@ -464,6 +424,14 @@ export default function SignupCompany() {
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
+            </div>
+            <div id="password-strength" className="grid grid-cols-2 gap-1 text-xs text-muted-foreground sm:grid-cols-5">
+              {passwordChecks.map((check) => (
+                <span key={check.label} className={cn("flex items-center gap-1", check.valid && "text-success")}>
+                  <CheckCircle2 className="h-3 w-3" />
+                  {check.label}
+                </span>
+              ))}
             </div>
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
@@ -475,6 +443,7 @@ export default function SignupCompany() {
                 id="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 {...register("confirmPassword")}
               />
               <button
@@ -497,9 +466,22 @@ export default function SignupCompany() {
             </p>
           </div>
 
-          <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating Company..." : "Register Company →"}
+          <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading || isSuccess}>
+            {isLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating Company...
+              </span>
+            ) : isSuccess ? (
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Success! Opening Admin Portal...
+              </span>
+            ) : (
+              "Register Company →"
+            )}
           </Button>
+          </fieldset>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
