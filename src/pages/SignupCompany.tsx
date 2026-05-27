@@ -74,6 +74,7 @@ type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
@@ -93,6 +94,15 @@ export default function SignupCompany() {
   const companyType = watch("companyType");
   const vatCycle = watch("vatCycle");
   const nextVatDate = watch("nextVatSubmissionDate");
+  const password = watch("password") || "";
+
+  const passwordChecks = [
+    { label: "8+ characters", valid: password.length >= 8 },
+    { label: "Uppercase", valid: /[A-Z]/.test(password) },
+    { label: "Lowercase", valid: /[a-z]/.test(password) },
+    { label: "Number", valid: /[0-9]/.test(password) },
+    { label: "Special character", valid: /[^A-Za-z0-9]/.test(password) },
+  ];
 
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
