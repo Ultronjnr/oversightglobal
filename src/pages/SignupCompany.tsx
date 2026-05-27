@@ -455,9 +455,10 @@ export default function SignupCompany() {
             </p>
           </div>
 
-          <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading}>
+          <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={isLoading || isSuccess}>
             {isLoading ? "Creating Company..." : "Register Company →"}
           </Button>
+          </fieldset>
         </form>
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
