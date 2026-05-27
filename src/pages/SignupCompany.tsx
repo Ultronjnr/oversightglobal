@@ -354,6 +354,82 @@ export default function SignupCompany() {
           </p>
         </div>
 
+        {/* Resume incomplete signup */}
+        {!resumeUserId && (
+          <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            {!showResume ? (
+              <button
+                type="button"
+                onClick={() => setShowResume(true)}
+                className="flex w-full items-center justify-between text-left text-sm"
+              >
+                <span className="flex items-center gap-2 text-foreground">
+                  <RotateCcw className="h-4 w-4 text-primary" />
+                  Started signing up before? <span className="text-primary font-medium">Resume setup</span>
+                </span>
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4 text-primary" /> Resume your setup
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowResume(false)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the email and password from your previous attempt. We'll sign you in and pre-fill the form so you can finish.
+                </p>
+                <div className="grid gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Email used previously"
+                    value={resumeEmail}
+                    onChange={(e) => setResumeEmail(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Password"
+                    value={resumePassword}
+                    onChange={(e) => setResumePassword(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResume}
+                  disabled={resumeLoading}
+                >
+                  {resumeLoading ? "Resuming..." : "Resume setup"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {resumeUserId && (
+          <div className="mb-4 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm">
+            <span className="flex items-center gap-2 text-foreground">
+              <RotateCcw className="h-4 w-4 text-primary" />
+              Resuming setup for <strong>{resumeEmail}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={cancelResume}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Personal */}
           <div className="grid grid-cols-2 gap-4">
