@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon } from "lucide-react";
+import { Building2, Eye, EyeOff, CalendarIcon, RotateCcw, X } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,11 @@ export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showResume, setShowResume] = useState(false);
+  const [resumeEmail, setResumeEmail] = useState("");
+  const [resumePassword, setResumePassword] = useState("");
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeUserId, setResumeUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const {
@@ -92,17 +97,96 @@ export default function SignupCompany() {
   const vatCycle = watch("vatCycle");
   const nextVatDate = watch("nextVatSubmissionDate");
 
+  const handleResume = async () => {
+    if (!resumeEmail || !resumePassword) {
+      toast.error("Enter the email and password you used previously.");
+      return;
+    }
+    setResumeLoading(true);
+    try {
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({
+          email: resumeEmail,
+          password: resumePassword,
+        });
+
+      if (signInError || !signInData.user) {
+        toast.error(
+          "Couldn't sign you in. Check your email and password, or start a fresh registration."
+        );
+        setResumeLoading(false);
+        return;
+      }
+
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, organization_id")
+        .eq("id", signInData.user.id)
+        .maybeSingle();
+
+      if (existingProfile?.organization_id) {
+        toast.success("Your setup is already complete. Welcome back!");
+        navigate("/admin/portal");
+        return;
+      }
+
+      setResumeUserId(signInData.user.id);
+      setValue("email", resumeEmail, { shouldValidate: true });
+      setValue("password", resumePassword);
+      setValue("confirmPassword", resumePassword);
+      setShowResume(false);
+      toast.success(
+        "Signed in. Fill in the remaining company details below to finish setup."
+      );
+    } catch (err) {
+      logError("resumeSignup", err);
+      toast.error(getSafeErrorMessage(err));
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const cancelResume = () => {
+    setResumeUserId(null);
+    setResumeEmail("");
+    setResumePassword("");
+  };
+
   const onSubmit = async (data: SignupForm) => {
     setIsLoading(true);
     let createdOrgId: string | null = null;
 
     try {
-      // STEP 1: Sign up user
-      let { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: { emailRedirectTo: window.location.origin },
-      });
+      // STEP 1: Sign up user (or reuse the resumed session)
+      let authData: { user: { id: string } | null; session: unknown } | null = null;
+      let authError: { message?: string } | null = null;
+
+      if (resumeUserId) {
+        const { data: sessionData } = await supabase.auth.getUser();
+        if (sessionData?.user?.id === resumeUserId) {
+          authData = { user: sessionData.user, session: null };
+        } else {
+          const { data: reSignIn, error: reSignInErr } =
+            await supabase.auth.signInWithPassword({
+              email: data.email,
+              password: data.password,
+            });
+          if (reSignInErr || !reSignIn.user) {
+            toast.error("Session expired. Please use Resume setup again.");
+            setIsLoading(false);
+            return;
+          }
+          authData = { user: reSignIn.user, session: reSignIn.session };
+        }
+      } else {
+        const result = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        authData = result.data as typeof authData;
+        authError = result.error;
+      }
 
       // Recovery: if a prior signup attempt created the auth user but failed
       // before saving the profile/org, try to sign in with the supplied password
@@ -120,7 +204,7 @@ export default function SignupCompany() {
 
         if (signInError || !signInData.user) {
           toast.error(
-            "This email is already registered. Please log in or use a different email."
+            "This email is already registered. Use \"Resume setup\" above with the original password, or log in."
           );
           setIsLoading(false);
           return;
@@ -147,7 +231,7 @@ export default function SignupCompany() {
         setIsLoading(false);
         return;
       }
-      if (!authData.user) {
+      if (!authData?.user) {
         toast.error("Failed to create user account");
         setIsLoading(false);
         return;
