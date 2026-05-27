@@ -459,7 +459,7 @@ export default function SignupCompany() {
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-xs text-muted-foreground">
               <strong className="text-foreground">Note:</strong> You will be registered as the Administrator for this
-              company on the FREEMIUM tier. Only one admin is allowed per company.
+              company and taken straight to the Admin portal.
             </p>
           </div>
 
