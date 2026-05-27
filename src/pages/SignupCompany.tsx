@@ -173,17 +173,21 @@ export default function SignupCompany() {
       }
       createdOrgId = orgData.id;
 
-      // STEP 3: Create profile (tier defaults to FREEMIUM in DB; set explicitly)
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: authData.user.id,
-        email: data.email,
-        name: data.name,
-        surname: data.surname,
-        organization_id: createdOrgId,
-        phone: data.companyPhone || null,
-        status: "ACTIVE",
-        tier: "FREEMIUM",
-      });
+      // STEP 3: Create profile (tier defaults to FREEMIUM in DB; set explicitly).
+      // Upsert so a re-attempt after a prior partial signup still works.
+      const { error: profileError } = await supabase.from("profiles").upsert(
+        {
+          id: authData.user.id,
+          email: data.email,
+          name: data.name,
+          surname: data.surname,
+          organization_id: createdOrgId,
+          phone: data.companyPhone || null,
+          status: "ACTIVE",
+          tier: "FREEMIUM",
+        },
+        { onConflict: "id" }
+      );
 
       if (profileError) {
         logError("createProfile", profileError);
