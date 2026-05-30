@@ -108,9 +108,18 @@ export function InvitationsTab() {
         return;
       }
 
-      toast.success("Invitation created successfully!");
-      setGeneratedLink(result.inviteLink || "");
-      setLinkDialogOpen(true);
+      const invitedEmail = email.trim();
+
+      if (result.emailSent) {
+        toast.success(`Invitation email sent to ${invitedEmail}`);
+      } else {
+        toast.error(
+          "Couldn't send the invitation email. Share the link manually instead."
+        );
+        setGeneratedLink(result.inviteLink || "");
+        setLinkDialogOpen(true);
+      }
+
       setEmail("");
       setRole("");
       setDepartment("");
