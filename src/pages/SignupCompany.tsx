@@ -98,6 +98,8 @@ export default function SignupCompany() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const {
@@ -115,6 +117,9 @@ export default function SignupCompany() {
   const companyType = watch("companyType");
   const vatCycle = watch("vatCycle");
   const nextVatDate = watch("nextVatSubmissionDate");
+  const registrationNumber = watch("registrationNumber") || "";
+  const taxNumber = watch("taxNumber") || "";
+  const vatNumber = watch("vatNumber") || "";
   const password = watch("password") || "";
 
   const passwordChecks = [
