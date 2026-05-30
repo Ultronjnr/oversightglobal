@@ -31,6 +31,7 @@ export default function AdminPortal() {
     verifiedSuppliers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("company");
 
   useEffect(() => {
     fetchStats();
@@ -111,7 +112,7 @@ export default function AdminPortal() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="company" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="flex flex-wrap h-auto gap-2">
             <TabsTrigger value="company" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
@@ -160,7 +161,7 @@ export default function AdminPortal() {
           </TabsContent>
 
           <TabsContent value="invitations">
-            <InvitationsTab />
+            <InvitationsTab onAddDepartment={() => setActiveTab("departments")} />
           </TabsContent>
 
           <TabsContent value="prs">
