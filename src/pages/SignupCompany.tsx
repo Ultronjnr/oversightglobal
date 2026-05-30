@@ -98,6 +98,8 @@ type SignupForm = z.infer<typeof signupSchema>;
 export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
