@@ -21,13 +21,14 @@ import { PRItemRow } from "./PRItemRow";
 import { createPurchaseRequisition } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useActiveDepartments } from "@/hooks/use-departments";
 import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { SubmitReimbursementModal } from "./SubmitReimbursementModal";
 import { DocumentCaptureField } from "@/components/capture/DocumentCaptureField";
 
 const formSchema = z.object({
-  department: z.string().min(1, "Department is required"),
+  department: z.string().min(1, "Cost Center / Department is required"),
   urgency: z.enum(["LOW", "NORMAL", "HIGH", "URGENT"]),
   due_date: z.string().optional(),
   payment_due_date: z.string().optional(),
@@ -41,6 +42,7 @@ interface PurchaseRequisitionFormProps {
 
 export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormProps) {
   const { user } = useAuth();
+  const { departments, isLoading: isLoadingDepartments } = useActiveDepartments();
   const [items, setItems] = useState<PRItem[]>([
     { id: uuidv4(), description: "", quantity: 1, unit_price: 0, total: 0 },
   ]);
@@ -61,6 +63,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors },
   } = useForm<FormData>({
@@ -69,6 +72,8 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
       urgency: "NORMAL",
     },
   });
+
+  const selectedDepartment = watch("department");
 
   // Recalculate totals when VAT changes
   useEffect(() => {
@@ -262,13 +267,32 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
       {/* Header Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="department">Department *</Label>
-          <Input
-            id="department"
-            placeholder="e.g., Marketing"
-            {...register("department")}
-            className="bg-background/50"
-          />
+          <Label htmlFor="department">Cost Center / Department *</Label>
+          <Select
+            value={selectedDepartment || ""}
+            onValueChange={(value) =>
+              setValue("department", value, { shouldValidate: true })
+            }
+          >
+            <SelectTrigger id="department" className="bg-background/50">
+              <SelectValue
+                placeholder={
+                  isLoadingDepartments
+                    ? "Loading..."
+                    : departments.length === 0
+                    ? "No cost centers available"
+                    : "Select a cost center / department"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {departments.map((dept) => (
+                <SelectItem key={dept.id} value={dept.name}>
+                  {dept.code ? `${dept.code} — ${dept.name}` : dept.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {errors.department && (
             <p className="text-sm text-destructive">{errors.department.message}</p>
           )}
