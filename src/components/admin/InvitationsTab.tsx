@@ -29,6 +29,7 @@ import {
   XCircle,
   Trash2,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 import {
   createInvitation,
@@ -37,6 +38,7 @@ import {
   resendInvitation,
   type Invitation,
 } from "@/services/invitation.service";
+import { useActiveDepartments } from "@/hooks/use-departments";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 
 const roleLabels: Record<string, string> = {
@@ -52,7 +54,11 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   expired: { label: "Expired", variant: "destructive" },
 };
 
-export function InvitationsTab() {
+interface InvitationsTabProps {
+  onAddDepartment?: () => void;
+}
+
+export function InvitationsTab({ onAddDepartment }: InvitationsTabProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("");
   const [department, setDepartment] = useState("");
@@ -61,6 +67,7 @@ export function InvitationsTab() {
   const [isLoading, setIsLoading] = useState(true);
   const [showSentBanner, setShowSentBanner] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const { departments, isLoading: isLoadingDepartments } = useActiveDepartments();
 
   useEffect(() => {
     loadInvitations();
@@ -86,12 +93,17 @@ export function InvitationsTab() {
       return;
     }
 
+    if (!department) {
+      toast.error("Please select a Cost Center / Department");
+      return;
+    }
+
     setIsSending(true);
     try {
       const result = await createInvitation({
         email: email.trim(),
         role: role as "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN",
-        department: department.trim() || undefined,
+        department: department,
       });
 
       if (!result.success) {
