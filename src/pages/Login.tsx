@@ -55,7 +55,7 @@ export default function Login() {
 
   const completeRegistrationIfPending = async (user: any) => {
     const reg = user?.user_metadata?.company_registration;
-    if (!reg) return false;
+    if (!reg) return { hadPendingRegistration: false, completed: false };
 
     // Only complete if the profile has no organization yet.
     const { data: existingProfile } = await supabase
@@ -63,7 +63,9 @@ export default function Login() {
       .select("id, organization_id")
       .eq("id", user.id)
       .maybeSingle();
-    if (existingProfile?.organization_id) return false;
+    if (existingProfile?.organization_id) {
+      return { hadPendingRegistration: true, completed: false };
+    }
 
     const { error } = await supabase.rpc("complete_company_registration", {
       _user_id: user.id,
@@ -84,16 +86,17 @@ export default function Login() {
     });
     if (error) {
       console.error("complete_company_registration failed", error);
-      return false;
+      toast.error(error.message || "Company setup could not be completed.");
+      return { hadPendingRegistration: true, completed: false };
     }
-    return true;
+    return { hadPendingRegistration: true, completed: true };
   };
 
   // Resolves where an authenticated user should land. Reads the role/profile
   // AFTER auth, completes a pending company registration on first login, and
   // never loops back to /login.
   const finalizeAndRedirect = async (user: any) => {
-    await completeRegistrationIfPending(user);
+    const registrationResult = await completeRegistrationIfPending(user);
 
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -102,7 +105,12 @@ export default function Login() {
       .maybeSingle();
 
     if (roleData?.role) {
-      navigate(rolePortalMap[roleData.role] || "/dashboard");
+      navigate(rolePortalMap[roleData.role] || "/dashboard", { replace: true });
+      return;
+    }
+
+    if (registrationResult.completed) {
+      navigate("/admin/portal", { replace: true });
       return;
     }
 
@@ -113,14 +121,14 @@ export default function Login() {
       .eq("id", user.id)
       .maybeSingle();
 
-    if (!profile?.organization_id) {
+    if (!profile?.organization_id && !registrationResult.hadPendingRegistration) {
       // Brand new admin whose company setup never finished — send them to
       // complete it instead of looping back to login.
-      navigate("/signup/company");
+      navigate("/signup/company", { replace: true });
       return;
     }
 
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: true });
   };
 
   // Handle the email-verification callback. Supabase creates a temporary
