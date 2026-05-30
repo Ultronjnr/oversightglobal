@@ -330,14 +330,36 @@ export default function SignupCompany() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="registrationNumber">Registration Number *</Label>
-              <Input id="registrationNumber" placeholder="2023/123456/07" {...register("registrationNumber")} />
+              <Input
+                id="registrationNumber"
+                inputMode="numeric"
+                placeholder="2023/123456/07"
+                maxLength={13}
+                value={registrationNumber}
+                onChange={(e) =>
+                  setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.registrationNumber && (
                 <p className="text-sm text-destructive">{errors.registrationNumber.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="taxNumber">Tax Number *</Label>
-              <Input id="taxNumber" placeholder="9876543210" {...register("taxNumber")} />
+              <Input
+                id="taxNumber"
+                inputMode="numeric"
+                placeholder="987654321"
+                maxLength={9}
+                value={taxNumber}
+                onChange={(e) =>
+                  setValue("taxNumber", formatNineDigits(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.taxNumber && <p className="text-sm text-destructive">{errors.taxNumber.message}</p>}
             </div>
           </div>
