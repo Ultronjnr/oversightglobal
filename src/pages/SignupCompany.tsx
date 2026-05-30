@@ -320,8 +320,16 @@ export default function SignupCompany() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4" noValidate>
           <fieldset disabled={isLoading || isSuccess} className="space-y-4 disabled:opacity-70">
+          {isSubmitted && Object.keys(errors).length > 0 && (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+            >
+              Please fix the errors below to continue
+            </div>
+          )}
           {/* Personal */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
