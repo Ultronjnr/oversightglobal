@@ -45,6 +45,32 @@ export async function getDepartments(): Promise<{
 }
 
 /**
+ * Get only ACTIVE cost centers / departments for the current organization,
+ * sorted alphabetically. Used to populate required dropdowns across the app.
+ */
+export async function getActiveDepartments(): Promise<{
+  success: boolean;
+  data: Department[];
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from("departments")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if (error) {
+      return { success: false, data: [], error: getSafeErrorMessage(error) };
+    }
+
+    return { success: true, data: data as Department[] };
+  } catch (error: any) {
+    return { success: false, data: [], error: getSafeErrorMessage(error) };
+  }
+}
+
+/**
  * Create a new cost center / department
  */
 export async function createDepartment(
