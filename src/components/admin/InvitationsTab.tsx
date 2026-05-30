@@ -197,19 +197,7 @@ export function InvitationsTab({ onAddDepartment }: InvitationsTabProps) {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="department">Cost Center / Department</Label>
-                {onAddDepartment && (
-                  <button
-                    type="button"
-                    onClick={onAddDepartment}
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add new department
-                  </button>
-                )}
-              </div>
+              <Label htmlFor="department">Cost Center / Department</Label>
               <Select value={department} onValueChange={setDepartment}>
                 <SelectTrigger id="department">
                   <SelectValue
