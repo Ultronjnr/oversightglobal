@@ -334,32 +334,32 @@ export default function SignupCompany() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">First Name *</Label>
-              <Input id="name" placeholder="John" autoComplete="given-name" {...register("name")} />
+              <Input id="name" placeholder="John" autoComplete="given-name" className={errCls("name")} {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="surname">Surname *</Label>
-              <Input id="surname" placeholder="Doe" autoComplete="family-name" {...register("surname")} />
+              <Input id="surname" placeholder="Doe" autoComplete="family-name" className={errCls("surname")} {...register("surname")} />
               {errors.surname && <p className="text-sm text-destructive">{errors.surname.message}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Company Email *</Label>
-            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" {...register("email")} />
+            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" className={errCls("email")} {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           {/* Company */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
-            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" {...register("companyName")} />
+            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" className={errCls("companyName")} {...register("companyName")} />
             {errors.companyName && <p className="text-sm text-destructive">{errors.companyName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyAddress">Company Address *</Label>
-            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" {...register("companyAddress")} />
+            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" className={errCls("companyAddress")} {...register("companyAddress")} />
             {errors.companyAddress && <p className="text-sm text-destructive">{errors.companyAddress.message}</p>}
           </div>
 
@@ -377,6 +377,7 @@ export default function SignupCompany() {
                 placeholder="2023/123456/07"
                 maxLength={14}
                 value={registrationNumber}
+                className={errCls("registrationNumber")}
                 onChange={(e) =>
                   setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
                     shouldValidate: true,
@@ -395,6 +396,7 @@ export default function SignupCompany() {
                 placeholder="987654321"
                 maxLength={9}
                 value={taxNumber}
+                className={errCls("taxNumber")}
                 onChange={(e) =>
                   setValue("taxNumber", formatNineDigits(e.target.value), {
                     shouldValidate: true,
@@ -411,7 +413,7 @@ export default function SignupCompany() {
               value={companyType}
               onValueChange={(v) => setValue("companyType", v as SignupForm["companyType"], { shouldValidate: true })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="companyType" className={errCls("companyType")}>
                 <SelectValue placeholder="Select company type" />
               </SelectTrigger>
               <SelectContent>
@@ -446,6 +448,7 @@ export default function SignupCompany() {
                   placeholder="412345678"
                   maxLength={9}
                   value={vatNumber}
+                  className={errCls("vatNumber")}
                   onChange={(e) =>
                     setValue("vatNumber", formatNineDigits(e.target.value), {
                       shouldValidate: true,
@@ -461,7 +464,7 @@ export default function SignupCompany() {
                   value={vatCycle}
                   onValueChange={(v) => setValue("vatCycle", v as "MONTHLY" | "BI_MONTHLY", { shouldValidate: true })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="vatCycle" className={errCls("vatCycle")}>
                     <SelectValue placeholder="Select VAT cycle" />
                   </SelectTrigger>
                   <SelectContent>
