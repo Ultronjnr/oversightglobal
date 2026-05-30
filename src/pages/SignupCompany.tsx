@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
+import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2, MailCheck } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -98,6 +98,8 @@ type SignupForm = z.infer<typeof signupSchema>;
 export default function SignupCompany() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [dateOpen, setDateOpen] = useState(false);
@@ -171,129 +173,53 @@ export default function SignupCompany() {
       const normalizedEmail = data.email.trim().toLowerCase();
       const organizationId = crypto.randomUUID();
 
-      if (import.meta.env.DEV) {
-        console.log("FORM DATA:", data);
-      }
-
-      // STEP 1: Sign up user
-      let { data: authData, error: authError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password: data.password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-
-      if (import.meta.env.DEV) {
-        console.log("AUTH ERROR:", authError);
-      }
-
-      // Recovery: if a prior signup attempt created the auth user but failed
-      // before saving the profile/org, try to sign in with the supplied password
-      // and continue the onboarding flow from where it stopped.
-      const alreadyRegistered =
-        authError &&
-        /already.*registered|already.*exists|user.*exists/i.test(authError.message || "");
-
-      if (alreadyRegistered) {
-        const { data: signInData, error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email: normalizedEmail,
-            password: data.password,
-          });
-
-        if (signInError || !signInData.user) {
-          toast.error(
-            "This email is already registered. Please log in or use a different email."
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        // Check whether onboarding already completed
-        const { data: existingProfile } = await supabase
-          .from("profiles")
-          .select("id, organization_id")
-          .eq("id", signInData.user.id)
-          .maybeSingle();
-
-        if (existingProfile?.organization_id) {
-          // Verify the referenced organization still exists.
-          const { data: orgStillThere } = await supabase
-            .from("organizations")
-            .select("id")
-            .eq("id", existingProfile.organization_id)
-            .maybeSingle();
-
-          if (orgStillThere) {
-            toast.success("Welcome back!");
-            navigate("/admin/portal");
-            return;
-          }
-
-          // Stale reference from a failed previous attempt — clear it so
-          // the organizations INSERT RLS policy allows a fresh org.
-          await supabase
-            .from("profiles")
-            .update({ organization_id: null })
-            .eq("id", signInData.user.id);
-        }
-
-        // Continue onboarding with the existing auth user
-        authData = { user: signInData.user, session: signInData.session } as typeof authData;
-        authError = null;
-      } else if (authError) {
-        toast.error(getSafeErrorMessage(authError));
-        setIsLoading(false);
-        return;
-      }
-      if (!authData.user) {
-        toast.error("Failed to create user account");
-        setIsLoading(false);
-        return;
-      }
-      const payload = {
-        _user_id: authData.user.id,
-        _email: normalizedEmail,
-        _name: data.name.trim(),
-        _surname: data.surname.trim(),
-        _phone: data.companyPhone?.trim() || "",
-        _organization_id: organizationId,
-        _company_name: data.companyName.trim(),
-        _company_address: data.companyAddress.trim(),
-        _registration_number: data.registrationNumber.trim(),
-        _tax_number: data.taxNumber.trim(),
-        _company_type: data.companyType,
-        _vat_registered: data.vatRegistered,
-        _vat_number: data.vatRegistered ? data.vatNumber?.trim() || null : null,
-        _vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
-        _next_vat_submission_date:
+      // Company registration data is stored in the user's auth metadata and
+      // applied on the first verified login (the DB function requires an
+      // authenticated session, which only exists after email verification).
+      const company_registration = {
+        organization_id: organizationId,
+        name: data.name.trim(),
+        surname: data.surname.trim(),
+        phone: data.companyPhone?.trim() || "",
+        company_name: data.companyName.trim(),
+        company_address: data.companyAddress.trim(),
+        registration_number: data.registrationNumber.trim(),
+        tax_number: data.taxNumber.trim(),
+        company_type: data.companyType,
+        vat_registered: data.vatRegistered,
+        vat_number: data.vatRegistered ? data.vatNumber?.trim() || null : null,
+        vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
+        next_vat_submission_date:
           data.vatRegistered && data.nextVatSubmissionDate
             ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
             : null,
       };
 
-      if (import.meta.env.DEV) {
-        console.log("API PAYLOAD:", payload);
-      }
+      const { error: authError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login`,
+          data: { company_registration },
+        },
+      });
 
-      const { data: response, error: registrationError } = await supabase.rpc(
-        "complete_company_registration",
-        payload
-      );
-
-      if (import.meta.env.DEV) {
-        console.log("SERVER RESPONSE:", response);
-        console.log("AUTH ERROR:", registrationError);
-      }
-
-      if (registrationError) {
-        logError("completeCompanyRegistration", registrationError);
-        toast.error(getSafeErrorMessage(registrationError));
+      if (authError) {
+        const alreadyRegistered =
+          /already.*registered|already.*exists|user.*exists/i.test(authError.message || "");
+        if (alreadyRegistered) {
+          toast.error("This email is already registered. Please log in instead.");
+        } else {
+          toast.error(getSafeErrorMessage(authError));
+        }
+        setIsLoading(false);
         return;
       }
 
+      // Signup succeeded — email verification required before login.
+      setPendingEmail(normalizedEmail);
       setIsSuccess(true);
-      toast.success("Company registered successfully!");
-      setTimeout(() => navigate("/admin/portal"), 500);
+      toast.success("Verification email sent!");
     } catch (error: unknown) {
       logError("signup", error);
       if (import.meta.env.DEV) {
@@ -304,6 +230,75 @@ export default function SignupCompany() {
       setIsLoading(false);
     }
   };
+
+  const handleResend = async () => {
+    if (!pendingEmail) return;
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: pendingEmail,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      });
+      if (error) {
+        toast.error(getSafeErrorMessage(error));
+      } else {
+        toast.success("Verification email resent");
+      }
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  if (isSuccess && pendingEmail) {
+    return (
+      <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">
+        <div className="auth-card animate-slide-up max-w-md text-center">
+          <div className="flex justify-center mb-5">
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <MailCheck className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Almost there!</h1>
+          <p className="text-muted-foreground text-sm mt-3">
+            We've sent a verification email to{" "}
+            <span className="font-semibold text-foreground">{pendingEmail}</span>.
+            Please check your inbox and click the link to activate your account.
+          </p>
+          <p className="text-xs text-muted-foreground mt-4">
+            The email comes from <strong>noreply@ovasyt.tech</strong> — if you don't
+            see it within a couple of minutes, check your spam folder.
+          </p>
+          <div className="mt-6 space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleResend}
+              disabled={isResending}
+            >
+              {isResending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Resending...
+                </span>
+              ) : (
+                "Resend verification email"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="gradient"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate("/login")}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">

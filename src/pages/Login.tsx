@@ -32,6 +32,8 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -42,8 +44,63 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   });
 
+  const completeRegistrationIfPending = async (user: any) => {
+    const reg = user?.user_metadata?.company_registration;
+    if (!reg) return false;
+
+    // Only complete if the profile has no organization yet.
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id, organization_id")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (existingProfile?.organization_id) return false;
+
+    const { error } = await supabase.rpc("complete_company_registration", {
+      _user_id: user.id,
+      _email: (user.email || reg.email || "").toLowerCase(),
+      _name: reg.name,
+      _surname: reg.surname,
+      _phone: reg.phone || "",
+      _organization_id: reg.organization_id,
+      _company_name: reg.company_name,
+      _company_address: reg.company_address,
+      _registration_number: reg.registration_number,
+      _tax_number: reg.tax_number,
+      _company_type: reg.company_type,
+      _vat_registered: reg.vat_registered,
+      _vat_number: reg.vat_number ?? null,
+      _vat_cycle: reg.vat_cycle ?? null,
+      _next_vat_submission_date: reg.next_vat_submission_date ?? null,
+    });
+    if (error) {
+      console.error("complete_company_registration failed", error);
+      return false;
+    }
+    return true;
+  };
+
+  const handleResend = async (email: string) => {
+    setIsResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/login` },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Verification email sent. Please check your inbox.");
+      }
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
+    setUnverifiedEmail(null);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -51,11 +108,28 @@ export default function Login() {
       });
 
       if (error) {
-        toast.error(error.message);
+        const notConfirmed =
+          /email.*not.*confirm|not.*confirmed|confirm.*email/i.test(error.message || "");
+        if (notConfirmed) {
+          setUnverifiedEmail(data.email.trim().toLowerCase());
+          toast.error(
+            "Please verify your email address first. Check your inbox for an email from noreply@ovasyt.tech"
+          );
+        } else {
+          toast.error(error.message);
+        }
         return;
       }
 
       if (authData.user) {
+        // First login after verification — finalize company registration.
+        const justCompleted = await completeRegistrationIfPending(authData.user);
+        if (justCompleted) {
+          toast.success("Welcome to Ovasyt!");
+          navigate("/admin/portal");
+          return;
+        }
+
         const { data: roleData } = await supabase
           .from("user_roles")
           .select("role")
@@ -235,6 +309,23 @@ export default function Login() {
                   </p>
                 )}
               </div>
+
+              {unverifiedEmail && (
+                <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
+                  <p>
+                    Please verify your email address first. Check your inbox for
+                    an email from <strong>noreply@ovasyt.tech</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleResend(unverifiedEmail)}
+                    disabled={isResending}
+                    className="mt-2 font-semibold text-primary hover:underline disabled:opacity-60"
+                  >
+                    {isResending ? "Sending..." : "Resend verification email"}
+                  </button>
+                </div>
+              )}
 
               <Button
                 type="submit"
