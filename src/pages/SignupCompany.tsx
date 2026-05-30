@@ -540,6 +540,7 @@ export default function SignupCompany() {
                 placeholder="••••••••"
                 autoComplete="new-password"
                 aria-describedby="password-strength"
+                className={errCls("password")}
                 {...register("password")}
               />
               <button
@@ -569,6 +570,7 @@ export default function SignupCompany() {
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="new-password"
+                className={errCls("confirmPassword")}
                 {...register("confirmPassword")}
               />
               <button
