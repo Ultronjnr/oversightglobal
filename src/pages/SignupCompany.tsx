@@ -399,7 +399,18 @@ export default function SignupCompany() {
             <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
               <div className="space-y-2">
                 <Label htmlFor="vatNumber">VAT Number *</Label>
-                <Input id="vatNumber" placeholder="4123456789" {...register("vatNumber")} />
+                <Input
+                  id="vatNumber"
+                  inputMode="numeric"
+                  placeholder="412345678"
+                  maxLength={9}
+                  value={vatNumber}
+                  onChange={(e) =>
+                    setValue("vatNumber", formatNineDigits(e.target.value), {
+                      shouldValidate: true,
+                    })
+                  }
+                />
                 {errors.vatNumber && <p className="text-sm text-destructive">{errors.vatNumber.message}</p>}
               </div>
 
@@ -422,30 +433,52 @@ export default function SignupCompany() {
 
               <div className="space-y-2">
                 <Label>Next VAT Submission Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !nextVatDate && "text-muted-foreground"
-                      )}
+                {isMobile ? (
+                  <Input
+                    type="date"
+                    value={nextVatDate ? format(nextVatDate, "yyyy-MM-dd") : ""}
+                    onChange={(e) =>
+                      setValue(
+                        "nextVatSubmissionDate",
+                        e.target.value ? new Date(e.target.value) : undefined,
+                        { shouldValidate: true }
+                      )
+                    }
+                  />
+                ) : (
+                  <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !nextVatDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {nextVatDate ? format(nextVatDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0"
+                      align="start"
+                      side="top"
+                      sideOffset={4}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {nextVatDate ? format(nextVatDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={nextVatDate}
-                      onSelect={(d) => setValue("nextVatSubmissionDate", d, { shouldValidate: true })}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
+                      <Calendar
+                        mode="single"
+                        selected={nextVatDate}
+                        onSelect={(d) => {
+                          setValue("nextVatSubmissionDate", d, { shouldValidate: true });
+                          setDateOpen(false);
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
                 {errors.nextVatSubmissionDate && (
                   <p className="text-sm text-destructive">{errors.nextVatSubmissionDate.message}</p>
                 )}
