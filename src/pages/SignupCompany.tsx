@@ -50,10 +50,12 @@ const signupSchema = z
     registrationNumber: z
       .string()
       .trim()
-      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number must be YYYY/NNNNNN/NN"),
+      .min(1, "Registration number is required")
+      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number format: 2023/123456/07"),
     taxNumber: z
       .string()
       .trim()
+      .min(1, "Tax number is required")
       .regex(/^\d{9}$/, "Tax number must be exactly 9 digits"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
@@ -107,11 +109,42 @@ export default function SignupCompany() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: { vatRegistered: false },
   });
+
+  const errCls = (field: keyof SignupForm) =>
+    errors[field] ? "border-destructive focus-visible:ring-destructive" : "";
+
+  const onInvalid = (formErrors: typeof errors) => {
+    const order: (keyof SignupForm)[] = [
+      "name",
+      "surname",
+      "email",
+      "companyName",
+      "companyAddress",
+      "companyPhone",
+      "registrationNumber",
+      "taxNumber",
+      "companyType",
+      "vatNumber",
+      "vatCycle",
+      "nextVatSubmissionDate",
+      "password",
+      "confirmPassword",
+    ];
+    const first = order.find((k) => formErrors[k]);
+    if (!first) return;
+    const el =
+      document.getElementById(first) ||
+      (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => (el as HTMLElement).focus?.(), 400);
+    }
+  };
 
   const vatRegistered = watch("vatRegistered");
   const companyType = watch("companyType");
@@ -287,38 +320,46 @@ export default function SignupCompany() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-4" noValidate>
           <fieldset disabled={isLoading || isSuccess} className="space-y-4 disabled:opacity-70">
+          {isSubmitted && Object.keys(errors).length > 0 && (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+            >
+              Please fix the errors below to continue
+            </div>
+          )}
           {/* Personal */}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">First Name *</Label>
-              <Input id="name" placeholder="John" autoComplete="given-name" {...register("name")} />
+              <Input id="name" placeholder="John" autoComplete="given-name" className={errCls("name")} {...register("name")} />
               {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="surname">Surname *</Label>
-              <Input id="surname" placeholder="Doe" autoComplete="family-name" {...register("surname")} />
+              <Input id="surname" placeholder="Doe" autoComplete="family-name" className={errCls("surname")} {...register("surname")} />
               {errors.surname && <p className="text-sm text-destructive">{errors.surname.message}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">Company Email *</Label>
-            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" {...register("email")} />
+            <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" className={errCls("email")} {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
 
           {/* Company */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
-            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" {...register("companyName")} />
+            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" className={errCls("companyName")} {...register("companyName")} />
             {errors.companyName && <p className="text-sm text-destructive">{errors.companyName.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="companyAddress">Company Address *</Label>
-            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" {...register("companyAddress")} />
+            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" className={errCls("companyAddress")} {...register("companyAddress")} />
             {errors.companyAddress && <p className="text-sm text-destructive">{errors.companyAddress.message}</p>}
           </div>
 
@@ -336,6 +377,7 @@ export default function SignupCompany() {
                 placeholder="2023/123456/07"
                 maxLength={14}
                 value={registrationNumber}
+                className={errCls("registrationNumber")}
                 onChange={(e) =>
                   setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
                     shouldValidate: true,
@@ -354,6 +396,7 @@ export default function SignupCompany() {
                 placeholder="987654321"
                 maxLength={9}
                 value={taxNumber}
+                className={errCls("taxNumber")}
                 onChange={(e) =>
                   setValue("taxNumber", formatNineDigits(e.target.value), {
                     shouldValidate: true,
@@ -370,7 +413,7 @@ export default function SignupCompany() {
               value={companyType}
               onValueChange={(v) => setValue("companyType", v as SignupForm["companyType"], { shouldValidate: true })}
             >
-              <SelectTrigger>
+              <SelectTrigger id="companyType" className={errCls("companyType")}>
                 <SelectValue placeholder="Select company type" />
               </SelectTrigger>
               <SelectContent>
@@ -405,6 +448,7 @@ export default function SignupCompany() {
                   placeholder="412345678"
                   maxLength={9}
                   value={vatNumber}
+                  className={errCls("vatNumber")}
                   onChange={(e) =>
                     setValue("vatNumber", formatNineDigits(e.target.value), {
                       shouldValidate: true,
@@ -420,7 +464,7 @@ export default function SignupCompany() {
                   value={vatCycle}
                   onValueChange={(v) => setValue("vatCycle", v as "MONTHLY" | "BI_MONTHLY", { shouldValidate: true })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="vatCycle" className={errCls("vatCycle")}>
                     <SelectValue placeholder="Select VAT cycle" />
                   </SelectTrigger>
                   <SelectContent>
@@ -496,6 +540,7 @@ export default function SignupCompany() {
                 placeholder="••••••••"
                 autoComplete="new-password"
                 aria-describedby="password-strength"
+                className={errCls("password")}
                 {...register("password")}
               />
               <button
@@ -525,6 +570,7 @@ export default function SignupCompany() {
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="new-password"
+                className={errCls("confirmPassword")}
                 {...register("confirmPassword")}
               />
               <button
