@@ -197,14 +197,39 @@ export function InvitationsTab({ onAddDepartment }: InvitationsTabProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="department">Department (Optional)</Label>
-              <Input
-                id="department"
-                type="text"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Engineering"
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="department">Cost Center / Department</Label>
+                {onAddDepartment && (
+                  <button
+                    type="button"
+                    onClick={onAddDepartment}
+                    className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add new department
+                  </button>
+                )}
+              </div>
+              <Select value={department} onValueChange={setDepartment}>
+                <SelectTrigger id="department">
+                  <SelectValue
+                    placeholder={
+                      isLoadingDepartments
+                        ? "Loading..."
+                        : departments.length === 0
+                        ? "No cost centers available"
+                        : "Select a cost center / department"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.code ? `${dept.code} — ${dept.name}` : dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-end">
