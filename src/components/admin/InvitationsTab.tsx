@@ -29,7 +29,6 @@ import {
   XCircle,
   Trash2,
   RefreshCw,
-  Plus,
 } from "lucide-react";
 import {
   createInvitation,
@@ -54,11 +53,7 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
   expired: { label: "Expired", variant: "destructive" },
 };
 
-interface InvitationsTabProps {
-  onAddDepartment?: () => void;
-}
-
-export function InvitationsTab({ onAddDepartment }: InvitationsTabProps) {
+export function InvitationsTab() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("");
   const [department, setDepartment] = useState("");
