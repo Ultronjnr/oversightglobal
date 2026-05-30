@@ -21,8 +21,23 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage, logError } from "@/lib/error-handler";
+
+// Formats raw input into the SA registration number mask YYYY/NNNNNN/NN
+const formatRegistrationNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 12);
+  const parts: string[] = [];
+  parts.push(digits.slice(0, 4));
+  if (digits.length > 4) parts.push(digits.slice(4, 10));
+  if (digits.length > 10) parts.push(digits.slice(10, 12));
+  return parts.join("/");
+};
+
+// Keeps only digits, max 9 (VAT / Tax numbers)
+const formatNineDigits = (value: string): string =>
+  value.replace(/\D/g, "").slice(0, 9);
 
 const signupSchema = z
   .object({
@@ -32,13 +47,19 @@ const signupSchema = z
     companyName: z.string().trim().min(2, "Company name is required").max(160, "Company name is too long"),
     companyAddress: z.string().trim().min(5, "Company address is required").max(500, "Company address is too long"),
     companyPhone: z.string().trim().max(40, "Phone number is too long").optional(),
-    registrationNumber: z.string().trim().min(2, "Registration number is required").max(80, "Registration number is too long"),
-    taxNumber: z.string().trim().min(2, "Tax number is required").max(80, "Tax number is too long"),
+    registrationNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number must be YYYY/NNNNNN/NN"),
+    taxNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{9}$/, "Tax number must be exactly 9 digits"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
     }),
     vatRegistered: z.boolean().default(false),
-    vatNumber: z.string().trim().max(40, "VAT number is too long").optional(),
+    vatNumber: z.string().trim().optional(),
     vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
     nextVatSubmissionDate: z.date().optional(),
     password: z
@@ -58,8 +79,8 @@ const signupSchema = z
   .refine(
     (data) =>
       !data.vatRegistered ||
-      (data.vatNumber && data.vatNumber.trim().length > 0),
-    { message: "VAT number is required", path: ["vatNumber"] }
+      (!!data.vatNumber && /^\d{9}$/.test(data.vatNumber.trim())),
+    { message: "VAT number must be exactly 9 digits", path: ["vatNumber"] }
   )
   .refine((data) => !data.vatRegistered || !!data.vatCycle, {
     message: "VAT cycle is required",
@@ -77,6 +98,8 @@ export default function SignupCompany() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const {
@@ -94,6 +117,9 @@ export default function SignupCompany() {
   const companyType = watch("companyType");
   const vatCycle = watch("vatCycle");
   const nextVatDate = watch("nextVatSubmissionDate");
+  const registrationNumber = watch("registrationNumber") || "";
+  const taxNumber = watch("taxNumber") || "";
+  const vatNumber = watch("vatNumber") || "";
   const password = watch("password") || "";
 
   const passwordChecks = [
@@ -304,14 +330,36 @@ export default function SignupCompany() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="registrationNumber">Registration Number *</Label>
-              <Input id="registrationNumber" placeholder="2023/123456/07" {...register("registrationNumber")} />
+              <Input
+                id="registrationNumber"
+                inputMode="numeric"
+                placeholder="2023/123456/07"
+                maxLength={13}
+                value={registrationNumber}
+                onChange={(e) =>
+                  setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.registrationNumber && (
                 <p className="text-sm text-destructive">{errors.registrationNumber.message}</p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="taxNumber">Tax Number *</Label>
-              <Input id="taxNumber" placeholder="9876543210" {...register("taxNumber")} />
+              <Input
+                id="taxNumber"
+                inputMode="numeric"
+                placeholder="987654321"
+                maxLength={9}
+                value={taxNumber}
+                onChange={(e) =>
+                  setValue("taxNumber", formatNineDigits(e.target.value), {
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.taxNumber && <p className="text-sm text-destructive">{errors.taxNumber.message}</p>}
             </div>
           </div>
@@ -351,7 +399,18 @@ export default function SignupCompany() {
             <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
               <div className="space-y-2">
                 <Label htmlFor="vatNumber">VAT Number *</Label>
-                <Input id="vatNumber" placeholder="4123456789" {...register("vatNumber")} />
+                <Input
+                  id="vatNumber"
+                  inputMode="numeric"
+                  placeholder="412345678"
+                  maxLength={9}
+                  value={vatNumber}
+                  onChange={(e) =>
+                    setValue("vatNumber", formatNineDigits(e.target.value), {
+                      shouldValidate: true,
+                    })
+                  }
+                />
                 {errors.vatNumber && <p className="text-sm text-destructive">{errors.vatNumber.message}</p>}
               </div>
 
@@ -374,30 +433,52 @@ export default function SignupCompany() {
 
               <div className="space-y-2">
                 <Label>Next VAT Submission Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !nextVatDate && "text-muted-foreground"
-                      )}
+                {isMobile ? (
+                  <Input
+                    type="date"
+                    value={nextVatDate ? format(nextVatDate, "yyyy-MM-dd") : ""}
+                    onChange={(e) =>
+                      setValue(
+                        "nextVatSubmissionDate",
+                        e.target.value ? new Date(e.target.value) : undefined,
+                        { shouldValidate: true }
+                      )
+                    }
+                  />
+                ) : (
+                  <Popover open={dateOpen} onOpenChange={setDateOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !nextVatDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {nextVatDate ? format(nextVatDate, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-auto p-0"
+                      align="start"
+                      side="top"
+                      sideOffset={4}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {nextVatDate ? format(nextVatDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={nextVatDate}
-                      onSelect={(d) => setValue("nextVatSubmissionDate", d, { shouldValidate: true })}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
+                      <Calendar
+                        mode="single"
+                        selected={nextVatDate}
+                        onSelect={(d) => {
+                          setValue("nextVatSubmissionDate", d, { shouldValidate: true });
+                          setDateOpen(false);
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
                 {errors.nextVatSubmissionDate && (
                   <p className="text-sm text-destructive">{errors.nextVatSubmissionDate.message}</p>
                 )}
