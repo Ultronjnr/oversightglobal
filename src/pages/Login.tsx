@@ -140,7 +140,7 @@ export default function Login() {
       window.history.replaceState(null, "", "/login?verified=true");
 
       if (session?.user) {
-        supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+        supabase.auth.signOut().catch(() => undefined);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
