@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2 } from "lucide-react";
+import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2, MailCheck } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
