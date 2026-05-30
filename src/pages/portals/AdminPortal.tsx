@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
+import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
 import { InvitationsTab } from "@/components/admin/InvitationsTab";
 import { AllPRsTab } from "@/components/admin/AllPRsTab";
 import { SuppliersTab } from "@/components/admin/SuppliersTab";
@@ -120,6 +121,10 @@ export default function AdminPortal() {
               <Users className="h-4 w-4" />
               Users & Roles
             </TabsTrigger>
+            <TabsTrigger value="departments" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Cost Centers / Depts
+            </TabsTrigger>
             <TabsTrigger value="invitations" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Invitations
@@ -148,6 +153,10 @@ export default function AdminPortal() {
 
           <TabsContent value="users">
             <UsersRolesTab />
+          </TabsContent>
+
+          <TabsContent value="departments">
+            <DepartmentsTab />
           </TabsContent>
 
           <TabsContent value="invitations">
