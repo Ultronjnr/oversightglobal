@@ -161,7 +161,7 @@ export default function AdminPortal() {
           </TabsContent>
 
           <TabsContent value="invitations">
-            <InvitationsTab onAddDepartment={() => setActiveTab("departments")} />
+            <InvitationsTab />
           </TabsContent>
 
           <TabsContent value="prs">
