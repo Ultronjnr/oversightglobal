@@ -19,29 +19,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Mail,
   Send,
   UserPlus,
-  Copy,
   Clock,
   CheckCircle2,
   XCircle,
-  Link as LinkIcon,
   Trash2,
+  RefreshCw,
 } from "lucide-react";
 import {
   createInvitation,
   getOrganizationInvitations,
   cancelInvitation,
+  resendInvitation,
   type Invitation,
 } from "@/services/invitation.service";
 import { format, formatDistanceToNow, isPast } from "date-fns";
@@ -66,10 +59,8 @@ export function InvitationsTab() {
   const [isSending, setIsSending] = useState(false);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Link dialog
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState("");
+  const [showSentBanner, setShowSentBanner] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadInvitations();
@@ -112,12 +103,10 @@ export function InvitationsTab() {
 
       if (result.emailSent) {
         toast.success(`Invitation email sent to ${invitedEmail}`);
+        setShowSentBanner(true);
       } else {
-        toast.error(
-          "Couldn't send the invitation email. Share the link manually instead."
-        );
-        setGeneratedLink(result.inviteLink || "");
-        setLinkDialogOpen(true);
+        toast.error("Couldn't send the invitation email. Please try again.");
+        setShowSentBanner(false);
       }
 
       setEmail("");
@@ -129,12 +118,14 @@ export function InvitationsTab() {
     }
   };
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(generatedLink);
-      toast.success("Invite link copied to clipboard!");
-    } catch {
-      toast.error("Failed to copy link");
+  const handleResend = async (invitation: Invitation) => {
+    setResendingId(invitation.id);
+    const result = await resendInvitation(invitation);
+    setResendingId(null);
+    if (result.emailSent) {
+      toast.success(`Invitation email re-sent to ${invitation.email}`);
+    } else {
+      toast.error(result.error || "Failed to resend invitation email");
     }
   };
 
@@ -211,6 +202,12 @@ export function InvitationsTab() {
               </Button>
             </div>
           </div>
+          {showSentBanner && (
+            <div className="mt-4 rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+              ✉️ Invitation sent from noreply@ovasyt.tech — ask the invitee to
+              check their spam folder if they don't see it within 2 minutes.
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -283,14 +280,30 @@ export function InvitationsTab() {
                         </TableCell>
                         <TableCell className="text-right">
                           {displayStatus === "pending" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleCancelInvitation(invitation.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleResend(invitation)}
+                                disabled={resendingId === invitation.id}
+                                title="Resend invitation email"
+                              >
+                                <RefreshCw
+                                  className={`h-4 w-4 ${
+                                    resendingId === invitation.id ? "animate-spin" : ""
+                                  }`}
+                                />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCancelInvitation(invitation.id)}
+                                className="text-destructive hover:text-destructive"
+                                title="Cancel invitation"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
@@ -302,36 +315,6 @@ export function InvitationsTab() {
           )}
         </CardContent>
       </Card>
-
-      {/* Generated Link Dialog */}
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <LinkIcon className="h-5 w-5 text-primary" />
-              Invitation Created
-            </DialogTitle>
-            <DialogDescription>
-              Share this link with the invitee. The link will expire in 7 days.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={generatedLink}
-                readOnly
-                className="bg-muted font-mono text-sm"
-              />
-              <Button onClick={handleCopyLink}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              <strong>Note:</strong> The invitee will use this link to create their account with a pre-assigned role.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
