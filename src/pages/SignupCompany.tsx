@@ -250,6 +250,56 @@ export default function SignupCompany() {
     }
   };
 
+  if (isSuccess && pendingEmail) {
+    return (
+      <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">
+        <div className="auth-card animate-slide-up max-w-md text-center">
+          <div className="flex justify-center mb-5">
+            <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+              <MailCheck className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">Almost there!</h1>
+          <p className="text-muted-foreground text-sm mt-3">
+            We've sent a verification email to{" "}
+            <span className="font-semibold text-foreground">{pendingEmail}</span>.
+            Please check your inbox and click the link to activate your account.
+          </p>
+          <p className="text-xs text-muted-foreground mt-4">
+            The email comes from <strong>noreply@ovasyt.tech</strong> — if you don't
+            see it within a couple of minutes, check your spam folder.
+          </p>
+          <div className="mt-6 space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleResend}
+              disabled={isResending}
+            >
+              {isResending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Resending...
+                </span>
+              ) : (
+                "Resend verification email"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="gradient"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate("/login")}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">
       <div className="auth-card animate-slide-up max-w-lg">
