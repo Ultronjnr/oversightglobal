@@ -151,6 +151,41 @@ export async function getOrganizationInvitations(): Promise<{
 /**
  * Cancel/expire an invitation
  */
+export async function resendInvitation(
+  invitation: Pick<Invitation, "email" | "role" | "department" | "token">
+): Promise<{ success: boolean; emailSent: boolean; error?: string }> {
+  try {
+    const baseUrl = window.location.origin;
+    const inviteLink = `${baseUrl}/invite?token=${invitation.token}&email=${encodeURIComponent(
+      invitation.email.toLowerCase()
+    )}`;
+
+    const { error: emailError } = await supabase.functions.invoke(
+      "send-transactional-email",
+      {
+        body: {
+          templateName: "invitation",
+          recipientEmail: invitation.email.toLowerCase(),
+          idempotencyKey: `invitation-resend-${invitation.token}-${Date.now()}`,
+          templateData: {
+            inviteLink,
+            role: invitation.role,
+            department: invitation.department || null,
+          },
+        },
+      }
+    );
+
+    if (emailError) {
+      return { success: false, emailSent: false, error: getSafeErrorMessage(emailError) };
+    }
+
+    return { success: true, emailSent: true };
+  } catch (error: any) {
+    return { success: false, emailSent: false, error: getSafeErrorMessage(error) };
+  }
+}
+
 export async function cancelInvitation(
   invitationId: string
 ): Promise<{ success: boolean; error?: string }> {
