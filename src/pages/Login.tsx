@@ -137,7 +137,7 @@ export default function Login() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setVerificationSuccess(true);
       toast.success("Email verified! You can now sign in.");
-      window.history.replaceState(null, "", "/login?verified=true");
+      window.history.replaceState(null, "", "/login");
 
       if (session?.user) {
         supabase.auth.signOut().catch(() => undefined);
