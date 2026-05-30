@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "oversightglobal"
+const SITE_NAME = "Ovasyt"
 const SENDER_DOMAIN = "notify.ovasyt.tech"
 const ROOT_DOMAIN = "ovasyt.tech"
 const FROM_DOMAIN = "ovasyt.tech" // Domain shown in From address (may be root or sender subdomain)
