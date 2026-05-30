@@ -42,6 +42,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -122,20 +123,25 @@ export default function Login() {
     navigate("/dashboard");
   };
 
-  // Handle the email-verification callback and existing sessions on mount.
+  // Handle the email-verification callback. Supabase creates a temporary
+  // session after verification; clear it so the user stays on /login and
+  // signs in manually instead of being pushed back to /signup/company.
   useEffect(() => {
     const hash = window.location.hash || "";
+    const params = new URLSearchParams(window.location.search);
     const isVerificationCallback =
-      /type=signup/.test(hash) || /access_token=/.test(hash);
+      /type=signup/.test(hash) || params.get("verified") === "true";
+
+    if (!isVerificationCallback) return;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session?.user) return;
-      if (isVerificationCallback) {
-        toast.success("Email verified! You can now sign in.");
-        // Clean the token fragment out of the URL.
-        window.history.replaceState(null, "", window.location.pathname);
+      setVerificationSuccess(true);
+      toast.success("Email verified! You can now sign in.");
+      window.history.replaceState(null, "", "/login");
+
+      if (session?.user) {
+        supabase.auth.signOut().catch(() => undefined);
       }
-      finalizeAndRedirect(session.user);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -294,6 +300,12 @@ export default function Login() {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              {verificationSuccess && (
+                <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
+                  Email verified! You can now sign in.
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Company Email</Label>
                 <div className="relative">
