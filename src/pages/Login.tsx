@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,14 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+
+const rolePortalMap: Record<string, string> = {
+  EMPLOYEE: "/employee/portal",
+  HOD: "/hod/portal",
+  FINANCE: "/finance/portal",
+  ADMIN: "/admin/portal",
+  SUPPLIER: "/supplier/portal",
+};
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +88,58 @@ export default function Login() {
     return true;
   };
 
+  // Resolves where an authenticated user should land. Reads the role/profile
+  // AFTER auth, completes a pending company registration on first login, and
+  // never loops back to /login.
+  const finalizeAndRedirect = async (user: any) => {
+    await completeRegistrationIfPending(user);
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (roleData?.role) {
+      navigate(rolePortalMap[roleData.role] || "/dashboard");
+      return;
+    }
+
+    // No role yet — check if their organization profile is incomplete.
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!profile?.organization_id) {
+      // Brand new admin whose company setup never finished — send them to
+      // complete it instead of looping back to login.
+      navigate("/signup/company");
+      return;
+    }
+
+    navigate("/dashboard");
+  };
+
+  // Handle the email-verification callback and existing sessions on mount.
+  useEffect(() => {
+    const hash = window.location.hash || "";
+    const isVerificationCallback =
+      /type=signup/.test(hash) || /access_token=/.test(hash);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      if (isVerificationCallback) {
+        toast.success("Email verified! You can now sign in.");
+        // Clean the token fragment out of the URL.
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+      finalizeAndRedirect(session.user);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleResend = async (email: string) => {
     setIsResending(true);
     try {
@@ -122,35 +182,8 @@ export default function Login() {
       }
 
       if (authData.user) {
-        // First login after verification — finalize company registration.
-        const justCompleted = await completeRegistrationIfPending(authData.user);
-        if (justCompleted) {
-          toast.success("Welcome to Ovasyt!");
-          navigate("/admin/portal");
-          return;
-        }
-
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", authData.user.id)
-          .single();
-
         toast.success("Welcome back!");
-
-        const rolePortalMap: Record<string, string> = {
-          EMPLOYEE: "/employee/portal",
-          HOD: "/hod/portal",
-          FINANCE: "/finance/portal",
-          ADMIN: "/admin/portal",
-          SUPPLIER: "/supplier/portal",
-        };
-
-        const redirectPath = roleData?.role
-          ? rolePortalMap[roleData.role] || "/dashboard"
-          : "/dashboard";
-
-        navigate(redirectPath);
+        await finalizeAndRedirect(authData.user);
       }
     } catch (error: any) {
       toast.error("An error occurred during login");
