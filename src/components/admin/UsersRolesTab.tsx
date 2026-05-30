@@ -148,7 +148,7 @@ export function UsersRolesTab() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Department</TableHead>
+                  <TableHead>Cost Center / Department</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
