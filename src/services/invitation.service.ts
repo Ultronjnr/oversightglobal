@@ -37,6 +37,7 @@ export async function createInvitation(
 ): Promise<{
   success: boolean;
   inviteLink?: string;
+  emailSent?: boolean;
   error?: string;
 }> {
   try {
@@ -94,7 +95,30 @@ export async function createInvitation(
     const baseUrl = window.location.origin;
     const inviteLink = `${baseUrl}/invite?token=${token}&email=${encodeURIComponent(params.email.toLowerCase())}`;
 
-    return { success: true, inviteLink };
+    // Attempt to send the invitation email via the built-in email system
+    let emailSent = false;
+    try {
+      const { error: emailError } = await supabase.functions.invoke(
+        "send-transactional-email",
+        {
+          body: {
+            templateName: "invitation",
+            recipientEmail: params.email.toLowerCase(),
+            idempotencyKey: `invitation-${token}`,
+            templateData: {
+              inviteLink,
+              role: params.role,
+              department: params.department || null,
+            },
+          },
+        }
+      );
+      emailSent = !emailError;
+    } catch {
+      emailSent = false;
+    }
+
+    return { success: true, inviteLink, emailSent };
   } catch (error: any) {
     return { success: false, error: getSafeErrorMessage(error) };
   }
