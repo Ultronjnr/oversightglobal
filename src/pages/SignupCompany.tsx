@@ -334,7 +334,7 @@ export default function SignupCompany() {
                 id="registrationNumber"
                 inputMode="numeric"
                 placeholder="2023/123456/07"
-                maxLength={13}
+                maxLength={14}
                 value={registrationNumber}
                 onChange={(e) =>
                   setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
