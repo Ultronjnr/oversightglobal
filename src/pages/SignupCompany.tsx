@@ -21,8 +21,23 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage, logError } from "@/lib/error-handler";
+
+// Formats raw input into the SA registration number mask YYYY/NNNNNN/NN
+const formatRegistrationNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 12);
+  const parts: string[] = [];
+  parts.push(digits.slice(0, 4));
+  if (digits.length > 4) parts.push(digits.slice(4, 10));
+  if (digits.length > 10) parts.push(digits.slice(10, 12));
+  return parts.join("/");
+};
+
+// Keeps only digits, max 9 (VAT / Tax numbers)
+const formatNineDigits = (value: string): string =>
+  value.replace(/\D/g, "").slice(0, 9);
 
 const signupSchema = z
   .object({
@@ -32,13 +47,19 @@ const signupSchema = z
     companyName: z.string().trim().min(2, "Company name is required").max(160, "Company name is too long"),
     companyAddress: z.string().trim().min(5, "Company address is required").max(500, "Company address is too long"),
     companyPhone: z.string().trim().max(40, "Phone number is too long").optional(),
-    registrationNumber: z.string().trim().min(2, "Registration number is required").max(80, "Registration number is too long"),
-    taxNumber: z.string().trim().min(2, "Tax number is required").max(80, "Tax number is too long"),
+    registrationNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number must be YYYY/NNNNNN/NN"),
+    taxNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{9}$/, "Tax number must be exactly 9 digits"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
     }),
     vatRegistered: z.boolean().default(false),
-    vatNumber: z.string().trim().max(40, "VAT number is too long").optional(),
+    vatNumber: z.string().trim().optional(),
     vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
     nextVatSubmissionDate: z.date().optional(),
     password: z
@@ -58,8 +79,8 @@ const signupSchema = z
   .refine(
     (data) =>
       !data.vatRegistered ||
-      (data.vatNumber && data.vatNumber.trim().length > 0),
-    { message: "VAT number is required", path: ["vatNumber"] }
+      (!!data.vatNumber && /^\d{9}$/.test(data.vatNumber.trim())),
+    { message: "VAT number must be exactly 9 digits", path: ["vatNumber"] }
   )
   .refine((data) => !data.vatRegistered || !!data.vatCycle, {
     message: "VAT cycle is required",
