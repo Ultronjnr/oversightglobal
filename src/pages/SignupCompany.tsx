@@ -50,10 +50,12 @@ const signupSchema = z
     registrationNumber: z
       .string()
       .trim()
-      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number must be YYYY/NNNNNN/NN"),
+      .min(1, "Registration number is required")
+      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number format: 2023/123456/07"),
     taxNumber: z
       .string()
       .trim()
+      .min(1, "Tax number is required")
       .regex(/^\d{9}$/, "Tax number must be exactly 9 digits"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
