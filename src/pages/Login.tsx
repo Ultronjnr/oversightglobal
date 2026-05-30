@@ -310,6 +310,23 @@ export default function Login() {
                 )}
               </div>
 
+              {unverifiedEmail && (
+                <div className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground">
+                  <p>
+                    Please verify your email address first. Check your inbox for
+                    an email from <strong>noreply@ovasyt.tech</strong>.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleResend(unverifiedEmail)}
+                    disabled={isResending}
+                    className="mt-2 font-semibold text-primary hover:underline disabled:opacity-60"
+                  >
+                    {isResending ? "Sending..." : "Resend verification email"}
+                  </button>
+                </div>
+              )}
+
               <Button
                 type="submit"
                 variant="gradient"
