@@ -109,11 +109,42 @@ export default function SignupCompany() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
     defaultValues: { vatRegistered: false },
   });
+
+  const errCls = (field: keyof SignupForm) =>
+    errors[field] ? "border-destructive focus-visible:ring-destructive" : "";
+
+  const onInvalid = (formErrors: typeof errors) => {
+    const order: (keyof SignupForm)[] = [
+      "name",
+      "surname",
+      "email",
+      "companyName",
+      "companyAddress",
+      "companyPhone",
+      "registrationNumber",
+      "taxNumber",
+      "companyType",
+      "vatNumber",
+      "vatCycle",
+      "nextVatSubmissionDate",
+      "password",
+      "confirmPassword",
+    ];
+    const first = order.find((k) => formErrors[k]);
+    if (!first) return;
+    const el =
+      document.getElementById(first) ||
+      (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => (el as HTMLElement).focus?.(), 400);
+    }
+  };
 
   const vatRegistered = watch("vatRegistered");
   const companyType = watch("companyType");
