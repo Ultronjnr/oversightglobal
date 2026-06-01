@@ -84,6 +84,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [suppliers, setSuppliers] = useState<ApprovedSupplier[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const {
     register,
@@ -101,6 +103,17 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   });
 
   const urgency = watch("urgency");
+  const selectedSupplier = watch("supplier_preference");
+
+  const loadSuppliers = async () => {
+    const result = await getApprovedSuppliers();
+    if (result.success) setSuppliers(result.data);
+  };
+
+  // Load approved suppliers when the modal opens
+  useEffect(() => {
+    if (open) loadSuppliers();
+  }, [open]);
 
   // Generate transaction ID when modal opens
   useEffect(() => {
