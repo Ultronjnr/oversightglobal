@@ -319,6 +319,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0 bg-white border-0 shadow-2xl">
         <div className="flex flex-col h-full max-h-[95vh]">
