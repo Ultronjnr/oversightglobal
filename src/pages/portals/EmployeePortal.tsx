@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText, Receipt } from "lucide-react";
+import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
