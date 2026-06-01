@@ -18,10 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PRItemRow } from "./PRItemRow";
+import { CostCenterDropdown } from "./CostCenterDropdown";
 import { createPurchaseRequisition } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActiveDepartments } from "@/hooks/use-departments";
 import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { SubmitReimbursementModal } from "./SubmitReimbursementModal";
@@ -42,7 +42,6 @@ interface PurchaseRequisitionFormProps {
 
 export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormProps) {
   const { user } = useAuth();
-  const { departments, isLoading: isLoadingDepartments } = useActiveDepartments();
   const [items, setItems] = useState<PRItem[]>([
     { id: uuidv4(), description: "", quantity: 1, unit_price: 0, total: 0 },
   ]);
