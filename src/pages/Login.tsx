@@ -43,6 +43,7 @@ export default function Login() {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const {
@@ -137,6 +138,29 @@ export default function Login() {
   useEffect(() => {
     const hash = window.location.hash || "";
     const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(hash.replace(/^#/, ""));
+
+    // Failure case: Supabase redirects with an error in the hash when the
+    // one-time token is missing/expired (e.g. consumed by an email link
+    // scanner, or the link is stale). Surface a clear message + resend
+    // instead of silently dropping the user on a blank login screen.
+    const errorCode =
+      hashParams.get("error_code") || params.get("error_code");
+    const errorDescription =
+      hashParams.get("error_description") || params.get("error_description");
+    if (errorCode || errorDescription) {
+      const expired = /otp_expired|expired|not_found|invalid/i.test(
+        `${errorCode} ${errorDescription}`
+      );
+      setVerificationError(
+        expired
+          ? "This verification link is invalid or has expired. Enter your email below and resend a fresh verification link."
+          : decodeURIComponent(errorDescription || "Verification failed. Please try again.")
+      );
+      window.history.replaceState(null, "", "/login");
+      return;
+    }
+
     const isVerificationCallback =
       /type=signup/.test(hash) || params.get("verified") === "true";
 
@@ -165,6 +189,7 @@ export default function Login() {
       if (error) {
         toast.error(error.message);
       } else {
+        setVerificationError(null);
         toast.success("Verification email sent. Please check your inbox.");
       }
     } finally {
@@ -311,6 +336,29 @@ export default function Login() {
               {verificationSuccess && (
                 <div className="rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
                   Email verified! You can now sign in.
+                </div>
+              )}
+
+              {verificationError && (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                  <p className="font-medium text-destructive">{verificationError}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById("email") as HTMLInputElement | null;
+                      const email = el?.value?.trim().toLowerCase();
+                      if (!email) {
+                        toast.error("Enter your email address above, then resend.");
+                        el?.focus();
+                        return;
+                      }
+                      handleResend(email);
+                    }}
+                    disabled={isResending}
+                    className="mt-2 font-semibold text-primary hover:underline disabled:opacity-60"
+                  >
+                    {isResending ? "Sending..." : "Resend verification email"}
+                  </button>
                 </div>
               )}
 
