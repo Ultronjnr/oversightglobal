@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,9 @@ const PAGE_SIZE = 10;
 export default function PRHistory() {
   const { user, role, profile } = useAuth();
   const navigate = useNavigate();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -173,6 +175,19 @@ export default function PRHistory() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  // Auto-open and highlight a PR when arriving from a notification.
+  useEffect(() => {
+    if (!highlightId || prs.length === 0) return;
+    const match = prs.find(
+      (pr) => pr.id === highlightId || pr.transaction_id === highlightId,
+    );
+    if (match) {
+      setSelectedPR(match);
+      setShowDetailModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [highlightId, prs, setSearchParams]);
 
   const handleSearch = (value: string) => {
     setFilters((prev) => ({ ...prev, search: value }));

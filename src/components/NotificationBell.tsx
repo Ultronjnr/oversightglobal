@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Check, Inbox } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,8 +38,37 @@ const typeAccent: Record<string, string> = {
   ai_receipt_matched: "bg-primary",
 };
 
+// Maps a notification to the page it should open when clicked.
+function getNotificationTarget(n: NotificationRow): string | null {
+  switch (n.type) {
+    case "reimbursement_submitted":
+    case "reimbursement_approved":
+    case "partial_payment":
+    case "full_payment":
+      return n.related_transaction_id
+        ? `/expenses?highlight=${n.related_transaction_id}`
+        : "/expenses";
+    case "requisition_submitted":
+    case "requisition_approved":
+    case "requisition_declined":
+      return n.related_transaction_id
+        ? `/pr-history?highlight=${n.related_transaction_id}`
+        : "/pr-history";
+    case "batch_created":
+    case "overdue_transaction":
+    case "invoice_uploaded":
+    case "ai_receipt_matched":
+      return n.related_transaction_id
+        ? `/expenses?highlight=${n.related_transaction_id}`
+        : "/expenses";
+    default:
+      return null;
+  }
+}
+
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,6 +119,15 @@ export function NotificationBell() {
       .eq("is_read", false);
   };
 
+  const handleClick = (n: NotificationRow) => {
+    if (!n.is_read) markOne(n.id);
+    const target = getNotificationTarget(n);
+    if (target) {
+      setOpen(false);
+      navigate(target);
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -136,7 +175,7 @@ export function NotificationBell() {
               {items.map((n) => (
                 <li
                   key={n.id}
-                  onClick={() => !n.is_read && markOne(n.id)}
+                  onClick={() => handleClick(n)}
                   className={cn(
                     "px-4 py-3 cursor-pointer transition-colors hover:bg-muted/50 flex gap-3",
                     !n.is_read && "bg-primary/5",
