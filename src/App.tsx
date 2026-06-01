@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
 import SignupCompany from "./pages/SignupCompany";
+import ResetPassword from "./pages/ResetPassword";
 
 import Invite from "./pages/Invite";
 import JoinSupplier from "./pages/JoinSupplier";
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Index />} />
             <Route path="/signup/company" element={<SignupCompany />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/join/supplier" element={<JoinSupplier />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />

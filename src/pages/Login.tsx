@@ -44,6 +44,7 @@ export default function Login() {
   const [isResending, setIsResending] = useState(false);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [isResettingPw, setIsResettingPw] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -194,6 +195,29 @@ export default function Login() {
       }
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const el = document.getElementById("email") as HTMLInputElement | null;
+    const email = el?.value?.trim().toLowerCase();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      toast.error("Enter your email address above, then click reset.");
+      el?.focus();
+      return;
+    }
+    setIsResettingPw(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Password reset link sent. Check your inbox.");
+      }
+    } finally {
+      setIsResettingPw(false);
     }
   };
 
@@ -409,6 +433,16 @@ export default function Login() {
                     {errors.password.message}
                   </p>
                 )}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={isResettingPw}
+                    className="text-sm text-primary hover:underline disabled:opacity-60"
+                  >
+                    {isResettingPw ? "Sending..." : "Forgot password?"}
+                  </button>
+                </div>
               </div>
 
               {unverifiedEmail && (
