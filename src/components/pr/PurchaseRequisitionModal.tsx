@@ -22,6 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } from "@/services/pr.service";
+import { getApprovedSuppliers, type ApprovedSupplier } from "@/services/supplier.service";
+import { SuggestSupplierModal } from "@/components/pr/SuggestSupplierModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
@@ -82,6 +84,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [suppliers, setSuppliers] = useState<ApprovedSupplier[]>([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const {
     register,
@@ -99,6 +103,17 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   });
 
   const urgency = watch("urgency");
+  const selectedSupplier = watch("supplier_preference");
+
+  const loadSuppliers = async () => {
+    const result = await getApprovedSuppliers();
+    if (result.success) setSuppliers(result.data);
+  };
+
+  // Load approved suppliers when the modal opens
+  useEffect(() => {
+    if (open) loadSuppliers();
+  }, [open]);
 
   // Generate transaction ID when modal opens
   useEffect(() => {
@@ -304,6 +319,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0 bg-white border-0 shadow-2xl">
         <div className="flex flex-col h-full max-h-[95vh]">
@@ -637,19 +653,40 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-foreground">Preferred Supplier</Label>
-                      <div className="relative">
-                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                        <Input
-                          {...register("supplier_preference")}
-                          placeholder="Enter supplier name manually..."
-                          maxLength={120}
-                          autoComplete="off"
-                          className="bg-white border-border h-11 pl-9 rounded-md"
-                        />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Type any supplier name — existing or new. New suppliers can be invited to register later.
-                      </p>
+                      <Select
+                        value={selectedSupplier || ""}
+                        onValueChange={(value) => {
+                          setValue("supplier_preference", value);
+                          const match = suppliers.find((s) => s.company_name === value);
+                          if (match?.address) {
+                            setValue("supplier_address", match.address);
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="bg-white border-border h-11">
+                          <SelectValue
+                            placeholder={
+                              suppliers.length === 0
+                                ? "No approved suppliers yet"
+                                : "Select a supplier"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
+                          {suppliers.map((s) => (
+                            <SelectItem key={s.id} value={s.company_name}>
+                              {s.company_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <button
+                        type="button"
+                        onClick={() => setSuggestOpen(true)}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        + Suggest New Supplier
+                      </button>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-foreground">Supplier Address</Label>
@@ -747,5 +784,11 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         </div>
       </DialogContent>
     </Dialog>
+      <SuggestSupplierModal
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        onSuggested={loadSuppliers}
+      />
+    </>
   );
 }

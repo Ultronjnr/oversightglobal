@@ -477,3 +477,128 @@ export async function declineQuoteRequest(
     return { success: false, error: error.message };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Approved suppliers (for requisition selection) + supplier suggestions
+// ---------------------------------------------------------------------------
+
+export interface ApprovedSupplier {
+  id: string;
+  company_name: string;
+  contact_email: string | null;
+  contact_person: string | null;
+  phone: string | null;
+  address: string | null;
+  industry: string | null;
+}
+
+/**
+ * GET /api/suppliers
+ * List all approved (verified) suppliers in the current user's organization.
+ * Accessible to any organization member (used to populate PR supplier dropdown).
+ */
+export async function getApprovedSuppliers(): Promise<{
+  success: boolean;
+  data: ApprovedSupplier[];
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("id, company_name, contact_email, contact_person, phone, address, industry")
+      .eq("is_verified", true)
+      .order("company_name", { ascending: true });
+
+    if (error) {
+      return { success: false, data: [], error: error.message };
+    }
+
+    return { success: true, data: (data || []) as ApprovedSupplier[] };
+  } catch (error: any) {
+    return { success: false, data: [], error: error.message };
+  }
+}
+
+/**
+ * GET /api/suppliers/:id
+ * Get a single approved supplier's details (including address).
+ */
+export async function getSupplierById(id: string): Promise<{
+  success: boolean;
+  data: ApprovedSupplier | null;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("id, company_name, contact_email, contact_person, phone, address, industry")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      return { success: false, data: null, error: error.message };
+    }
+
+    return { success: true, data: (data as ApprovedSupplier) || null };
+  } catch (error: any) {
+    return { success: false, data: null, error: error.message };
+  }
+}
+
+export interface SupplierSuggestionInput {
+  company_name: string;
+  contact_email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+/**
+ * Create a new supplier suggestion that Finance can review/approve.
+ * Supplier creation itself remains in the Finance Manager portal.
+ */
+export async function createSupplierSuggestion(
+  input: SupplierSuggestionInput
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const name = input.company_name.trim();
+    if (!name) return { success: false, error: "Supplier name is required" };
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return { success: false, error: "Not authenticated" };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id, name, surname")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return { success: false, error: "Organization not found" };
+    }
+
+    const suggestedName = [profile.name, (profile as any).surname]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || null;
+
+    const { error } = await supabase.from("supplier_suggestions").insert({
+      organization_id: profile.organization_id,
+      suggested_by: user.id,
+      suggested_by_name: suggestedName,
+      company_name: name,
+      contact_email: input.contact_email?.trim() || null,
+      phone: input.phone?.trim() || null,
+      address: input.address?.trim() || null,
+      notes: input.notes?.trim() || null,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
