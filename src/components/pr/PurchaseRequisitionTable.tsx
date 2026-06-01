@@ -122,7 +122,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
             <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-10"></TableHead>
               <TableHead className="font-semibold">Transaction ID</TableHead>
-              <TableHead className="font-semibold">Department</TableHead>
+              <TableHead className="font-semibold">Cost Center</TableHead>
               <TableHead className="font-semibold">Urgency</TableHead>
               <TableHead className="text-right font-semibold">Amount</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
