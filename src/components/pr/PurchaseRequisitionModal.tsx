@@ -369,20 +369,14 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2 text-sm font-medium text-foreground">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        Department
-                      </Label>
-                      <Input
-                        {...register("department")}
-                        placeholder="IT Department"
-                        className="bg-white border-border h-11"
-                      />
-                      {errors.department && (
-                        <p className="text-xs text-destructive">{errors.department.message}</p>
-                      )}
-                    </div>
+                    <CostCenterDropdown
+                      id="department"
+                      value={watch("department")}
+                      onChange={(value) =>
+                        setValue("department", value, { shouldValidate: true })
+                      }
+                      error={errors.department?.message}
+                    />
 
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-foreground">Urgency Level</Label>
