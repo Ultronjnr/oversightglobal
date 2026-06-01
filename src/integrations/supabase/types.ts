@@ -1422,6 +1422,54 @@ export type Database = {
           },
         ]
       }
+      supplier_suggestions: {
+        Row: {
+          address: string | null
+          company_name: string
+          contact_email: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_by: string
+          suggested_by_name: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by: string
+          suggested_by_name?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_by?: string
+          suggested_by_name?: string | null
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
