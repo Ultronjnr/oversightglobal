@@ -98,7 +98,6 @@ export default function HODPortal() {
   const navItems = [
     { label: "My Portal", href: "/hod/portal", icon: <User className="h-4 w-4" /> },
     { label: "Purchase Requisition History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
-    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   ];
 
   const fetchPRs = async () => {

@@ -25,7 +25,6 @@ export default function EmployeePortal() {
   const navItems = [
     { label: "My Portal", href: "/employee/portal", icon: <User className="h-4 w-4" /> },
     { label: "Purchase Requisition History", href: "/pr-history", icon: <ClipboardList className="h-4 w-4" /> },
-    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   ];
 
   // Fetch stats
