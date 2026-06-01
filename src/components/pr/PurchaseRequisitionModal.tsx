@@ -783,5 +783,11 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         </div>
       </DialogContent>
     </Dialog>
+      <SuggestSupplierModal
+        open={suggestOpen}
+        onOpenChange={setSuggestOpen}
+        onSuggested={loadSuppliers}
+      />
+    </>
   );
 }
