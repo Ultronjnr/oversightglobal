@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { LogOut } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
