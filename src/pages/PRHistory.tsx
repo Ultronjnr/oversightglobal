@@ -95,7 +95,9 @@ const PAGE_SIZE = 10;
 export default function PRHistory() {
   const { user, role, profile } = useAuth();
   const navigate = useNavigate();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
