@@ -147,7 +147,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
               {title}
             </h1>
             {profile?.department && (
-              <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5">
+              <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 sm:mr-40">
                 <Building2 className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-primary">
                   Cost Center: {profile.department}
