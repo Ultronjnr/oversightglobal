@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
