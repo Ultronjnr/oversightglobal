@@ -22,6 +22,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } from "@/services/pr.service";
+import { getApprovedSuppliers, type ApprovedSupplier } from "@/services/supplier.service";
+import { SuggestSupplierModal } from "@/components/pr/SuggestSupplierModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
