@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { LogOut } from "lucide-react";
+import { LogOut, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
@@ -106,9 +106,20 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
                   <p className="text-sm font-semibold text-foreground">
                     {profile?.name} {profile?.surname}
                   </p>
-                  <Badge variant="outline" className={cn("text-xs px-2 py-0 h-5", getRoleBadgeClass())}>
-                    {getRoleLabel()}
-                  </Badge>
+                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                    <Badge variant="outline" className={cn("text-xs px-2 py-0 h-5", getRoleBadgeClass())}>
+                      {getRoleLabel()}
+                    </Badge>
+                    {profile?.department && (
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs px-2 py-0 h-5 bg-secondary/80 text-secondary-foreground border-secondary/30 flex items-center gap-1"
+                      >
+                        <Building2 className="h-3 w-3" />
+                        {profile.department}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -131,9 +142,19 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
       <main className="container mx-auto px-6 py-8">
         {/* Title */}
         <div className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            {title}
-          </h1>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+              {title}
+            </h1>
+            {profile?.department && (
+              <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5">
+                <Building2 className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">
+                  Cost Center: {profile.department}
+                </span>
+              </div>
+            )}
+          </div>
           <div className="h-1 w-16 bg-primary rounded-full mt-3" />
         </div>
 
