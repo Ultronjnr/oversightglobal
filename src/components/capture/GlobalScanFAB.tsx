@@ -4,6 +4,7 @@ import {
   Upload,
   ScanLine,
   FileText,
+  Receipt,
   X,
 } from "lucide-react";
 import {
@@ -73,12 +74,12 @@ export function GlobalScanFAB() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Scan or upload a receipt"
+        aria-label="Add invoice or upload a receipt"
         className="fixed top-20 right-4 sm:right-6 z-40 group flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all px-4 py-3 animate-fade-in"
       >
         <span className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
-        <Camera className="h-5 w-5" />
-        <span className="hidden sm:inline text-sm font-medium">Scan</span>
+        <FileText className="h-5 w-5" />
+        <span className="hidden sm:inline text-sm font-medium">Add Invoice</span>
       </button>
 
       {/* Action sheet */}
@@ -90,7 +91,7 @@ export function GlobalScanFAB() {
               Capture a document
             </DialogTitle>
             <DialogDescription>
-              Snap a receipt, scan an invoice or upload a file. We'll create a
+              Snap a receipt, add an invoice or upload a file. We'll create a
               reimbursement and run AI analysis automatically.
             </DialogDescription>
           </DialogHeader>
@@ -112,8 +113,8 @@ export function GlobalScanFAB() {
               onClick={() => imageInputRef.current?.click()}
             />
             <ActionTile
-              icon={<ScanLine className="h-6 w-6" />}
-              label="Scan Receipt"
+              icon={<Receipt className="h-6 w-6" />}
+              label="Add Receipt"
               hint="Auto edge detection"
               onClick={() => {
                 setOpen(false);
