@@ -18,7 +18,6 @@ import {
   Inbox,
   MessageSquare,
 } from "lucide-react";
-import { MessageSquare } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
