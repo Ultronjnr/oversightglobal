@@ -4,6 +4,7 @@ import {
   Upload,
   ScanLine,
   FileText,
+  Receipt,
   X,
 } from "lucide-react";
 import {
