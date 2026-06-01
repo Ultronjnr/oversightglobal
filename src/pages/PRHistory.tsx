@@ -176,6 +176,19 @@ export default function PRHistory() {
     fetchHistory();
   }, [fetchHistory]);
 
+  // Auto-open and highlight a PR when arriving from a notification.
+  useEffect(() => {
+    if (!highlightId || prs.length === 0) return;
+    const match = prs.find(
+      (pr) => pr.id === highlightId || pr.transaction_id === highlightId,
+    );
+    if (match) {
+      setSelectedPR(match);
+      setShowDetailModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [highlightId, prs, setSearchParams]);
+
   const handleSearch = (value: string) => {
     setFilters((prev) => ({ ...prev, search: value }));
     setCurrentPage(1);
