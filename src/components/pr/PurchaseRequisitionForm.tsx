@@ -18,10 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PRItemRow } from "./PRItemRow";
+import { CostCenterDropdown } from "./CostCenterDropdown";
 import { createPurchaseRequisition } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useActiveDepartments } from "@/hooks/use-departments";
 import { formatCurrency } from "@/lib/utils";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { SubmitReimbursementModal } from "./SubmitReimbursementModal";
@@ -42,7 +42,6 @@ interface PurchaseRequisitionFormProps {
 
 export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormProps) {
   const { user } = useAuth();
-  const { departments, isLoading: isLoadingDepartments } = useActiveDepartments();
   const [items, setItems] = useState<PRItem[]>([
     { id: uuidv4(), description: "", quantity: 1, unit_price: 0, total: 0 },
   ]);
@@ -266,37 +265,14 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {/* Header Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="department">Cost Center / Department *</Label>
-          <Select
-            value={selectedDepartment || ""}
-            onValueChange={(value) =>
-              setValue("department", value, { shouldValidate: true })
-            }
-          >
-            <SelectTrigger id="department" className="bg-background/50">
-              <SelectValue
-                placeholder={
-                  isLoadingDepartments
-                    ? "Loading..."
-                    : departments.length === 0
-                    ? "No cost centers available"
-                    : "Select a cost center / department"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {departments.map((dept) => (
-                <SelectItem key={dept.id} value={dept.name}>
-                  {dept.code ? `${dept.code} — ${dept.name}` : dept.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.department && (
-            <p className="text-sm text-destructive">{errors.department.message}</p>
-          )}
-        </div>
+        <CostCenterDropdown
+          id="department"
+          value={selectedDepartment}
+          onChange={(value) =>
+            setValue("department", value, { shouldValidate: true })
+          }
+          error={errors.department?.message}
+        />
 
         <div className="space-y-2">
           <Label>Urgency *</Label>
