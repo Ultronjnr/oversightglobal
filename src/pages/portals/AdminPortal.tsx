@@ -12,6 +12,7 @@ import {
   Mail,
   BarChart3,
   Truck,
+  Receipt,
 } from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
@@ -50,6 +51,7 @@ export default function AdminPortal() {
 
   const navItems = [
     { label: "Dashboard", href: "/admin/portal", icon: <User className="h-4 w-4" /> },
+    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   ];
 
   return (

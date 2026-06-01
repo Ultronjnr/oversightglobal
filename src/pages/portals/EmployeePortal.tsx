@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText, Receipt } from "lucide-react";
+import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
@@ -25,7 +25,6 @@ export default function EmployeePortal() {
   const navItems = [
     { label: "My Portal", href: "/employee/portal", icon: <User className="h-4 w-4" /> },
     { label: "Purchase Requisition History", href: "/pr-history", icon: <ClipboardList className="h-4 w-4" /> },
-    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   ];
 
   // Fetch stats
