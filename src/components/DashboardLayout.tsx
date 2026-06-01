@@ -106,9 +106,20 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
                   <p className="text-sm font-semibold text-foreground">
                     {profile?.name} {profile?.surname}
                   </p>
-                  <Badge variant="outline" className={cn("text-xs px-2 py-0 h-5", getRoleBadgeClass())}>
-                    {getRoleLabel()}
-                  </Badge>
+                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                    <Badge variant="outline" className={cn("text-xs px-2 py-0 h-5", getRoleBadgeClass())}>
+                      {getRoleLabel()}
+                    </Badge>
+                    {profile?.department && (
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs px-2 py-0 h-5 bg-secondary/80 text-secondary-foreground border-secondary/30 flex items-center gap-1"
+                      >
+                        <Building2 className="h-3 w-3" />
+                        {profile.department}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
