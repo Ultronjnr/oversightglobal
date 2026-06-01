@@ -441,8 +441,8 @@ export default function FinancePortal() {
             className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
             onClick={() => setShowScanModal(true)}
           >
-            <ScanLine className="h-4 w-4" />
-            Scan Invoice (AI)
+            <FileText className="h-4 w-4" />
+            Add Invoice (AI)
           </Button>
           
           {/* Prominent blue circled button */}
