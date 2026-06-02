@@ -59,8 +59,6 @@ export default function ExpenseHistory() {
       ? "/finance/portal"
       : role === "HOD"
       ? "/hod/portal"
-      : role === "ADMIN"
-      ? "/admin/portal"
       : "/employee/portal";
     return [
       { label: "My Portal", href: base },
