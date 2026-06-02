@@ -268,9 +268,18 @@ export async function getUserPurchaseRequisitions(): Promise<{
   error?: string;
 }> {
   try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: "User not authenticated", data: [] };
+    }
+
     const { data, error } = await supabase
       .from("purchase_requisitions" as any)
       .select("*")
+      .eq("requested_by", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
