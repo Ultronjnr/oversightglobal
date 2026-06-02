@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Building2, Filter, X, Loader2, CalendarRange, Receipt } from "lucide-react";
+import { Building2, Filter, X, Loader2, CalendarRange } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
