@@ -296,26 +296,6 @@ export default function HODPortal() {
           </Button>
         </div>
 
-        {/* Main Content Card */}
-        <SectionCard
-          title="Pending Approvals"
-          icon={<FileText className="h-5 w-5" />}
-        >
-          {showCleared ? (
-            <EmptyState
-              icon={<FileText className="h-16 w-16" />}
-              title="Dashboard Cleared"
-              description="Your dashboard is now clean. Click 'Incoming Purchase Requisitions' to review pending approvals."
-            />
-          ) : (
-            <EmptyState
-              icon={<ClipboardCheck className="h-16 w-16" />}
-              title="No Pending Approvals"
-              description="Requisitions requiring your approval will appear here. Click 'Incoming Purchase Requisitions' to view the queue."
-            />
-          )}
-        </SectionCard>
-
         {/* My Activity Section (same as Employee) */}
         <SectionCard
           title="My Purchase Requisitions"
