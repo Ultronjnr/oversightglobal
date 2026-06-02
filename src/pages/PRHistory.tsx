@@ -490,7 +490,12 @@ export default function PRHistory() {
 
         {/* Detail Modal */}
         <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent
+            className="max-w-3xl max-h-[90vh] overflow-y-auto"
+            onInteractOutside={(e) => {
+              if (chatPanel.open) e.preventDefault();
+            }}
+          >
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
