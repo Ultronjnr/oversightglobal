@@ -41,8 +41,8 @@ export function GlobalScanFAB() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
 
-  // Only show for org users who can act on receipts.
-  if (!role || !["EMPLOYEE", "HOD", "FINANCE", "ADMIN"].includes(role)) {
+  // Only show for org users who can act on receipts (Admin excluded).
+  if (!role || !["EMPLOYEE", "HOD", "FINANCE"].includes(role)) {
     return null;
   }
 
