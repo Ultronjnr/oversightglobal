@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import PRHistory from "./pages/PRHistory";
 import ExpenseHistory from "./pages/ExpenseHistory";
+import CostCenterHistory from "./pages/CostCenterHistory";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -77,6 +78,16 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
                   <ExpenseHistory />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Cost Center / Department History - ADMIN */}
+            <Route
+              path="/cost-center-history"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <CostCenterHistory />
                 </ProtectedRoute>
               }
             />
