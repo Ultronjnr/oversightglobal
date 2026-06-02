@@ -315,6 +315,25 @@ export default function HODPortal() {
             />
           )}
         </SectionCard>
+
+        {/* My Activity Section (same as Employee) */}
+        <SectionCard
+          title="My Purchase Requisitions"
+          icon={<FileText className="h-5 w-5" />}
+        >
+          <Tabs defaultValue="prs" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="prs">Requisitions</TabsTrigger>
+              <TabsTrigger value="reimbursements">My Reimbursements</TabsTrigger>
+            </TabsList>
+            <TabsContent value="prs" className="mt-0">
+              <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
+            </TabsContent>
+            <TabsContent value="reimbursements" className="mt-0">
+              <MyReimbursementsTab />
+            </TabsContent>
+          </Tabs>
+        </SectionCard>
       </div>
 
       {/* Incoming Purchase Requisitions Modal */}
