@@ -68,7 +68,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
               </Link>
               
               {/* Navigation */}
-              <nav className="hidden md:flex items-center gap-1">
+              <nav className="hidden md:flex items-center gap-2">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
@@ -76,7 +76,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
                         isActive 
                           ? "bg-primary text-white shadow-md" 
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
