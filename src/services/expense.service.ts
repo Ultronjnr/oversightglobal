@@ -151,3 +151,36 @@ export function summarizeByCategory(
   }
   return Array.from(map.values()).sort((a, b) => b.totalSpent - a.totalSpent);
 }
+
+export interface DepartmentSummary {
+  department: string;
+  totalSpent: number;
+  totalVat: number;
+  count: number;
+  monthly: Record<string, number>; // "YYYY-MM" -> amount
+}
+
+export function summarizeByDepartment(
+  records: ExpenseRecord[],
+): DepartmentSummary[] {
+  const map = new Map<string, DepartmentSummary>();
+  for (const r of records) {
+    const key = r.department || "Unassigned";
+    const existing =
+      map.get(key) ||
+      ({
+        department: key,
+        totalSpent: 0,
+        totalVat: 0,
+        count: 0,
+        monthly: {},
+      } as DepartmentSummary);
+    existing.totalSpent += r.amount;
+    existing.totalVat += r.vatAmount;
+    existing.count += 1;
+    const month = r.approvalDate ? r.approvalDate.slice(0, 7) : "unknown";
+    existing.monthly[month] = (existing.monthly[month] || 0) + r.amount;
+    map.set(key, existing);
+  }
+  return Array.from(map.values()).sort((a, b) => b.totalSpent - a.totalSpent);
+}
