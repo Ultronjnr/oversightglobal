@@ -15,6 +15,7 @@ export interface ExpenseRecord {
   categoryId: string | null;
   categoryName: string;
   categoryType: "EXPENSE" | "ASSET" | "UNCATEGORIZED";
+  department: string;
   amount: number;
   vatAmount: number;
   vatClaimable: boolean;
@@ -88,6 +89,7 @@ export async function getExpenses(
         categoryId: t.pr?.category?.id || t.pr?.category_id || null,
         categoryName: t.pr?.category?.name || "Uncategorized",
         categoryType: (t.pr?.category?.type as any) || "UNCATEGORIZED",
+        department: t.pr?.requested_by_department || "Unassigned",
         amount,
         amountPaid: Number(t.amount_paid || 0),
         vatAmount: computeVat(amount, claimable),
