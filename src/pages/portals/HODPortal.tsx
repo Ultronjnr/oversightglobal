@@ -44,6 +44,9 @@ import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
+import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getHODPendingPRs,
   hodApprovePR,
@@ -311,6 +314,25 @@ export default function HODPortal() {
               description="Requisitions requiring your approval will appear here. Click 'Incoming Purchase Requisitions' to view the queue."
             />
           )}
+        </SectionCard>
+
+        {/* My Activity Section (same as Employee) */}
+        <SectionCard
+          title="My Purchase Requisitions"
+          icon={<FileText className="h-5 w-5" />}
+        >
+          <Tabs defaultValue="prs" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="prs">Requisitions</TabsTrigger>
+              <TabsTrigger value="reimbursements">My Reimbursements</TabsTrigger>
+            </TabsList>
+            <TabsContent value="prs" className="mt-0">
+              <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
+            </TabsContent>
+            <TabsContent value="reimbursements" className="mt-0">
+              <MyReimbursementsTab />
+            </TabsContent>
+          </Tabs>
         </SectionCard>
       </div>
 
