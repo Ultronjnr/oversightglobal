@@ -6,6 +6,7 @@
  * No animations, no global state, no realtime sockets.
  */
 import { X, MessageSquare } from "lucide-react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { PRChatPanel } from "./PRChatPanel";
 
@@ -24,17 +25,29 @@ export function PRChatSlidePanel({
 }: PRChatSlidePanelProps) {
   if (!open) return null;
 
-  return (
+  const handleClose = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onClose();
+  };
+
+  return createPortal(
     <>
       {/* Backdrop — sits above any open dialog overlay so the chat is never blocked */}
       <div
         className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={handleClose}
         aria-hidden="true"
       />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 z-[101] h-full w-full max-w-md bg-background border-l border-border shadow-2xl flex flex-col">
+      <div
+        className="fixed right-0 top-0 z-[101] h-full w-full max-w-md bg-background border-l border-border shadow-2xl flex flex-col"
+        onPointerDown={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 shrink-0">
           <div className="flex items-center gap-2">
@@ -48,7 +61,9 @@ export function PRChatSlidePanel({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={onClose}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={handleClose}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -59,6 +74,7 @@ export function PRChatSlidePanel({
           <PRChatPanel prId={prId} transactionId={transactionId} />
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
