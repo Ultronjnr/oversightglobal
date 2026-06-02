@@ -25,7 +25,8 @@ export function PRChatSlidePanel({
 }: PRChatSlidePanelProps) {
   if (!open) return null;
 
-  const handleClose = (e?: React.MouseEvent) => {
+  const handleClose = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
     e?.stopPropagation();
     onClose();
   };
@@ -34,16 +35,16 @@ export function PRChatSlidePanel({
     <>
       {/* Backdrop — sits above any open dialog overlay so the chat is never blocked */}
       <div
-        className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm"
-        onPointerDown={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm pointer-events-auto"
+        onPointerDownCapture={handleClose}
+        onMouseDownCapture={handleClose}
         onClick={handleClose}
         aria-hidden="true"
       />
 
       {/* Panel */}
       <div
-        className="fixed right-0 top-0 z-[101] h-full w-full max-w-md bg-background border-l border-border shadow-2xl flex flex-col"
+        className="fixed right-0 top-0 z-[101] h-full w-full max-w-md bg-background border-l border-border shadow-2xl flex flex-col pointer-events-auto"
         onPointerDown={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
@@ -61,8 +62,8 @@ export function PRChatSlidePanel({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDownCapture={handleClose}
+            onMouseDownCapture={handleClose}
             onClick={handleClose}
           >
             <X className="h-4 w-4" />
