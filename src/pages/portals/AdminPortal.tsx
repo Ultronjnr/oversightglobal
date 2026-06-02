@@ -23,6 +23,7 @@ import { SuppliersTab } from "@/components/admin/SuppliersTab";
 import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { SettingsTab } from "@/components/admin/SettingsTab";
 import { getAdminStats } from "@/services/admin.service";
+import { adminNavItems } from "@/lib/admin-nav";
 
 export default function AdminPortal() {
   const [stats, setStats] = useState({
@@ -49,13 +50,8 @@ export default function AdminPortal() {
     }
   };
 
-  const navItems = [
-    { label: "Dashboard", href: "/admin/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
-  ];
-
   return (
-    <DashboardLayout title="Admin Dashboard" navItems={navItems}>
+    <DashboardLayout title="Admin Dashboard" navItems={adminNavItems}>
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

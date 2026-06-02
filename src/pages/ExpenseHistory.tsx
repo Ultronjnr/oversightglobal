@@ -42,6 +42,7 @@ import {
   type ExpensePaymentStatus,
 } from "@/services/expense.service";
 import { getCategories, type Category } from "@/services/category.service";
+import { adminNavItems } from "@/lib/admin-nav";
 
 const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className: string }> = {
   APPROVED_NOT_PAID: { label: "Approved – Not Paid", className: "bg-destructive/10 text-destructive border-destructive/30" },
@@ -53,12 +54,11 @@ export default function ExpenseHistory() {
   const { role } = useAuth();
 
   const navItems = useMemo(() => {
+    if (role === "ADMIN") return adminNavItems;
     const base = role === "FINANCE"
       ? "/finance/portal"
       : role === "HOD"
       ? "/hod/portal"
-      : role === "ADMIN"
-      ? "/admin/portal"
       : "/employee/portal";
     return [
       { label: "My Portal", href: base },
