@@ -44,6 +44,9 @@ import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
+import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   getHODPendingPRs,
   hodApprovePR,
