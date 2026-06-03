@@ -30,13 +30,71 @@ import {
   Phone, 
   CheckCircle, 
   UserPlus,
-  Copy,
-  ExternalLink
+  Send,
+  RefreshCw,
+  XCircle,
+  Clock,
+  Ban,
 } from "lucide-react";
 import { getOrganizationSuppliers, type Supplier } from "@/services/admin.service";
-import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage } from "@/lib/error-handler";
 import { format } from "date-fns";
+import {
+  createSupplierInvite,
+  resendSupplierInvite,
+  cancelSupplierInvite,
+  listSupplierInvitations,
+  type SupplierInvitation,
+} from "@/services/supplier-invite.service";
+
+const INDUSTRY_OPTIONS = [
+  "Construction & Building Materials",
+  "IT & Technology",
+  "Office Supplies & Stationery",
+  "Cleaning & Sanitation",
+  "Electrical & Electronics",
+  "Plumbing & Water Systems",
+  "Catering & Food Services",
+  "Transport & Logistics",
+  "Security Services",
+  "Furniture & Fittings",
+  "Printing & Signage",
+  "Consulting & Professional Services",
+  "Medical & Healthcare Supplies",
+  "Agriculture & Farming",
+  "Other",
+];
+
+function InvitationStatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "ACCEPTED":
+      return (
+        <Badge className="bg-success/20 text-success border-success/30">
+          <CheckCircle className="h-3 w-3 mr-1" /> Accepted
+        </Badge>
+      );
+    case "PENDING":
+      return (
+        <Badge className="bg-warning/20 text-warning border-warning/30">
+          <Clock className="h-3 w-3 mr-1" /> Pending
+        </Badge>
+      );
+    case "EXPIRED":
+      return (
+        <Badge variant="outline" className="text-muted-foreground">
+          <XCircle className="h-3 w-3 mr-1" /> Expired
+        </Badge>
+      );
+    case "CANCELLED":
+      return (
+        <Badge className="bg-destructive/15 text-destructive border-destructive/30">
+          <Ban className="h-3 w-3 mr-1" /> Cancelled
+        </Badge>
+      );
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+}
 
 export function SuppliersTab() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -44,12 +102,20 @@ export function SuppliersTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteCompanyName, setInviteCompanyName] = useState("");
-  const [generatedLink, setGeneratedLink] = useState("");
+  const [invitations, setInvitations] = useState<SupplierInvitation[]>([]);
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    companyName: "",
+    contactPerson: "",
+    email: "",
+    industry: "",
+    registrationNumber: "",
+    vatNumber: "",
+  });
 
   useEffect(() => {
     fetchSuppliers();
+    fetchInvitations();
   }, []);
 
   const fetchSuppliers = async () => {
@@ -66,45 +132,57 @@ export function SuppliersTab() {
     }
   };
 
+  const fetchInvitations = async () => {
+    const result = await listSupplierInvitations();
+    if (result.success) setInvitations(result.data);
+  };
+
+  const resetForm = () =>
+    setForm({
+      companyName: "",
+      contactPerson: "",
+      email: "",
+      industry: "",
+      registrationNumber: "",
+      vatNumber: "",
+    });
+
   const handleInviteSupplier = async () => {
-    if (!inviteEmail || !inviteCompanyName) {
-      toast.error("Please fill in all fields");
+    const email = form.email.trim();
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!form.companyName.trim() || !form.contactPerson.trim() || !email) {
+      toast.error("Company name, contact person and email are required");
+      return;
+    }
+    if (!emailValid) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
     setIsInviting(true);
     try {
-      // Get current user for invited_by and org
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { toast.error("Not authenticated"); return; }
+      const result = await createSupplierInvite({
+        email,
+        companyName: form.companyName.trim(),
+        contactPerson: form.contactPerson.trim(),
+        industry: form.industry || undefined,
+        registrationNumber: form.registrationNumber.trim() || undefined,
+        vatNumber: form.vatNumber.trim() || undefined,
+      });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("organization_id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile?.organization_id) { toast.error("Organization not found"); return; }
-
-      const { data, error } = await supabase
-        .from("supplier_invitations")
-        .insert({
-          email: inviteEmail.toLowerCase(),
-          company_name: inviteCompanyName,
-          organization_id: profile.organization_id,
-          invited_by: user.id,
-        })
-        .select("token")
-        .single();
-
-      if (error) {
-        toast.error(getSafeErrorMessage(error));
+      if (!result.success) {
+        toast.error(result.error || "Failed to create invitation");
         return;
       }
 
-      const link = `${window.location.origin}/join/supplier?token=${data.token}`;
-      setGeneratedLink(link);
-      toast.success("Supplier invitation created!");
+      if (result.emailSent) {
+        toast.success("Invitation email sent successfully");
+      } else {
+        toast.warning("Invitation created, but the email failed to send. Try resending.");
+      }
+      setIsInviteModalOpen(false);
+      resetForm();
+      fetchInvitations();
     } catch (err: any) {
       toast.error(getSafeErrorMessage(err));
     } finally {
@@ -112,16 +190,38 @@ export function SuppliersTab() {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(generatedLink);
-    toast.success("Invitation link copied to clipboard!");
+  const handleResend = async (id: string) => {
+    setActionId(id);
+    try {
+      const result = await resendSupplierInvite(id);
+      if (!result.success) {
+        toast.error(result.error || "Failed to resend invitation");
+        return;
+      }
+      if (result.emailSent) {
+        toast.success("Invitation resent successfully");
+      } else {
+        toast.warning("Invitation refreshed, but the email failed to send.");
+      }
+      fetchInvitations();
+    } finally {
+      setActionId(null);
+    }
   };
 
-  const handleCloseModal = () => {
-    setIsInviteModalOpen(false);
-    setInviteEmail("");
-    setInviteCompanyName("");
-    setGeneratedLink("");
+  const handleCancel = async (id: string) => {
+    setActionId(id);
+    try {
+      const result = await cancelSupplierInvite(id);
+      if (!result.success) {
+        toast.error(result.error || "Failed to cancel invitation");
+        return;
+      }
+      toast.success("Invitation cancelled");
+      fetchInvitations();
+    } finally {
+      setActionId(null);
+    }
   };
 
   const filteredSuppliers = suppliers.filter((supplier) => {
@@ -144,6 +244,7 @@ export function SuppliersTab() {
   }
 
   return (
+    <div className="space-y-6">
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -168,91 +269,103 @@ export function SuppliersTab() {
                   Invite Supplier
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Invite Supplier</DialogTitle>
                   <DialogDescription>
-                    Send an invitation to a supplier to join your organization.
+                    We'll email the supplier a secure registration link automatically.
                   </DialogDescription>
                 </DialogHeader>
 
-                {!generatedLink ? (
-                  <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name *</Label>
+                    <Input
+                      id="companyName"
+                      placeholder="ABC Supplies Ltd"
+                      value={form.companyName}
+                      onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPerson">Contact Person *</Label>
+                    <Input
+                      id="contactPerson"
+                      placeholder="Full name"
+                      value={form.contactPerson}
+                      onChange={(e) => setForm((f) => ({ ...f, contactPerson: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="supplierEmail">Supplier Email *</Label>
+                    <Input
+                      id="supplierEmail"
+                      type="email"
+                      placeholder="supplier@company.com"
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="industry">Industry</Label>
+                    <select
+                      id="industry"
+                      value={form.industry}
+                      onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="">Select industry (optional)</option>
+                      {INDUSTRY_OPTIONS.map((ind) => (
+                        <option key={ind} value={ind}>{ind}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="supplierEmail">Supplier Email *</Label>
+                      <Label htmlFor="registrationNumber">Registration Number</Label>
                       <Input
-                        id="supplierEmail"
-                        type="email"
-                        placeholder="supplier@company.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
+                        id="registrationNumber"
+                        placeholder="e.g. 2024/123456/07"
+                        value={form.registrationNumber}
+                        onChange={(e) => setForm((f) => ({ ...f, registrationNumber: e.target.value }))}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="companyName">Company Name *</Label>
+                      <Label htmlFor="vatNumber">VAT Number</Label>
                       <Input
-                        id="companyName"
-                        placeholder="ABC Supplies Ltd"
-                        value={inviteCompanyName}
-                        onChange={(e) => setInviteCompanyName(e.target.value)}
+                        id="vatNumber"
+                        placeholder="Optional"
+                        value={form.vatNumber}
+                        onChange={(e) => setForm((f) => ({ ...f, vatNumber: e.target.value }))}
                       />
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4 py-4">
-                    <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
-                      <p className="text-sm text-success font-medium mb-2">
-                        Invitation Created Successfully!
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Share this link with <strong>{inviteCompanyName}</strong> to complete registration:
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={generatedLink}
-                        readOnly
-                        className="text-xs"
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={handleCopyLink}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      This link expires in 7 days and can only be used once.
-                    </p>
-                  </div>
-                )}
+                </div>
 
                 <DialogFooter>
-                  {!generatedLink ? (
-                    <>
-                      <Button variant="outline" onClick={handleCloseModal}>
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={handleInviteSupplier}
-                        disabled={isInviting}
-                      >
-                        {isInviting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Creating...
-                          </>
-                        ) : (
-                          "Generate Invitation Link"
-                        )}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button onClick={handleCloseModal}>
-                      Done
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsInviteModalOpen(false);
+                      resetForm();
+                    }}
+                    disabled={isInviting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleInviteSupplier} disabled={isInviting}>
+                    {isInviting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Invite Supplier
+                      </>
+                    )}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -364,5 +477,93 @@ export function SuppliersTab() {
         )}
       </CardContent>
     </Card>
+
+      {/* Invitations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-muted-foreground" />
+            Supplier Invitations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invitations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="p-4 rounded-full bg-muted mb-4">
+                <Mail className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                No invitations sent yet. Invite a supplier to get started.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sent</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invitations.map((inv) => {
+                    const canManage = inv.status === "PENDING" || inv.status === "EXPIRED";
+                    const busy = actionId === inv.id;
+                    return (
+                      <TableRow key={inv.id}>
+                        <TableCell className="font-medium">{inv.company_name}</TableCell>
+                        <TableCell>
+                          {inv.contact_person || <span className="text-muted-foreground">-</span>}
+                        </TableCell>
+                        <TableCell className="truncate max-w-[180px]">{inv.email}</TableCell>
+                        <TableCell>
+                          <InvitationStatusBadge status={inv.status} />
+                        </TableCell>
+                        <TableCell>{format(new Date(inv.created_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{format(new Date(inv.expires_at), "dd MMM yyyy")}</TableCell>
+                        <TableCell className="text-right">
+                          {canManage ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => handleResend(inv.id)}
+                              >
+                                {busy ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                )}
+                                <span className="ml-1">Resend</span>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => handleCancel(inv.id)}
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

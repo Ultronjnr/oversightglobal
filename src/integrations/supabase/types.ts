@@ -1378,39 +1378,101 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_invitation_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          invitation_id: string
+          notes: string | null
+          organization_id: string
+          performed_by: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          invitation_id: string
+          notes?: string | null
+          organization_id: string
+          performed_by?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          notes?: string | null
+          organization_id?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_invitation_audit_log_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_invitations: {
         Row: {
+          accepted_at: string | null
           company_name: string
+          contact_person: string | null
           created_at: string
           email: string
           expires_at: string
+          expiry_reminder_sent_at: string | null
           id: string
+          industry: string | null
           invited_by: string
           organization_id: string
+          registration_number: string | null
+          reminder_sent_at: string | null
           status: string
+          supplier_user_id: string | null
           token: string
+          vat_number: string | null
         }
         Insert: {
+          accepted_at?: string | null
           company_name: string
+          contact_person?: string | null
           created_at?: string
           email: string
           expires_at?: string
+          expiry_reminder_sent_at?: string | null
           id?: string
+          industry?: string | null
           invited_by: string
           organization_id: string
+          registration_number?: string | null
+          reminder_sent_at?: string | null
           status?: string
+          supplier_user_id?: string | null
           token?: string
+          vat_number?: string | null
         }
         Update: {
+          accepted_at?: string | null
           company_name?: string
+          contact_person?: string | null
           created_at?: string
           email?: string
           expires_at?: string
+          expiry_reminder_sent_at?: string | null
           id?: string
+          industry?: string | null
           invited_by?: string
           organization_id?: string
+          registration_number?: string | null
+          reminder_sent_at?: string | null
           status?: string
+          supplier_user_id?: string | null
           token?: string
+          vat_number?: string | null
         }
         Relationships: [
           {
@@ -1790,6 +1852,10 @@ export type Database = {
         Returns: boolean
       }
       cancel_batch_draft: { Args: { _batch_id: string }; Returns: Json }
+      cancel_supplier_invite: {
+        Args: { _invitation_id: string }
+        Returns: Json
+      }
       complete_company_registration: {
         Args: {
           _company_address: string
@@ -1828,6 +1894,17 @@ export type Database = {
       }
       create_supplier_invitation: {
         Args: { _company_name: string; _email: string }
+        Returns: Json
+      }
+      create_supplier_invite: {
+        Args: {
+          _company_name: string
+          _contact_person: string
+          _email: string
+          _industry?: string
+          _registration_number?: string
+          _vat_number?: string
+        }
         Returns: Json
       }
       delete_email: {
@@ -1891,6 +1968,10 @@ export type Database = {
       recompute_overdue_invoices: { Args: never; Returns: number }
       reject_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
+      resend_supplier_invite: {
+        Args: { _invitation_id: string }
         Returns: Json
       }
       submit_reimbursement: {
