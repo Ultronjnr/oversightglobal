@@ -137,6 +137,12 @@ export default function FinancePortal() {
   const [showPRModal, setShowPRModal] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+    prId: string;
+  }>({ isOpen: false, url: "", transactionId: "", prId: "" });
   const notifCounts = useNotificationCounts();
   const approvalsNotif =
     (notifCounts["requisition_submitted"] || 0) + (notifCounts["requisition_approved"] || 0);
