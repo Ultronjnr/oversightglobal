@@ -70,6 +70,8 @@ import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { ScanInvoiceModal } from "@/components/finance/ScanInvoiceModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { supabase } from "@/integrations/supabase/client";
