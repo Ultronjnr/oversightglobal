@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { LayoutDashboard, Building2, Receipt, User, FileText } from "lucide-react";
+// Building2 used by adminNavItems below
 
 export interface NavItem {
   label: string;
