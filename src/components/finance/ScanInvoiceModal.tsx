@@ -272,7 +272,6 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     const res = await createTransactionFromInvoice({
       file,
       supplier_name: supplierName.trim(),
-      supplier_id: supplierId ?? null,
       supplier_vat_number: supplierVat.trim() || null,
       document_number: invoiceNumber.trim() || null,
       document_date: invoiceDate || null,
@@ -280,6 +279,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       vat_amount: vatAmount ? Number(vatAmount) : null,
       total_amount: total,
       category_id: categoryId,
+      line_items: lineItems.map((li) => ({
+        description: li.description,
+        quantity: Number(li.quantity) || undefined,
+        unit_price: Number(li.unit_price) || undefined,
+        total: Number(li.total) || undefined,
+      })),
       ocr_analysis_id: analysis?.id ?? null,
     });
     // best-effort cleanup of the scan staging file
