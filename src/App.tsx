@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 
 import Invite from "./pages/Invite";
 import JoinSupplier from "./pages/JoinSupplier";
+import SupplierRegister from "./pages/SupplierRegister";
 import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/join/supplier" element={<JoinSupplier />} />
+            <Route path="/supplier/register" element={<SupplierRegister />} />
+            <Route path="/portal/supplier/register" element={<SupplierRegister />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
