@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPortalNavItems } from "@/lib/admin-nav";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -573,35 +574,7 @@ export default function PRHistory() {
                 </div>
 
                 {/* History */}
-                {selectedPR.history && selectedPR.history.length > 0 && (
-                  <div>
-                    <p className="text-sm font-medium mb-2">History</p>
-                    <div className="space-y-2">
-                      {selectedPR.history.map((entry, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
-                        >
-                          <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{entry.action}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(entry.timestamp), "MMM dd, yyyy HH:mm")}
-                              </p>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              by {entry.user_name}
-                            </p>
-                            {entry.details && (
-                              <p className="text-sm mt-1">{entry.details}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <PRHistoryTimeline history={selectedPR.history as any} />
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">

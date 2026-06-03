@@ -70,6 +70,8 @@ import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { ScanInvoiceModal } from "@/components/finance/ScanInvoiceModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
+import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { supabase } from "@/integrations/supabase/client";
@@ -135,6 +137,12 @@ export default function FinancePortal() {
   const [showPRModal, setShowPRModal] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
+  const [documentModal, setDocumentModal] = useState<{
+    isOpen: boolean;
+    url: string;
+    transactionId: string;
+    prId: string;
+  }>({ isOpen: false, url: "", transactionId: "", prId: "" });
   const notifCounts = useNotificationCounts();
   const approvalsNotif =
     (notifCounts["requisition_submitted"] || 0) + (notifCounts["requisition_approved"] || 0);
@@ -246,6 +254,27 @@ export default function FinancePortal() {
   useEffect(() => {
     fetchData();
   }, [refreshTrigger]);
+
+  // Live-refresh the dashboard overview cards when finance-relevant data changes.
+  useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => fetchData(), 600);
+    };
+    const channel = supabase
+      .channel("finance-overview-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_requisitions" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_allocations" }, bump)
+      .subscribe();
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
@@ -875,41 +904,27 @@ export default function FinancePortal() {
                                 {/* Document */}
                                 {pr.document_url && (
                                   <div>
-                                    <a
-                                      href={pr.document_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 text-primary hover:underline"
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDocumentModal({
+                                          isOpen: true,
+                                          url: pr.document_url!,
+                                          transactionId: pr.transaction_id,
+                                          prId: pr.id,
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                                     >
                                       <FileText className="h-4 w-4" />
                                       View Attached Document
-                                    </a>
+                                    </button>
                                   </div>
                                 )}
 
                                 {/* History */}
-                                {pr.history && (pr.history as any[]).length > 0 && (
-                                  <div>
-                                    <h4 className="font-medium mb-2">History</h4>
-                                    <div className="space-y-2">
-                                      {(pr.history as any[]).map((entry, idx) => (
-                                        <div
-                                          key={idx}
-                                          className="text-sm p-2 bg-background rounded"
-                                        >
-                                          <span className="font-medium">{entry.action}</span>
-                                          <span className="text-muted-foreground">
-                                            {" "}by {entry.user_name} on{" "}
-                                            {format(new Date(entry.timestamp), "dd MMM yyyy HH:mm")}
-                                          </span>
-                                          {entry.details && (
-                                            <p className="text-muted-foreground mt-1">{entry.details}</p>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+                                <PRHistoryTimeline history={pr.history as any} />
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1001,6 +1016,15 @@ export default function FinancePortal() {
         onClose={() => setChatPanel({ open: false, prId: "", transactionId: "" })}
         prId={chatPanel.prId}
         transactionId={chatPanel.transactionId}
+      />
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={documentModal.isOpen}
+        onClose={() => setDocumentModal({ isOpen: false, url: "", transactionId: "", prId: "" })}
+        documentUrl={documentModal.url}
+        prId={documentModal.prId}
+        transactionId={documentModal.transactionId}
       />
     </DashboardLayout>
   );

@@ -37,6 +37,7 @@ import {
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
@@ -354,40 +355,7 @@ export function FinanceApprovalQueue() {
                                 </div>
 
                                 {/* History */}
-                                {pr.history && (pr.history as any[]).length > 0 && (
-                                  <div>
-                                    <h4 className="font-medium mb-2">
-                                      History
-                                    </h4>
-                                    <div className="space-y-2">
-                                      {(pr.history as any[]).map(
-                                        (entry, idx) => (
-                                          <div
-                                            key={idx}
-                                            className="text-sm p-2 bg-background rounded"
-                                          >
-                                            <span className="font-medium">
-                                              {entry.action}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                              {" "}
-                                              by {entry.user_name} on{" "}
-                                              {format(
-                                                new Date(entry.timestamp),
-                                                "dd MMM yyyy HH:mm"
-                                              )}
-                                            </span>
-                                            {entry.details && (
-                                              <p className="text-muted-foreground mt-1">
-                                                {entry.details}
-                                              </p>
-                                            )}
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
+                                <PRHistoryTimeline history={pr.history as any} />
 
                                 {/* Document */}
                                 {pr.document_url && (

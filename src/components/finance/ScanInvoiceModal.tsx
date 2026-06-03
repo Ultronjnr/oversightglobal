@@ -29,12 +29,18 @@ import {
   ScanLine,
   Camera,
   FileText,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
 import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
-import { SupplierPicker } from "@/components/finance/SupplierPicker";
-import { getCategories, type Category } from "@/services/category.service";
+import {
+  getCategories,
+  createCategory,
+  type Category,
+  type CategoryType,
+} from "@/services/category.service";
 import {
   createTransactionFromInvoice,
   validateSarsInvoice,
@@ -46,6 +52,13 @@ const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
 
 type CameraMode = "capture" | "scan" | null;
+
+interface LineItemRow {
+  description: string;
+  quantity: string;
+  unit_price: string;
+  total: string;
+}
 
 interface Props {
   open: boolean;
@@ -80,9 +93,15 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [subtotal, setSubtotal] = useState<string>("");
   const [vatAmount, setVatAmount] = useState<string>("");
   const [totalAmount, setTotalAmount] = useState<string>("");
-  const [supplierId, setSupplierId] = useState<string | undefined>(undefined);
   const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
+
+  // Inline create-category
+  const [showCreateCat, setShowCreateCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatType, setNewCatType] = useState<CategoryType>("EXPENSE");
+  const [creatingCat, setCreatingCat] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -101,8 +120,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setSubtotal("");
     setVatAmount("");
     setTotalAmount("");
-    setSupplierId(undefined);
     setCategoryId("");
+    setLineItems([]);
   };
 
   const handleClose = () => {
@@ -124,6 +143,46 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const handleCapture = (f: File) => {
     setCameraMode(null);
     onFile(f);
+  };
+
+  const updateLineItem = (idx: number, field: keyof LineItemRow, value: string) => {
+    setLineItems((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
+    );
+  };
+
+  const addLineItem = () =>
+    setLineItems((prev) => [...prev, { description: "", quantity: "1", unit_price: "", total: "" }]);
+
+  const removeLineItem = (idx: number) =>
+    setLineItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const applyLineItemTotals = () => {
+    const sub = lineItems.reduce((s, li) => s + (Number(li.total) || 0), 0);
+    if (sub > 0) {
+      setSubtotal(sub.toFixed(2));
+      const vat = Number(vatAmount) || 0;
+      setTotalAmount((sub + vat).toFixed(2));
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim()) {
+      toast.error("Enter a category name");
+      return;
+    }
+    setCreatingCat(true);
+    const res = await createCategory({ name: newCatName.trim(), type: newCatType });
+    setCreatingCat(false);
+    if (!res.success || !res.data) {
+      toast.error(res.error || "Failed to create category");
+      return;
+    }
+    setCategories((prev) => [...prev, res.data!]);
+    setCategoryId(res.data.id);
+    setNewCatName("");
+    setShowCreateCat(false);
+    toast.success("Category created");
   };
 
   const runScan = async () => {
@@ -165,6 +224,18 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
       setVatAmount(typeof e.vat_amount === "number" ? String(e.vat_amount) : "");
       setTotalAmount(typeof e.total_amount === "number" ? String(e.total_amount) : "");
+      const li = (e.line_items ?? []).map((it: any) => ({
+        description: it.description ?? "",
+        quantity: it.quantity != null ? String(it.quantity) : "1",
+        unit_price: it.unit_price != null ? String(it.unit_price) : "",
+        total:
+          it.total_price != null
+            ? String(it.total_price)
+            : it.amount != null
+            ? String(it.amount)
+            : "",
+      }));
+      setLineItems(li);
       toast.success("Invoice scanned. Review and confirm.");
     } finally {
       setScanning(false);
@@ -201,7 +272,6 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     const res = await createTransactionFromInvoice({
       file,
       supplier_name: supplierName.trim(),
-      supplier_id: supplierId ?? null,
       supplier_vat_number: supplierVat.trim() || null,
       document_number: invoiceNumber.trim() || null,
       document_date: invoiceDate || null,
@@ -209,6 +279,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       vat_amount: vatAmount ? Number(vatAmount) : null,
       total_amount: total,
       category_id: categoryId,
+      line_items: lineItems.map((li) => ({
+        description: li.description,
+        quantity: Number(li.quantity) || undefined,
+        unit_price: Number(li.unit_price) || undefined,
+        total: Number(li.total) || undefined,
+      })),
       ocr_analysis_id: analysis?.id ?? null,
     });
     // best-effort cleanup of the scan staging file
@@ -367,24 +443,14 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               {/* Editable fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <Label className="text-xs">Supplier</Label>
-                  <SupplierPicker
-                    value={supplierId}
-                    onChange={(id, s) => {
-                      setSupplierId(id);
-                      if (s) {
-                        setSupplierName(s.company_name);
-                        if (s.vat_number) setSupplierVat(s.vat_number);
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="si-name" className="text-xs">Supplier Name</Label>
+                  <Label htmlFor="si-name" className="text-xs">
+                    Supplier Name <span className="text-muted-foreground">(auto-detected)</span>
+                  </Label>
                   <Input
                     id="si-name"
                     value={supplierName}
                     onChange={(e) => setSupplierName(e.target.value)}
+                    placeholder="Detected from invoice"
                   />
                 </div>
                 <div>
@@ -412,6 +478,95 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                     onChange={(e) => setInvoiceDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Line items table */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Line Items</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 text-xs text-primary"
+                    onClick={applyLineItemTotals}
+                  >
+                    <Sparkles className="h-3 w-3" /> Sum to totals
+                  </Button>
+                </div>
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-[1fr_64px_96px_96px_32px] gap-2 bg-muted/50 px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                    <span>Description</span>
+                    <span className="text-right">Qty</span>
+                    <span className="text-right">Unit Price</span>
+                    <span className="text-right">Total</span>
+                    <span />
+                  </div>
+                  <div className="divide-y divide-border">
+                    {lineItems.length === 0 ? (
+                      <p className="px-3 py-3 text-xs text-muted-foreground italic">
+                        No line items detected. Add one if needed.
+                      </p>
+                    ) : (
+                      lineItems.map((li, idx) => (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-[1fr_64px_96px_96px_32px] gap-2 items-center px-2 py-1.5"
+                        >
+                          <Input
+                            className="h-8 text-xs"
+                            value={li.description}
+                            onChange={(e) => updateLineItem(idx, "description", e.target.value)}
+                            placeholder="Item description"
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.quantity}
+                            onChange={(e) => updateLineItem(idx, "quantity", e.target.value)}
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.unit_price}
+                            onChange={(e) => updateLineItem(idx, "unit_price", e.target.value)}
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.total}
+                            onChange={(e) => updateLineItem(idx, "total", e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeLineItem(idx)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={addLineItem}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Line Item
+                </Button>
+              </div>
+
+              {/* Totals */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="si-sub" className="text-xs">Subtotal (ZAR)</Label>
                   <Input
@@ -463,6 +618,61 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!showCreateCat ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 mt-1 gap-1 text-xs text-primary"
+                      onClick={() => setShowCreateCat(true)}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Create Category
+                    </Button>
+                  ) : (
+                    <div className="mt-2 rounded-lg border border-border bg-muted/30 p-2 space-y-2">
+                      <Input
+                        className="h-8 text-xs"
+                        placeholder="New category name"
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                      />
+                      <Select
+                        value={newCatType}
+                        onValueChange={(v) => setNewCatType(v as CategoryType)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EXPENSE">Expense</SelectItem>
+                          <SelectItem value="ASSET">Fixed Asset</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs flex-1"
+                          onClick={handleCreateCategory}
+                          disabled={creatingCat}
+                        >
+                          {creatingCat ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setShowCreateCat(false);
+                            setNewCatName("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

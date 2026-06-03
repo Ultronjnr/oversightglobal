@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
 
-      const model = "google/gemini-2.5-flash";
+      const model = "google/gemini-2.5-pro";
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
