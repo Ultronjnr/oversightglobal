@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { getPortalNavItems } from "@/lib/admin-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -135,20 +136,7 @@ export default function PRHistory() {
     search: "",
   });
 
-  const getNavItems = () => {
-    const baseHref = role === "EMPLOYEE"
-      ? "/employee/portal"
-      : role === "HOD"
-      ? "/hod/portal"
-      : role === "FINANCE"
-      ? "/finance/portal"
-      : "/admin/portal";
-
-    return [
-      { label: "My Portal", href: baseHref, icon: <User className="h-4 w-4" /> },
-      { label: "PR History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
-    ];
-  };
+  const getNavItems = () => getPortalNavItems(role);
 
   const fetchHistory = useCallback(async () => {
     if (!user || !role) return;
