@@ -38,6 +38,7 @@ export function usePRNotifications() {
   const { user, role } = useAuth();
   const prChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const quoteChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const messageChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -96,6 +97,40 @@ export function usePRNotifications() {
       .subscribe();
 
     prChannelRef.current = prChannel;
+
+    // Subscribe to new chat messages on any PR in the org (RLS scopes visibility)
+    const messageChannel = supabase
+      .channel('pr-message-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'pr_messages',
+        },
+        (payload) => {
+          const msg = payload.new as {
+            sender_id?: string;
+            sender_name?: string;
+            is_system_note?: boolean;
+            message?: string | null;
+          };
+
+          // Ignore system notes and the user's own messages
+          if (msg.is_system_note) return;
+          if (msg.sender_id === user.id) return;
+
+          const sender = msg.sender_name || 'Someone';
+          const preview = (msg.message || '').trim();
+          const description = preview
+            ? `${sender}: ${preview.length > 80 ? preview.slice(0, 80) + '…' : preview}`
+            : `${sender} sent an attachment`;
+          showNotification(description, 'info', 'New chat message');
+        }
+      )
+      .subscribe();
+
+    messageChannelRef.current = messageChannel;
 
     // Subscribe to quote request changes for Finance role
     if (role === 'FINANCE') {
@@ -181,6 +216,9 @@ export function usePRNotifications() {
       }
       if (quoteChannelRef.current) {
         supabase.removeChannel(quoteChannelRef.current);
+      }
+      if (messageChannelRef.current) {
+        supabase.removeChannel(messageChannelRef.current);
       }
     };
   }, [user, role]);
