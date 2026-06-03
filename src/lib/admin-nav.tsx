@@ -39,13 +39,5 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
     { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   ];
 
-  if (role === "FINANCE") {
-    items.splice(2, 0, {
-      label: "Cost Center / Department History",
-      href: "/cost-center-history",
-      icon: <Building2 className="h-4 w-4" />,
-    });
-  }
-
   return items;
 }
