@@ -145,6 +145,46 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     onFile(f);
   };
 
+  const updateLineItem = (idx: number, field: keyof LineItemRow, value: string) => {
+    setLineItems((prev) =>
+      prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)),
+    );
+  };
+
+  const addLineItem = () =>
+    setLineItems((prev) => [...prev, { description: "", quantity: "1", unit_price: "", total: "" }]);
+
+  const removeLineItem = (idx: number) =>
+    setLineItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const applyLineItemTotals = () => {
+    const sub = lineItems.reduce((s, li) => s + (Number(li.total) || 0), 0);
+    if (sub > 0) {
+      setSubtotal(sub.toFixed(2));
+      const vat = Number(vatAmount) || 0;
+      setTotalAmount((sub + vat).toFixed(2));
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim()) {
+      toast.error("Enter a category name");
+      return;
+    }
+    setCreatingCat(true);
+    const res = await createCategory({ name: newCatName.trim(), type: newCatType });
+    setCreatingCat(false);
+    if (!res.success || !res.data) {
+      toast.error(res.error || "Failed to create category");
+      return;
+    }
+    setCategories((prev) => [...prev, res.data!]);
+    setCategoryId(res.data.id);
+    setNewCatName("");
+    setShowCreateCat(false);
+    toast.success("Category created");
+  };
+
   const runScan = async () => {
     if (!file) return;
     setScanning(true);
