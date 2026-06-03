@@ -9,13 +9,13 @@ interface LogoProps {
 
 export function Logo({ className, size = "md" }: LogoProps) {
   const sizeClasses = {
-    sm: "h-10",
-    md: "h-16",
-    lg: "h-28",
+    sm: "h-24",
+    md: "h-36",
+    lg: "h-56",
   };
 
   return (
-    <div className={cn("flex items-center shrink-0", className)}>
+    <div className={cn("flex items-center", className)}>
       <img
         src={logoImage}
         alt="Ovasyt"
