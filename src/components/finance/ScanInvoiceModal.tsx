@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,12 @@ import {
   AlertTriangle,
   Receipt,
   ScanLine,
+  Camera,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
+import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
 import { SupplierPicker } from "@/components/finance/SupplierPicker";
 import { getCategories, type Category } from "@/services/category.service";
 import {
@@ -39,7 +42,11 @@ import {
 } from "@/services/scan-invoice.service";
 
 const ACCEPT = ".pdf,application/pdf,image/jpeg,image/jpg,image/png";
+const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
+const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
+
+type CameraMode = "capture" | "scan" | null;
 
 interface Props {
   open: boolean;
@@ -62,6 +69,9 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
   const [scanPath, setScanPath] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cameraMode, setCameraMode] = useState<CameraMode>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const invoiceInputRef = useRef<HTMLInputElement>(null);
 
   // Editable fields
   const [supplierName, setSupplierName] = useState("");
