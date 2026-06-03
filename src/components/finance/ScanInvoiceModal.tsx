@@ -94,6 +94,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setFile(null);
     setAnalysis(null);
     setScanPath(null);
+    setCameraMode(null);
     setSupplierName("");
     setSupplierVat("");
     setInvoiceNumber("");
@@ -119,6 +120,11 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     }
     setFile(f);
     setAnalysis(null);
+  };
+
+  const handleCapture = (f: File) => {
+    setCameraMode(null);
+    onFile(f);
   };
 
   const runScan = async () => {
