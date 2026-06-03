@@ -1424,11 +1424,13 @@ export type Database = {
           created_at: string
           email: string
           expires_at: string
+          expiry_reminder_sent_at: string | null
           id: string
           industry: string | null
           invited_by: string
           organization_id: string
           registration_number: string | null
+          reminder_sent_at: string | null
           status: string
           supplier_user_id: string | null
           token: string
@@ -1441,11 +1443,13 @@ export type Database = {
           created_at?: string
           email: string
           expires_at?: string
+          expiry_reminder_sent_at?: string | null
           id?: string
           industry?: string | null
           invited_by: string
           organization_id: string
           registration_number?: string | null
+          reminder_sent_at?: string | null
           status?: string
           supplier_user_id?: string | null
           token?: string
@@ -1458,11 +1462,13 @@ export type Database = {
           created_at?: string
           email?: string
           expires_at?: string
+          expiry_reminder_sent_at?: string | null
           id?: string
           industry?: string | null
           invited_by?: string
           organization_id?: string
           registration_number?: string | null
+          reminder_sent_at?: string | null
           status?: string
           supplier_user_id?: string | null
           token?: string
