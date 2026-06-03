@@ -29,12 +29,18 @@ import {
   ScanLine,
   Camera,
   FileText,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
 import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
-import { SupplierPicker } from "@/components/finance/SupplierPicker";
-import { getCategories, type Category } from "@/services/category.service";
+import {
+  getCategories,
+  createCategory,
+  type Category,
+  type CategoryType,
+} from "@/services/category.service";
 import {
   createTransactionFromInvoice,
   validateSarsInvoice,
@@ -46,6 +52,13 @@ const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
 
 type CameraMode = "capture" | "scan" | null;
+
+interface LineItemRow {
+  description: string;
+  quantity: string;
+  unit_price: string;
+  total: string;
+}
 
 interface Props {
   open: boolean;
