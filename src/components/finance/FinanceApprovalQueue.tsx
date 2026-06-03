@@ -37,6 +37,7 @@ import {
 import { FinalizationModal } from "@/components/pr/FinalizationModal";
 import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
