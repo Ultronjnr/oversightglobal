@@ -996,6 +996,15 @@ export default function FinancePortal() {
         prId={chatPanel.prId}
         transactionId={chatPanel.transactionId}
       />
+
+      {/* Document Viewer Modal */}
+      <DocumentViewerModal
+        isOpen={documentModal.isOpen}
+        onClose={() => setDocumentModal({ isOpen: false, url: "", transactionId: "", prId: "" })}
+        documentUrl={documentModal.url}
+        prId={documentModal.prId}
+        transactionId={documentModal.transactionId}
+      />
     </DashboardLayout>
   );
 }
