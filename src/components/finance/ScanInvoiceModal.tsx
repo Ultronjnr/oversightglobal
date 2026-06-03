@@ -443,24 +443,14 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               {/* Editable fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <Label className="text-xs">Supplier</Label>
-                  <SupplierPicker
-                    value={supplierId}
-                    onChange={(id, s) => {
-                      setSupplierId(id);
-                      if (s) {
-                        setSupplierName(s.company_name);
-                        if (s.vat_number) setSupplierVat(s.vat_number);
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="si-name" className="text-xs">Supplier Name</Label>
+                  <Label htmlFor="si-name" className="text-xs">
+                    Supplier Name <span className="text-muted-foreground">(auto-detected)</span>
+                  </Label>
                   <Input
                     id="si-name"
                     value={supplierName}
                     onChange={(e) => setSupplierName(e.target.value)}
+                    placeholder="Detected from invoice"
                   />
                 </div>
                 <div>
@@ -488,6 +478,95 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                     onChange={(e) => setInvoiceDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Line items table */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold">Line Items</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 text-xs text-primary"
+                    onClick={applyLineItemTotals}
+                  >
+                    <Sparkles className="h-3 w-3" /> Sum to totals
+                  </Button>
+                </div>
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-[1fr_64px_96px_96px_32px] gap-2 bg-muted/50 px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
+                    <span>Description</span>
+                    <span className="text-right">Qty</span>
+                    <span className="text-right">Unit Price</span>
+                    <span className="text-right">Total</span>
+                    <span />
+                  </div>
+                  <div className="divide-y divide-border">
+                    {lineItems.length === 0 ? (
+                      <p className="px-3 py-3 text-xs text-muted-foreground italic">
+                        No line items detected. Add one if needed.
+                      </p>
+                    ) : (
+                      lineItems.map((li, idx) => (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-[1fr_64px_96px_96px_32px] gap-2 items-center px-2 py-1.5"
+                        >
+                          <Input
+                            className="h-8 text-xs"
+                            value={li.description}
+                            onChange={(e) => updateLineItem(idx, "description", e.target.value)}
+                            placeholder="Item description"
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.quantity}
+                            onChange={(e) => updateLineItem(idx, "quantity", e.target.value)}
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.unit_price}
+                            onChange={(e) => updateLineItem(idx, "unit_price", e.target.value)}
+                          />
+                          <Input
+                            className="h-8 text-xs text-right"
+                            type="number"
+                            step="0.01"
+                            value={li.total}
+                            onChange={(e) => updateLineItem(idx, "total", e.target.value)}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeLineItem(idx)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={addLineItem}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Line Item
+                </Button>
+              </div>
+
+              {/* Totals */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="si-sub" className="text-xs">Subtotal (ZAR)</Label>
                   <Input
@@ -539,6 +618,61 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!showCreateCat ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 mt-1 gap-1 text-xs text-primary"
+                      onClick={() => setShowCreateCat(true)}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Create Category
+                    </Button>
+                  ) : (
+                    <div className="mt-2 rounded-lg border border-border bg-muted/30 p-2 space-y-2">
+                      <Input
+                        className="h-8 text-xs"
+                        placeholder="New category name"
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                      />
+                      <Select
+                        value={newCatType}
+                        onValueChange={(v) => setNewCatType(v as CategoryType)}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EXPENSE">Expense</SelectItem>
+                          <SelectItem value="ASSET">Fixed Asset</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs flex-1"
+                          onClick={handleCreateCategory}
+                          disabled={creatingCat}
+                        >
+                          {creatingCat ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setShowCreateCat(false);
+                            setNewCatName("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
