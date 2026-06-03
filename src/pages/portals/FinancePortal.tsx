@@ -883,15 +883,22 @@ export default function FinancePortal() {
                                 {/* Document */}
                                 {pr.document_url && (
                                   <div>
-                                    <a
-                                      href={pr.document_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 text-primary hover:underline"
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDocumentModal({
+                                          isOpen: true,
+                                          url: pr.document_url!,
+                                          transactionId: pr.transaction_id,
+                                          prId: pr.id,
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-2 text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                                     >
                                       <FileText className="h-4 w-4" />
                                       View Attached Document
-                                    </a>
+                                    </button>
                                   </div>
                                 )}
 
