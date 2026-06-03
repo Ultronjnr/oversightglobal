@@ -41,7 +41,6 @@ import {
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
 
-const ACCEPT = ".pdf,application/pdf,image/jpeg,image/jpg,image/png";
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
