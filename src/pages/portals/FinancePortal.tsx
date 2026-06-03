@@ -703,7 +703,7 @@ export default function FinancePortal() {
       </div>
 
       {/* Incoming Purchase Requisitions Modal */}
-      <Dialog open={showIncomingModal} onOpenChange={setShowIncomingModal}>
+      <Dialog open={showIncomingModal} onOpenChange={setShowIncomingModal} modal={!chatPanel.open}>
         <DialogContent
           className="max-w-6xl max-h-[90vh] overflow-y-auto"
           onInteractOutside={(e) => {
