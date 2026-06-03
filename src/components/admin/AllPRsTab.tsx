@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { getAllOrganizationPRs } from "@/services/admin.service";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
+import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 
