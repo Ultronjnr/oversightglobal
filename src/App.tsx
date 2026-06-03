@@ -82,11 +82,11 @@ const App = () => (
               }
             />
 
-            {/* Cost Center / Department History - ADMIN */}
+            {/* Cost Center / Department History - ADMIN & FINANCE */}
             <Route
               path="/cost-center-history"
               element={
-                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                <ProtectedRoute allowedRoles={["ADMIN", "FINANCE"]}>
                   <CostCenterHistory />
                 </ProtectedRoute>
               }
