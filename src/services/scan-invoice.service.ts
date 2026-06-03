@@ -70,6 +70,13 @@ export interface CreateTxnFromInvoiceInput {
   currency?: string;
   category_id: string;
   notes?: string | null;
+  /** Editable, AI-extracted line items */
+  line_items?: Array<{
+    description: string;
+    quantity?: number;
+    unit_price?: number;
+    total?: number;
+  }>;
   /** Raw OCR analysis id for traceability */
   ocr_analysis_id?: string | null;
 }
@@ -119,15 +126,35 @@ export async function createTransactionFromInvoice(
       ? `Invoice ${input.document_number} – ${input.supplier_name}`
       : `Invoice from ${input.supplier_name}`;
 
-    const items = [
-      {
-        description: desc,
-        quantity: 1,
-        unit_price: total,
-        price: total,
-        supplier_preference: input.supplier_name.trim(),
-      },
-    ];
+    const cleanLineItems = (input.line_items ?? [])
+      .filter((li) => li && (li.description?.trim() || (li.total ?? 0) > 0));
+
+    const items =
+      cleanLineItems.length > 0
+        ? cleanLineItems.map((li) => {
+            const qty = Number(li.quantity) > 0 ? Number(li.quantity) : 1;
+            const lineTotal = Number(li.total) || 0;
+            const unit =
+              Number(li.unit_price) > 0
+                ? Number(li.unit_price)
+                : Number((lineTotal / qty).toFixed(2));
+            return {
+              description: li.description?.trim() || desc,
+              quantity: qty,
+              unit_price: unit,
+              price: lineTotal || Number((unit * qty).toFixed(2)),
+              supplier_preference: input.supplier_name.trim(),
+            };
+          })
+        : [
+            {
+              description: desc,
+              quantity: 1,
+              unit_price: total,
+              price: total,
+              supplier_preference: input.supplier_name.trim(),
+            },
+          ];
 
     const history = [
       {
