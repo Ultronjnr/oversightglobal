@@ -488,6 +488,40 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
           </div>
         </div>
       </DialogContent>
+
+      {/* Camera capture */}
+      <CameraCaptureModal
+        open={cameraMode !== null}
+        onOpenChange={(o) => !o && setCameraMode(null)}
+        onCapture={handleCapture}
+        fileNamePrefix={cameraMode === "scan" ? "receipt-scan" : "invoice-capture"}
+      />
     </Dialog>
+  );
+}
+
+function ActionTile({
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative flex flex-col items-center justify-center gap-1 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors p-4 text-center"
+    >
+      <span className="rounded-full bg-primary/10 text-primary p-2.5 group-hover:scale-110 transition-transform">
+        {icon}
+      </span>
+      <span className="text-sm font-semibold text-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground">{hint}</span>
+    </button>
   );
 }
