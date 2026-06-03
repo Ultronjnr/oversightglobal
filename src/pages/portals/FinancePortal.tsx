@@ -30,7 +30,7 @@ import {
   Undo2,
   Layers,
 } from "lucide-react";
-import { Percent } from "lucide-react";
+import { Percent, ScanLine } from "lucide-react";
 
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -70,6 +70,7 @@ import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { ScanInvoiceModal } from "@/components/finance/ScanInvoiceModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
+import { getPortalNavItems } from "@/lib/admin-nav";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -154,11 +155,7 @@ export default function FinancePortal() {
       </span>
     ) : null;
 
-  const navItems = [
-    { label: "My Portal", href: "/finance/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Purchase Requisition History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
-    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
-  ];
+  const navItems = getPortalNavItems("FINANCE");
 
   const fetchData = async () => {
     setLoading(true);
@@ -441,8 +438,8 @@ export default function FinancePortal() {
             className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
             onClick={() => setShowScanModal(true)}
           >
-            <FileText className="h-4 w-4" />
-            Add Invoice (AI)
+            <ScanLine className="h-4 w-4" />
+            Scan Invoice
           </Button>
           
           {/* Prominent blue circled button */}

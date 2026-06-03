@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { LayoutDashboard, Building2, Receipt } from "lucide-react";
+import { LayoutDashboard, Building2, Receipt, User, FileText } from "lucide-react";
 
 export interface NavItem {
   label: string;
@@ -17,3 +17,35 @@ export const adminNavItems: NavItem[] = [
   { label: "Cost Center / Department History", href: "/cost-center-history", icon: <Building2 className="h-4 w-4" /> },
   { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
 ];
+
+/**
+ * Role-aware top navigation used across the Employee / HOD / Finance portals
+ * and their shared history pages. Finance gets the extra
+ * "Cost Center / Department History" tab.
+ */
+export function getPortalNavItems(role?: string | null): NavItem[] {
+  if (role === "ADMIN") return adminNavItems;
+
+  const base =
+    role === "FINANCE"
+      ? "/finance/portal"
+      : role === "HOD"
+      ? "/hod/portal"
+      : "/employee/portal";
+
+  const items: NavItem[] = [
+    { label: "My Portal", href: base, icon: <User className="h-4 w-4" /> },
+    { label: "Purchase Requisition History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
+    { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
+  ];
+
+  if (role === "FINANCE") {
+    items.splice(2, 0, {
+      label: "Cost Center / Department History",
+      href: "/cost-center-history",
+      icon: <Building2 className="h-4 w-4" />,
+    });
+  }
+
+  return items;
+}

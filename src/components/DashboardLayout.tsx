@@ -68,7 +68,7 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
               </Link>
               
               {/* Navigation */}
-              <nav className="hidden md:flex items-center gap-2">
+              <nav className="hidden md:flex items-center gap-1">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
@@ -76,10 +76,10 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
                       key={item.href}
                       to={item.href}
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
-                        isActive 
-                          ? "bg-primary text-white shadow-md" 
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        "relative flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap rounded-lg transition-all",
+                        isActive
+                          ? "text-primary font-bold after:absolute after:left-3 after:right-3 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
+                          : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50"
                       )}
                     >
                       {item.icon}
@@ -106,14 +106,20 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
                   <p className="text-sm font-semibold text-foreground">
                     {profile?.name} {profile?.surname}
                   </p>
-                  <div className="flex items-center justify-end gap-1.5 mt-0.5">
-                    <Badge variant="outline" className={cn("text-xs px-2 py-0 h-5", getRoleBadgeClass())}>
+                  <div className="flex items-center justify-end gap-1.5 mt-1">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "rounded-full text-[11px] font-semibold leading-none px-2.5 py-1 h-auto whitespace-nowrap",
+                        getRoleBadgeClass()
+                      )}
+                    >
                       {getRoleLabel()}
                     </Badge>
                     {profile?.department && (
-                      <Badge 
-                        variant="outline" 
-                        className="text-xs px-2 py-0 h-5 bg-secondary/80 text-secondary-foreground border-secondary/30 flex items-center gap-1"
+                      <Badge
+                        variant="outline"
+                        className="rounded-full text-[11px] font-semibold leading-none px-2.5 py-1 h-auto whitespace-nowrap bg-secondary/80 text-secondary-foreground border-secondary/30 flex items-center gap-1"
                       >
                         <Building2 className="h-3 w-3" />
                         {profile.department}

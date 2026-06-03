@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { Building2, Filter, X, Loader2, CalendarRange } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import { adminNavItems } from "@/lib/admin-nav";
+import { getPortalNavItems } from "@/lib/admin-nav";
 import {
   getExpenses,
   summarizeByDepartment,
@@ -35,6 +36,8 @@ import {
 } from "@/services/expense.service";
 
 export default function CostCenterHistory() {
+  const { role } = useAuth();
+  const navItems = useMemo(() => getPortalNavItems(role), [role]);
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
   const [filters, setFilters] = useState<ExpenseFilters>({});
@@ -75,7 +78,7 @@ export default function CostCenterHistory() {
   const resetFilters = () => setFilters({});
 
   return (
-    <DashboardLayout title="Cost Center / Department History" navItems={adminNavItems}>
+    <DashboardLayout title="Cost Center / Department History" navItems={navItems}>
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

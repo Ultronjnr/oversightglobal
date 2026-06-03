@@ -42,7 +42,7 @@ import {
   type ExpensePaymentStatus,
 } from "@/services/expense.service";
 import { getCategories, type Category } from "@/services/category.service";
-import { adminNavItems } from "@/lib/admin-nav";
+import { getPortalNavItems } from "@/lib/admin-nav";
 
 const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className: string }> = {
   APPROVED_NOT_PAID: { label: "Approved – Not Paid", className: "bg-destructive/10 text-destructive border-destructive/30" },
@@ -53,19 +53,7 @@ const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className
 export default function ExpenseHistory() {
   const { role } = useAuth();
 
-  const navItems = useMemo(() => {
-    if (role === "ADMIN") return adminNavItems;
-    const base = role === "FINANCE"
-      ? "/finance/portal"
-      : role === "HOD"
-      ? "/hod/portal"
-      : "/employee/portal";
-    return [
-      { label: "My Portal", href: base },
-      { label: "Purchase Requisition History", href: "/pr-history" },
-      { label: "Expense History", href: "/expenses" },
-    ];
-  }, [role]);
+  const navItems = useMemo(() => getPortalNavItems(role), [role]);
 
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<ExpenseRecord[]>([]);
