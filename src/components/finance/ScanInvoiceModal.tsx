@@ -242,34 +242,83 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* File upload */}
-          <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
-            <Input
-              id="scan-file"
-              type="file"
-              accept={ACCEPT}
-              className="hidden"
-              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
-            />
-            <Label htmlFor="scan-file" className="cursor-pointer flex flex-col items-center gap-2">
-              <div className="p-2 rounded-full bg-muted">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-              </div>
-              {file ? (
-                <div>
-                  <p className="font-medium text-primary text-sm">{file.name}</p>
+          {/* Capture options */}
+          {!file ? (
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <ActionTile
+                icon={<Camera className="h-6 w-6" />}
+                label="Take Picture"
+                hint="Use device camera"
+                onClick={() => setCameraMode("capture")}
+              />
+              <ActionTile
+                icon={<Upload className="h-6 w-6" />}
+                label="Upload Image"
+                hint="From your gallery"
+                onClick={() => imageInputRef.current?.click()}
+              />
+              <ActionTile
+                icon={<Receipt className="h-6 w-6" />}
+                label="Add Receipt"
+                hint="Auto edge detection"
+                onClick={() => setCameraMode("scan")}
+              />
+              <ActionTile
+                icon={<FileText className="h-6 w-6" />}
+                label="Upload Invoice"
+                hint="PDF or image"
+                onClick={() => invoiceInputRef.current?.click()}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="rounded-full bg-primary/10 text-primary p-2.5 shrink-0">
+                  <FileText className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground text-sm truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
                 </div>
-              ) : (
-                <div>
-                  <p className="font-medium text-sm">Select an invoice file</p>
-                  <p className="text-xs text-muted-foreground">PDF, JPG, PNG · max 15MB</p>
-                </div>
-              )}
-            </Label>
-          </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFile(null);
+                  setAnalysis(null);
+                }}
+                disabled={scanning || submitting}
+              >
+                Change
+              </Button>
+            </div>
+          )}
+
+          {/* Hidden file inputs */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept={ACCEPTED_IMAGE}
+            capture="environment"
+            hidden
+            onChange={(e) => {
+              onFile(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
+          <input
+            ref={invoiceInputRef}
+            type="file"
+            accept={ACCEPTED_INVOICE}
+            hidden
+            onChange={(e) => {
+              onFile(e.target.files?.[0] ?? null);
+              e.target.value = "";
+            }}
+          />
 
           <Button
             onClick={runScan}
