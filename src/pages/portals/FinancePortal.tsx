@@ -255,6 +255,27 @@ export default function FinancePortal() {
     fetchData();
   }, [refreshTrigger]);
 
+  // Live-refresh the dashboard overview cards when finance-relevant data changes.
+  useEffect(() => {
+    let debounce: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => fetchData(), 600);
+    };
+    const channel = supabase
+      .channel("finance-overview-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_requisitions" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, bump)
+      .on("postgres_changes", { event: "*", schema: "public", table: "payment_allocations" }, bump)
+      .subscribe();
+    return () => {
+      if (debounce) clearTimeout(debounce);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
