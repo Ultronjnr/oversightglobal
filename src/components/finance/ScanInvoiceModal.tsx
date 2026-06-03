@@ -93,9 +93,15 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [subtotal, setSubtotal] = useState<string>("");
   const [vatAmount, setVatAmount] = useState<string>("");
   const [totalAmount, setTotalAmount] = useState<string>("");
-  const [supplierId, setSupplierId] = useState<string | undefined>(undefined);
   const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
+
+  // Inline create-category
+  const [showCreateCat, setShowCreateCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatType, setNewCatType] = useState<CategoryType>("EXPENSE");
+  const [creatingCat, setCreatingCat] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -114,8 +120,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setSubtotal("");
     setVatAmount("");
     setTotalAmount("");
-    setSupplierId(undefined);
     setCategoryId("");
+    setLineItems([]);
   };
 
   const handleClose = () => {
@@ -178,6 +184,18 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
       setVatAmount(typeof e.vat_amount === "number" ? String(e.vat_amount) : "");
       setTotalAmount(typeof e.total_amount === "number" ? String(e.total_amount) : "");
+      const li = (e.line_items ?? []).map((it: any) => ({
+        description: it.description ?? "",
+        quantity: it.quantity != null ? String(it.quantity) : "1",
+        unit_price: it.unit_price != null ? String(it.unit_price) : "",
+        total:
+          it.total_price != null
+            ? String(it.total_price)
+            : it.amount != null
+            ? String(it.amount)
+            : "",
+      }));
+      setLineItems(li);
       toast.success("Invoice scanned. Review and confirm.");
     } finally {
       setScanning(false);
