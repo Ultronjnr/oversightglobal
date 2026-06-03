@@ -501,6 +501,14 @@ export default function FinancePortal() {
             <RefreshCw className="h-4 w-4" />
             Refresh Dashboard
           </Button>
+          <Button
+            variant="outline"
+            className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
+            onClick={() => navigate("/cost-center-history")}
+          >
+            <Building2 className="h-4 w-4" />
+            Cost Center / Department History
+          </Button>
         </div>
 
         {/* Main Content Card */}
