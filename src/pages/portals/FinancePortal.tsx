@@ -424,7 +424,6 @@ export default function FinancePortal() {
             value={stats.pending}
             valueColor="warning"
             isLoading={loading}
-            badge={approvalsNotif}
           />
           <StatCard
             label="Pending Quotes"
