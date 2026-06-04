@@ -1783,6 +1783,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      _notify_supplier: {
+        Args: {
+          _message: string
+          _org_id: string
+          _related: string
+          _supplier_id: string
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: undefined
+      }
       _notify_users: {
         Args: {
           _message: string
