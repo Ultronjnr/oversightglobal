@@ -464,12 +464,22 @@ export function BatchesTab() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={(e) => { e.stopPropagation(); exportBatchToPdf(buildExportData(b)); }}
+                          disabled={exportingId === b.id}
+                          onClick={(e) => { e.stopPropagation(); void handleExportPdf(b); }}
                           className="gap-1"
                         >
-                          <FileDown className="h-4 w-4" />
-                          Export PDF
+                          {exportingId === b.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4" />
+                          )}
+                          {b.export_id ? "Re-download PDF" : "Export PDF"}
                         </Button>
+                        {b.export_id && (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success/30 self-center">
+                            Exported
+                          </Badge>
+                        )}
                       </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
