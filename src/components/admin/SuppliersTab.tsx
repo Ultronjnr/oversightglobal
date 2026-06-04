@@ -98,13 +98,12 @@ export function SuppliersTab() {
   const [isInviting, setIsInviting] = useState(false);
   const [invitations, setInvitations] = useState<SupplierInvitation[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [supplierActionId, setSupplierActionId] = useState<string | null>(null);
+  const [supplierToRemove, setSupplierToRemove] = useState<Supplier | null>(null);
   const [form, setForm] = useState({
     companyName: "",
     contactPerson: "",
     email: "",
-    industry: "",
-    registrationNumber: "",
-    vatNumber: "",
   });
 
   useEffect(() => {
@@ -136,9 +135,6 @@ export function SuppliersTab() {
       companyName: "",
       contactPerson: "",
       email: "",
-      industry: "",
-      registrationNumber: "",
-      vatNumber: "",
     });
 
   const handleInviteSupplier = async () => {
@@ -159,9 +155,6 @@ export function SuppliersTab() {
         email,
         companyName: form.companyName.trim(),
         contactPerson: form.contactPerson.trim(),
-        industry: form.industry || undefined,
-        registrationNumber: form.registrationNumber.trim() || undefined,
-        vatNumber: form.vatNumber.trim() || undefined,
       });
 
       if (!result.success) {
