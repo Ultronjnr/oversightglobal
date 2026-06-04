@@ -247,6 +247,13 @@ export function BatchesTab() {
         a.invoice?.supplier?.supplier_code || a.transaction?.supplier?.supplier_code || null;
       const prNumber =
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
+      const sup = a.invoice?.supplier || a.transaction?.supplier;
+      const accountNumber =
+        a.transaction?.bank_account_number || sup?.bank_account_number || null;
+      const branchCode =
+        a.transaction?.bank_branch_code || sup?.bank_branch_code || null;
+      const accountType =
+        a.transaction?.bank_account_type || sup?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
@@ -256,9 +263,9 @@ export function BatchesTab() {
         type: isFull ? "Full" : "Partial",
         currency,
         invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
-        supplier_account: supplierCode || "—",
-        branch_code: "—",
-        account_type: "—",
+        supplier_account: accountNumber || supplierCode || "—",
+        branch_code: branchCode || "—",
+        account_type: accountType || "—",
         statement_ref: b.payment_reference || txnRef,
         pr_number: prNumber,
         vat_registered: !!vatNumber,
