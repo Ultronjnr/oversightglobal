@@ -1922,6 +1922,10 @@ export type Database = {
         Args: { _comment: string; _reimbursement_id: string }
         Returns: Json
       }
+      admin_approve_reimbursement: {
+        Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
       approve_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
         Returns: Json

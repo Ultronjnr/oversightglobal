@@ -32,6 +32,7 @@ import {
   approveReimbursement,
   rejectReimbursement,
   markReimbursementPaid,
+  adminApproveReimbursement,
   getOrgReimbursementsByBucket,
   getOrgReimbursementBucketCounts,
   type Reimbursement,
@@ -47,6 +48,7 @@ import { Paperclip } from "lucide-react";
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = [
   "PENDING",
+  "FINANCE_APPROVED",
   "AWAITING_PAYMENT",
   "PAID",
   "REJECTED",
@@ -55,7 +57,7 @@ const URL_KEY = "rtab";
 
 const statusConfig: Record<Reimbursement["status"], { label: string; className: string }> = {
   PENDING: { label: "Pending", className: "bg-warning/10 text-warning border-warning/30" },
-  APPROVED: { label: "Approved", className: "bg-primary/10 text-primary border-primary/30" },
+  APPROVED: { label: "Finance Approved", className: "bg-primary/10 text-primary border-primary/30" },
   AWAITING_PAYMENT: {
     label: "Awaiting Payment",
     className: "bg-accent/40 text-foreground border-border",
@@ -76,6 +78,10 @@ const emptyMeta: Record<ReimbursementBucket, { title: string; description: strin
     title: "No Pending Reimbursements",
     description: "New employee reimbursement requests awaiting your review will appear here.",
   },
+  FINANCE_APPROVED: {
+    title: "No Reimbursements Awaiting Final Approval",
+    description: "Reimbursements approved by Finance and awaiting the Admin's final approval will appear here.",
+  },
   AWAITING_PAYMENT: {
     title: "No Reimbursements Awaiting Payment",
     description: "Approved reimbursements waiting to be paid out will appear here.",
@@ -90,7 +96,13 @@ const emptyMeta: Record<ReimbursementBucket, { title: string; description: strin
   },
 };
 
-export function ReimbursementsTab() {
+interface ReimbursementsTabProps {
+  /** Controls available actions and labels. FINANCE is the default. */
+  role?: "FINANCE" | "ADMIN";
+}
+
+export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) {
+  const isAdmin = role === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get(URL_KEY);
   const initialTab: ReimbursementBucket = (VALID_TABS as string[]).includes(urlTab || "")
@@ -103,6 +115,7 @@ export function ReimbursementsTab() {
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<Record<ReimbursementBucket, number>>({
     PENDING: 0,
+    FINANCE_APPROVED: 0,
     AWAITING_PAYMENT: 0,
     PAID: 0,
     REJECTED: 0,
@@ -184,7 +197,19 @@ export function ReimbursementsTab() {
     const res = await approveReimbursement(r.id);
     setActingId(null);
     if (!res.success) return toast.error("Approval failed", { description: res.error });
-    toast.success("Reimbursement approved", { description: "Moved to Awaiting Payment queue." });
+    toast.success("Reimbursement approved", {
+      description: "Sent to Admin for final approval.",
+    });
+    await refreshCounts();
+    goToTab("FINANCE_APPROVED");
+  };
+
+  const handleAdminApprove = async (r: Reimbursement) => {
+    setActingId(r.id);
+    const res = await adminApproveReimbursement(r.id);
+    setActingId(null);
+    if (!res.success) return toast.error("Final approval failed", { description: res.error });
+    toast.success("Final approval granted", { description: "Moved to Awaiting Payment queue." });
     await refreshCounts();
     goToTab("AWAITING_PAYMENT");
   };
@@ -298,7 +323,7 @@ export function ReimbursementsTab() {
                       <Paperclip className="h-4 w-4" />
                       Attach
                     </Button>
-                  {r.status === "PENDING" && (
+                  {r.status === "PENDING" && !isAdmin && (
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
@@ -321,7 +346,40 @@ export function ReimbursementsTab() {
                       </Button>
                     </div>
                   )}
-                  {(r.status === "APPROVED" || r.status === "AWAITING_PAYMENT") && (
+                  {r.status === "PENDING" && isAdmin && (
+                    <span className="text-xs text-muted-foreground italic">
+                      Awaiting Finance review
+                    </span>
+                  )}
+                  {r.status === "APPROVED" && isAdmin && (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={actingId === r.id}
+                        onClick={() => handleDecline(r)}
+                        className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/5"
+                      >
+                        <X className="h-3 w-3" />
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={actingId === r.id}
+                        onClick={() => handleAdminApprove(r)}
+                        className="gap-1"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        Final Approve
+                      </Button>
+                    </div>
+                  )}
+                  {r.status === "APPROVED" && !isAdmin && (
+                    <span className="text-xs text-muted-foreground italic">
+                      Awaiting Admin approval
+                    </span>
+                  )}
+                  {r.status === "AWAITING_PAYMENT" && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -346,10 +404,14 @@ export function ReimbursementsTab() {
   return (
     <>
     <Tabs value={subTab} onValueChange={handleTabChange} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+      <TabsList className="grid w-full grid-cols-5 max-w-3xl">
         <TabsTrigger value="PENDING" className="gap-2">
           Pending
           <Badge variant="secondary" className="ml-1">{counts.PENDING}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="FINANCE_APPROVED" className="gap-2">
+          {isAdmin ? "Final Approval" : "Awaiting Admin"}
+          <Badge variant="secondary" className="ml-1">{counts.FINANCE_APPROVED}</Badge>
         </TabsTrigger>
         <TabsTrigger value="AWAITING_PAYMENT" className="gap-2">
           Awaiting Payment

@@ -186,6 +186,16 @@ export async function rejectReimbursement(id: string, notes?: string) {
   return r?.success ? { success: true } : { success: false, error: r?.error || "Failed" };
 }
 
+export async function adminApproveReimbursement(id: string, notes?: string) {
+  const { data, error } = await supabase.rpc("admin_approve_reimbursement" as any, {
+    _reimbursement_id: id,
+    _notes: notes ?? null,
+  } as any);
+  if (error) return { success: false, error: getSafeErrorMessage(error) };
+  const r = data as any;
+  return r?.success ? { success: true } : { success: false, error: r?.error || "Failed" };
+}
+
 export async function markReimbursementPaid(
   id: string,
   reference?: string,
@@ -295,6 +305,7 @@ export const REIMBURSEMENT_PAYMENT_METHODS = [
 
 export type ReimbursementBucket =
   | "PENDING"
+  | "FINANCE_APPROVED"
   | "AWAITING_PAYMENT"
   | "PAID"
   | "REJECTED";
@@ -302,14 +313,15 @@ export type ReimbursementBucket =
 /**
  * Canonical mapping of UI buckets -> underlying statuses.
  * - PENDING: newly submitted, awaiting finance review
- * - AWAITING_PAYMENT: finance-approved, not yet paid (covers both APPROVED and
- *   the explicit AWAITING_PAYMENT transitional state)
+ * - FINANCE_APPROVED: approved by Finance, awaiting Admin final approval
+ * - AWAITING_PAYMENT: Admin-approved, cleared and not yet paid
  * - PAID: completed payouts only
  * DECLINED/REJECTED are intentionally excluded from active sub-tabs.
  */
 export const REIMBURSEMENT_BUCKET_STATUSES: Record<ReimbursementBucket, ReimbursementStatus[]> = {
   PENDING: ["PENDING"],
-  AWAITING_PAYMENT: ["APPROVED", "AWAITING_PAYMENT"],
+  FINANCE_APPROVED: ["APPROVED"],
+  AWAITING_PAYMENT: ["AWAITING_PAYMENT"],
   PAID: ["PAID"],
   REJECTED: ["REJECTED", "DECLINED"],
 };
@@ -343,6 +355,7 @@ export async function getOrgReimbursementBucketCounts(): Promise<
 > {
   const buckets: ReimbursementBucket[] = [
     "PENDING",
+    "FINANCE_APPROVED",
     "AWAITING_PAYMENT",
     "PAID",
     "REJECTED",
