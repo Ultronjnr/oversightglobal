@@ -444,7 +444,15 @@ export async function getInvoicesAwaitingPayment(): Promise<{
       return { success: false, data: [], error: error.message };
     }
 
-    return { success: true, data: (data || []) as InvoiceWithDetails[] };
+    // One invoice = one batch: exclude invoices already linked to any batch
+    const { data: allocs } = await supabase
+      .from("payment_allocations")
+      .select("invoice_id")
+      .not("invoice_id", "is", null);
+    const batchedIds = new Set((allocs || []).map((a: any) => a.invoice_id));
+    const filtered = (data || []).filter((inv: any) => !batchedIds.has(inv.id));
+
+    return { success: true, data: filtered as InvoiceWithDetails[] };
   } catch (error: any) {
     console.error("getInvoicesAwaitingPayment error:", error);
     return { success: false, data: [], error: error.message };
