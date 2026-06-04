@@ -7,7 +7,9 @@ export type PRStatus =
   | "PENDING_FINANCE_APPROVAL"
   | "FINANCE_APPROVED"
   | "FINANCE_DECLINED"
-  | "SPLIT";
+  | "SPLIT"
+  | "FULFILLED"
+  | "CLOSED";
 
 export type UrgencyLevel = "LOW" | "NORMAL" | "HIGH" | "URGENT";
 
