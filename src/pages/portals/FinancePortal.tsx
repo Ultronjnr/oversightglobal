@@ -175,12 +175,12 @@ export default function FinancePortal() {
       .update({ is_read: true })
       .eq("user_id", uid)
       .eq("is_read", false)
-      .in("type", types);
+      .in("type", types as never[]);
   };
 
   const tabNotifTypes: Record<string, string[]> = {
     approvals: ["requisition_submitted", "requisition_approved"],
-    quotes: ["quote_submitted", "quote_received"],
+    quotes: ["quote_submitted"],
     invoices: ["invoice_uploaded"],
     payments: ["partial_payment", "full_payment"],
     overdue: ["overdue_transaction"],
