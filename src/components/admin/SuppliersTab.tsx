@@ -46,24 +46,18 @@ import {
   listSupplierInvitations,
   type SupplierInvitation,
 } from "@/services/supplier-invite.service";
-
-const INDUSTRY_OPTIONS = [
-  "Construction & Building Materials",
-  "IT & Technology",
-  "Office Supplies & Stationery",
-  "Cleaning & Sanitation",
-  "Electrical & Electronics",
-  "Plumbing & Water Systems",
-  "Catering & Food Services",
-  "Transport & Logistics",
-  "Security Services",
-  "Furniture & Fittings",
-  "Printing & Signage",
-  "Consulting & Professional Services",
-  "Medical & Healthcare Supplies",
-  "Agriculture & Farming",
-  "Other",
-];
+import { deleteSupplier } from "@/services/admin.service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 function InvitationStatusBadge({ status }: { status: string }) {
   switch (status) {
