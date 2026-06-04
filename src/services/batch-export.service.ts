@@ -3,6 +3,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
+import logoUrl from "@/assets/ovasyt-logo.png";
 
 /**
  * Friendly status labels for the public-facing batch lifecycle.
@@ -31,6 +32,15 @@ export interface BatchExportAllocation {
   total_amount: number;
   type: "Full" | "Partial";
   currency?: string;
+  // Netcash-style creditor fields
+  invoice_ref?: string | null;
+  supplier_account?: string | null;
+  branch_code?: string | null;
+  account_type?: string | null;
+  statement_ref?: string | null;
+  pr_number?: string | null;
+  vat_registered?: boolean;
+  payment_status?: string;
 }
 
 export interface BatchExportData {
@@ -43,6 +53,14 @@ export interface BatchExportData {
   currency: string;
   total_amount: number;
   allocations: BatchExportAllocation[];
+  // Header / audit metadata (optional — fall back gracefully)
+  batch_name?: string | null;
+  service_type?: string | null;
+  created_by_name?: string | null;
+  organization_name?: string | null;
+  export_id?: string | null;
+  system_user?: string | null;
+  netcash_status?: string | null;
 }
 
 function triggerDownload(blob: Blob, filename: string) {
@@ -54,6 +72,31 @@ function triggerDownload(blob: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** VAT helpers — amounts are treated as VAT-inclusive at 15% for VAT-registered suppliers. */
+const VAT_RATE = 0.15;
+function vatPortion(amount: number, vatRegistered: boolean | undefined): number {
+  if (!vatRegistered) return 0;
+  return amount - amount / (1 + VAT_RATE);
+}
+function vatClassification(vatRegistered: boolean | undefined): string {
+  return vatRegistered ? "Standard (15%)" : "Zero (0%)";
+}
+
+async function loadLogoDataUrl(): Promise<string | null> {
+  try {
+    const res = await fetch(logoUrl);
+    const blob = await res.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function exportBatchToExcel(batch: BatchExportData) {
