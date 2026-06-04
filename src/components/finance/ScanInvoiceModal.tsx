@@ -88,6 +88,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   // Editable fields
   const [supplierName, setSupplierName] = useState("");
   const [supplierVat, setSupplierVat] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankBranchCode, setBankBranchCode] = useState("");
+  const [bankAccountType, setBankAccountType] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [subtotal, setSubtotal] = useState<string>("");
@@ -115,6 +119,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setCameraMode(null);
     setSupplierName("");
     setSupplierVat("");
+    setBankName("");
+    setBankAccountNumber("");
+    setBankBranchCode("");
+    setBankAccountType("");
     setInvoiceNumber("");
     setInvoiceDate("");
     setSubtotal("");
@@ -219,6 +227,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       const e = res.analysis.extracted || {};
       setSupplierName(e.supplier_name ?? "");
       setSupplierVat(e.supplier_vat_number ?? "");
+      setBankName(e.bank_name ?? "");
+      setBankAccountNumber(e.bank_account_number ?? "");
+      setBankBranchCode(e.bank_branch_code ?? "");
+      setBankAccountType(e.bank_account_type ?? "");
       setInvoiceNumber(e.document_number ?? "");
       setInvoiceDate(e.document_date ?? "");
       setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
@@ -273,6 +285,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       file,
       supplier_name: supplierName.trim(),
       supplier_vat_number: supplierVat.trim() || null,
+      bank_name: bankName.trim() || null,
+      bank_account_number: bankAccountNumber.trim() || null,
+      bank_branch_code: bankBranchCode.trim() || null,
+      bank_account_type: bankAccountType.trim() || null,
       document_number: invoiceNumber.trim() || null,
       document_date: invoiceDate || null,
       subtotal: subtotal ? Number(subtotal) : null,
