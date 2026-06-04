@@ -55,7 +55,7 @@ interface BatchAllocation {
     document_url: string;
     status: string;
     quote?: { amount: number };
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
   transaction?: {
@@ -65,7 +65,11 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
+    bank_name?: string | null;
+    bank_account_number?: string | null;
+    bank_branch_code?: string | null;
+    bank_account_type?: string | null;
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
 }
@@ -115,12 +119,13 @@ export function BatchesTab() {
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
+             bank_name, bank_account_number, bank_branch_code, bank_account_type,
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
          )`,
@@ -242,6 +247,13 @@ export function BatchesTab() {
         a.invoice?.supplier?.supplier_code || a.transaction?.supplier?.supplier_code || null;
       const prNumber =
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
+      const sup = a.invoice?.supplier || a.transaction?.supplier;
+      const accountNumber =
+        a.transaction?.bank_account_number || sup?.bank_account_number || null;
+      const branchCode =
+        a.transaction?.bank_branch_code || sup?.bank_branch_code || null;
+      const accountType =
+        a.transaction?.bank_account_type || sup?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
@@ -251,9 +263,9 @@ export function BatchesTab() {
         type: isFull ? "Full" : "Partial",
         currency,
         invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
-        supplier_account: supplierCode || "—",
-        branch_code: "—",
-        account_type: "—",
+        supplier_account: accountNumber || supplierCode || "—",
+        branch_code: branchCode || "—",
+        account_type: accountType || "—",
         statement_ref: b.payment_reference || txnRef,
         pr_number: prNumber,
         vat_registered: !!vatNumber,

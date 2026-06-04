@@ -19,6 +19,10 @@ export interface OcrExtracted {
   payment_reference?: string;
   notes?: string;
   confidence?: number;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_branch_code?: string;
+  bank_account_type?: string;
   line_items?: Array<{
     description: string;
     quantity?: number;

@@ -39,6 +39,10 @@ const EXTRACTION_TOOL = {
         total_amount: { type: "number" },
         payment_method: { type: "string" },
         payment_reference: { type: "string" },
+        bank_name: { type: "string", description: "Supplier/beneficiary bank name for payment (e.g. FNB, Standard Bank, ABSA, Nedbank, Capitec)" },
+        bank_account_number: { type: "string", description: "Supplier/beneficiary bank account number for payment" },
+        bank_branch_code: { type: "string", description: "Bank branch / universal branch code" },
+        bank_account_type: { type: "string", description: "Account type, e.g. Current/Cheque, Savings, Transmission" },
         line_items: {
           type: "array",
           items: {
@@ -87,6 +91,12 @@ function systemPromptFor(docType: DocType): string {
     "- Ensure math consistency: sum(line total_price) ≈ subtotal; subtotal + vat_amount ≈ total_amount.",
     "- Return numbers only — no currency symbols, no thousands separators.",
     "- Currency defaults to ZAR. VAT is normally 15% (Standard) or 0% (Zero).",
+    "- BANKING DETAILS: carefully look for the supplier's banking/payment details, usually near the footer or in a 'Banking Details' / 'Payment Details' block. Extract:",
+    "  * bank_name (e.g. FNB, Standard Bank, ABSA, Nedbank, Capitec)",
+    "  * bank_account_number (digits only, no spaces)",
+    "  * bank_branch_code (universal/branch code, digits only)",
+    "  * bank_account_type (Current/Cheque, Savings, or Transmission). Default to 'Current/Cheque' if not stated but a bank account is present.",
+    "  If no banking details are printed, omit these fields.",
     "- Map fields when calling extract_document_data:",
     "  receipt_number → document_number, date → document_date, supplier_vat → supplier_vat_number,",
     "  vat_total → vat_amount, total → total_amount.",
