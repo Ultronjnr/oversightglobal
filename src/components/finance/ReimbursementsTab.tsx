@@ -32,6 +32,7 @@ import {
   approveReimbursement,
   rejectReimbursement,
   markReimbursementPaid,
+  adminApproveReimbursement,
   getOrgReimbursementsByBucket,
   getOrgReimbursementBucketCounts,
   type Reimbursement,
@@ -47,6 +48,7 @@ import { Paperclip } from "lucide-react";
 const PAGE_SIZE = 25;
 const VALID_TABS: ReimbursementBucket[] = [
   "PENDING",
+  "FINANCE_APPROVED",
   "AWAITING_PAYMENT",
   "PAID",
   "REJECTED",
@@ -75,6 +77,10 @@ const emptyMeta: Record<ReimbursementBucket, { title: string; description: strin
   PENDING: {
     title: "No Pending Reimbursements",
     description: "New employee reimbursement requests awaiting your review will appear here.",
+  },
+  FINANCE_APPROVED: {
+    title: "No Reimbursements Awaiting Final Approval",
+    description: "Reimbursements approved by Finance and awaiting the Admin's final approval will appear here.",
   },
   AWAITING_PAYMENT: {
     title: "No Reimbursements Awaiting Payment",
