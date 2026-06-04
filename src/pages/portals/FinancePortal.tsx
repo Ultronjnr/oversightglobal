@@ -396,12 +396,14 @@ export default function FinancePortal() {
             value={stats.pending}
             valueColor="warning"
             isLoading={loading}
+            badge={approvalsNotif}
           />
           <StatCard
             label="Pending Quotes"
             value={stats.quotes}
             valueColor="primary"
             isLoading={loading}
+            badge={quotesNotif}
           />
           <StatCard
             label="Approved Today"
