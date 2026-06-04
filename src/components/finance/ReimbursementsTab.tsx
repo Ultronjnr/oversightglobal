@@ -197,7 +197,19 @@ export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) 
     const res = await approveReimbursement(r.id);
     setActingId(null);
     if (!res.success) return toast.error("Approval failed", { description: res.error });
-    toast.success("Reimbursement approved", { description: "Moved to Awaiting Payment queue." });
+    toast.success("Reimbursement approved", {
+      description: "Sent to Admin for final approval.",
+    });
+    await refreshCounts();
+    goToTab("FINANCE_APPROVED");
+  };
+
+  const handleAdminApprove = async (r: Reimbursement) => {
+    setActingId(r.id);
+    const res = await adminApproveReimbursement(r.id);
+    setActingId(null);
+    if (!res.success) return toast.error("Final approval failed", { description: res.error });
+    toast.success("Final approval granted", { description: "Moved to Awaiting Payment queue." });
     await refreshCounts();
     goToTab("AWAITING_PAYMENT");
   };
