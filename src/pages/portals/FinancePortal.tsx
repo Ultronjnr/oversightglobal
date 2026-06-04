@@ -593,19 +593,16 @@ export default function FinancePortal() {
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">Overdue (30+)</span>
                   <Badge variant="secondary" className="ml-1 bg-destructive/15 text-destructive border-destructive/30">{tabCounts.OVERDUE}</Badge>
-                  <NotifDot n={overdueNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="reimbursements" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Undo2 className="h-4 w-4" />
                   <span className="text-sm">Reimbursements</span>
                   <Badge variant="secondary" className="ml-1 bg-primary/15 text-primary border-primary/30">{tabCounts.REIMBURSEMENTS}</Badge>
-                  <NotifDot n={reimbNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="batches" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Layers className="h-4 w-4" />
                   <span className="text-sm">Batches</span>
                   <Badge variant="secondary" className="ml-1 bg-muted text-muted-foreground">{tabCounts.BATCHES}</Badge>
-                  <NotifDot n={batchesNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="input_vat" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
