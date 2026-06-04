@@ -207,6 +207,13 @@ export function BatchesTab() {
     notes: b.notes,
     currency: b.currency || "ZAR",
     total_amount: Number(b.total_amount || 0),
+    batch_name: b.notes || (b.batch_number ? `Batch ${b.batch_number}` : null),
+    service_type: "Creditor Payments",
+    created_by_name: (b.created_by && creators[b.created_by]) || "—",
+    organization_name: orgName,
+    export_id: b.export_id,
+    system_user: currentUser || (b.created_by && creators[b.created_by]) || "—",
+    netcash_status: b.export_id ? "Exported — Ready for Netcash Import" : "Ready for Netcash Import",
     allocations: b.allocations.map((a) => {
       const supplierName =
         a.invoice?.supplier?.company_name ||
@@ -229,6 +236,12 @@ export function BatchesTab() {
         a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
       const isFull =
         a.invoice?.status === "PAID" || a.transaction?.status === "PAID";
+      const vatNumber =
+        a.invoice?.supplier?.vat_number || a.transaction?.supplier?.vat_number || null;
+      const supplierCode =
+        a.invoice?.supplier?.supplier_code || a.transaction?.supplier?.supplier_code || null;
+      const prNumber =
+        a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       return {
         supplier: supplierName,
         contact,
@@ -237,9 +250,71 @@ export function BatchesTab() {
         total_amount: total,
         type: isFull ? "Full" : "Partial",
         currency,
+        invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
+        supplier_account: supplierCode || "—",
+        branch_code: "—",
+        account_type: "—",
+        statement_ref: b.payment_reference || txnRef,
+        pr_number: prNumber,
+        vat_registered: !!vatNumber,
+        payment_status: isFull ? "Paid" : batchStatusLabel(b.status),
       };
     }),
   });
+
+  const handleExportPdf = async (b: BatchRow) => {
+    setExportingId(b.id);
+    try {
+      // 1. Register the export — generates a unique Export ID and locks against duplicates
+      const { data, error } = await supabase.rpc("register_batch_export", { _batch_id: b.id });
+      const res: any = data;
+      if (error || !res?.success) {
+        toast.error("Failed to prepare export", { description: error?.message || res?.error });
+        return;
+      }
+      const exportId: string = res.export_id;
+      if (res.already_exported) {
+        toast.info("This batch was already exported", {
+          description: "Re-downloading the locked report with its original Export ID.",
+        });
+      }
+
+      // 2. Build the PDF with the export metadata
+      const exportData = { ...buildExportData(b), export_id: exportId };
+      const blob = await exportBatchToPdf(exportData, { download: true });
+
+      // 3. Store a copy in batch history (best-effort)
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", auth?.user?.id || "")
+          .single();
+        const orgId = prof?.organization_id;
+        if (orgId) {
+          const path = `${orgId}/${b.id}/${exportId}.pdf`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, blob, { contentType: "application/pdf", upsert: true });
+          if (!up.error) {
+            await supabase.rpc("attach_batch_export_pdf", {
+              _batch_id: b.id,
+              _export_id: exportId,
+              _file_path: path,
+            });
+          }
+        }
+      } catch {
+        /* storage copy is best-effort */
+      }
+
+      toast.success("Batch report exported", { description: `Export ID: ${exportId.slice(0, 8)}…` });
+      void fetchBatches();
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   const handleCancelBatch = async (batchId: string) => {
     if (!window.confirm("Cancel this draft batch? All allocations will be removed.")) return;
