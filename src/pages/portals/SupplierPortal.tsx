@@ -43,6 +43,7 @@ import { getSupplierInvoices, type Invoice } from "@/services/invoice.service";
 import { SubmitQuoteModal } from "@/components/supplier/SubmitQuoteModal";
 import { QuoteRequestDetailsModal } from "@/components/supplier/QuoteRequestDetailsModal";
 import { UploadInvoiceModal } from "@/components/supplier/UploadInvoiceModal";
+import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -253,6 +254,47 @@ export default function SupplierPortal() {
     return invoices.some((inv) => inv.quote_id === quoteId);
   };
 
+  // ── Actionable / notification counts ──────────────────────────────
+  const notifCounts = useNotificationCounts();
+  const newRequestNotif =
+    (notifCounts["quote_request_received"] || 0) || stats.pendingRequests;
+  const awaitingInvoiceCount = quotes.filter(
+    (q) => q.status === "ACCEPTED" && !hasInvoiceForQuote(q.id),
+  ).length;
+  const awaitingApprovalCount = invoices.filter(
+    (inv) => inv.status === "UPLOADED" || inv.status === "AWAITING_PAYMENT",
+  ).length;
+  const paidInvoicesCount = invoices.filter((inv) => inv.status === "PAID").length;
+  const paymentNotif = notifCounts["full_payment"] || 0;
+
+  const NotifBadge = ({ n }: { n: number }) =>
+    n > 0 ? (
+      <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+        {n > 99 ? "99+" : n}
+      </span>
+    ) : null;
+
+  const tabNotifTypes: Record<string, string[]> = {
+    requests: ["quote_request_received"],
+    quotes: ["quote_accepted"],
+    invoices: ["full_payment", "invoice_rejected"],
+  };
+
+  const handleSupplierTabChange = async (value: string) => {
+    setActiveTab(value);
+    const types = tabNotifTypes[value];
+    if (!types) return;
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", uid)
+      .eq("is_read", false)
+      .in("type", types as never[]);
+  };
+
   const handleUploadInvoice = (quote: SupplierQuote) => {
     setSelectedQuoteForInvoice(quote);
     setInvoiceModalOpen(true);
@@ -351,18 +393,21 @@ export default function SupplierPortal() {
         )}
 
         {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleSupplierTabChange}>
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
               Quote Requests
-              {stats.pendingRequests > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
-                  {stats.pendingRequests}
-                </span>
-              )}
+              <NotifBadge n={newRequestNotif} />
             </TabsTrigger>
-            <TabsTrigger value="quotes">My Quotes</TabsTrigger>
+            <TabsTrigger value="quotes" className="relative">
+              My Quotes
+              <NotifBadge n={awaitingInvoiceCount} />
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="relative">
+              Invoices
+              <NotifBadge n={awaitingApprovalCount + paymentNotif} />
+            </TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -735,6 +780,102 @@ export default function SupplierPortal() {
                             </TableRow>
                           );
                         })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-warning/10">
+                      <Upload className="h-5 w-5 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Upload Invoice</p>
+                      <p className="text-2xl font-bold text-warning">{awaitingInvoiceCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Awaiting Approval</p>
+                      <p className="text-2xl font-bold text-primary">{awaitingApprovalCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-success/10">
+                      <CheckCircle className="h-5 w-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Paid Invoices</p>
+                      <p className="text-2xl font-bold text-success">{paidInvoicesCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-muted-foreground" />
+                  My Invoices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {invoices.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                      <Receipt className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-1">No Invoices Yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Invoices you upload for accepted quotes will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Uploaded</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invoices.map((inv) => (
+                          <TableRow key={inv.id}>
+                            <TableCell>
+                              {format(new Date(inv.created_at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {inv.status === "PAID" ? (
+                                <Badge className="bg-success/20 text-success border-success/30">Paid</Badge>
+                              ) : inv.status === "AWAITING_PAYMENT" ? (
+                                <Badge className="bg-primary/20 text-primary border-primary/30">Awaiting Payment</Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-warning/30 text-warning">Awaiting Approval</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>

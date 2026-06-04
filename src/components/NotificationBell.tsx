@@ -61,6 +61,11 @@ function getNotificationTarget(n: NotificationRow): string | null {
       return n.related_transaction_id
         ? `/expenses?highlight=${n.related_transaction_id}`
         : "/expenses";
+    case "quote_request_received":
+      return "/supplier/portal";
+    case "quote_accepted":
+    case "invoice_rejected":
+      return "/supplier/portal";
     default:
       return null;
   }
