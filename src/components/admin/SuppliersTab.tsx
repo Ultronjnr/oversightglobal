@@ -293,40 +293,10 @@ export function SuppliersTab() {
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">Industry</Label>
-                    <select
-                      id="industry"
-                      value={form.industry}
-                      onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="">Select industry (optional)</option>
-                      {INDUSTRY_OPTIONS.map((ind) => (
-                        <option key={ind} value={ind}>{ind}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="registrationNumber">Registration Number</Label>
-                      <Input
-                        id="registrationNumber"
-                        placeholder="e.g. 2024/123456/07"
-                        value={form.registrationNumber}
-                        onChange={(e) => setForm((f) => ({ ...f, registrationNumber: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vatNumber">VAT Number</Label>
-                      <Input
-                        id="vatNumber"
-                        placeholder="Optional"
-                        value={form.vatNumber}
-                        onChange={(e) => setForm((f) => ({ ...f, vatNumber: e.target.value }))}
-                      />
-                    </div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The supplier will provide their industry, registration number and
+                    VAT number when they complete registration.
+                  </p>
                 </div>
 
                 <DialogFooter>
