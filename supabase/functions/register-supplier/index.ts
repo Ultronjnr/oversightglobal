@@ -44,7 +44,9 @@ Deno.serve(async (req) => {
 
     const email = inv.email.toLowerCase();
 
-    // 2. Create the auth user (confirmed so they can log in immediately)
+    // 2. Create the auth user (confirmed so they can log in immediately).
+    // If a prior attempt left an orphaned auth user, reuse it and set the password.
+    let userId: string;
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password,
@@ -53,13 +55,33 @@ Deno.serve(async (req) => {
     });
 
     if (createErr || !created?.user) {
-      return json(
-        { success: false, error: createErr?.message || "Failed to create account." },
-        400
-      );
-    }
+      const alreadyExists =
+        (createErr?.message || "").toLowerCase().includes("already") ||
+        (createErr as { code?: string })?.code === "email_exists";
 
-    const userId = created.user.id;
+      if (!alreadyExists) {
+        return json(
+          { success: false, error: createErr?.message || "Failed to create account." },
+          400
+        );
+      }
+
+      // Find the existing user by email
+      const { data: list } = await admin.auth.admin.listUsers();
+      const existing = list?.users?.find(
+        (u) => (u.email || "").toLowerCase() === email
+      );
+      if (!existing) {
+        return json({ success: false, error: "Failed to create account." }, 400);
+      }
+      userId = existing.id;
+      await admin.auth.admin.updateUserById(userId, {
+        password,
+        email_confirm: true,
+      });
+    } else {
+      userId = created.user.id;
+    }
 
     // 3. Create profile
     const { error: profileErr } = await admin.from("profiles").upsert({
