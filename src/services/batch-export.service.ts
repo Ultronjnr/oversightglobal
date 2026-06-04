@@ -358,7 +358,7 @@ export async function exportBatchToPdf(
     doc.setFontSize(7.5);
     doc.setTextColor(...MUTED);
     doc.text(
-      `${batch.organization_name || "OVASYT"} • Payment Batch ${batch.batch_number}`,
+      batch.organization_name || "OVASYT",
       margin,
       pageH - 22,
     );
