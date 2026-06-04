@@ -39,6 +39,10 @@ const EXTRACTION_TOOL = {
         total_amount: { type: "number" },
         payment_method: { type: "string" },
         payment_reference: { type: "string" },
+        bank_name: { type: "string", description: "Supplier/beneficiary bank name for payment (e.g. FNB, Standard Bank, ABSA, Nedbank, Capitec)" },
+        bank_account_number: { type: "string", description: "Supplier/beneficiary bank account number for payment" },
+        bank_branch_code: { type: "string", description: "Bank branch / universal branch code" },
+        bank_account_type: { type: "string", description: "Account type, e.g. Current/Cheque, Savings, Transmission" },
         line_items: {
           type: "array",
           items: {
