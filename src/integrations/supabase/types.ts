@@ -2063,6 +2063,8 @@ export type Database = {
         | "FINANCE_APPROVED"
         | "FINANCE_DECLINED"
         | "SPLIT"
+        | "FULFILLED"
+        | "CLOSED"
       quote_status:
         | "PENDING"
         | "SUBMITTED"
@@ -2239,6 +2241,8 @@ export const Constants = {
         "FINANCE_APPROVED",
         "FINANCE_DECLINED",
         "SPLIT",
+        "FULFILLED",
+        "CLOSED",
       ],
       quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
       reimbursement_status: [
