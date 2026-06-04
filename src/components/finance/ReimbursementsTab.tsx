@@ -57,7 +57,7 @@ const URL_KEY = "rtab";
 
 const statusConfig: Record<Reimbursement["status"], { label: string; className: string }> = {
   PENDING: { label: "Pending", className: "bg-warning/10 text-warning border-warning/30" },
-  APPROVED: { label: "Approved", className: "bg-primary/10 text-primary border-primary/30" },
+  APPROVED: { label: "Finance Approved", className: "bg-primary/10 text-primary border-primary/30" },
   AWAITING_PAYMENT: {
     label: "Awaiting Payment",
     className: "bg-accent/40 text-foreground border-border",
