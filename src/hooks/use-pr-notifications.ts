@@ -14,6 +14,8 @@ const STATUS_LABELS: Record<PRStatus, string> = {
   FINANCE_APPROVED: 'fully approved',
   FINANCE_DECLINED: 'declined by Finance',
   SPLIT: 'split into multiple requests',
+  FULFILLED: 'fulfilled',
+  CLOSED: 'closed',
 };
 
 const getStatusStyle = (status: PRStatus): 'success' | 'error' | 'info' | 'warning' => {
