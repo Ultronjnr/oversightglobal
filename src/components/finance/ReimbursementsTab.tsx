@@ -323,7 +323,7 @@ export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) 
                       <Paperclip className="h-4 w-4" />
                       Attach
                     </Button>
-                  {r.status === "PENDING" && (
+                  {r.status === "PENDING" && !isAdmin && (
                     <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
@@ -346,7 +346,40 @@ export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) 
                       </Button>
                     </div>
                   )}
-                  {(r.status === "APPROVED" || r.status === "AWAITING_PAYMENT") && (
+                  {r.status === "PENDING" && isAdmin && (
+                    <span className="text-xs text-muted-foreground italic">
+                      Awaiting Finance review
+                    </span>
+                  )}
+                  {r.status === "APPROVED" && isAdmin && (
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={actingId === r.id}
+                        onClick={() => handleDecline(r)}
+                        className="gap-1 text-destructive border-destructive/30 hover:bg-destructive/5"
+                      >
+                        <X className="h-3 w-3" />
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={actingId === r.id}
+                        onClick={() => handleAdminApprove(r)}
+                        className="gap-1"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        Final Approve
+                      </Button>
+                    </div>
+                  )}
+                  {r.status === "APPROVED" && !isAdmin && (
+                    <span className="text-xs text-muted-foreground italic">
+                      Awaiting Admin approval
+                    </span>
+                  )}
+                  {r.status === "AWAITING_PAYMENT" && (
                     <Button
                       size="sm"
                       variant="outline"
