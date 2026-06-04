@@ -787,6 +787,102 @@ export default function SupplierPortal() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices" className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-warning/10">
+                      <Upload className="h-5 w-5 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Upload Invoice</p>
+                      <p className="text-2xl font-bold text-warning">{awaitingInvoiceCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Clock className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Awaiting Approval</p>
+                      <p className="text-2xl font-bold text-primary">{awaitingApprovalCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="dashboard-card">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-success/10">
+                      <CheckCircle className="h-5 w-5 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Paid Invoices</p>
+                      <p className="text-2xl font-bold text-success">{paidInvoicesCount}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-muted-foreground" />
+                  My Invoices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {invoices.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                      <Receipt className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-1">No Invoices Yet</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Invoices you upload for accepted quotes will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Uploaded</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {invoices.map((inv) => (
+                          <TableRow key={inv.id}>
+                            <TableCell>
+                              {format(new Date(inv.created_at), "MMM d, yyyy")}
+                            </TableCell>
+                            <TableCell>
+                              {inv.status === "PAID" ? (
+                                <Badge className="bg-success/20 text-success border-success/30">Paid</Badge>
+                              ) : inv.status === "AWAITING_PAYMENT" ? (
+                                <Badge className="bg-primary/20 text-primary border-primary/30">Awaiting Payment</Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-warning/30 text-warning">Awaiting Approval</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
