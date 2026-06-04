@@ -80,6 +80,44 @@ export type Database = {
         }
         Relationships: []
       }
+      batch_export_log: {
+        Row: {
+          batch_id: string
+          created_at: string
+          export_id: string
+          exported_by: string | null
+          file_path: string | null
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          export_id: string
+          exported_by?: string | null
+          file_path?: string | null
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          export_id?: string
+          exported_by?: string | null
+          file_path?: string | null
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_export_log_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payment_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -700,6 +738,9 @@ export type Database = {
           created_at: string
           created_by: string
           currency: string
+          export_id: string | null
+          exported_at: string | null
+          exported_by: string | null
           id: string
           notes: string | null
           organization_id: string
@@ -714,6 +755,9 @@ export type Database = {
           created_at?: string
           created_by: string
           currency?: string
+          export_id?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
           id?: string
           notes?: string | null
           organization_id: string
@@ -728,6 +772,9 @@ export type Database = {
           created_at?: string
           created_by?: string
           currency?: string
+          export_id?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
           id?: string
           notes?: string | null
           organization_id?: string
@@ -1862,6 +1909,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      attach_batch_export_pdf: {
+        Args: { _batch_id: string; _export_id: string; _file_path: string }
+        Returns: Json
+      }
       cancel_batch_draft: { Args: { _batch_id: string }; Returns: Json }
       cancel_supplier_invite: {
         Args: { _invitation_id: string }
@@ -1977,6 +2028,7 @@ export type Database = {
         }[]
       }
       recompute_overdue_invoices: { Args: never; Returns: number }
+      register_batch_export: { Args: { _batch_id: string }; Returns: Json }
       reject_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
         Returns: Json
