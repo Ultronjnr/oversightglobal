@@ -478,6 +478,41 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="si-bank" className="text-xs">Bank Name</Label>
+                  <Input
+                    id="si-bank"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="Detected from invoice"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-bankacc" className="text-xs">Account Number</Label>
+                  <Input
+                    id="si-bankacc"
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value)}
+                    placeholder="Detected from invoice"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-branch" className="text-xs">Branch Code</Label>
+                  <Input
+                    id="si-branch"
+                    value={bankBranchCode}
+                    onChange={(e) => setBankBranchCode(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="si-acctype" className="text-xs">Account Type</Label>
+                  <Input
+                    id="si-acctype"
+                    value={bankAccountType}
+                    onChange={(e) => setBankAccountType(e.target.value)}
+                    placeholder="Current/Cheque"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="si-invno" className="text-xs">Invoice Number</Label>
                   <Input
                     id="si-invno"

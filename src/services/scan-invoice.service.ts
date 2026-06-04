@@ -62,6 +62,10 @@ export interface CreateTxnFromInvoiceInput {
   supplier_name: string;
   supplier_id?: string | null;
   supplier_vat_number?: string | null;
+  bank_name?: string | null;
+  bank_account_number?: string | null;
+  bank_branch_code?: string | null;
+  bank_account_type?: string | null;
   document_number?: string | null;
   document_date?: string | null;
   subtotal?: number | null;
