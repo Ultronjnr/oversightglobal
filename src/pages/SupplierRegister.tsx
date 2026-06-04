@@ -151,7 +151,17 @@ export default function SupplierRegister() {
       // RLS/session issues during signup.
       const { data, error: fnError } = await supabase.functions.invoke(
         "register-supplier",
-        { body: { token, password } }
+        {
+          body: {
+            token,
+            password,
+            industry: industry || null,
+            registrationNumber: registrationNumber.trim() || null,
+            vatNumber: vatNumber.trim() || null,
+            phone: phone.trim() || null,
+            address: address.trim() || null,
+          },
+        }
       );
 
       if (fnError) {
