@@ -11,6 +11,11 @@ import {
   Loader2,
   AlertCircle,
   Clock,
+  Phone,
+  MapPin,
+  Briefcase,
+  Hash,
+  Receipt,
 } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
@@ -45,6 +50,29 @@ export default function SupplierRegister() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+
+  const INDUSTRY_OPTIONS = [
+    "Construction & Building Materials",
+    "IT & Technology",
+    "Office Supplies & Stationery",
+    "Cleaning & Sanitation",
+    "Electrical & Electronics",
+    "Plumbing & Water Systems",
+    "Catering & Food Services",
+    "Transport & Logistics",
+    "Security Services",
+    "Furniture & Fittings",
+    "Printing & Signage",
+    "Consulting & Professional Services",
+    "Medical & Healthcare Supplies",
+    "Agriculture & Farming",
+    "Other",
+  ];
 
   useEffect(() => {
     if (!token) {
@@ -123,7 +151,17 @@ export default function SupplierRegister() {
       // RLS/session issues during signup.
       const { data, error: fnError } = await supabase.functions.invoke(
         "register-supplier",
-        { body: { token, password } }
+        {
+          body: {
+            token,
+            password,
+            industry: industry || null,
+            registrationNumber: registrationNumber.trim() || null,
+            vatNumber: vatNumber.trim() || null,
+            phone: phone.trim() || null,
+            address: address.trim() || null,
+          },
+        }
       );
 
       if (fnError) {
@@ -227,6 +265,87 @@ export default function SupplierRegister() {
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input className="pl-10 bg-muted/50" readOnly value={invitation?.email ?? ""} />
+            </div>
+          </div>
+
+          <div className="border-t border-border pt-2">
+            <p className="text-xs text-muted-foreground mb-3">Business Details</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="industry">Industry</Label>
+            <div className="relative">
+              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+              <select
+                id="industry"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background pl-10 pr-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Select industry</option>
+                {INDUSTRY_OPTIONS.map((ind) => (
+                  <option key={ind} value={ind}>
+                    {ind}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="registrationNumber">Registration Number</Label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="registrationNumber"
+                  className="pl-10"
+                  placeholder="e.g. 2024/123456/07"
+                  value={registrationNumber}
+                  onChange={(e) => setRegistrationNumber(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vatNumber">VAT Number</Label>
+              <div className="relative">
+                <Receipt className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="vatNumber"
+                  className="pl-10"
+                  placeholder="Optional"
+                  value={vatNumber}
+                  onChange={(e) => setVatNumber(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="phone"
+                className="pl-10"
+                placeholder="Optional"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="address"
+                className="pl-10"
+                placeholder="Optional"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
             </div>
           </div>
 

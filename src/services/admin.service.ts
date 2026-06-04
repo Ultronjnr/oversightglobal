@@ -372,3 +372,25 @@ export async function deleteUser(
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Delete a supplier from the organization
+ */
+export async function deleteSupplier(
+  supplierId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from("suppliers")
+      .delete()
+      .eq("id", supplierId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

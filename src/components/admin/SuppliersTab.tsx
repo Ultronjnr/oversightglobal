@@ -46,24 +46,18 @@ import {
   listSupplierInvitations,
   type SupplierInvitation,
 } from "@/services/supplier-invite.service";
-
-const INDUSTRY_OPTIONS = [
-  "Construction & Building Materials",
-  "IT & Technology",
-  "Office Supplies & Stationery",
-  "Cleaning & Sanitation",
-  "Electrical & Electronics",
-  "Plumbing & Water Systems",
-  "Catering & Food Services",
-  "Transport & Logistics",
-  "Security Services",
-  "Furniture & Fittings",
-  "Printing & Signage",
-  "Consulting & Professional Services",
-  "Medical & Healthcare Supplies",
-  "Agriculture & Farming",
-  "Other",
-];
+import { deleteSupplier } from "@/services/admin.service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 function InvitationStatusBadge({ status }: { status: string }) {
   switch (status) {
@@ -104,13 +98,12 @@ export function SuppliersTab() {
   const [isInviting, setIsInviting] = useState(false);
   const [invitations, setInvitations] = useState<SupplierInvitation[]>([]);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [supplierActionId, setSupplierActionId] = useState<string | null>(null);
+  const [supplierToRemove, setSupplierToRemove] = useState<Supplier | null>(null);
   const [form, setForm] = useState({
     companyName: "",
     contactPerson: "",
     email: "",
-    industry: "",
-    registrationNumber: "",
-    vatNumber: "",
   });
 
   useEffect(() => {
@@ -142,9 +135,6 @@ export function SuppliersTab() {
       companyName: "",
       contactPerson: "",
       email: "",
-      industry: "",
-      registrationNumber: "",
-      vatNumber: "",
     });
 
   const handleInviteSupplier = async () => {
@@ -165,9 +155,6 @@ export function SuppliersTab() {
         email,
         companyName: form.companyName.trim(),
         contactPerson: form.contactPerson.trim(),
-        industry: form.industry || undefined,
-        registrationNumber: form.registrationNumber.trim() || undefined,
-        vatNumber: form.vatNumber.trim() || undefined,
       });
 
       if (!result.success) {
@@ -221,6 +208,46 @@ export function SuppliersTab() {
       fetchInvitations();
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleReinviteSupplier = async (supplier: Supplier) => {
+    setSupplierActionId(supplier.id);
+    try {
+      const result = await createSupplierInvite({
+        email: supplier.contact_email,
+        companyName: supplier.company_name,
+        contactPerson: supplier.contact_person || supplier.company_name,
+      });
+      if (!result.success) {
+        toast.error(result.error || "Failed to resend invitation");
+        return;
+      }
+      if (result.emailSent) {
+        toast.success("Invitation email sent successfully");
+      } else {
+        toast.warning("Invitation created, but the email failed to send.");
+      }
+      fetchInvitations();
+    } finally {
+      setSupplierActionId(null);
+    }
+  };
+
+  const handleRemoveSupplier = async () => {
+    if (!supplierToRemove) return;
+    setSupplierActionId(supplierToRemove.id);
+    try {
+      const result = await deleteSupplier(supplierToRemove.id);
+      if (!result.success) {
+        toast.error(result.error || "Failed to remove supplier");
+        return;
+      }
+      toast.success("Supplier removed");
+      setSupplierToRemove(null);
+      fetchSuppliers();
+    } finally {
+      setSupplierActionId(null);
     }
   };
 
@@ -306,40 +333,10 @@ export function SuppliersTab() {
                       onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="industry">Industry</Label>
-                    <select
-                      id="industry"
-                      value={form.industry}
-                      onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="">Select industry (optional)</option>
-                      {INDUSTRY_OPTIONS.map((ind) => (
-                        <option key={ind} value={ind}>{ind}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="registrationNumber">Registration Number</Label>
-                      <Input
-                        id="registrationNumber"
-                        placeholder="e.g. 2024/123456/07"
-                        value={form.registrationNumber}
-                        onChange={(e) => setForm((f) => ({ ...f, registrationNumber: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vatNumber">VAT Number</Label>
-                      <Input
-                        id="vatNumber"
-                        placeholder="Optional"
-                        value={form.vatNumber}
-                        onChange={(e) => setForm((f) => ({ ...f, vatNumber: e.target.value }))}
-                      />
-                    </div>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    The supplier will provide their industry, registration number and
+                    VAT number when they complete registration.
+                  </p>
                 </div>
 
                 <DialogFooter>
@@ -405,6 +402,7 @@ export function SuppliersTab() {
                   <TableHead>Registration #</TableHead>
                   <TableHead>VAT #</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -468,6 +466,32 @@ export function SuppliersTab() {
                     </TableCell>
                     <TableCell>
                       {format(new Date(supplier.created_at), "dd MMM yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={supplierActionId === supplier.id}
+                          onClick={() => handleReinviteSupplier(supplier)}
+                        >
+                          {supplierActionId === supplier.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          <span className="ml-1">Resend</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={supplierActionId === supplier.id}
+                          onClick={() => setSupplierToRemove(supplier)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -564,6 +588,34 @@ export function SuppliersTab() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!supplierToRemove}
+        onOpenChange={(open) => !open && setSupplierToRemove(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove supplier?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove{" "}
+              <span className="font-medium">{supplierToRemove?.company_name}</span>{" "}
+              from your organization. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleRemoveSupplier();
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

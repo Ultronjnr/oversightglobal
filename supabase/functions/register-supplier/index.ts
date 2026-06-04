@@ -12,7 +12,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, password } = await req.json();
+    const { token, password, industry, registrationNumber, vatNumber, phone, address } =
+      await req.json();
 
     if (!token || !password || String(password).length < 8) {
       return json({ success: false, error: "Invalid token or password." }, 400);
@@ -101,9 +102,11 @@ Deno.serve(async (req) => {
       company_name: inv.company_name,
       contact_email: email,
       contact_person: inv.contact_person,
-      registration_number: inv.registration_number,
-      vat_number: inv.vat_number,
-      industry: inv.industry,
+      registration_number: registrationNumber || inv.registration_number || null,
+      vat_number: vatNumber || inv.vat_number || null,
+      industry: industry || inv.industry || null,
+      phone: phone || null,
+      address: address || null,
       organization_id: inv.organization_id,
       is_public: false,
       is_verified: true,
