@@ -96,7 +96,13 @@ const emptyMeta: Record<ReimbursementBucket, { title: string; description: strin
   },
 };
 
-export function ReimbursementsTab() {
+interface ReimbursementsTabProps {
+  /** Controls available actions and labels. FINANCE is the default. */
+  role?: "FINANCE" | "ADMIN";
+}
+
+export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) {
+  const isAdmin = role === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get(URL_KEY);
   const initialTab: ReimbursementBucket = (VALID_TABS as string[]).includes(urlTab || "")
@@ -109,6 +115,7 @@ export function ReimbursementsTab() {
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<Record<ReimbursementBucket, number>>({
     PENDING: 0,
+    FINANCE_APPROVED: 0,
     AWAITING_PAYMENT: 0,
     PAID: 0,
     REJECTED: 0,
