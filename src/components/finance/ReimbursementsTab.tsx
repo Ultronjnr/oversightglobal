@@ -404,10 +404,14 @@ export function ReimbursementsTab({ role = "FINANCE" }: ReimbursementsTabProps) 
   return (
     <>
     <Tabs value={subTab} onValueChange={handleTabChange} className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+      <TabsList className="grid w-full grid-cols-5 max-w-3xl">
         <TabsTrigger value="PENDING" className="gap-2">
           Pending
           <Badge variant="secondary" className="ml-1">{counts.PENDING}</Badge>
+        </TabsTrigger>
+        <TabsTrigger value="FINANCE_APPROVED" className="gap-2">
+          {isAdmin ? "Final Approval" : "Awaiting Admin"}
+          <Badge variant="secondary" className="ml-1">{counts.FINANCE_APPROVED}</Badge>
         </TabsTrigger>
         <TabsTrigger value="AWAITING_PAYMENT" className="gap-2">
           Awaiting Payment
