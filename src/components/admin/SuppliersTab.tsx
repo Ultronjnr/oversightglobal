@@ -402,6 +402,7 @@ export function SuppliersTab() {
                   <TableHead>Registration #</TableHead>
                   <TableHead>VAT #</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -465,6 +466,32 @@ export function SuppliersTab() {
                     </TableCell>
                     <TableCell>
                       {format(new Date(supplier.created_at), "dd MMM yyyy")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={supplierActionId === supplier.id}
+                          onClick={() => handleReinviteSupplier(supplier)}
+                        >
+                          {supplierActionId === supplier.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          <span className="ml-1">Resend</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={supplierActionId === supplier.id}
+                          onClick={() => setSupplierToRemove(supplier)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
