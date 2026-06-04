@@ -119,71 +119,25 @@ export default function SupplierRegister() {
 
     setSubmitting(true);
     try {
-      // 1. Sign up
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: invitation.email,
-        password,
-        options: { emailRedirectTo: window.location.origin },
-      });
+      // All account creation happens server-side (service role) to avoid
+      // RLS/session issues during signup.
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "register-supplier",
+        { body: { token, password } }
+      );
 
-      if (authError) {
-        toast.error(getSafeErrorMessage(authError));
-        return;
-      }
-      if (!authData.user) {
-        toast.error("Failed to create account.");
+      if (fnError) {
+        toast.error(getSafeErrorMessage(fnError));
         return;
       }
 
-      const userId = authData.user.id;
-
-      // 2. Create profile
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: userId,
-        email: invitation.email.toLowerCase(),
-        name: invitation.company_name,
-        organization_id: invitation.organization_id,
-      });
-      if (profileError) {
-        toast.error(getSafeErrorMessage(profileError));
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "Registration failed. Please try again.");
         return;
       }
 
-      // 3. Create supplier record from invitation data
-      const { error: supplierError } = await supabase.from("suppliers").insert({
-        user_id: userId,
-        company_name: invitation.company_name,
-        contact_email: invitation.email.toLowerCase(),
-        contact_person: invitation.contact_person,
-        registration_number: invitation.registration_number,
-        vat_number: invitation.vat_number,
-        industry: invitation.industry,
-        organization_id: invitation.organization_id,
-        is_public: false,
-        is_verified: true,
-      });
-      if (supplierError) {
-        toast.error(getSafeErrorMessage(supplierError));
-        return;
-      }
-
-      // 4. Assign SUPPLIER role
-      const { error: roleError } = await supabase.rpc("assign_invitation_role", {
-        _user_id: userId,
-        _role: "SUPPLIER",
-      });
-      if (roleError) {
-        toast.error(getSafeErrorMessage(roleError));
-        return;
-      }
-
-      // 5. Mark invitation accepted
-      await supabase.rpc("accept_supplier_invitation_token", {
-        _token: token,
-        _user_id: userId,
-      });
-
-      toast.success("Registration completed! Please check your email to confirm, then log in.");
+      toast.success("Registration completed! You can now log in.");
       navigate("/login");
     } catch (err: any) {
       toast.error(getSafeErrorMessage(err));
