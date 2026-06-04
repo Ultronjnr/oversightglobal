@@ -55,7 +55,7 @@ interface BatchAllocation {
     document_url: string;
     status: string;
     quote?: { amount: number };
-    supplier?: { company_name: string; contact_email: string };
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
   transaction?: {
@@ -65,7 +65,7 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
-    supplier?: { company_name: string; contact_email: string } | null;
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
 }
@@ -81,6 +81,9 @@ interface BatchRow {
   payment_reference: string | null;
   confirmed_at: string | null;
   paid_at: string | null;
+  created_by: string | null;
+  export_id: string | null;
+  exported_at: string | null;
   allocations: BatchAllocation[];
 }
 
@@ -92,6 +95,10 @@ export function BatchesTab() {
   const [confirmRef, setConfirmRef] = useState("");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const [orgName, setOrgName] = useState<string>("OVASYT");
+  const [creators, setCreators] = useState<Record<string, string>>({});
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchBatches();
@@ -102,18 +109,18 @@ export function BatchesTab() {
     const { data, error } = await supabase
       .from("payment_batches")
       .select(
-        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at,
+        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at, created_by, export_id, exported_at,
          allocations:payment_allocations (
            id, invoice_id, transaction_id, amount_paid,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
-             supplier:suppliers ( company_name, contact_email ),
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
-             supplier:suppliers ( company_name, contact_email ),
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
          )`,
@@ -125,7 +132,38 @@ export function BatchesTab() {
       setLoading(false);
       return;
     }
-    setBatches((data || []) as any);
+    const rows = (data || []) as any as BatchRow[];
+    setBatches(rows);
+
+    // Resolve organization name + creator names + current user for the report header
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth?.user?.id;
+    const creatorIds = Array.from(
+      new Set(rows.map((r) => r.created_by).filter(Boolean) as string[]),
+    );
+    const ids = Array.from(new Set([...creatorIds, ...(uid ? [uid] : [])]));
+    if (ids.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, name, surname, organization_id")
+        .in("id", ids);
+      const map: Record<string, string> = {};
+      let orgId: string | undefined;
+      (profs || []).forEach((p: any) => {
+        map[p.id] = [p.name, p.surname].filter(Boolean).join(" ") || "—";
+        if (p.id === uid) orgId = p.organization_id;
+      });
+      setCreators(map);
+      if (uid && map[uid]) setCurrentUser(map[uid]);
+      if (orgId) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single();
+        if (org?.name) setOrgName(org.name);
+      }
+    }
     setLoading(false);
   };
 
