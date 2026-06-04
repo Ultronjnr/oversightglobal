@@ -165,6 +165,34 @@ export default function FinancePortal() {
 
   const navItems = getPortalNavItems("FINANCE");
 
+  // Mark unread notifications of given types as read when the related tab is opened.
+  const markNotifTypesRead = async (types: string[]) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", uid)
+      .eq("is_read", false)
+      .in("type", types);
+  };
+
+  const tabNotifTypes: Record<string, string[]> = {
+    approvals: ["requisition_submitted", "requisition_approved"],
+    quotes: ["quote_submitted", "quote_received"],
+    invoices: ["invoice_uploaded"],
+    payments: ["partial_payment", "full_payment"],
+    overdue: ["overdue_transaction"],
+    reimbursements: ["reimbursement_submitted", "ai_receipt_matched"],
+    batches: ["batch_created"],
+  };
+
+  const handleTabChange = (value: string) => {
+    const types = tabNotifTypes[value];
+    if (types) void markNotifTypesRead(types);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
