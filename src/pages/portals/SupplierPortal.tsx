@@ -43,6 +43,7 @@ import { getSupplierInvoices, type Invoice } from "@/services/invoice.service";
 import { SubmitQuoteModal } from "@/components/supplier/SubmitQuoteModal";
 import { QuoteRequestDetailsModal } from "@/components/supplier/QuoteRequestDetailsModal";
 import { UploadInvoiceModal } from "@/components/supplier/UploadInvoiceModal";
+import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -251,6 +252,47 @@ export default function SupplierPortal() {
   // Check if invoice has been uploaded for a quote
   const hasInvoiceForQuote = (quoteId: string) => {
     return invoices.some((inv) => inv.quote_id === quoteId);
+  };
+
+  // ── Actionable / notification counts ──────────────────────────────
+  const notifCounts = useNotificationCounts();
+  const newRequestNotif =
+    (notifCounts["quote_request_received"] || 0) || stats.pendingRequests;
+  const awaitingInvoiceCount = quotes.filter(
+    (q) => q.status === "ACCEPTED" && !hasInvoiceForQuote(q.id),
+  ).length;
+  const awaitingApprovalCount = invoices.filter(
+    (inv) => inv.status === "UPLOADED" || inv.status === "AWAITING_PAYMENT",
+  ).length;
+  const paidInvoicesCount = invoices.filter((inv) => inv.status === "PAID").length;
+  const paymentNotif = notifCounts["full_payment"] || 0;
+
+  const NotifBadge = ({ n }: { n: number }) =>
+    n > 0 ? (
+      <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+        {n > 99 ? "99+" : n}
+      </span>
+    ) : null;
+
+  const tabNotifTypes: Record<string, string[]> = {
+    requests: ["quote_request_received"],
+    quotes: ["quote_accepted"],
+    invoices: ["full_payment", "invoice_rejected"],
+  };
+
+  const handleSupplierTabChange = async (value: string) => {
+    setActiveTab(value);
+    const types = tabNotifTypes[value];
+    if (!types) return;
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", uid)
+      .eq("is_read", false)
+      .in("type", types as never[]);
   };
 
   const handleUploadInvoice = (quote: SupplierQuote) => {
