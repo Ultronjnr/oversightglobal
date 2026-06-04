@@ -393,18 +393,21 @@ export default function SupplierPortal() {
         )}
 
         {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleSupplierTabChange}>
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="requests" className="relative">
               Quote Requests
-              {stats.pendingRequests > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
-                  {stats.pendingRequests}
-                </span>
-              )}
+              <NotifBadge n={newRequestNotif} />
             </TabsTrigger>
-            <TabsTrigger value="quotes">My Quotes</TabsTrigger>
+            <TabsTrigger value="quotes" className="relative">
+              My Quotes
+              <NotifBadge n={awaitingInvoiceCount} />
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="relative">
+              Invoices
+              <NotifBadge n={awaitingApprovalCount + paymentNotif} />
+            </TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
