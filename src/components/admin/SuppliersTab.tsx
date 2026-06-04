@@ -211,6 +211,46 @@ export function SuppliersTab() {
     }
   };
 
+  const handleReinviteSupplier = async (supplier: Supplier) => {
+    setSupplierActionId(supplier.id);
+    try {
+      const result = await createSupplierInvite({
+        email: supplier.contact_email,
+        companyName: supplier.company_name,
+        contactPerson: supplier.contact_person || supplier.company_name,
+      });
+      if (!result.success) {
+        toast.error(result.error || "Failed to resend invitation");
+        return;
+      }
+      if (result.emailSent) {
+        toast.success("Invitation email sent successfully");
+      } else {
+        toast.warning("Invitation created, but the email failed to send.");
+      }
+      fetchInvitations();
+    } finally {
+      setSupplierActionId(null);
+    }
+  };
+
+  const handleRemoveSupplier = async () => {
+    if (!supplierToRemove) return;
+    setSupplierActionId(supplierToRemove.id);
+    try {
+      const result = await deleteSupplier(supplierToRemove.id);
+      if (!result.success) {
+        toast.error(result.error || "Failed to remove supplier");
+        return;
+      }
+      toast.success("Supplier removed");
+      setSupplierToRemove(null);
+      fetchSuppliers();
+    } finally {
+      setSupplierActionId(null);
+    }
+  };
+
   const filteredSuppliers = suppliers.filter((supplier) => {
     const searchLower = searchTerm.toLowerCase();
     return (
