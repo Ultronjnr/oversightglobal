@@ -55,7 +55,7 @@ interface BatchAllocation {
     document_url: string;
     status: string;
     quote?: { amount: number };
-    supplier?: { company_name: string; contact_email: string };
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
   transaction?: {
@@ -65,7 +65,7 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
-    supplier?: { company_name: string; contact_email: string } | null;
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
 }
@@ -81,6 +81,9 @@ interface BatchRow {
   payment_reference: string | null;
   confirmed_at: string | null;
   paid_at: string | null;
+  created_by: string | null;
+  export_id: string | null;
+  exported_at: string | null;
   allocations: BatchAllocation[];
 }
 
@@ -92,6 +95,10 @@ export function BatchesTab() {
   const [confirmRef, setConfirmRef] = useState("");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [submitting, setSubmitting] = useState(false);
+  const [orgName, setOrgName] = useState<string>("OVASYT");
+  const [creators, setCreators] = useState<Record<string, string>>({});
+  const [currentUser, setCurrentUser] = useState<string>("");
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchBatches();
@@ -102,18 +109,18 @@ export function BatchesTab() {
     const { data, error } = await supabase
       .from("payment_batches")
       .select(
-        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at,
+        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at, created_by, export_id, exported_at,
          allocations:payment_allocations (
            id, invoice_id, transaction_id, amount_paid,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
-             supplier:suppliers ( company_name, contact_email ),
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
-             supplier:suppliers ( company_name, contact_email ),
+             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
          )`,
@@ -125,7 +132,38 @@ export function BatchesTab() {
       setLoading(false);
       return;
     }
-    setBatches((data || []) as any);
+    const rows = (data || []) as any as BatchRow[];
+    setBatches(rows);
+
+    // Resolve organization name + creator names + current user for the report header
+    const { data: auth } = await supabase.auth.getUser();
+    const uid = auth?.user?.id;
+    const creatorIds = Array.from(
+      new Set(rows.map((r) => r.created_by).filter(Boolean) as string[]),
+    );
+    const ids = Array.from(new Set([...creatorIds, ...(uid ? [uid] : [])]));
+    if (ids.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, name, surname, organization_id")
+        .in("id", ids);
+      const map: Record<string, string> = {};
+      let orgId: string | undefined;
+      (profs || []).forEach((p: any) => {
+        map[p.id] = [p.name, p.surname].filter(Boolean).join(" ") || "—";
+        if (p.id === uid) orgId = p.organization_id;
+      });
+      setCreators(map);
+      if (uid && map[uid]) setCurrentUser(map[uid]);
+      if (orgId) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", orgId)
+          .single();
+        if (org?.name) setOrgName(org.name);
+      }
+    }
     setLoading(false);
   };
 
@@ -169,6 +207,13 @@ export function BatchesTab() {
     notes: b.notes,
     currency: b.currency || "ZAR",
     total_amount: Number(b.total_amount || 0),
+    batch_name: b.notes || (b.batch_number ? `Batch ${b.batch_number}` : null),
+    service_type: "Creditor Payments",
+    created_by_name: (b.created_by && creators[b.created_by]) || "—",
+    organization_name: orgName,
+    export_id: b.export_id,
+    system_user: currentUser || (b.created_by && creators[b.created_by]) || "—",
+    netcash_status: b.export_id ? "Exported — Ready for Netcash Import" : "Ready for Netcash Import",
     allocations: b.allocations.map((a) => {
       const supplierName =
         a.invoice?.supplier?.company_name ||
@@ -191,6 +236,12 @@ export function BatchesTab() {
         a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
       const isFull =
         a.invoice?.status === "PAID" || a.transaction?.status === "PAID";
+      const vatNumber =
+        a.invoice?.supplier?.vat_number || a.transaction?.supplier?.vat_number || null;
+      const supplierCode =
+        a.invoice?.supplier?.supplier_code || a.transaction?.supplier?.supplier_code || null;
+      const prNumber =
+        a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       return {
         supplier: supplierName,
         contact,
@@ -199,9 +250,71 @@ export function BatchesTab() {
         total_amount: total,
         type: isFull ? "Full" : "Partial",
         currency,
+        invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
+        supplier_account: supplierCode || "—",
+        branch_code: "—",
+        account_type: "—",
+        statement_ref: b.payment_reference || txnRef,
+        pr_number: prNumber,
+        vat_registered: !!vatNumber,
+        payment_status: isFull ? "Paid" : batchStatusLabel(b.status),
       };
     }),
   });
+
+  const handleExportPdf = async (b: BatchRow) => {
+    setExportingId(b.id);
+    try {
+      // 1. Register the export — generates a unique Export ID and locks against duplicates
+      const { data, error } = await supabase.rpc("register_batch_export", { _batch_id: b.id });
+      const res: any = data;
+      if (error || !res?.success) {
+        toast.error("Failed to prepare export", { description: error?.message || res?.error });
+        return;
+      }
+      const exportId: string = res.export_id;
+      if (res.already_exported) {
+        toast.info("This batch was already exported", {
+          description: "Re-downloading the locked report with its original Export ID.",
+        });
+      }
+
+      // 2. Build the PDF with the export metadata
+      const exportData = { ...buildExportData(b), export_id: exportId };
+      const blob = await exportBatchToPdf(exportData, { download: true });
+
+      // 3. Store a copy in batch history (best-effort)
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", auth?.user?.id || "")
+          .single();
+        const orgId = prof?.organization_id;
+        if (orgId) {
+          const path = `${orgId}/${b.id}/${exportId}.pdf`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, blob, { contentType: "application/pdf", upsert: true });
+          if (!up.error) {
+            await supabase.rpc("attach_batch_export_pdf", {
+              _batch_id: b.id,
+              _export_id: exportId,
+              _file_path: path,
+            });
+          }
+        }
+      } catch {
+        /* storage copy is best-effort */
+      }
+
+      toast.success("Batch report exported", { description: `Export ID: ${exportId.slice(0, 8)}…` });
+      void fetchBatches();
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   const handleCancelBatch = async (batchId: string) => {
     if (!window.confirm("Cancel this draft batch? All allocations will be removed.")) return;
@@ -351,12 +464,22 @@ export function BatchesTab() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={(e) => { e.stopPropagation(); exportBatchToPdf(buildExportData(b)); }}
+                          disabled={exportingId === b.id}
+                          onClick={(e) => { e.stopPropagation(); void handleExportPdf(b); }}
                           className="gap-1"
                         >
-                          <FileDown className="h-4 w-4" />
-                          Export PDF
+                          {exportingId === b.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4" />
+                          )}
+                          {b.export_id ? "Re-download PDF" : "Export PDF"}
                         </Button>
+                        {b.export_id && (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success/30 self-center">
+                            Exported
+                          </Badge>
+                        )}
                       </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
