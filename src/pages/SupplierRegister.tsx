@@ -11,6 +11,11 @@ import {
   Loader2,
   AlertCircle,
   Clock,
+  Phone,
+  MapPin,
+  Briefcase,
+  Hash,
+  Receipt,
 } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
@@ -45,6 +50,29 @@ export default function SupplierRegister() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+
+  const INDUSTRY_OPTIONS = [
+    "Construction & Building Materials",
+    "IT & Technology",
+    "Office Supplies & Stationery",
+    "Cleaning & Sanitation",
+    "Electrical & Electronics",
+    "Plumbing & Water Systems",
+    "Catering & Food Services",
+    "Transport & Logistics",
+    "Security Services",
+    "Furniture & Fittings",
+    "Printing & Signage",
+    "Consulting & Professional Services",
+    "Medical & Healthcare Supplies",
+    "Agriculture & Farming",
+    "Other",
+  ];
 
   useEffect(() => {
     if (!token) {
