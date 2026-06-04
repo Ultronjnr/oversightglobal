@@ -553,7 +553,7 @@ export default function FinancePortal() {
               description="Your dashboard is now clean. Click 'Incoming Purchase Requisitions' to review pending approvals."
             />
           ) : (
-            <Tabs defaultValue="approvals" className="space-y-4">
+            <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
               <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <DollarSign className="h-4 w-4" />
