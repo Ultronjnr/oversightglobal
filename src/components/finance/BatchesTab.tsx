@@ -55,7 +55,7 @@ interface BatchAllocation {
     document_url: string;
     status: string;
     quote?: { amount: number };
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
   transaction?: {
@@ -65,7 +65,11 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
+    bank_name?: string | null;
+    bank_account_number?: string | null;
+    bank_branch_code?: string | null;
+    bank_account_type?: string | null;
+    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
 }
