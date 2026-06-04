@@ -2037,6 +2037,7 @@ export type Database = {
         | "overdue_transaction"
         | "invoice_uploaded"
         | "ai_receipt_matched"
+        | "quote_submitted"
       ocr_document_type: "INVOICE" | "REIMBURSEMENT_PROOF" | "PR_DOCUMENT"
       ocr_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
@@ -2208,6 +2209,7 @@ export const Constants = {
         "overdue_transaction",
         "invoice_uploaded",
         "ai_receipt_matched",
+        "quote_submitted",
       ],
       ocr_document_type: ["INVOICE", "REIMBURSEMENT_PROOF", "PR_DOCUMENT"],
       ocr_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],

@@ -165,6 +165,34 @@ export default function FinancePortal() {
 
   const navItems = getPortalNavItems("FINANCE");
 
+  // Mark unread notifications of given types as read when the related tab is opened.
+  const markNotifTypesRead = async (types: string[]) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData?.user?.id;
+    if (!uid) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", uid)
+      .eq("is_read", false)
+      .in("type", types as never[]);
+  };
+
+  const tabNotifTypes: Record<string, string[]> = {
+    approvals: ["requisition_submitted", "requisition_approved"],
+    quotes: ["quote_submitted"],
+    invoices: ["invoice_uploaded"],
+    payments: ["partial_payment", "full_payment"],
+    overdue: ["overdue_transaction"],
+    reimbursements: ["reimbursement_submitted", "ai_receipt_matched"],
+    batches: ["batch_created"],
+  };
+
+  const handleTabChange = (value: string) => {
+    const types = tabNotifTypes[value];
+    if (types) void markNotifTypesRead(types);
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -396,12 +424,14 @@ export default function FinancePortal() {
             value={stats.pending}
             valueColor="warning"
             isLoading={loading}
+            badge={approvalsNotif}
           />
           <StatCard
             label="Pending Quotes"
             value={stats.quotes}
             valueColor="primary"
             isLoading={loading}
+            badge={quotesNotif}
           />
           <StatCard
             label="Approved Today"
@@ -523,7 +553,7 @@ export default function FinancePortal() {
               description="Your dashboard is now clean. Click 'Incoming Purchase Requisitions' to review pending approvals."
             />
           ) : (
-            <Tabs defaultValue="approvals" className="space-y-4">
+            <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
               <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <DollarSign className="h-4 w-4" />
