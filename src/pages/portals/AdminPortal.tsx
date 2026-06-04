@@ -22,6 +22,7 @@ import { AllPRsTab } from "@/components/admin/AllPRsTab";
 import { SuppliersTab } from "@/components/admin/SuppliersTab";
 import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { SettingsTab } from "@/components/admin/SettingsTab";
+import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
 
@@ -136,6 +137,10 @@ export default function AdminPortal() {
               <Truck className="h-4 w-4" />
               Suppliers
             </TabsTrigger>
+            <TabsTrigger value="reimbursements" className="flex items-center gap-2">
+              <Receipt className="h-4 w-4" />
+              Reimbursements
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
@@ -168,6 +173,10 @@ export default function AdminPortal() {
 
           <TabsContent value="suppliers">
             <SuppliersTab />
+          </TabsContent>
+
+          <TabsContent value="reimbursements">
+            <ReimbursementsTab role="ADMIN" />
           </TabsContent>
 
           <TabsContent value="analytics">
