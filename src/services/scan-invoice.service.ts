@@ -210,12 +210,26 @@ export async function createTransactionFromInvoice(
       supplier_name: input.supplier_name.trim(),
     };
     if (input.supplier_id) txnUpdate.supplier_id = input.supplier_id;
+    if (input.bank_name) txnUpdate.bank_name = input.bank_name.trim();
+    if (input.bank_account_number) txnUpdate.bank_account_number = input.bank_account_number.trim();
+    if (input.bank_branch_code) txnUpdate.bank_branch_code = input.bank_branch_code.trim();
+    if (input.bank_account_type) txnUpdate.bank_account_type = input.bank_account_type.trim();
     const { data: txnRow } = await supabase
       .from("transactions" as any)
       .update(txnUpdate)
       .eq("pr_id", prRow.id)
       .select("id")
       .single();
+
+    // If a real supplier is linked, persist banking details on the supplier too
+    if (input.supplier_id && (input.bank_name || input.bank_account_number || input.bank_branch_code || input.bank_account_type)) {
+      const supUpdate: Record<string, unknown> = {};
+      if (input.bank_name) supUpdate.bank_name = input.bank_name.trim();
+      if (input.bank_account_number) supUpdate.bank_account_number = input.bank_account_number.trim();
+      if (input.bank_branch_code) supUpdate.bank_branch_code = input.bank_branch_code.trim();
+      if (input.bank_account_type) supUpdate.bank_account_type = input.bank_account_type.trim();
+      await supabase.from("suppliers" as any).update(supUpdate).eq("id", input.supplier_id);
+    }
 
     const transactionId = (txnRow as any)?.id as string | undefined;
 
