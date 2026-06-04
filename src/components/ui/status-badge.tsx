@@ -68,6 +68,16 @@ const prStatusConfig: Record<PRStatus, StatusConfig> = {
     variant: "info",
     icon: <SplitSquareVertical className="h-3 w-3" />,
   },
+  FULFILLED: {
+    label: "Fulfilled",
+    variant: "success",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+  },
+  CLOSED: {
+    label: "Closed",
+    variant: "info",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+  },
 };
 
 // Quote Status configurations
