@@ -101,6 +101,9 @@ export function BatchesTab() {
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
+  const [bankDetails, setBankDetails] = useState<
+    Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
+  >({});
   const [currentUser, setCurrentUser] = useState<string>("");
   const [exportingId, setExportingId] = useState<string | null>(null);
 
