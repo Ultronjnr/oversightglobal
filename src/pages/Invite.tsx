@@ -45,14 +45,6 @@ const roleLabels: Record<string, string> = {
   SUPPLIER: "Supplier",
 };
 
-const rolePortals: Record<string, string> = {
-  EMPLOYEE: "/employee/portal",
-  HOD: "/hod/portal",
-  FINANCE: "/finance/portal",
-  ADMIN: "/admin/portal",
-  SUPPLIER: "/supplier/portal",
-};
-
 const industries = [
   "Construction",
   "Manufacturing",
