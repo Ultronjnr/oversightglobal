@@ -274,12 +274,9 @@ export function BatchesTab() {
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       const sup = a.invoice?.supplier || a.transaction?.supplier;
       const supBank = sup?.id ? bankDetails[sup.id] : undefined;
-      const accountNumber =
-        a.transaction?.bank_account_number || supBank?.bank_account_number || null;
-      const branchCode =
-        a.transaction?.bank_branch_code || supBank?.bank_branch_code || null;
-      const accountType =
-        a.transaction?.bank_account_type || supBank?.bank_account_type || "Current/Cheque";
+      const accountNumber = supBank?.bank_account_number || null;
+      const branchCode = supBank?.bank_branch_code || null;
+      const accountType = supBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
