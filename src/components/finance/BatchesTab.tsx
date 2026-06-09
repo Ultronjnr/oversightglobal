@@ -55,7 +55,7 @@ interface BatchAllocation {
     document_url: string;
     status: string;
     quote?: { amount: number };
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null };
+    supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
   transaction?: {
@@ -69,7 +69,7 @@ interface BatchAllocation {
     bank_account_number?: string | null;
     bank_branch_code?: string | null;
     bank_account_type?: string | null;
-    supplier?: { company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null; bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null } | null;
+    supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
 }
@@ -101,6 +101,9 @@ export function BatchesTab() {
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
+  const [bankDetails, setBankDetails] = useState<
+    Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
+  >({});
   const [currentUser, setCurrentUser] = useState<string>("");
   const [exportingId, setExportingId] = useState<string | null>(null);
 
@@ -119,13 +122,13 @@ export function BatchesTab() {
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
+              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
              bank_name, bank_account_number, bank_branch_code, bank_account_type,
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
+             supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
          )`,
@@ -139,6 +142,33 @@ export function BatchesTab() {
     }
     const rows = (data || []) as any as BatchRow[];
     setBatches(rows);
+
+    // Fetch supplier bank details (Finance/Admin restricted) for involved suppliers
+    const supplierIds = Array.from(
+      new Set(
+        rows
+          .flatMap((r) => r.allocations)
+          .map((a) => a.invoice?.supplier?.id || a.transaction?.supplier?.id)
+          .filter(Boolean) as string[],
+      ),
+    );
+    if (supplierIds.length > 0) {
+      const { data: bank } = await supabase
+        .from("supplier_bank_details")
+        .select("supplier_id, bank_account_number, bank_branch_code, bank_account_type")
+        .in("supplier_id", supplierIds);
+      const bankMap: Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
+      (bank || []).forEach((b: any) => {
+        bankMap[b.supplier_id] = {
+          bank_account_number: b.bank_account_number,
+          bank_branch_code: b.bank_branch_code,
+          bank_account_type: b.bank_account_type,
+        };
+      });
+      setBankDetails(bankMap);
+    } else {
+      setBankDetails({});
+    }
 
     // Resolve organization name + creator names + current user for the report header
     const { data: auth } = await supabase.auth.getUser();
@@ -248,12 +278,13 @@ export function BatchesTab() {
       const prNumber =
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       const sup = a.invoice?.supplier || a.transaction?.supplier;
+      const supBank = sup?.id ? bankDetails[sup.id] : undefined;
       const accountNumber =
-        a.transaction?.bank_account_number || sup?.bank_account_number || null;
+        a.transaction?.bank_account_number || supBank?.bank_account_number || null;
       const branchCode =
-        a.transaction?.bank_branch_code || sup?.bank_branch_code || null;
+        a.transaction?.bank_branch_code || supBank?.bank_branch_code || null;
       const accountType =
-        a.transaction?.bank_account_type || sup?.bank_account_type || "Current/Cheque";
+        a.transaction?.bank_account_type || supBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,

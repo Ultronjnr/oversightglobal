@@ -6,7 +6,7 @@ export interface Invitation {
   email: string;
   role: string;
   department: string | null;
-  token: string;
+  token?: string;
   status: "pending" | "accepted" | "expired";
   expires_at: string;
   organization_id: string;
@@ -135,7 +135,9 @@ export async function getOrganizationInvitations(): Promise<{
   try {
     const { data, error } = await supabase
       .from("invitations")
-      .select("*")
+      .select(
+        "id, email, role, department, status, expires_at, organization_id, invited_by, created_at"
+      )
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -152,12 +154,31 @@ export async function getOrganizationInvitations(): Promise<{
  * Cancel/expire an invitation
  */
 export async function resendInvitation(
-  invitation: Pick<Invitation, "email" | "role" | "department" | "token">
+  invitation: Pick<Invitation, "id">
 ): Promise<{ success: boolean; emailSent: boolean; error?: string }> {
   try {
+    // Rotate the token server-side; the raw token is never readable from the row.
+    const { data, error } = await supabase.rpc("resend_invitation", {
+      _invitation_id: invitation.id,
+    });
+    if (error) {
+      return { success: false, emailSent: false, error: getSafeErrorMessage(error) };
+    }
+    const res = data as unknown as {
+      success: boolean;
+      error?: string;
+      token?: string;
+      email?: string;
+      role?: string;
+      department?: string | null;
+    };
+    if (!res?.success || !res.token || !res.email) {
+      return { success: false, emailSent: false, error: res?.error || "Failed to resend invitation" };
+    }
+
     const baseUrl = window.location.origin;
-    const inviteLink = `${baseUrl}/invite?token=${invitation.token}&email=${encodeURIComponent(
-      invitation.email.toLowerCase()
+    const inviteLink = `${baseUrl}/invite?token=${res.token}&email=${encodeURIComponent(
+      res.email.toLowerCase()
     )}`;
 
     const { error: emailError } = await supabase.functions.invoke(
@@ -165,12 +186,12 @@ export async function resendInvitation(
       {
         body: {
           templateName: "invitation",
-          recipientEmail: invitation.email.toLowerCase(),
-          idempotencyKey: `invitation-resend-${invitation.token}-${Date.now()}`,
+          recipientEmail: res.email.toLowerCase(),
+          idempotencyKey: `invitation-resend-${res.token}-${Date.now()}`,
           templateData: {
             inviteLink,
-            role: invitation.role,
-            department: invitation.department || null,
+            role: res.role,
+            department: res.department || null,
           },
         },
       }

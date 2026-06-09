@@ -1425,6 +1425,47 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_bank_details: {
+        Row: {
+          bank_account_number: string | null
+          bank_account_type: string | null
+          bank_branch_code: string | null
+          bank_name: string | null
+          created_at: string
+          organization_id: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          created_at?: string
+          organization_id: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          bank_account_number?: string | null
+          bank_account_type?: string | null
+          bank_branch_code?: string | null
+          bank_name?: string | null
+          created_at?: string
+          organization_id?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_bank_details_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: true
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_invitation_audit_log: {
         Row: {
           action: string
@@ -1582,10 +1623,6 @@ export type Database = {
       suppliers: {
         Row: {
           address: string | null
-          bank_account_number: string | null
-          bank_account_type: string | null
-          bank_branch_code: string | null
-          bank_name: string | null
           company_name: string
           contact_email: string | null
           contact_person: string | null
@@ -1608,10 +1645,6 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          bank_account_number?: string | null
-          bank_account_type?: string | null
-          bank_branch_code?: string | null
-          bank_name?: string | null
           company_name: string
           contact_email?: string | null
           contact_person?: string | null
@@ -1634,10 +1667,6 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          bank_account_number?: string | null
-          bank_account_type?: string | null
-          bank_branch_code?: string | null
-          bank_name?: string | null
           company_name?: string
           contact_email?: string | null
           contact_person?: string | null
@@ -2061,6 +2090,7 @@ export type Database = {
         Args: { _notes?: string; _reimbursement_id: string }
         Returns: Json
       }
+      resend_invitation: { Args: { _invitation_id: string }; Returns: Json }
       resend_supplier_invite: {
         Args: { _invitation_id: string }
         Returns: Json
