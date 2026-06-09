@@ -1726,10 +1726,6 @@ export type Database = {
           amount: number
           amount_paid: number
           approved_at: string
-          bank_account_number: string | null
-          bank_account_type: string | null
-          bank_branch_code: string | null
-          bank_name: string | null
           created_at: string
           currency: string
           id: string
@@ -1745,10 +1741,6 @@ export type Database = {
           amount?: number
           amount_paid?: number
           approved_at?: string
-          bank_account_number?: string | null
-          bank_account_type?: string | null
-          bank_branch_code?: string | null
-          bank_name?: string | null
           created_at?: string
           currency?: string
           id?: string
@@ -1764,10 +1756,6 @@ export type Database = {
           amount?: number
           amount_paid?: number
           approved_at?: string
-          bank_account_number?: string | null
-          bank_account_type?: string | null
-          bank_branch_code?: string | null
-          bank_name?: string | null
           created_at?: string
           currency?: string
           id?: string

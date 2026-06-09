@@ -65,10 +65,6 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
-    bank_name?: string | null;
-    bank_account_number?: string | null;
-    bank_branch_code?: string | null;
-    bank_account_type?: string | null;
     supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
     pr?: { transaction_id: string; currency: string } | null;
   } | null;
@@ -127,7 +123,6 @@ export function BatchesTab() {
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
-             bank_name, bank_account_number, bank_branch_code, bank_account_type,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
@@ -279,12 +274,9 @@ export function BatchesTab() {
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       const sup = a.invoice?.supplier || a.transaction?.supplier;
       const supBank = sup?.id ? bankDetails[sup.id] : undefined;
-      const accountNumber =
-        a.transaction?.bank_account_number || supBank?.bank_account_number || null;
-      const branchCode =
-        a.transaction?.bank_branch_code || supBank?.bank_branch_code || null;
-      const accountType =
-        a.transaction?.bank_account_type || supBank?.bank_account_type || "Current/Cheque";
+      const accountNumber = supBank?.bank_account_number || null;
+      const branchCode = supBank?.bank_branch_code || null;
+      const accountType = supBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
