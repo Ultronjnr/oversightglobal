@@ -122,13 +122,13 @@ export function BatchesTab() {
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
+              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
              id, supplier_name, amount, amount_paid, currency, status,
              bank_name, bank_account_number, bank_branch_code, bank_account_type,
-             supplier:suppliers ( company_name, contact_email, vat_number, supplier_code, bank_name, bank_account_number, bank_branch_code, bank_account_type ),
+             supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            )
          )`,
