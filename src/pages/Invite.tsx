@@ -45,14 +45,6 @@ const roleLabels: Record<string, string> = {
   SUPPLIER: "Supplier",
 };
 
-const rolePortals: Record<string, string> = {
-  EMPLOYEE: "/employee/portal",
-  HOD: "/hod/portal",
-  FINANCE: "/finance/portal",
-  ADMIN: "/admin/portal",
-  SUPPLIER: "/supplier/portal",
-};
-
 const industries = [
   "Construction",
   "Manufacturing",
@@ -228,8 +220,10 @@ export default function Invite() {
         return;
       }
 
-      toast.success("Supplier account created successfully!");
-      navigate("/supplier/portal");
+      toast.success(
+        "Supplier account created! Please check your email to confirm your address, then log in."
+      );
+      navigate("/login");
     } else {
       // Regular user registration
       if (!name.trim()) {
@@ -252,11 +246,10 @@ export default function Invite() {
         return;
       }
 
-      toast.success("Account created successfully!");
-      
-      // Redirect to the appropriate portal
-      const portal = rolePortals[result.role || "EMPLOYEE"] || "/login";
-      navigate(portal);
+      toast.success(
+        "Account created! Please check your email to confirm your address, then log in."
+      );
+      navigate("/login");
     }
   };
 

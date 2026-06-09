@@ -86,7 +86,7 @@ export async function acceptSupplierInvitation(
       email: params.email,
       password: params.password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     });
 
