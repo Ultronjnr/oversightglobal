@@ -143,6 +143,33 @@ export function BatchesTab() {
     const rows = (data || []) as any as BatchRow[];
     setBatches(rows);
 
+    // Fetch supplier bank details (Finance/Admin restricted) for involved suppliers
+    const supplierIds = Array.from(
+      new Set(
+        rows
+          .flatMap((r) => r.allocations)
+          .map((a) => a.invoice?.supplier?.id || a.transaction?.supplier?.id)
+          .filter(Boolean) as string[],
+      ),
+    );
+    if (supplierIds.length > 0) {
+      const { data: bank } = await supabase
+        .from("supplier_bank_details")
+        .select("supplier_id, bank_account_number, bank_branch_code, bank_account_type")
+        .in("supplier_id", supplierIds);
+      const bankMap: Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
+      (bank || []).forEach((b: any) => {
+        bankMap[b.supplier_id] = {
+          bank_account_number: b.bank_account_number,
+          bank_branch_code: b.bank_branch_code,
+          bank_account_type: b.bank_account_type,
+        };
+      });
+      setBankDetails(bankMap);
+    } else {
+      setBankDetails({});
+    }
+
     // Resolve organization name + creator names + current user for the report header
     const { data: auth } = await supabase.auth.getUser();
     const uid = auth?.user?.id;
