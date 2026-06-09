@@ -226,7 +226,7 @@ export async function createTransactionFromInvoice(
     if (input.supplier_id && (input.bank_name || input.bank_account_number || input.bank_branch_code || input.bank_account_type)) {
       const bankUpdate: Record<string, unknown> = {
         supplier_id: input.supplier_id,
-        organization_id: input.organization_id,
+        organization_id: profile.organization_id,
       };
       if (input.bank_name) bankUpdate.bank_name = input.bank_name.trim();
       if (input.bank_account_number) bankUpdate.bank_account_number = input.bank_account_number.trim();
