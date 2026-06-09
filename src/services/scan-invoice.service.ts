@@ -221,14 +221,20 @@ export async function createTransactionFromInvoice(
       .select("id")
       .single();
 
-    // If a real supplier is linked, persist banking details on the supplier too
+    // If a real supplier is linked, persist banking details in the
+    // Finance/Admin-restricted supplier_bank_details table.
     if (input.supplier_id && (input.bank_name || input.bank_account_number || input.bank_branch_code || input.bank_account_type)) {
-      const supUpdate: Record<string, unknown> = {};
-      if (input.bank_name) supUpdate.bank_name = input.bank_name.trim();
-      if (input.bank_account_number) supUpdate.bank_account_number = input.bank_account_number.trim();
-      if (input.bank_branch_code) supUpdate.bank_branch_code = input.bank_branch_code.trim();
-      if (input.bank_account_type) supUpdate.bank_account_type = input.bank_account_type.trim();
-      await supabase.from("suppliers" as any).update(supUpdate).eq("id", input.supplier_id);
+      const bankUpdate: Record<string, unknown> = {
+        supplier_id: input.supplier_id,
+        organization_id: input.organization_id,
+      };
+      if (input.bank_name) bankUpdate.bank_name = input.bank_name.trim();
+      if (input.bank_account_number) bankUpdate.bank_account_number = input.bank_account_number.trim();
+      if (input.bank_branch_code) bankUpdate.bank_branch_code = input.bank_branch_code.trim();
+      if (input.bank_account_type) bankUpdate.bank_account_type = input.bank_account_type.trim();
+      await supabase
+        .from("supplier_bank_details" as any)
+        .upsert(bankUpdate, { onConflict: "supplier_id" });
     }
 
     const transactionId = (txnRow as any)?.id as string | undefined;
