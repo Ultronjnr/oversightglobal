@@ -495,13 +495,8 @@ export default function Login() {
                 </Link>
               </p>
               <p className="text-sm text-muted-foreground">
-                Want to be a supplier?{" "}
-                <Link
-                  to="/signup/supplier"
-                  className="text-primary hover:underline font-semibold"
-                >
-                  Register here
-                </Link>
+                Suppliers join by invitation — ask the company that works with
+                you to send an invite.
               </p>
             </div>
           </div>
