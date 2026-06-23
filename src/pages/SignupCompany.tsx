@@ -35,9 +35,9 @@ const formatRegistrationNumber = (value: string): string => {
   return parts.join("/");
 };
 
-// Keeps only digits, max 9 (VAT / Tax numbers)
-const formatNineDigits = (value: string): string =>
-  value.replace(/\D/g, "").slice(0, 9);
+// Keeps only digits, max 10 (VAT / Tax numbers)
+const formatTaxDigits = (value: string): string =>
+  value.replace(/\D/g, "").slice(0, 10);
 
 const signupSchema = z
   .object({
@@ -56,7 +56,7 @@ const signupSchema = z
       .string()
       .trim()
       .min(1, "Tax number is required")
-      .regex(/^\d{9}$/, "Tax number must be exactly 9 digits"),
+      .regex(/^\d{10}$/, "Tax number must be exactly 10 digits"),
     companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
       required_error: "Company type is required",
     }),
@@ -81,8 +81,8 @@ const signupSchema = z
   .refine(
     (data) =>
       !data.vatRegistered ||
-      (!!data.vatNumber && /^\d{9}$/.test(data.vatNumber.trim())),
-    { message: "VAT number must be exactly 9 digits", path: ["vatNumber"] }
+      (!!data.vatNumber && /^\d{10}$/.test(data.vatNumber.trim())),
+    { message: "VAT number must be exactly 10 digits", path: ["vatNumber"] }
   )
   .refine((data) => !data.vatRegistered || !!data.vatCycle, {
     message: "VAT cycle is required",
@@ -388,12 +388,12 @@ export default function SignupCompany() {
               <Input
                 id="taxNumber"
                 inputMode="numeric"
-                placeholder="987654321"
-                maxLength={9}
+                placeholder="9876543210"
+                maxLength={10}
                 value={taxNumber}
                 className={errCls("taxNumber")}
                 onChange={(e) =>
-                  setValue("taxNumber", formatNineDigits(e.target.value), {
+                  setValue("taxNumber", formatTaxDigits(e.target.value), {
                     shouldValidate: true,
                   })
                 }
@@ -440,12 +440,12 @@ export default function SignupCompany() {
                 <Input
                   id="vatNumber"
                   inputMode="numeric"
-                  placeholder="412345678"
-                  maxLength={9}
+                  placeholder="4123456789"
+                  maxLength={10}
                   value={vatNumber}
                   className={errCls("vatNumber")}
                   onChange={(e) =>
-                    setValue("vatNumber", formatNineDigits(e.target.value), {
+                    setValue("vatNumber", formatTaxDigits(e.target.value), {
                       shouldValidate: true,
                     })
                   }
