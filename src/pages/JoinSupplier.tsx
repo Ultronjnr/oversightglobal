@@ -52,7 +52,12 @@ const joinSchema = z
     phone: z.string().min(1, "Phone number is required").max(30),
     address: z.string().min(1, "Address is required").max(500),
     registrationNumber: z.string().min(1, "Registration number is required").max(100),
-    vatNumber: z.string().max(100).optional(),
+    vatNumber: z
+      .string()
+      .trim()
+      .regex(/^\d{0,10}$/, "VAT number must be up to 10 digits")
+      .optional()
+      .or(z.literal("")),
     industry: z.string().min(1, "Industry is required"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
