@@ -313,9 +313,11 @@ export default function SupplierRegister() {
                 <Input
                   id="vatNumber"
                   className="pl-10"
-                  placeholder="Optional"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="Optional (max 10 digits)"
                   value={vatNumber}
-                  onChange={(e) => setVatNumber(e.target.value)}
+                  onChange={(e) => setVatNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 />
               </div>
             </div>
