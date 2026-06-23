@@ -370,9 +370,11 @@ export default function Invite() {
                 <Input
                   id="vatNumber"
                   type="text"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={vatNumber}
-                  onChange={(e) => setVatNumber(e.target.value)}
-                  placeholder="VAT12345678"
+                  onChange={(e) => setVatNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="4123456789"
                   disabled={status === "accepting"}
                 />
               </div>
