@@ -399,8 +399,10 @@ export default function JoinSupplier() {
                 <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="vatNumber"
-                  placeholder="Optional"
+                  placeholder="Optional (max 10 digits)"
                   className="pl-10"
+                  inputMode="numeric"
+                  maxLength={10}
                   {...register("vatNumber")}
                 />
               </div>
