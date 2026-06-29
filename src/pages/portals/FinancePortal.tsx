@@ -30,7 +30,7 @@ import {
   Undo2,
   Layers,
 } from "lucide-react";
-import { Percent, ScanLine } from "lucide-react";
+import { Percent } from "lucide-react";
 
 
 import { DashboardLayout } from "@/components/DashboardLayout";
