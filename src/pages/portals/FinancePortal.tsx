@@ -496,8 +496,8 @@ export default function FinancePortal() {
             className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
             onClick={() => setShowScanModal(true)}
           >
-            <ScanLine className="h-4 w-4" />
-            Scan Invoice
+            <FileText className="h-4 w-4" />
+            Add Invoice
           </Button>
           
           {/* Prominent blue circled button */}
@@ -980,11 +980,10 @@ export default function FinancePortal() {
         onSuccess={handlePRFormSuccess}
       />
 
-      {/* Scan Invoice (AI OCR) Modal */}
-      <ScanInvoiceModal
+      {/* Add Invoice Modal */}
+      <AddInvoiceDialog
         open={showScanModal}
         onOpenChange={setShowScanModal}
-        onCreated={handleRefreshDashboard}
       />
 
       {/* Category Selection Modal for Approvals */}
