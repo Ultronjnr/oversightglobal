@@ -11,6 +11,7 @@ import { PRNotificationProvider } from "@/components/PRNotificationProvider";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import LandingPage from "./pages/LandingPage";
+import Pricing from "./pages/Pricing";
 import SignupCompany from "./pages/SignupCompany";
 import ResetPassword from "./pages/ResetPassword";
 
@@ -45,6 +46,7 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<Index />} />
             <Route path="/signup/company" element={<SignupCompany />} />

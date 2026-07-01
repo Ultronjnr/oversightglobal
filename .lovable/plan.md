@@ -1,70 +1,70 @@
-# Approval → Payment Workflow Fix
-
-## Problem
-
-Today, when Finance approves a PR, nothing enters payment processing on its own. The "Approved But Not Paid" queue only contains supplier-uploaded **invoices**, which require:
-- an accepted **quote**
-- a **supplier account** (`invoices.supplier_id NOT NULL`)
-- a supplier-uploaded invoice document
-
-So PRs without a registered supplier (e.g. manually-typed supplier names) get stuck after Finance approval and never appear in the payment queue, batch processing, or expense history.
-
 ## Goal
 
-Treat **Finance approval** as the moment a financial obligation is recognized. Auto-create a **Transaction** record at that point, regardless of supplier account or invoice upload, and feed it through the same Payment Preparation → Batch → Paid lifecycle.
+Redesign the public **Landing (Home) page** and add a new **Pricing page** to match the uploaded designs, without touching any app/portal logic. The home hero becomes a **5-slide auto-rotating carousel**, each slide carrying its own headline, bullet cards, stat card, and a **relevant, transparent background image that blends into the dark navy background**.
 
-## Approach
+This is purely public-facing presentation work — no changes to auth, portals, backend, or routing guards.
 
-Introduce a lightweight `transactions` ledger that runs in parallel to (not instead of) `invoices`. Invoices keep working as today for supplier-driven flows; transactions cover Finance-approved PRs.
+## Scope Guardrails
 
-### 1. New table: `public.transactions`
+- Only edit `src/pages/LandingPage.tsx`, add `src/pages/Pricing.tsx`, register one route in `src/App.tsx`, and add new generated background images under `src/assets/`.
+- No changes to any portal, service, hook, or database code.
+- Keep the existing `Logo`, design tokens (indigo/blue glassmorphism), and dark navy hero background.
 
-Columns:
-- `pr_id` (unique, FK → purchase_requisitions)
-- `organization_id`
-- `supplier_id` (nullable)
-- `supplier_name` (text — captures manual supplier name)
-- `amount`, `currency`
-- `status`: `APPROVED_NOT_PAID` | `PARTIALLY_PAID` | `FULLY_PAID`
-- `amount_paid` (running total)
-- `approved_at`, `paid_at`
-- standard timestamps + RLS (org-scoped, Finance/Admin)
+## Part 1 — Homepage Hero: 5 auto-rotating slides
 
-### 2. Trigger on `purchase_requisitions`
+Rebuild the hero as a carousel that cycles automatically (every ~6 seconds), with a subtle fade/slide transition, pause-on-hover, and clickable dot indicators. Each slide matches the uploaded `synced-slide1–5` layout:
 
-`AFTER UPDATE` — when `status` transitions to `FINANCE_APPROVED`, upsert a `transactions` row with `APPROVED_NOT_PAID`, copying amount/currency/supplier hints from the PR.
+- Kicker: `FOR SOUTH AFRICAN SMES`
+- Large two-color split headline (white + accent color)
+- Three left "problem" cards (icon + title + subtitle)
+- Right stat card ("WHERE IT'S GOING RIGHT NOW" style) with 3 red/amber/accent figures + a green "With Ovasyt…" summary line
+- Each slide themed with its own accent color and a **transparent background image** faded into the navy backdrop
 
-### 3. Extend payment batches
+The five slides (content + accent + background image theme):
 
-- Add nullable `payment_allocations.transaction_id`.
-- Update `create_payment_batch_draft`, `update_batch_draft`, `confirm_batch_paid`, `cancel_batch_draft` to accept and process `transaction_id` allocations the same way they handle invoice/reimbursement allocations:
-  - On confirm → sum allocations, set `transactions.status` to `PARTIALLY_PAID` or `FULLY_PAID`, update `amount_paid` and `paid_at`.
+```
+1. "Your business is leaking money. You just can't see where."
+   Accent: red/blue · BG: cracked piggy bank / leaking coins motif
+2. "If SARS asked for proof right now, could you find it?"
+   Accent: amber · BG: magnifying glass over documents / audit motif
+3. "Know exactly where every rand goes. Before it goes."
+   Accent: blue · BG: flowing rand notes / directional arrows motif
+4. "Stop running your business through WhatsApp."
+   Accent: purple · BG: tangled chat bubbles / scattered messages motif
+5. "Ovasyt usually pays for itself in unclaimed VAT alone."
+   Accent: cyan · BG: stacked coins / recovered money motif
+```
 
-### 4. UI wiring (no redesign)
+Background images will be generated as low-opacity, transparent PNGs so they blend seamlessly into the dark hero and never compete with the text (positioned right side, ~15–25% opacity, masked/faded edges).
 
-- **PaymentPreparationTab** ("Approved But Not Paid"): add a third source — open transactions (`APPROVED_NOT_PAID` + `PARTIALLY_PAID`) — into the existing combined rows list. Reuse current row UI and BatchPaymentModal (new `kind: "transaction"`).
-- **TransactionStatusTab**:
-  - `PARTIALLY_PAID` and `FULLY_PAID` filters: include matching transactions alongside invoices.
-  - New status surface in the same component using existing badges.
-- **Expense History** (PRHistory): already lists FINANCE_APPROVED PRs; ensure the transaction status badge is reflected.
+## Part 2 — Homepage below-the-fold sections
 
-### 5. Workflow guarantees verified after build
+Rebuild the remaining sections to match `landing-page.png`:
+- "This is what 'we'll sort it out later' costs an SME" — 3 stat cards (R30k+, 1 in 4, 3 days)
+- "The difference isn't subtle" — Spreadsheets/WhatsApp vs Ovasyt comparison
+- "Spend control that doesn't slow you down" — 6 feature cards
+- "Every invoice, SARS-checked before it's filed" — invoice scanning panel
+- Testimonial band + final CTA + footer
 
-- Finance approve PR → row appears in `transactions` (`APPROVED_NOT_PAID`).
-- Add to batch → still `APPROVED_NOT_PAID` until batch is confirmed.
-- Confirm batch with partial amount → `PARTIALLY_PAID`, `amount_paid` updated.
-- Confirm batch with remaining amount → `FULLY_PAID`, `paid_at` set.
-- Works for PRs with **no supplier account** (manual supplier name preserved).
+## Part 3 — Pricing page
 
-## What stays untouched
+New page at route `/pricing` matching `pricing.png`:
+- Header/nav (shared style with landing) + `PRICING` kicker + headline
+- 3 pricing cards: Starter (R 1 290/mo), Growth (R 3 450/mo, "MOST POPULAR"), Enterprise (Custom)
+- "Every detail, side by side" comparison table
+- FAQ section (4 questions) + footer
+- Nav "Pricing" link updated to route to `/pricing`
 
-- Existing PR statuses (`PENDING_HOD_APPROVAL` … `FINANCE_APPROVED`) unchanged.
-- Supplier RFQ → quote → invoice flow unchanged.
-- Reimbursements flow unchanged.
-- All existing RLS, role permissions, and UI styling preserved.
+## Technical Notes
 
-## Risk / non-goals
+- Carousel: lightweight React state + `useEffect` interval (no new dependency), or reuse existing `embla`/shadcn carousel if already installed — will check and prefer the existing one.
+- Background images: 5 generated transparent PNGs imported as ES6 assets, rendered with Tailwind opacity + gradient mask so they blend into `bg-background`.
+- All colors via existing semantic tokens; accent-per-slide handled with inline theme classes already used in the current hero.
+- `<title>`/meta stay app-appropriate.
 
-- No redesign, no new tabs, no changes to approval UI.
-- No changes to invoice or reimbursement schemas.
-- Backfill of historical FINANCE_APPROVED PRs is included in the migration so existing approved-but-stuck PRs surface immediately.
+## Deliverables
+
+- Updated `src/pages/LandingPage.tsx` (carousel hero + refreshed sections)
+- New `src/pages/Pricing.tsx`
+- New route `/pricing` in `src/App.tsx`
+- 5 new transparent background images in `src/assets/`
