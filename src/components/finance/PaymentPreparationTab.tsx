@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Download,
+  Paperclip,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -409,7 +410,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                 </TableCell>
                 <TableCell className="text-right">
                   {row.documentUrl ? (
-                    <Button
+                    <div className="flex items-center justify-end gap-2">
+                      <Badge variant="outline" className="border-success/30 text-success gap-1 hidden sm:inline-flex">
+                        <Paperclip className="h-3 w-3" />
+                        Attached
+                      </Badge>
+                      <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => {
@@ -422,6 +428,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       View
                       <ExternalLink className="h-3 w-3" />
                     </Button>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
@@ -459,11 +466,34 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     type: "pdf" | "image" | "other";
     error: string | null;
     fileName: string | null;
-  }>({ loading: true, url: null, type: "other", error: null, fileName: null });
+    uploadedAt: string | null;
+  }>({ loading: true, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
+
+  // Clean up storage-mangled filenames (strip leading org/user id, timestamp and uuid prefixes)
+  const prettyFileName = (name: string | null): string => {
+    if (!name) return "document";
+    let n = name.split("/").pop() || name;
+    // remove leading numeric timestamp + uuid segments like "1712345678901-uuid-"
+    n = n.replace(/^\d{10,}-/, "").replace(/^[0-9a-f]{8}-[0-9a-f-]{27,}-/i, "");
+    // remove a leading prId-timestamp- pattern
+    n = n.replace(/^[\w-]+?-\d{10,}-/, "");
+    return n || "document";
+  };
+
+  // Extract an upload timestamp from a storage path (ms epoch embedded in filename)
+  const parseUploadTime = (path: string | null): string | null => {
+    if (!path) return null;
+    const m = path.match(/(\d{13})/);
+    if (m) {
+      const d = new Date(Number(m[1]));
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    return null;
+  };
 
   useEffect(() => {
     let cancelled = false;
-    setDocState({ loading: true, url: null, type: "other", error: null, fileName: null });
+    setDocState({ loading: true, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
 
     const loadAttachmentFallback = async () => {
       const filter: any = {};
@@ -486,7 +516,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             const att = res2.data[0];
             const signed = await getAttachmentSignedUrl(att.file_path);
             if (signed.success && signed.url) {
-              return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+              return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name), uploadedAt: att.created_at };
             }
           }
         }
@@ -495,7 +525,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
       const att = res.data[0];
       const signed = await getAttachmentSignedUrl(att.file_path);
       if (signed.success && signed.url) {
-        return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+        return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name), uploadedAt: att.created_at };
       }
       return null;
     };
@@ -512,6 +542,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -525,6 +556,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -538,6 +570,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: res.file_type || getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -547,12 +580,12 @@ function ExpandedDetails({ row }: { row: PayRow }) {
         const fb = await loadAttachmentFallback();
         if (cancelled) return;
         if (fb) {
-          setDocState({ loading: false, url: fb.url, type: fb.type, error: null, fileName: fb.fileName });
+          setDocState({ loading: false, url: fb.url, type: fb.type, error: null, fileName: fb.fileName, uploadedAt: (fb as any).uploadedAt || null });
         } else {
-          setDocState({ loading: false, url: null, type: "other", error: null, fileName: null });
+          setDocState({ loading: false, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
         }
       } catch (e: any) {
-        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error", fileName: null });
+        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error", fileName: null, uploadedAt: null });
       }
     })();
     return () => {
@@ -651,6 +684,22 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             </div>
           )}
         </div>
+        {docState.url && (
+          <div className="flex items-start gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2">
+            <Paperclip className="h-4 w-4 text-success mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-success">Invoice attached</p>
+              <p className="text-xs text-foreground/80 truncate" title={prettyFileName(docState.fileName)}>
+                {prettyFileName(docState.fileName)}
+              </p>
+              {docState.uploadedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Uploaded {format(new Date(docState.uploadedAt), "dd MMM yyyy 'at' HH:mm")}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
           {docState.loading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
