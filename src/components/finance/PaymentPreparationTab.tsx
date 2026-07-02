@@ -410,7 +410,12 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                 </TableCell>
                 <TableCell className="text-right">
                   {row.documentUrl ? (
-                    <Button
+                    <div className="flex items-center justify-end gap-2">
+                      <Badge variant="outline" className="border-success/30 text-success gap-1 hidden sm:inline-flex">
+                        <Paperclip className="h-3 w-3" />
+                        Attached
+                      </Badge>
+                      <Button
                       variant="ghost"
                       size="sm"
                       onClick={(e) => {
@@ -423,6 +428,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       View
                       <ExternalLink className="h-3 w-3" />
                     </Button>
+                    </div>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
