@@ -148,7 +148,7 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const SLIDE_INTERVAL = 6000;
+const SLIDE_INTERVAL = 5000;
 
 function HeroCarousel() {
   const [active, setActive] = useState(0);
