@@ -264,12 +264,11 @@ export async function createTransactionFromInvoice(
     if (input.file) {
       try {
         const safe = input.file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
-        const docPath = `${user.id}/${prRow.id}-${safe}`;
+        const docPath = `${user.id}/${prRow.id}-${Date.now()}-${safe}`;
         const { error: docUpErr } = await supabase.storage
           .from("pr-documents")
           .upload(docPath, input.file, {
             contentType: input.file.type,
-            upsert: true,
           });
         if (!docUpErr) {
           await supabase
