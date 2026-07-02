@@ -461,9 +461,8 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     error: string | null;
     fileName: string | null;
     uploadedAt: string | null;
-  }>({ loading: true, url: null, type: "other", error: null, fileName: null });
-
-  // NOTE: uploadedAt added below via state updates
+    uploadedAt: string | null;
+  }>({ loading: true, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
 
   // Clean up storage-mangled filenames (strip leading org/user id, timestamp and uuid prefixes)
   const prettyFileName = (name: string | null): string => {
@@ -489,7 +488,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
 
   useEffect(() => {
     let cancelled = false;
-    setDocState({ loading: true, url: null, type: "other", error: null, fileName: null });
+    setDocState({ loading: true, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
 
     const loadAttachmentFallback = async () => {
       const filter: any = {};
@@ -512,7 +511,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             const att = res2.data[0];
             const signed = await getAttachmentSignedUrl(att.file_path);
             if (signed.success && signed.url) {
-              return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+              return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name), uploadedAt: att.created_at };
             }
           }
         }
@@ -521,7 +520,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
       const att = res.data[0];
       const signed = await getAttachmentSignedUrl(att.file_path);
       if (signed.success && signed.url) {
-        return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name) };
+        return { url: signed.url, fileName: att.file_name, type: getFileType(att.file_name), uploadedAt: att.created_at };
       }
       return null;
     };
@@ -538,6 +537,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -551,6 +551,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -564,6 +565,7 @@ function ExpandedDetails({ row }: { row: PayRow }) {
               type: res.file_type || getFileType(row.documentUrl!),
               error: null,
               fileName: row.documentUrl!.split("/").pop() || "document",
+              uploadedAt: parseUploadTime(row.documentUrl!) || row.createdAt,
             });
             return;
           }
@@ -573,12 +575,12 @@ function ExpandedDetails({ row }: { row: PayRow }) {
         const fb = await loadAttachmentFallback();
         if (cancelled) return;
         if (fb) {
-          setDocState({ loading: false, url: fb.url, type: fb.type, error: null, fileName: fb.fileName });
+          setDocState({ loading: false, url: fb.url, type: fb.type, error: null, fileName: fb.fileName, uploadedAt: (fb as any).uploadedAt || null });
         } else {
-          setDocState({ loading: false, url: null, type: "other", error: null, fileName: null });
+          setDocState({ loading: false, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
         }
       } catch (e: any) {
-        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error", fileName: null });
+        if (!cancelled) setDocState({ loading: false, url: null, type: "other", error: e?.message || "Error", fileName: null, uploadedAt: null });
       }
     })();
     return () => {
