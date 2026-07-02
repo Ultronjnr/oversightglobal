@@ -463,6 +463,8 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     uploadedAt: string | null;
   }>({ loading: true, url: null, type: "other", error: null, fileName: null });
 
+  // NOTE: uploadedAt added below via state updates
+
   // Clean up storage-mangled filenames (strip leading org/user id, timestamp and uuid prefixes)
   const prettyFileName = (name: string | null): string => {
     if (!name) return "document";
