@@ -258,6 +258,32 @@ export async function createTransactionFromInvoice(
       }
     }
 
+    // Also persist the invoice on the PR's document_url so it surfaces on the
+    // "Approved" (Payment Preparation) tab via the standard "View" button,
+    // which resolves documents from the pr-documents bucket.
+    if (input.file) {
+      try {
+        const safe = input.file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
+        const docPath = `${user.id}/${prRow.id}-${safe}`;
+        const { error: docUpErr } = await supabase.storage
+          .from("pr-documents")
+          .upload(docPath, input.file, {
+            contentType: input.file.type,
+            upsert: true,
+          });
+        if (!docUpErr) {
+          await supabase
+            .from("purchase_requisitions")
+            .update({ document_url: docPath })
+            .eq("id", prRow.id);
+        } else {
+          console.warn("[scan-invoice] pr-documents upload failed:", docUpErr.message);
+        }
+      } catch (docErr) {
+        console.warn("[scan-invoice] pr document persist failed:", docErr);
+      }
+    }
+
     return { success: true, pr_id: prRow.id, transaction_id: transactionId };
   } catch (e: any) {
     logError("createTransactionFromInvoice", e);
