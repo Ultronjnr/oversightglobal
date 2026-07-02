@@ -461,7 +461,6 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     error: string | null;
     fileName: string | null;
     uploadedAt: string | null;
-    uploadedAt: string | null;
   }>({ loading: true, url: null, type: "other", error: null, fileName: null, uploadedAt: null });
 
   // Clean up storage-mangled filenames (strip leading org/user id, timestamp and uuid prefixes)
