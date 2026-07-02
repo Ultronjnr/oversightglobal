@@ -14,6 +14,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Download,
+  Paperclip,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
