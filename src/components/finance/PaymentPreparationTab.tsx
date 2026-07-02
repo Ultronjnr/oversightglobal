@@ -460,7 +460,30 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     type: "pdf" | "image" | "other";
     error: string | null;
     fileName: string | null;
+    uploadedAt: string | null;
   }>({ loading: true, url: null, type: "other", error: null, fileName: null });
+
+  // Clean up storage-mangled filenames (strip leading org/user id, timestamp and uuid prefixes)
+  const prettyFileName = (name: string | null): string => {
+    if (!name) return "document";
+    let n = name.split("/").pop() || name;
+    // remove leading numeric timestamp + uuid segments like "1712345678901-uuid-"
+    n = n.replace(/^\d{10,}-/, "").replace(/^[0-9a-f]{8}-[0-9a-f-]{27,}-/i, "");
+    // remove a leading prId-timestamp- pattern
+    n = n.replace(/^[\w-]+?-\d{10,}-/, "");
+    return n || "document";
+  };
+
+  // Extract an upload timestamp from a storage path (ms epoch embedded in filename)
+  const parseUploadTime = (path: string | null): string | null => {
+    if (!path) return null;
+    const m = path.match(/(\d{13})/);
+    if (m) {
+      const d = new Date(Number(m[1]));
+      if (!isNaN(d.getTime())) return d.toISOString();
+    }
+    return null;
+  };
 
   useEffect(() => {
     let cancelled = false;
