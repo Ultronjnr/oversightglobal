@@ -679,6 +679,22 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             </div>
           )}
         </div>
+        {docState.url && (
+          <div className="flex items-start gap-2 rounded-md border border-success/30 bg-success/10 px-3 py-2">
+            <Paperclip className="h-4 w-4 text-success mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-success">Invoice attached</p>
+              <p className="text-xs text-foreground/80 truncate" title={prettyFileName(docState.fileName)}>
+                {prettyFileName(docState.fileName)}
+              </p>
+              {docState.uploadedAt && (
+                <p className="text-xs text-muted-foreground">
+                  Uploaded {format(new Date(docState.uploadedAt), "dd MMM yyyy 'at' HH:mm")}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         <div className="rounded-md border border-border/40 bg-muted/20 overflow-hidden h-[420px] flex items-center justify-center">
           {docState.loading ? (
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
