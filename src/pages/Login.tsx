@@ -47,6 +47,15 @@ export default function Login() {
   const [isResettingPw, setIsResettingPw] = useState(false);
   const navigate = useNavigate();
 
+  // A safe same-origin relative path to return to after login (e.g. the OAuth
+  // consent page). Ignore absolute URLs / protocol-relative values.
+  const getNextPath = (): string | null => {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return null;
+    if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  };
+
   const {
     register,
     handleSubmit,
@@ -98,6 +107,14 @@ export default function Login() {
   // AFTER auth, completes a pending company registration on first login, and
   // never loops back to /login.
   const finalizeAndRedirect = async (user: any) => {
+    // If we were sent here to complete an action (e.g. OAuth consent), return
+    // there instead of the role portal.
+    const next = getNextPath();
+    if (next) {
+      window.location.href = next;
+      return;
+    }
+
     const registrationResult = await completeRegistrationIfPending(user);
 
     const { data: roleData } = await supabase
