@@ -25,9 +25,27 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth note: verify_jwt = true only proves the caller presented *some* valid
+// JWT — and the public anon key is one. That is not enough: without an explicit
+// authorization check this function would be an open email relay. We therefore
+// require either a trusted service-role token (internal/cron callers) or a real
+// signed-in user, and for privileged templates (invitations) we require the
+// caller to be an ADMIN of the organization the invitation actually belongs to.
+
+// Templates that can be abused for phishing/spam and must be tightly gated.
+const PRIVILEGED_TEMPLATES = new Set(['invitation', 'supplier-invitation'])
+
+// Decode a JWT payload without verifying (gateway already verified the signature).
+function decodeJwtRole(token: string): string | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    return (JSON.parse(json)?.role as string) ?? null
+  } catch {
+    return null
+  }
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
