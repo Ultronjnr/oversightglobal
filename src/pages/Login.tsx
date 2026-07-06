@@ -107,6 +107,14 @@ export default function Login() {
   // AFTER auth, completes a pending company registration on first login, and
   // never loops back to /login.
   const finalizeAndRedirect = async (user: any) => {
+    // If we were sent here to complete an action (e.g. OAuth consent), return
+    // there instead of the role portal.
+    const next = getNextPath();
+    if (next) {
+      window.location.href = next;
+      return;
+    }
+
     const registrationResult = await completeRegistrationIfPending(user);
 
     const { data: roleData } = await supabase
