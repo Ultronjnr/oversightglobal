@@ -2065,6 +2065,26 @@ export type Database = {
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
+      post_pr_system_note: {
+        Args: { _note: string; _pr_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          is_system_note: boolean
+          message: string
+          organization_id: string
+          pr_id: string
+          sender_id: string
+          sender_name: string
+          sender_role: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pr_messages"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -2115,6 +2135,7 @@ export type Database = {
         Args: { _add?: Json; _batch_id: string; _remove?: string[] }
         Returns: Json
       }
+      user_can_join_org: { Args: { _org_id: string }; Returns: boolean }
       validate_invitation: {
         Args: { _email: string; _token: string }
         Returns: {
