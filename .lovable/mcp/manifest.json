@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://udnxnhvzowsjawpvfjuq.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "oversight-mcp",
+      "version": "0.1.0",
+      "title": "Oversight Procurement MCP"
+    },
+    "tools": [
+      {
+        "name": "whoami",
+        "title": "Who am I",
+        "description": "Return the signed-in user's profile: name, email, department, role and organization.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_purchase_requisitions",
+        "title": "List purchase requisitions",
+        "description": "List purchase requisitions visible to the signed-in user (scoped by access rules). Optionally filter by status and limit results.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED",
+                "PAID",
+                "IN_PROGRESS"
+              ],
+              "description": "Filter by requisition status."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max rows to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_purchase_requisition",
+        "title": "Get purchase requisition",
+        "description": "Fetch the full detail of a single purchase requisition by its transaction_id (e.g. PR-000123), including line items and approval history.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "transaction_id": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The requisition transaction_id."
+            }
+          },
+          "required": [
+            "transaction_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_suppliers",
+        "title": "List suppliers",
+        "description": "List suppliers visible to the signed-in user's organization (scoped by access rules). Optionally filter by a company-name search term.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive company-name filter."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max rows to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_notifications",
+        "title": "List notifications",
+        "description": "List the signed-in user's most recent notifications. Optionally show only unread ones.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "unread_only": {
+              "type": "boolean",
+              "description": "Only return unread notifications."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Max rows to return (default 20)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
