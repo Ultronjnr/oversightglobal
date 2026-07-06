@@ -14,6 +14,7 @@ import LandingPage from "./pages/LandingPage";
 import Pricing from "./pages/Pricing";
 import SignupCompany from "./pages/SignupCompany";
 import ResetPassword from "./pages/ResetPassword";
+import OAuthConsent from "./pages/OAuthConsent";
 
 import Invite from "./pages/Invite";
 import JoinSupplier from "./pages/JoinSupplier";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/dashboard" element={<Index />} />
             <Route path="/signup/company" element={<SignupCompany />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/invite" element={<Invite />} />
             <Route path="/join/supplier" element={<JoinSupplier />} />
             <Route path="/supplier/register" element={<SupplierRegister />} />
