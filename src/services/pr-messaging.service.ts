@@ -191,53 +191,27 @@ export async function postSystemNote(
   note: string
 ): Promise<PRMessagingResult<PRMessage>> {
   try {
-    const user = await requireUser();
+    // System (audit) notes are written through a trusted SECURITY DEFINER
+    // routine. End-user RLS policies forbid setting is_system_note = true
+    // directly, so this RPC is the only path that can create an authoritative
+    // system note (after verifying the caller may access the PR).
+    const { data: messageRow, error: rpcError } = await supabase.rpc(
+      "post_pr_system_note",
+      { _pr_id: prId, _note: note.trim() }
+    );
 
-    // Fetch role, name, and PR's org_id in parallel.
-    // We use the PR's organization_id for the message (not caller's profile org)
-    // to correctly handle supplier users whose profile.organization_id is NULL.
-    const [callerRole, callerName, prRow] = await Promise.all([
-      requireCallerRole(user.id),
-      getCallerName(user.id),
-      supabase
-        .from("purchase_requisitions")
-        .select("id, organization_id")
-        .eq("id", prId)
-        .maybeSingle(),
-    ]);
-
-    if (prRow.error || !prRow.data) {
-      throw new PRMessagingError(
-        "The purchase requisition was not found or you do not have access to it.",
-        "PR_NOT_FOUND"
-      );
-    }
-
-    const prOrgId = prRow.data.organization_id;
-
-    const { data: messageRow, error: insertError } = await supabase
-      .from("pr_messages")
-      .insert({
-        pr_id: prId,
-        sender_id: user.id,
-        sender_name: callerName,
-        sender_role: callerRole,
-        message: note.trim(),
-        organization_id: prOrgId,
-        is_system_note: true,
-      })
-      .select()
-      .single();
-
-    if (insertError || !messageRow) {
-      console.warn("[pr-messaging] postSystemNote insert failed:", insertError?.message);
+    if (rpcError || !messageRow) {
+      console.warn("[pr-messaging] postSystemNote rpc failed:", rpcError?.message);
       throw new PRMessagingError(
         "Failed to record system note. The action completed but the audit entry was not saved.",
         "INSERT_FAILED"
       );
     }
 
-    return { success: true, data: mapMessage(messageRow, []) };
+    return {
+      success: true,
+      data: mapMessage(messageRow as Parameters<typeof mapMessage>[0], []),
+    };
   } catch (err) {
     if (err instanceof PRMessagingError) {
       return { success: false, error: err.message };
@@ -308,7 +282,9 @@ export async function sendPRMessage(
         sender_role: callerRole,
         message: hasText ? input.messageText!.trim() : "",
         organization_id: prOrgId,
-        is_system_note: input.isSystemNote ?? false,
+        // System notes can only be written via the trusted post_pr_system_note
+        // RPC; regular messages are always non-system.
+        is_system_note: false,
       })
       .select()
       .single();
