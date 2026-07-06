@@ -282,7 +282,9 @@ export async function sendPRMessage(
         sender_role: callerRole,
         message: hasText ? input.messageText!.trim() : "",
         organization_id: prOrgId,
-        is_system_note: input.isSystemNote ?? false,
+        // System notes can only be written via the trusted post_pr_system_note
+        // RPC; regular messages are always non-system.
+        is_system_note: false,
       })
       .select()
       .single();
