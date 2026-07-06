@@ -47,6 +47,15 @@ export default function Login() {
   const [isResettingPw, setIsResettingPw] = useState(false);
   const navigate = useNavigate();
 
+  // A safe same-origin relative path to return to after login (e.g. the OAuth
+  // consent page). Ignore absolute URLs / protocol-relative values.
+  const getNextPath = (): string | null => {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (!raw) return null;
+    if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+    return raw;
+  };
+
   const {
     register,
     handleSubmit,
