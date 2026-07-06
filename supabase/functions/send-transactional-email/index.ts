@@ -138,6 +138,78 @@ Deno.serve(async (req) => {
   // Create Supabase client with service role (bypasses RLS)
   const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+  // ── Authorization gate (prevents open-relay abuse) ──────────────────────
+  const authHeader = req.headers.get('Authorization') || ''
+  const callerToken = authHeader.replace(/^Bearer\s+/i, '').trim()
+  const callerRole = decodeJwtRole(callerToken)
+
+  if (callerRole !== 'service_role') {
+    // Must be a genuine signed-in user (anon-key JWT resolves to no user).
+    const { data: userData, error: userErr } = await supabase.auth.getUser(callerToken)
+    const caller = userData?.user
+
+    if (userErr || !caller) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (PRIVILEGED_TEMPLATES.has(templateName)) {
+      // Re-derive the invitation (and its organization) from the DB instead of
+      // trusting client-supplied templateData, then require the caller to be an
+      // ADMIN of that organization.
+      const inviteEmail = (recipientEmail || '').toLowerCase()
+      let orgId: string | null = null
+
+      if (templateName === 'invitation') {
+        const { data: inv } = await supabase
+          .from('invitations')
+          .select('organization_id')
+          .ilike('email', inviteEmail)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        orgId = inv?.organization_id ?? null
+      } else {
+        const { data: inv } = await supabase
+          .from('supplier_invitations')
+          .select('organization_id')
+          .ilike('email', inviteEmail)
+          .in('status', ['PENDING', 'pending'])
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        orgId = inv?.organization_id ?? null
+      }
+
+      if (!orgId) {
+        return new Response(
+          JSON.stringify({ error: 'No matching pending invitation for this recipient' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const [{ data: prof }, { data: adminRole }] = await Promise.all([
+        supabase.from('profiles').select('organization_id').eq('id', caller.id).maybeSingle(),
+        supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', caller.id)
+          .eq('role', 'ADMIN')
+          .maybeSingle(),
+      ])
+
+      if (!adminRole || !prof || prof.organization_id !== orgId) {
+        return new Response(
+          JSON.stringify({ error: 'Not authorized to send this email' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    }
+  }
+
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
     .from('suppressed_emails')
