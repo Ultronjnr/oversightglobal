@@ -387,13 +387,22 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
           ) : (
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="rounded-full bg-primary/10 text-primary p-2.5 shrink-0">
-                  <FileText className="h-5 w-5" />
-                </span>
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Invoice preview"
+                    className="h-14 w-14 rounded-lg object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <span className="rounded-full bg-primary/10 text-primary p-2.5 shrink-0">
+                    <FileText className="h-5 w-5" />
+                  </span>
+                )}
                 <div className="min-w-0">
                   <p className="font-medium text-foreground text-sm truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {compressing && " · optimising…"}
                   </p>
                 </div>
               </div>
@@ -402,6 +411,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                 size="sm"
                 onClick={() => {
                   setFile(null);
+                  setPreviewUrl((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return null;
+                  });
                   setAnalysis(null);
                 }}
                 disabled={scanning || submitting}
