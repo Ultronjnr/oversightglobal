@@ -444,6 +444,7 @@ export type Database = {
           quote_id: string
           status: string
           supplier_id: string
+          transaction_id: string | null
           updated_at: string
         }
         Insert: {
@@ -455,6 +456,7 @@ export type Database = {
           quote_id: string
           status?: string
           supplier_id: string
+          transaction_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -466,6 +468,7 @@ export type Database = {
           quote_id?: string
           status?: string
           supplier_id?: string
+          transaction_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -495,6 +498,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -738,6 +748,7 @@ export type Database = {
           organization_id: string
           performed_at: string
           performed_by: string | null
+          transaction_id: string | null
         }
         Insert: {
           action: string
@@ -751,6 +762,7 @@ export type Database = {
           organization_id: string
           performed_at?: string
           performed_by?: string | null
+          transaction_id?: string | null
         }
         Update: {
           action?: string
@@ -764,8 +776,17 @@ export type Database = {
           organization_id?: string
           performed_at?: string
           performed_by?: string | null
+          transaction_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "payment_audit_log_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payment_batches: {
         Row: {
@@ -1069,6 +1090,7 @@ export type Database = {
           requested_by: string
           status: string
           supplier_id: string
+          transaction_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1081,6 +1103,7 @@ export type Database = {
           requested_by: string
           status?: string
           supplier_id: string
+          transaction_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1093,6 +1116,7 @@ export type Database = {
           requested_by?: string
           status?: string
           supplier_id?: string
+          transaction_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1117,6 +1141,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "quote_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       quotes: {
@@ -1132,6 +1163,7 @@ export type Database = {
           quote_request_id: string
           status: string
           supplier_id: string
+          transaction_id: string | null
           updated_at: string
           valid_until: string | null
         }
@@ -1147,6 +1179,7 @@ export type Database = {
           quote_request_id: string
           status?: string
           supplier_id: string
+          transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
         }
@@ -1162,6 +1195,7 @@ export type Database = {
           quote_request_id?: string
           status?: string
           supplier_id?: string
+          transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
         }
@@ -1192,6 +1226,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -1308,6 +1349,7 @@ export type Database = {
           status: string
           store_name: string | null
           subtotal: number
+          transaction_id: string | null
           updated_at: string
           vat: number
         }
@@ -1328,6 +1370,7 @@ export type Database = {
           status?: string
           store_name?: string | null
           subtotal?: number
+          transaction_id?: string | null
           updated_at?: string
           vat?: number
         }
@@ -1348,6 +1391,7 @@ export type Database = {
           status?: string
           store_name?: string | null
           subtotal?: number
+          transaction_id?: string | null
           updated_at?: string
           vat?: number
         }
@@ -1357,6 +1401,13 @@ export type Database = {
             columns: ["ocr_analysis_id"]
             isOneToOne: false
             referencedRelation: "ocr_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -2155,6 +2206,18 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      ensure_transaction_for_pr: {
+        Args: {
+          _amount?: number
+          _document_url?: string
+          _invoice_id?: string
+          _mark_invoiced?: boolean
+          _pr_id: string
+          _supplier_id?: string
+          _supplier_name?: string
+        }
+        Returns: string
       }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
