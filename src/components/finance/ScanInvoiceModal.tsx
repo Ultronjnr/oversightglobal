@@ -46,6 +46,7 @@ import {
   validateSarsInvoice,
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
+import { compressImage } from "@/lib/image-compression";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
@@ -78,6 +79,8 @@ const codeLabels: Record<SarsValidationCode, string> = {
 export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
   const [scanPath, setScanPath] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -114,6 +117,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
   const reset = () => {
     setFile(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setAnalysis(null);
     setScanPath(null);
     setCameraMode(null);
@@ -138,19 +145,35 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     onOpenChange(false);
   };
 
-  const onFile = (f: File | null) => {
+  const onFile = async (f: File | null) => {
     if (!f) return;
     if (f.size > MAX_SIZE) {
       toast.error("File must be smaller than 15MB");
       return;
     }
-    setFile(f);
     setAnalysis(null);
+    setCompressing(true);
+    try {
+      const compressed = await compressImage(f);
+      setFile(compressed);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return compressed.type.startsWith("image/")
+          ? URL.createObjectURL(compressed)
+          : null;
+      });
+      if (compressed.size < f.size) {
+        const saved = Math.round((1 - compressed.size / f.size) * 100);
+        toast.success(`Image optimised — ${saved}% smaller for a faster scan`);
+      }
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const handleCapture = (f: File) => {
     setCameraMode(null);
-    onFile(f);
+    void onFile(f);
   };
 
   const updateLineItem = (idx: number, field: keyof LineItemRow, value: string) => {
