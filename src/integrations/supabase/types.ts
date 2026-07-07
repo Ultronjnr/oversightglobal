@@ -78,7 +78,43 @@ export type Database = {
           uploaded_by?: string
           vat_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_reimbursement_id_fkey"
+            columns: ["reimbursement_id"]
+            isOneToOne: false
+            referencedRelation: "reimbursements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       batch_export_log: {
         Row: {
@@ -1315,7 +1351,15 @@ export type Database = {
           updated_at?: string
           vat?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "receipts_ocr_analysis_id_fkey"
+            columns: ["ocr_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "ocr_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reimbursement_audit_log: {
         Row: {
