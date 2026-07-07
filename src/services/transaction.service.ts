@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type TransactionStatus =
   | "APPROVED_NOT_PAID"
+  | "INVOICED"
   | "PARTIALLY_PAID"
   | "FULLY_PAID";
 
@@ -17,6 +18,9 @@ export interface OrgTransaction {
   status: TransactionStatus;
   approved_at: string;
   paid_at: string | null;
+  invoice_id: string | null;
+  document_url: string | null;
+  invoiced_at: string | null;
   created_at: string;
   updated_at: string;
   pr?: {
