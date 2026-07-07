@@ -220,7 +220,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         force: true,
       });
       if (!res.success || !res.analysis) {
-        toast.error(res.error || "AI scan failed");
+        toast.error(res.error || "Scan failed");
         return;
       }
       setAnalysis(res.analysis);
