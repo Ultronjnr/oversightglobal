@@ -39,6 +39,7 @@ export interface Invoice {
   pr_id: string;
   supplier_id: string;
   organization_id: string;
+  transaction_id: string | null;
   document_url: string;
   status: "UPLOADED" | "AWAITING_PAYMENT" | "PAID";
   created_at: string;
@@ -70,10 +71,10 @@ export class InvoiceUploadError extends Error {
  * been explicitly accepted by Finance.  This is the quotation-first gate:
  * no invoice may be uploaded unless Finance has already accepted a quote.
  */
-async function verifyQuoteIsAccepted(quoteId: string, supplierId: string): Promise<void> {
+async function verifyQuoteIsAccepted(quoteId: string, supplierId: string): Promise<{ transaction_id: string | null }> {
   const { data: quote, error } = await supabase
     .from("quotes")
-    .select("id, status, supplier_id")
+    .select("id, status, supplier_id, transaction_id")
     .eq("id", quoteId)
     .eq("supplier_id", supplierId)
     .maybeSingle();
@@ -101,6 +102,8 @@ async function verifyQuoteIsAccepted(quoteId: string, supplierId: string): Promi
       "Invoice upload allowed only after quotation approval. Your quote has not yet been approved by Finance."
     );
   }
+
+  return { transaction_id: quote.transaction_id ?? null };
 }
 
 /**
@@ -186,7 +189,7 @@ export async function uploadInvoice(
 
     // ── 4. QUOTATION-FIRST GATE ───────────────────────────────────────────────
     //    Throws InvoiceUploadError with a clear message if the quote is not ACCEPTED.
-    await verifyQuoteIsAccepted(quoteId, supplier.id);
+    const acceptedQuote = await verifyQuoteIsAccepted(quoteId, supplier.id);
 
     // ── 5. Immutability guard — no replacement after initial upload ───────────
     const { data: existingInvoice } = await supabase
@@ -229,6 +232,7 @@ export async function uploadInvoice(
         pr_id: prId,
         supplier_id: supplier.id,
         organization_id: organizationId,
+        transaction_id: acceptedQuote.transaction_id,
         document_url: filePath,
         status: "UPLOADED",
       })
@@ -417,6 +421,15 @@ export async function getInvoicesAwaitingPayment(): Promise<{
       .from("invoices")
       .select(`
         *,
+        transaction:transactions (
+          id,
+          status,
+          amount,
+          amount_paid,
+          currency,
+          document_url,
+          pr:purchase_requisitions ( transaction_id )
+        ),
         supplier:suppliers (
           id,
           company_name,
@@ -436,7 +449,7 @@ export async function getInvoicesAwaitingPayment(): Promise<{
           amount
         )
       `)
-      .in("status", ["UPLOADED", "AWAITING_PAYMENT"])
+      .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"])
       .order("created_at", { ascending: false });
 
     if (error) {

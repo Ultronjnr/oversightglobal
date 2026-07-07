@@ -17,6 +17,7 @@ export interface SupplierProfile {
 export interface SupplierQuoteRequest {
   id: string;
   pr_id: string;
+  transaction_id?: string | null;
   supplier_id: string;
   organization_id: string;
   requested_by: string;
@@ -41,6 +42,7 @@ export interface SupplierQuoteRequest {
 export interface SupplierQuote {
   id: string;
   quote_request_id: string;
+  transaction_id: string | null;
   supplier_id: string;
   organization_id: string;
   pr_id: string;
@@ -127,6 +129,7 @@ export async function getSupplierQuoteRequests(): Promise<{
         *,
         organizations:organization_id (name),
         purchase_requisitions:pr_id (
+          id,
           transaction_id,
           due_date,
           payment_due_date,
@@ -259,12 +262,19 @@ export async function submitQuote(params: {
       return { success: false, error: "You have already submitted a quote for this request" };
     }
 
-    // Insert the quote
+    const { data: quoteRequest } = await supabase
+      .from("quote_requests")
+      .select("transaction_id")
+      .eq("id", params.quoteRequestId)
+      .maybeSingle();
+
+    // Insert the quote; transaction_id is also enforced by the database trigger.
     const { error: insertError } = await supabase.from("quotes").insert({
       quote_request_id: params.quoteRequestId,
       pr_id: params.prId,
       organization_id: params.organizationId,
       supplier_id: supplier.id,
+      transaction_id: quoteRequest?.transaction_id ?? null,
       amount: params.amount,
       delivery_time: params.deliveryTime || null,
       valid_until: params.validUntil || null,

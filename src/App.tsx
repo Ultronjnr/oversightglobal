@@ -34,7 +34,16 @@ import AdminPortal from "./pages/portals/AdminPortal";
 import SupplierPortal from "./pages/portals/SupplierPortal";
 import FreemiumPortal from "./pages/portals/FreemiumPortal";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
