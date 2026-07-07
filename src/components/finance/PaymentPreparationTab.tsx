@@ -209,6 +209,11 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       const url = await getReimbursementProofUrl(row.documentUrl);
       if (url) window.open(url, "_blank");
       else toast.error("Failed to load proof");
+    } else if (row.kind === "transaction" && row.invoiceId) {
+      // Folded supplier invoice — document lives in the invoice bucket
+      const res = await getInvoiceDocumentUrl(row.documentUrl);
+      if (res.success && res.url) window.open(res.url, "_blank");
+      else toast.error("Failed to load document", { description: res.error });
     } else {
       // transaction: signed URL through PR document endpoint
       if (!row.prId) {
