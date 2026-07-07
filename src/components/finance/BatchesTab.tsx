@@ -265,7 +265,7 @@ export function BatchesTab() {
       const currency =
         a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
       const isFull =
-        a.invoice?.status === "PAID" || a.transaction?.status === "PAID";
+        a.invoice?.status === "PAID" || ["PAID", "COMPLETED", "FULLY_PAID"].includes(a.transaction?.status || "");
       const vatNumber =
         a.invoice?.supplier?.vat_number || a.transaction?.supplier?.vat_number || null;
       const supplierCode =
@@ -533,7 +533,7 @@ export function BatchesTab() {
                                 Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
                               const isFull =
                                 a.invoice?.status === "PAID" ||
-                                a.transaction?.status === "PAID";
+                                ["PAID", "COMPLETED", "FULLY_PAID"].includes(a.transaction?.status || "");
                               const supplierName =
                                 a.invoice?.supplier?.company_name ||
                                 a.transaction?.supplier?.company_name ||

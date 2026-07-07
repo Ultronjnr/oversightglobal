@@ -117,7 +117,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     setLoading(true);
     const [reimbRes, txnRes] = await Promise.all([
       getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
-      getTransactionsByStatus(["APPROVED_NOT_PAID", "INVOICED", "PARTIALLY_PAID"]),
+      getTransactionsByStatus(["FINANCE_APPROVED", "SUPPLIER_INVOICE", "AWAITING_PAYMENT", "PAYMENT_BATCH"]),
     ]);
     setReimbursements(reimbRes.rows);
     setTransactions(txnRes);
@@ -371,9 +371,9 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     {row.kind === "reimbursement"
                       ? "Reimbursement"
                       : row.kind === "transaction"
-                      ? (row.status === "INVOICED"
+                          ? (["SUPPLIER_INVOICE", "AWAITING_PAYMENT", "INVOICED"].includes(row.status)
                           ? "Invoiced"
-                          : row.status === "PARTIALLY_PAID"
+                          : ["PAYMENT_BATCH", "PARTIALLY_PAID"].includes(row.status)
                           ? "Part-paid"
                           : "Approved")
                       : "Invoice"}

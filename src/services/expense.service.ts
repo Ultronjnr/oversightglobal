@@ -1,10 +1,35 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export type ExpensePaymentStatus =
+  | "REQUEST_CREATED"
+  | "FINANCE_APPROVED"
+  | "SUPPLIER_QUOTE"
+  | "QUOTE_ACCEPTED"
+  | "SUPPLIER_INVOICE"
+  | "AWAITING_PAYMENT"
+  | "PAYMENT_BATCH"
+  | "PAID"
+  | "COMPLETED"
   | "APPROVED_NOT_PAID"
   | "INVOICED"
   | "PARTIALLY_PAID"
   | "FULLY_PAID";
+
+const STATUS_FILTERS: Record<ExpensePaymentStatus, ExpensePaymentStatus[]> = {
+  REQUEST_CREATED: ["REQUEST_CREATED"],
+  FINANCE_APPROVED: ["FINANCE_APPROVED", "APPROVED_NOT_PAID"],
+  SUPPLIER_QUOTE: ["SUPPLIER_QUOTE"],
+  QUOTE_ACCEPTED: ["QUOTE_ACCEPTED"],
+  SUPPLIER_INVOICE: ["SUPPLIER_INVOICE", "INVOICED"],
+  AWAITING_PAYMENT: ["AWAITING_PAYMENT", "INVOICED"],
+  PAYMENT_BATCH: ["PAYMENT_BATCH", "PARTIALLY_PAID"],
+  PAID: ["PAID", "FULLY_PAID"],
+  COMPLETED: ["COMPLETED", "FULLY_PAID"],
+  APPROVED_NOT_PAID: ["FINANCE_APPROVED", "APPROVED_NOT_PAID"],
+  INVOICED: ["SUPPLIER_INVOICE", "AWAITING_PAYMENT", "INVOICED"],
+  PARTIALLY_PAID: ["PAYMENT_BATCH", "PARTIALLY_PAID"],
+  FULLY_PAID: ["PAID", "COMPLETED", "FULLY_PAID"],
+};
 
 export interface ExpenseRecord {
   id: string;
@@ -58,7 +83,7 @@ export async function getExpenses(
     if (filters.from) query = query.gte("approved_at", filters.from);
     if (filters.to) query = query.lte("approved_at", filters.to);
     if (filters.paymentStatus && filters.paymentStatus !== "ALL") {
-      query = query.eq("status", filters.paymentStatus);
+      query = query.in("status", STATUS_FILTERS[filters.paymentStatus] ?? [filters.paymentStatus]);
     }
 
     const { data, error } = await query;
