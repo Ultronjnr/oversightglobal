@@ -30,9 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  getInvoicesAwaitingPayment,
   getInvoiceDocumentUrl,
-  type InvoiceWithDetails,
 } from "@/services/invoice.service";
 import { formatCurrency } from "@/lib/utils";
 import {
