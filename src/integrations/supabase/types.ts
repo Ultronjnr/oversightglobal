@@ -1728,7 +1728,10 @@ export type Database = {
           approved_at: string
           created_at: string
           currency: string
+          document_url: string | null
           id: string
+          invoice_id: string | null
+          invoiced_at: string | null
           organization_id: string
           paid_at: string | null
           pr_id: string
@@ -1743,7 +1746,10 @@ export type Database = {
           approved_at?: string
           created_at?: string
           currency?: string
+          document_url?: string | null
           id?: string
+          invoice_id?: string | null
+          invoiced_at?: string | null
           organization_id: string
           paid_at?: string | null
           pr_id: string
@@ -1758,7 +1764,10 @@ export type Database = {
           approved_at?: string
           created_at?: string
           currency?: string
+          document_url?: string | null
           id?: string
+          invoice_id?: string | null
+          invoiced_at?: string | null
           organization_id?: string
           paid_at?: string | null
           pr_id?: string
@@ -1768,6 +1777,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_organization_id_fkey"
             columns: ["organization_id"]
