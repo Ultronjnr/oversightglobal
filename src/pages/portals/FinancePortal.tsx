@@ -22,7 +22,6 @@ import {
   Clock,
   CheckCircle2,
   Receipt,
-  Banknote,
   MessageSquare,
   Wallet,
   CheckCheck,
