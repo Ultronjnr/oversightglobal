@@ -100,7 +100,7 @@ export default function Pricing() {
             Plans that scale with your spend, not your headcount
           </h1>
           <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
-            Every plan includes the full approval chain, AI invoice scanning, and a
+            Every plan includes the full approval chain, invoice scanning, and a
             complete audit trail. No setup fees, no lock-in contracts.
           </p>
 
