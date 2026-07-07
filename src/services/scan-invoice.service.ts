@@ -245,6 +245,39 @@ export async function createTransactionFromInvoice(
 
     // Attach the original invoice file (best effort)
     if (input.file && transactionId) {
+      // Persist OCR JSON, the human-corrected fields and a version-history
+      // envelope alongside the original file, permanently linked to the txn.
+      const correctedData = {
+        supplier_name: input.supplier_name.trim(),
+        supplier_vat_number: input.supplier_vat_number ?? null,
+        document_number: input.document_number ?? null,
+        document_date: input.document_date ?? null,
+        subtotal: input.subtotal ?? null,
+        vat_amount: input.vat_amount ?? null,
+        total_amount: total,
+        currency: input.currency || "ZAR",
+        line_items: cleanLineItems,
+        bank_name: input.bank_name ?? null,
+        bank_account_number: input.bank_account_number ?? null,
+        bank_branch_code: input.bank_branch_code ?? null,
+        bank_account_type: input.bank_account_type ?? null,
+      };
+      const aiExtracted = {
+        ocr_analysis_id: input.ocr_analysis_id ?? null,
+        ocr_confidence: input.ocr_confidence ?? null,
+        ocr: input.ocr_extracted ?? null,
+        corrected: correctedData,
+        versions: [
+          {
+            version: 1,
+            source: "SCAN_INVOICE",
+            edited_by: user.id,
+            edited_by_name: userName,
+            edited_at: new Date().toISOString(),
+            data: correctedData,
+          },
+        ],
+      };
       const upRes = await uploadAttachment({
         file: input.file,
         kind: "INVOICE",
@@ -256,6 +289,7 @@ export async function createTransactionFromInvoice(
         invoice_date: input.document_date ?? null,
         vat_number: input.supplier_vat_number ?? null,
         notes: input.notes ?? null,
+        ai_extracted: aiExtracted,
       });
       if (!upRes.success) {
         console.warn("[scan-invoice] attachment upload failed:", upRes.error);
