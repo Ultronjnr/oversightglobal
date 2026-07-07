@@ -466,6 +466,14 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         items={batchItems}
         onConfirmed={handleBatchConfirmed}
       />
+
+      <TransactionTimelineDialog
+        open={!!timelineRow}
+        onOpenChange={(o) => !o && setTimelineRow(null)}
+        prId={timelineRow?.prId ?? null}
+        transactionId={timelineRow?.kind === "transaction" ? timelineRow.id : null}
+        reference={timelineRow?.transactionId}
+      />
     </div>
   );
 }
