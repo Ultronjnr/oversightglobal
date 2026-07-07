@@ -256,7 +256,7 @@ export default function ExpenseHistory() {
                 </TableHeader>
                 <TableBody>
                   {records.map((r) => {
-                    const meta = paymentStatusMeta[r.paymentStatus];
+                    const meta = paymentStatusMeta[r.paymentStatus] ?? fallbackStatusMeta;
                     return (
                       <TableRow key={r.id} className="hover:bg-muted/20">
                         <TableCell>
@@ -342,7 +342,7 @@ export default function ExpenseHistory() {
                   </TableHeader>
                   <TableBody>
                     {drillRecords.map((r) => {
-                      const meta = paymentStatusMeta[r.paymentStatus];
+                      const meta = paymentStatusMeta[r.paymentStatus] ?? fallbackStatusMeta;
                       return (
                         <TableRow key={r.id}>
                           <TableCell>
