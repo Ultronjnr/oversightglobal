@@ -45,6 +45,15 @@ import { getCategories, type Category } from "@/services/category.service";
 import { getPortalNavItems } from "@/lib/admin-nav";
 
 const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className: string }> = {
+  REQUEST_CREATED: { label: "Request Created", className: "bg-muted text-muted-foreground border-border" },
+  FINANCE_APPROVED: { label: "Finance Approved", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  SUPPLIER_QUOTE: { label: "Quote Uploaded", className: "bg-primary/10 text-primary border-primary/30" },
+  QUOTE_ACCEPTED: { label: "Quote Accepted", className: "bg-primary/10 text-primary border-primary/30" },
+  SUPPLIER_INVOICE: { label: "Invoice Uploaded", className: "bg-primary/10 text-primary border-primary/30" },
+  AWAITING_PAYMENT: { label: "Awaiting Payment", className: "bg-warning/10 text-warning border-warning/30" },
+  PAYMENT_BATCH: { label: "Payment Batch", className: "bg-warning/10 text-warning border-warning/30" },
+  PAID: { label: "Paid", className: "bg-success/10 text-success border-success/30" },
+  COMPLETED: { label: "Completed", className: "bg-success/10 text-success border-success/30" },
   APPROVED_NOT_PAID: { label: "Approved – Not Paid", className: "bg-destructive/10 text-destructive border-destructive/30" },
   INVOICED: { label: "Invoiced", className: "bg-primary/10 text-primary border-primary/30" },
   PARTIALLY_PAID: { label: "Partially Paid", className: "bg-warning/10 text-warning border-warning/30" },
@@ -163,9 +172,10 @@ export default function ExpenseHistory() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">All Payment Statuses</SelectItem>
-                  <SelectItem value="APPROVED_NOT_PAID">Approved – Not Paid</SelectItem>
+                  <SelectItem value="FINANCE_APPROVED">Finance Approved</SelectItem>
+                  <SelectItem value="AWAITING_PAYMENT">Awaiting Payment</SelectItem>
                   <SelectItem value="PARTIALLY_PAID">Partially Paid</SelectItem>
-                  <SelectItem value="FULLY_PAID">Fully Paid</SelectItem>
+                  <SelectItem value="COMPLETED">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

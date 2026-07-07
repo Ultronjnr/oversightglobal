@@ -238,30 +238,32 @@ export default function FinancePortal() {
   const fetchAmountStats = async () => {
     try {
       const { supabase } = await import("@/integrations/supabase/client");
-      const [{ data: invoices }, { data: allocs }] = await Promise.all([
+      const [{ data: transactions }, { data: allocs }] = await Promise.all([
         supabase
-          .from("invoices")
-          .select("id, status, quote:quotes(amount)")
-          .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]),
+          .from("transactions" as any)
+          .select("id, status, amount, amount_paid")
+          .in("status", ["FINANCE_APPROVED", "SUPPLIER_INVOICE", "AWAITING_PAYMENT", "PAYMENT_BATCH", "APPROVED_NOT_PAID", "INVOICED", "PARTIALLY_PAID"]),
         supabase
           .from("payment_allocations")
-          .select("invoice_id, amount_paid, created_at"),
+          .select("transaction_id, amount_paid, created_at"),
       ]);
 
-      const paidByInvoice: Record<string, number> = {};
+      const paidByTransaction: Record<string, number> = {};
       (allocs || []).forEach((a: any) => {
-        paidByInvoice[a.invoice_id] = (paidByInvoice[a.invoice_id] || 0) + Number(a.amount_paid || 0);
+        if (a.transaction_id) {
+          paidByTransaction[a.transaction_id] = (paidByTransaction[a.transaction_id] || 0) + Number(a.amount_paid || 0);
+        }
       });
 
       let approvedNotPaid = 0;
       let partiallyPaid = 0;
       let outstanding = 0;
-      (invoices || []).forEach((inv: any) => {
-        const total = Number(inv.quote?.amount || 0);
-        const paid = paidByInvoice[inv.id] || 0;
+      (transactions || []).forEach((txn: any) => {
+        const total = Number(txn.amount || 0);
+        const paid = Number(txn.amount_paid ?? paidByTransaction[txn.id] ?? 0);
         const remaining = Math.max(total - paid, 0);
         outstanding += remaining;
-        if (inv.status === "PARTIALLY_PAID") partiallyPaid += remaining;
+        if (["PAYMENT_BATCH", "PARTIALLY_PAID"].includes(txn.status)) partiallyPaid += remaining;
         else approvedNotPaid += remaining;
       });
 

@@ -603,6 +603,7 @@ export async function sendQuoteRequest(
         pr_id: prId,
         supplier_id: supplierId,
         organization_id: profile.organization_id,
+        transaction_id: null,
         requested_by: user.id,
         message,
         items: items as unknown as Json,
@@ -669,6 +670,7 @@ export async function getQuotes(): Promise<{
       .from("quotes")
       .select(`
         *,
+        transaction:transactions (*),
         supplier:suppliers (*)
       `)
       .order("created_at", { ascending: false });

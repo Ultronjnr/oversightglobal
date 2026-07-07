@@ -157,7 +157,9 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   const handleCreateBatch = () => setBatchOpen(true);
 
   const batchItems: BatchPaymentItem[] = selectedRows.map((r) => ({
-    invoiceId: r.id,
+    kind: r.txnId ? "transaction" : "invoice",
+    invoiceId: r.txnId ? undefined : r.id,
+    transactionId: r.txnId ?? undefined,
     party: r.party,
     partySub: r.partySub,
     totalAmount: r.totalAmount,
@@ -362,7 +364,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "PARTIALLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
+        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const invoices = (data || []) as any[];
@@ -392,12 +394,13 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
           prId: inv.pr?.id ?? null,
+          txnId: inv.transaction_id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
         .select("id, pr_id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
-        .eq("status", "PARTIALLY_PAID")
+        .in("status", ["PAYMENT_BATCH", "PARTIALLY_PAID"])
         .order("updated_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
         id: t.id,
@@ -412,13 +415,14 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         prId: t.pr_id ?? null,
         txnId: t.id,
       }));
-      return [...invRows, ...txnRows];
+      const invoiceTxnIds = new Set(invRows.map((row) => row.txnId).filter(Boolean));
+      return [...invRows, ...txnRows.filter((row) => !invoiceTxnIds.has(row.txnId))];
     }
 
     if (filter === "FULLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
+        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
         .eq("status", "PAID")
         .order("updated_at", { ascending: false });
       const invRows = (data || []).map((inv: any) => {
@@ -435,12 +439,13 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
           date: inv.updated_at || inv.created_at,
           currency: inv.pr?.currency,
           prId: inv.pr?.id ?? null,
+          txnId: inv.transaction_id ?? null,
         };
       });
       const { data: txns } = await supabase
         .from("transactions" as any)
         .select("id, pr_id, amount, amount_paid, currency, paid_at, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
-        .eq("status", "FULLY_PAID")
+        .in("status", ["PAID", "COMPLETED", "FULLY_PAID"])
         .order("paid_at", { ascending: false });
       const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
         id: t.id,
@@ -455,7 +460,8 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         prId: t.pr_id ?? null,
         txnId: t.id,
       }));
-      return [...invRows, ...txnRows];
+      const invoiceTxnIds = new Set(invRows.map((row) => row.txnId).filter(Boolean));
+      return [...invRows, ...txnRows.filter((row) => !invoiceTxnIds.has(row.txnId))];
     }
 
     if (filter === "OVERDUE") {
