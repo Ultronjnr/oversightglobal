@@ -370,7 +370,11 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     {row.kind === "reimbursement"
                       ? "Reimbursement"
                       : row.kind === "transaction"
-                      ? "Approved"
+                      ? (row.status === "INVOICED"
+                          ? "Invoiced"
+                          : row.status === "PARTIALLY_PAID"
+                          ? "Part-paid"
+                          : "Approved")
                       : "Invoice"}
                   </Badge>
                 </TableCell>
