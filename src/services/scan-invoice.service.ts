@@ -275,6 +275,13 @@ export async function createTransactionFromInvoice(
             .from("purchase_requisitions")
             .update({ document_url: docPath })
             .eq("id", prRow.id);
+          // Single source of truth: also persist the scanned document directly
+          // on the transaction record so the transaction viewer always resolves
+          // the invoice/scan document from the transaction itself.
+          await supabase
+            .from("transactions" as any)
+            .update({ document_url: docPath })
+            .eq("pr_id", prRow.id);
         } else {
           console.warn("[scan-invoice] pr-documents upload failed:", docUpErr.message);
         }
