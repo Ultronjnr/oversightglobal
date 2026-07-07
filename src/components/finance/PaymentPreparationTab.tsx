@@ -45,6 +45,7 @@ import {
 import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
 import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
+import { TransactionTimelineDialog } from "./TransactionTimelineDialog";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
