@@ -30,9 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  getInvoicesAwaitingPayment,
   getInvoiceDocumentUrl,
-  type InvoiceWithDetails,
 } from "@/services/invoice.service";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -97,10 +95,10 @@ type PayRow =
       status: string;
       prId?: string;
       items?: any[];
+      invoiceId?: string | null;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
-  const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([]);
   const [reimbursements, setReimbursements] = useState<Reimbursement[]>([]);
   const [transactions, setTransactions] = useState<OrgTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,34 +112,16 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
 
   const fetchAll = async () => {
     setLoading(true);
-    const [invRes, reimbRes, txnRes] = await Promise.all([
-      getInvoicesAwaitingPayment(),
+    const [reimbRes, txnRes] = await Promise.all([
       getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
-      getTransactionsByStatus(["APPROVED_NOT_PAID", "PARTIALLY_PAID"]),
+      getTransactionsByStatus(["APPROVED_NOT_PAID", "INVOICED", "PARTIALLY_PAID"]),
     ]);
-    if (invRes.success) setInvoices(invRes.data);
-    else toast.error(invRes.error || "Failed to load invoices");
     setReimbursements(reimbRes.rows);
     setTransactions(txnRes);
     setLoading(false);
   };
 
   const rows = useMemo<PayRow[]>(() => {
-    const invRows: PayRow[] = invoices.map((inv) => ({
-      kind: "invoice",
-      key: `i:${inv.id}`,
-      id: inv.id,
-      party: inv.supplier?.company_name || "Unknown supplier",
-      partySub: inv.supplier?.contact_email,
-      transactionId: inv.pr?.transaction_id || "-",
-      amount: Number(inv.quote?.amount || 0),
-      currency: inv.pr?.currency,
-      createdAt: inv.created_at,
-      documentUrl: inv.document_url || inv.pr?.document_url || null,
-      status: inv.status,
-      prId: inv.pr?.id,
-      items: Array.isArray(inv.pr?.items) ? (inv.pr?.items as any[]) : [],
-    }));
     const reimbRows: PayRow[] = reimbursements.map((r) => ({
       kind: "reimbursement",
       key: `r:${r.id}`,
@@ -167,16 +147,17 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         amount: remaining,
         currency: t.currency,
         createdAt: t.approved_at,
-        documentUrl: t.pr?.document_url || null,
+        documentUrl: t.document_url || t.pr?.document_url || null,
         status: t.status,
         prId: t.pr?.id || t.pr_id,
         items: Array.isArray(t.pr?.items) ? (t.pr?.items as any[]) : [],
+        invoiceId: t.invoice_id,
       };
     });
-    return [...invRows, ...reimbRows, ...txnRows].sort(
+    return [...reimbRows, ...txnRows].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [invoices, reimbursements, transactions]);
+  }, [reimbursements, transactions]);
 
   const selectedRows = useMemo(
     () => rows.filter((r) => selectedIds.has(r.key)),
@@ -226,6 +207,11 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       const url = await getReimbursementProofUrl(row.documentUrl);
       if (url) window.open(url, "_blank");
       else toast.error("Failed to load proof");
+    } else if (row.kind === "transaction" && row.invoiceId) {
+      // Folded supplier invoice — document lives in the invoice bucket
+      const res = await getInvoiceDocumentUrl(row.documentUrl);
+      if (res.success && res.url) window.open(res.url, "_blank");
+      else toast.error("Failed to load document", { description: res.error });
     } else {
       // transaction: signed URL through PR document endpoint
       if (!row.prId) {
@@ -382,7 +368,11 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     {row.kind === "reimbursement"
                       ? "Reimbursement"
                       : row.kind === "transaction"
-                      ? "Approved"
+                      ? (row.status === "INVOICED"
+                          ? "Invoiced"
+                          : row.status === "PARTIALLY_PAID"
+                          ? "Part-paid"
+                          : "Approved")
                       : "Invoice"}
                   </Badge>
                 </TableCell>
