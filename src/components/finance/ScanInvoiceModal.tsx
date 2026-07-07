@@ -449,7 +449,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
           <Button
             onClick={runScan}
-            disabled={!file || scanning}
+            disabled={!file || scanning || compressing}
             className="w-full gap-2"
           >
             {scanning ? (
