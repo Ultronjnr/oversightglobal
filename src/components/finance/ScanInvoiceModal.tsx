@@ -46,6 +46,7 @@ import {
   validateSarsInvoice,
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
+import { compressImage } from "@/lib/image-compression";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
@@ -78,6 +79,8 @@ const codeLabels: Record<SarsValidationCode, string> = {
 export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
   const [scanPath, setScanPath] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -114,6 +117,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
   const reset = () => {
     setFile(null);
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setAnalysis(null);
     setScanPath(null);
     setCameraMode(null);
@@ -138,19 +145,35 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     onOpenChange(false);
   };
 
-  const onFile = (f: File | null) => {
+  const onFile = async (f: File | null) => {
     if (!f) return;
     if (f.size > MAX_SIZE) {
       toast.error("File must be smaller than 15MB");
       return;
     }
-    setFile(f);
     setAnalysis(null);
+    setCompressing(true);
+    try {
+      const compressed = await compressImage(f);
+      setFile(compressed);
+      setPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return compressed.type.startsWith("image/")
+          ? URL.createObjectURL(compressed)
+          : null;
+      });
+      if (compressed.size < f.size) {
+        const saved = Math.round((1 - compressed.size / f.size) * 100);
+        toast.success(`Image optimised — ${saved}% smaller for a faster scan`);
+      }
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const handleCapture = (f: File) => {
     setCameraMode(null);
-    onFile(f);
+    void onFile(f);
   };
 
   const updateLineItem = (idx: number, field: keyof LineItemRow, value: string) => {
@@ -302,6 +325,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         total: Number(li.total) || undefined,
       })),
       ocr_analysis_id: analysis?.id ?? null,
+      ocr_extracted: (analysis?.extracted as Record<string, unknown>) ?? null,
+      ocr_confidence: analysis?.confidence ?? null,
     });
     // best-effort cleanup of the scan staging file
     if (scanPath) {
@@ -364,13 +389,22 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
           ) : (
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/30 p-3">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="rounded-full bg-primary/10 text-primary p-2.5 shrink-0">
-                  <FileText className="h-5 w-5" />
-                </span>
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Invoice preview"
+                    className="h-14 w-14 rounded-lg object-cover border border-border shrink-0"
+                  />
+                ) : (
+                  <span className="rounded-full bg-primary/10 text-primary p-2.5 shrink-0">
+                    <FileText className="h-5 w-5" />
+                  </span>
+                )}
                 <div className="min-w-0">
                   <p className="font-medium text-foreground text-sm truncate">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {compressing && " · optimising…"}
                   </p>
                 </div>
               </div>
@@ -379,6 +413,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                 size="sm"
                 onClick={() => {
                   setFile(null);
+                  setPreviewUrl((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return null;
+                  });
                   setAnalysis(null);
                 }}
                 disabled={scanning || submitting}
@@ -413,7 +451,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
           <Button
             onClick={runScan}
-            disabled={!file || scanning}
+            disabled={!file || scanning || compressing}
             className="w-full gap-2"
           >
             {scanning ? (

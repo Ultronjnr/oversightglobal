@@ -40,6 +40,8 @@ export interface UploadAttachmentInput {
   invoice_date?: string | null;
   vat_number?: string | null;
   notes?: string | null;
+  /** OCR JSON, corrected fields and version history persisted with the file. */
+  ai_extracted?: any | null;
 }
 
 export interface AttachmentFilter {
@@ -101,6 +103,7 @@ export async function uploadAttachment(
       invoice_date: input.invoice_date || null,
       vat_number: input.vat_number?.trim() || null,
       notes: input.notes?.trim() || null,
+      ai_extracted: input.ai_extracted ?? null,
       file_path: path,
       file_name: file.name,
       mime_type: file.type,
