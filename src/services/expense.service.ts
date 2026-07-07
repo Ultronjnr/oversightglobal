@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type ExpensePaymentStatus =
   | "APPROVED_NOT_PAID"
+  | "INVOICED"
   | "PARTIALLY_PAID"
   | "FULLY_PAID";
 
