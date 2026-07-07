@@ -325,6 +325,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         total: Number(li.total) || undefined,
       })),
       ocr_analysis_id: analysis?.id ?? null,
+      ocr_extracted: (analysis?.extracted as Record<string, unknown>) ?? null,
+      ocr_confidence: analysis?.confidence ?? null,
     });
     // best-effort cleanup of the scan staging file
     if (scanPath) {
