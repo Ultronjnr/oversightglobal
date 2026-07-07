@@ -105,6 +105,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [timelineRow, setTimelineRow] = useState<PayRow | null>(null);
 
   useEffect(() => {
     void fetchAll();
