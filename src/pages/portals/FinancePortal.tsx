@@ -497,7 +497,7 @@ export default function FinancePortal() {
             onClick={() => setShowScanModal(true)}
           >
             <FileText className="h-4 w-4" />
-            Add Invoice
+            Reimbursement
           </Button>
           
           {/* Prominent blue circled button */}
