@@ -1765,6 +1765,79 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          comment: string | null
+          created_at: string
+          event_type: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          organization_id: string
+          pr_id: string | null
+          status: string | null
+          title: string
+          transaction_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          comment?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id: string
+          pr_id?: string | null
+          status?: string | null
+          title: string
+          transaction_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          comment?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id?: string
+          pr_id?: string | null
+          status?: string | null
+          title?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_events_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_events_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -2102,6 +2175,20 @@ export type Database = {
       is_valid_self_role_assignment: {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
+      }
+      log_transaction_event: {
+        Args: {
+          _comment?: string
+          _event_type: string
+          _new_value?: string
+          _old_value?: string
+          _org_id: string
+          _pr_id: string
+          _status?: string
+          _title: string
+          _transaction_id: string
+        }
+        Returns: undefined
       }
       mark_reimbursement_paid: {
         Args: {

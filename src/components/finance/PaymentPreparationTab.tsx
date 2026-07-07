@@ -16,6 +16,7 @@ import {
   Download,
   Paperclip,
 } from "lucide-react";
+import { Clock } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import {
 import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
 import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.service";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
+import { TransactionTimelineDialog } from "./TransactionTimelineDialog";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
@@ -105,6 +107,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [timelineRow, setTimelineRow] = useState<PayRow | null>(null);
 
   useEffect(() => {
     void fetchAll();
@@ -399,8 +402,23 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                   {format(new Date(row.createdAt), "dd MMM yyyy")}
                 </TableCell>
                 <TableCell className="text-right">
-                  {row.documentUrl ? (
-                    <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2">
+                    {row.kind === "transaction" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimelineRow(row);
+                        }}
+                        className="gap-1"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span className="hidden sm:inline">Timeline</span>
+                      </Button>
+                    )}
+                    {row.documentUrl ? (
+                    <>
                       <Badge variant="outline" className="border-success/30 text-success gap-1 hidden sm:inline-flex">
                         <Paperclip className="h-3 w-3" />
                         Attached
@@ -418,10 +436,13 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       View
                       <ExternalLink className="h-3 w-3" />
                     </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
+                    </>
+                    ) : (
+                      row.kind !== "transaction" && (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
               {isExpanded && (
@@ -444,6 +465,14 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         onOpenChange={setShowBatchModal}
         items={batchItems}
         onConfirmed={handleBatchConfirmed}
+      />
+
+      <TransactionTimelineDialog
+        open={!!timelineRow}
+        onOpenChange={(o) => !o && setTimelineRow(null)}
+        prId={timelineRow?.prId ?? null}
+        transactionId={timelineRow?.kind === "transaction" ? timelineRow.id : null}
+        reference={timelineRow?.transactionId}
       />
     </div>
   );
