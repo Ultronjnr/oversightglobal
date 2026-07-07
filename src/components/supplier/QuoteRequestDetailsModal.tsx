@@ -24,7 +24,7 @@ import {
   User,
   Mail,
   AlertTriangle,
-  DollarSign,
+  Banknote,
 } from "lucide-react";
 import { format } from "date-fns";
 import type { SupplierQuoteRequest } from "@/services/supplier.service";
@@ -152,7 +152,7 @@ export function QuoteRequestDetailsModal({
               )}
               {request.pr_payment_due_date && (
                 <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <Banknote className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">Payment Due:</span>
                   <span className="font-medium">
                     {format(new Date(request.pr_payment_due_date), "MMM d, yyyy")}

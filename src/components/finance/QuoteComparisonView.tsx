@@ -18,7 +18,7 @@ import {
   Clock,
   Calendar,
   Truck,
-  DollarSign,
+  Banknote,
   Download,
   ExternalLink,
   Building2,

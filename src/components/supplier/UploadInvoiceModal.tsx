@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, FileText, Upload, CheckCircle, DollarSign } from "lucide-react";
+import { Loader2, FileText, Upload, CheckCircle, Banknote } from "lucide-react";
 import { uploadInvoice } from "@/services/invoice.service";
 import type { SupplierQuote } from "@/services/supplier.service";
 import { format } from "date-fns";
@@ -175,7 +175,7 @@ export function UploadInvoiceModal({
 
           {/* Info Note */}
           <div className="bg-muted/50 rounded-lg p-3 flex items-start gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground mt-0.5" />
+            <Banknote className="h-4 w-4 text-muted-foreground mt-0.5" />
             <p className="text-xs text-muted-foreground">
               Once submitted, your invoice will be reviewed by the Finance team.
               Payment will be processed according to the agreed terms.

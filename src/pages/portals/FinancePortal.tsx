@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   User,
-  DollarSign,
+  Banknote,
   BarChart3,
   Building2,
   FileText,
@@ -543,7 +543,7 @@ export default function FinancePortal() {
         {/* Main Content Card */}
         <SectionCard
           title="Finance Overview"
-          icon={<DollarSign className="h-5 w-5" />}
+          icon={<Banknote className="h-5 w-5" />}
         >
           {showCleared ? (
             <EmptyState
@@ -555,7 +555,7 @@ export default function FinancePortal() {
             <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
               <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <DollarSign className="h-4 w-4" />
+                  <Banknote className="h-4 w-4" />
                   <span className="text-sm">Approvals</span>
                   <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
@@ -612,7 +612,7 @@ export default function FinancePortal() {
               <TabsContent value="approvals">
                 {prsWithQuoteStatus.length === 0 ? (
                   <EmptyState
-                    icon={<DollarSign className="h-16 w-16" />}
+                    icon={<Banknote className="h-16 w-16" />}
                     title="No Quote Workflows"
                     description="Requisitions with quote activity will appear here. Send quote requests from the Incoming Purchase Requisitions modal."
                   />

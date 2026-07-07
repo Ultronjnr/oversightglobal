@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, DollarSign, FileText } from "lucide-react";
+import { BarChart3, TrendingUp, Banknote, FileText } from "lucide-react";
 
 export function AnalyticsTab() {
   return (
@@ -13,7 +13,7 @@ export function AnalyticsTab() {
                 <p className="text-sm text-muted-foreground">Total Spend</p>
                 <p className="text-2xl font-bold text-primary">R0</p>
               </div>
-              <DollarSign className="h-8 w-8 text-primary/30" />
+              <Banknote className="h-8 w-8 text-primary/30" />
             </div>
           </CardContent>
         </Card>

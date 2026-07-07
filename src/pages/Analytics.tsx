@@ -17,7 +17,7 @@ import {
   User,
   BarChart3,
   TrendingUp,
-  DollarSign,
+  Banknote,
   CheckCircle,
   Clock,
   ArrowUpRight,
@@ -476,7 +476,7 @@ export default function Analytics() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <DollarSign className="h-5 w-5 text-primary" />
+                  <Banknote className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Avg Quote Value</p>
                     <p className="text-lg font-bold text-primary">{formatCurrency(analytics?.avgQuoteValue || 0)}</p>
