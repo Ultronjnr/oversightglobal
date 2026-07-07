@@ -83,6 +83,10 @@ export interface CreateTxnFromInvoiceInput {
   }>;
   /** Raw OCR analysis id for traceability */
   ocr_analysis_id?: string | null;
+  /** Raw OCR-extracted JSON as returned by the model. */
+  ocr_extracted?: Record<string, unknown> | null;
+  /** Overall OCR confidence 0..1. */
+  ocr_confidence?: number | null;
 }
 
 export interface CreateTxnFromInvoiceResult {
