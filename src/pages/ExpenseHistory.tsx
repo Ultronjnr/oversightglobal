@@ -46,9 +46,12 @@ import { getPortalNavItems } from "@/lib/admin-nav";
 
 const paymentStatusMeta: Record<ExpensePaymentStatus, { label: string; className: string }> = {
   APPROVED_NOT_PAID: { label: "Approved – Not Paid", className: "bg-destructive/10 text-destructive border-destructive/30" },
+  INVOICED: { label: "Invoiced", className: "bg-primary/10 text-primary border-primary/30" },
   PARTIALLY_PAID: { label: "Partially Paid", className: "bg-warning/10 text-warning border-warning/30" },
   FULLY_PAID: { label: "Fully Paid", className: "bg-success/10 text-success border-success/30" },
 };
+
+const fallbackStatusMeta = { label: "Unknown", className: "bg-muted text-muted-foreground border-border" };
 
 export default function ExpenseHistory() {
   const { role } = useAuth();
