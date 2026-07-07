@@ -2207,18 +2207,32 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
-      ensure_transaction_for_pr: {
-        Args: {
-          _amount?: number
-          _document_url?: string
-          _invoice_id?: string
-          _mark_invoiced?: boolean
-          _pr_id: string
-          _supplier_id?: string
-          _supplier_name?: string
-        }
-        Returns: string
-      }
+      ensure_transaction_for_pr:
+        | {
+            Args: {
+              _amount?: number
+              _document_url?: string
+              _invoice_id?: string
+              _mark_invoiced?: boolean
+              _pr_id: string
+              _supplier_id?: string
+              _supplier_name?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _amount?: number
+              _document_url?: string
+              _invoice_id?: string
+              _mark_invoiced?: boolean
+              _pr_id: string
+              _status?: string
+              _supplier_id?: string
+              _supplier_name?: string
+            }
+            Returns: string
+          }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
