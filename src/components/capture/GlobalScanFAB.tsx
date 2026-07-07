@@ -5,8 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Global floating action button (top-right) that lets Employee / HOD / Finance
- * users instantly scan an invoice with AI. Opens the Scan Invoice (AI OCR)
- * workflow which handles secure storage upload and the AI OCR pipeline.
+ * users instantly scan an invoice. Opens the Scan Invoice
+ * workflow which handles secure storage upload and the OCR pipeline.
  */
 export function GlobalScanFAB() {
   const { role } = useAuth();
@@ -23,7 +23,7 @@ export function GlobalScanFAB() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Scan an invoice with AI"
+        aria-label="Scan an invoice"
         className="fixed top-20 right-4 sm:right-6 z-40 group flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all px-4 py-3 animate-fade-in"
       >
         <span className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
@@ -31,7 +31,7 @@ export function GlobalScanFAB() {
         <span className="hidden sm:inline text-sm font-medium">Scan Invoice</span>
       </button>
 
-      {/* Scan Invoice (AI OCR) Modal */}
+      {/* Scan Invoice Modal */}
       <ScanInvoiceModal open={open} onOpenChange={setOpen} />
     </>
   );

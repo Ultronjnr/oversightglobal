@@ -351,7 +351,7 @@ export function InvoicesTable() {
             </div>
             {documentModal.invoice && (
               <OcrAnalysisPanel
-                title="AI invoice analysis"
+                title="Invoice analysis"
                 input={{
                   document_type: "INVOICE",
                   bucket: "invoice-documents",

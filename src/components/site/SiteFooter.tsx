@@ -16,7 +16,7 @@ export function SiteFooter() {
             <h4 className="text-sm font-semibold text-foreground mb-4">Product</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>Procurement workflow</li>
-              <li>AI invoice scanning</li>
+              <li>Invoice scanning</li>
               <li>Supplier portal</li>
               <li>
                 <Link to="/pricing" className="hover:text-foreground transition-colors">

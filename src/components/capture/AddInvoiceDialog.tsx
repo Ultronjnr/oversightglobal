@@ -25,7 +25,7 @@ interface AddInvoiceDialogProps {
 /**
  * Controlled "Add Invoice" dialog. Lets users snap or upload a receipt/invoice
  * which is pushed into the existing reimbursement flow (secure storage upload,
- * RLS-scoped persistence and the AI OCR pipeline).
+ * RLS-scoped persistence and the OCR pipeline).
  */
 export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) {
   const [cameraMode, setCameraMode] = useState<Mode>(null);
@@ -67,7 +67,7 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
             </DialogTitle>
             <DialogDescription>
               Snap a receipt, add an invoice or upload a file. We'll create a
-              reimbursement and run AI analysis automatically.
+              reimbursement and process it automatically.
             </DialogDescription>
           </DialogHeader>
 
@@ -145,7 +145,7 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
         }}
         initialFile={pendingFile}
         onSubmitted={() => {
-          toast.success("Reimbursement created — AI analysis running.");
+          toast.success("Reimbursement created — processing.");
         }}
       />
     </>

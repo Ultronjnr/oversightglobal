@@ -20,7 +20,7 @@ interface OcrAnalysisPanelProps {
 
 export function OcrAnalysisPanel({
   input,
-  title = "AI document analysis",
+  title = "Document analysis",
   autoLoad = true,
 }: OcrAnalysisPanelProps) {
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
@@ -74,8 +74,8 @@ export function OcrAnalysisPanel({
     toast({
       title: res.cached ? "Loaded cached analysis" : "Document analyzed",
       description: res.cached
-        ? "Reused a previous AI extraction for this file."
-        : "AI extracted structured fields from the document.",
+        ? "Reused a previous extraction for this file."
+        : "Extracted structured fields from the document.",
     });
   };
 
@@ -110,7 +110,7 @@ export function OcrAnalysisPanel({
               ) : (
                 <Sparkles className="h-3 w-3 mr-1" />
               )}
-              Analyze with AI
+              Scan document
             </Button>
           )}
           {analysis && (
