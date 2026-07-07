@@ -402,8 +402,23 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                   {format(new Date(row.createdAt), "dd MMM yyyy")}
                 </TableCell>
                 <TableCell className="text-right">
-                  {row.documentUrl ? (
-                    <div className="flex items-center justify-end gap-2">
+                  <div className="flex items-center justify-end gap-2">
+                    {row.kind === "transaction" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTimelineRow(row);
+                        }}
+                        className="gap-1"
+                      >
+                        <Clock className="h-4 w-4" />
+                        <span className="hidden sm:inline">Timeline</span>
+                      </Button>
+                    )}
+                    {row.documentUrl ? (
+                    <>
                       <Badge variant="outline" className="border-success/30 text-success gap-1 hidden sm:inline-flex">
                         <Paperclip className="h-3 w-3" />
                         Attached
@@ -421,10 +436,13 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       View
                       <ExternalLink className="h-3 w-3" />
                     </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
+                    </>
+                    ) : (
+                      row.kind !== "transaction" && (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
               {isExpanded && (
