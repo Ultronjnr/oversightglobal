@@ -21,7 +21,7 @@ import {
   Loader2,
   FileText,
   Receipt,
-  DollarSign,
+  Banknote,
   ExternalLink,
   Download,
   Building2,
@@ -300,7 +300,7 @@ export function InvoicesTable() {
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <>
-                                    <DollarSign className="h-4 w-4" />
+                                    <Banknote className="h-4 w-4" />
                                     Mark Awaiting Payment
                                   </>
                                 )}
@@ -351,7 +351,7 @@ export function InvoicesTable() {
             </div>
             {documentModal.invoice && (
               <OcrAnalysisPanel
-                title="AI invoice analysis"
+                title="Invoice analysis"
                 input={{
                   document_type: "INVOICE",
                   bucket: "invoice-documents",

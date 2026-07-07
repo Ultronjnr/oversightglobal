@@ -17,7 +17,7 @@ const PLANS = [
       "Up to 10 users",
       "Unlimited purchase requests",
       "2-step approval chains",
-      "AI invoice scanning (100/mo)",
+      "Invoice scanning (100/mo)",
       "Supplier portal access",
       "Standard audit trail",
     ],
@@ -34,7 +34,7 @@ const PLANS = [
       "Up to 50 users",
       "Unlimited purchase requests",
       "Multi-level, conditional approvals",
-      "AI invoice scanning (unlimited)",
+      "Invoice scanning (unlimited)",
       "SARS VAT verification",
       "Supplier portal + payment status",
       "Full exportable audit trail",
@@ -53,7 +53,7 @@ const PLANS = [
       "Unlimited users",
       "Multi-entity & multi-currency",
       "Custom approval logic",
-      "Priority AI processing",
+      "Priority processing",
       "Dedicated account manager",
       "API & accounting integrations",
       "Custom audit reporting",
@@ -63,7 +63,7 @@ const PLANS = [
 
 const COMPARE: { feature: string; starter: string; growth: string; enterprise: string }[] = [
   { feature: "Users included", starter: "10", growth: "50", enterprise: "Unlimited" },
-  { feature: "AI invoice scans", starter: "100 / month", growth: "Unlimited", enterprise: "Unlimited" },
+  { feature: "Invoice scans", starter: "100 / month", growth: "Unlimited", enterprise: "Unlimited" },
   { feature: "Approval chain depth", starter: "2 steps", growth: "Unlimited", enterprise: "Unlimited + conditional" },
   { feature: "SARS VAT verification", starter: "—", growth: "✓", enterprise: "✓" },
   { feature: "Supplier portal", starter: "✓", growth: "✓", enterprise: "✓" },
@@ -76,7 +76,7 @@ const FAQ = [
   { q: "Is there a free trial?", a: "Yes — every plan starts with a 14-day free trial, no card required. You'll have full access so you can run real purchases through it before committing." },
   { q: "Can I change plans later?", a: "Absolutely. You can move up or down a plan at any time, and we'll prorate the difference on your next invoice." },
   { q: "Is there a setup fee?", a: "No. Pricing is month-to-month with no setup costs and no long-term contract on Starter and Growth plans." },
-  { q: "What counts as an \"AI scan\"?", a: "Every invoice or quote that Ovasyt reads and validates counts as one scan, regardless of length or supplier." },
+  { q: "What counts as a \"scan\"?", a: "Every invoice or quote that Ovasyt reads and validates counts as one scan, regardless of length or supplier." },
 ];
 
 function Cell({ value }: { value: string }) {
@@ -100,7 +100,7 @@ export default function Pricing() {
             Plans that scale with your spend, not your headcount
           </h1>
           <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
-            Every plan includes the full approval chain, AI invoice scanning, and a
+            Every plan includes the full approval chain, invoice scanning, and a
             complete audit trail. No setup fees, no lock-in contracts.
           </p>
 

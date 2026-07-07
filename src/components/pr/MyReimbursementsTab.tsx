@@ -8,7 +8,7 @@ import {
   ExternalLink,
   Check,
   Clock,
-  CircleDollarSign,
+  Coins,
   CheckCircle2,
   XCircle,
   Plus,
@@ -57,7 +57,7 @@ function bucketOf(status: ReimbursementStatus): EmpSubView | null {
 const STEPS: { key: ReimbursementStatus; label: string; icon: React.ReactNode }[] = [
   { key: "PENDING", label: "Submitted", icon: <Clock className="h-3.5 w-3.5" /> },
   { key: "APPROVED", label: "Approved", icon: <Check className="h-3.5 w-3.5" /> },
-  { key: "AWAITING_PAYMENT", label: "Awaiting Payment", icon: <CircleDollarSign className="h-3.5 w-3.5" /> },
+  { key: "AWAITING_PAYMENT", label: "Awaiting Payment", icon: <Coins className="h-3.5 w-3.5" /> },
   { key: "PAID", label: "Paid", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
 ];
 

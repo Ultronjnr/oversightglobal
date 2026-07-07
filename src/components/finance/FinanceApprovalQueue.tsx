@@ -20,7 +20,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  DollarSign,
+  Banknote,
   Check,
   X,
   Split,
@@ -180,7 +180,7 @@ export function FinanceApprovalQueue() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-muted-foreground" />
+            <Banknote className="h-5 w-5 text-muted-foreground" />
             Pending Finance Approvals
           </CardTitle>
         </CardHeader>

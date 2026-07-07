@@ -6,7 +6,7 @@ import {
   AlertCircle,
   FileText,
   Receipt,
-  DollarSign,
+  Banknote,
   Truck,
   SplitSquareVertical,
   HourglassIcon,
@@ -129,7 +129,7 @@ const invoiceStatusConfig: Record<string, StatusConfig> = {
   AWAITING_PAYMENT: {
     label: "Awaiting Payment",
     variant: "warning",
-    icon: <DollarSign className="h-3 w-3" />,
+    icon: <Banknote className="h-3 w-3" />,
   },
   PAID: {
     label: "Paid",

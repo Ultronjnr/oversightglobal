@@ -481,7 +481,7 @@ export default function LandingPage() {
             </p>
             <Link to="/signup/company">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                See AI invoice scanning <ArrowRight className="ml-1 h-4 w-4" />
+                See invoice scanning <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
           </div>

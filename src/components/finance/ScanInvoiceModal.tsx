@@ -220,7 +220,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         force: true,
       });
       if (!res.success || !res.analysis) {
-        toast.error(res.error || "AI scan failed");
+        toast.error(res.error || "Scan failed");
         return;
       }
       setAnalysis(res.analysis);
@@ -324,10 +324,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-5 w-5 text-primary" />
-            Scan Invoice with AI
+            Scan Supplier Invoice
           </DialogTitle>
           <DialogDescription>
-            Upload a supplier invoice. AI will extract the fields, validate SARS
+            Upload a supplier invoice. The system will extract the fields, validate SARS
             compliance and let you create a transaction.
           </DialogDescription>
         </DialogHeader>
@@ -421,7 +421,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             ) : (
               <Sparkles className="h-4 w-4" />
             )}
-            {analysis ? "Re-scan invoice" : "Scan with AI"}
+            {analysis ? "Re-scan invoice" : "Scan invoice"}
           </Button>
 
           {analysis && (

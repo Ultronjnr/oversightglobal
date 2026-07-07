@@ -229,7 +229,7 @@ function OcrPreviewCard({
     >
       <div className="flex items-center gap-1 mb-1 font-medium opacity-80">
         <Sparkles className="h-3 w-3" />
-        AI extracted · {kind === "invoice" ? "Invoice" : "Receipt"}
+        Extracted · {kind === "invoice" ? "Invoice" : "Receipt"}
       </div>
       <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5">
         {fields.map(([k, v]) => (

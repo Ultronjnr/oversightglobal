@@ -19,7 +19,7 @@ import {
   Package,
   CheckCircle,
   Clock,
-  DollarSign,
+  Banknote,
   Send,
   XCircle,
   AlertCircle,
@@ -233,7 +233,7 @@ export default function SupplierPortal() {
       case "AWAITING_PAYMENT":
         return (
           <Badge className="bg-warning/20 text-warning border-warning/30">
-            <DollarSign className="h-3 w-3 mr-1" />
+            <Banknote className="h-3 w-3 mr-1" />
             Awaiting Payment
           </Badge>
         );
@@ -460,7 +460,7 @@ export default function SupplierPortal() {
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-accent/10">
-                      <DollarSign className="h-5 w-5 text-accent-foreground" />
+                      <Banknote className="h-5 w-5 text-accent-foreground" />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Value</p>
