@@ -3233,6 +3233,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      quote_request_current_org: { Args: { _id: string }; Returns: string }
+      quote_request_current_supplier: { Args: { _id: string }; Returns: string }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -3279,6 +3281,8 @@ export type Database = {
         }
         Returns: Json
       }
+      supplier_current_org: { Args: { _id: string }; Returns: string }
+      supplier_current_verified: { Args: { _id: string }; Returns: boolean }
       update_batch_draft: {
         Args: { _add?: Json; _batch_id: string; _remove?: string[] }
         Returns: Json
