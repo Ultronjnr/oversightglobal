@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
@@ -59,6 +60,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Analytics() {
   const { user, role, profile } = useAuth();
+  const { currency, symbol } = useCurrency();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -97,12 +99,10 @@ export default function Analytics() {
   }, [user, role, profile?.department]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
+    return `${symbol} ${new Intl.NumberFormat("en-ZA", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value);
+    }).format(value)}`;
   };
 
   const exportToCSV = () => {

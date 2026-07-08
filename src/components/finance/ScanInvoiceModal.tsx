@@ -33,6 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
 import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
 import {
@@ -77,6 +78,7 @@ const codeLabels: Record<SarsValidationCode, string> = {
 };
 
 export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
+  const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -307,6 +309,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     const res = await createTransactionFromInvoice({
       file,
       supplier_name: supplierName.trim(),
+      currency,
       supplier_vat_number: supplierVat.trim() || null,
       bank_name: bankName.trim() || null,
       bank_account_number: bankAccountNumber.trim() || null,
@@ -657,7 +660,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               {/* Totals */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="si-sub" className="text-xs">Subtotal (ZAR)</Label>
+                  <Label htmlFor="si-sub" className="text-xs">Subtotal ({currency})</Label>
                   <Input
                     id="si-sub"
                     type="number"
@@ -667,7 +670,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="si-vata" className="text-xs">VAT Amount (ZAR)</Label>
+                  <Label htmlFor="si-vata" className="text-xs">VAT Amount ({currency})</Label>
                   <Input
                     id="si-vata"
                     type="number"
@@ -678,7 +681,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                 </div>
                 <div>
                   <Label htmlFor="si-total" className="text-xs">
-                    Total (ZAR) <span className="text-destructive">*</span>
+                    Total ({currency}) <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="si-total"

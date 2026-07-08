@@ -20,17 +20,42 @@ export function formatNumber(value: number, decimals: number = 2): string {
  * Format currency with symbol and space thousands separator
  * e.g., 1234567.89 -> "R 1 234 567.89"
  */
+export const SUPPORTED_CURRENCIES = ["ZAR", "USD", "EUR", "GBP", "NAD", "BWP"] as const;
+export type CurrencyCode = (typeof SUPPORTED_CURRENCIES)[number];
+
+export const DEFAULT_CURRENCY: CurrencyCode = "ZAR";
+
+/** Symbol for each supported organization currency. */
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  ZAR: "R",
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  NAD: "N$",
+  BWP: "P",
+};
+
+export const CURRENCY_LABELS: Record<CurrencyCode, string> = {
+  ZAR: "South African Rand (R)",
+  USD: "US Dollar ($)",
+  EUR: "Euro (€)",
+  GBP: "British Pound (£)",
+  NAD: "Namibian Dollar (N$)",
+  BWP: "Botswana Pula (P)",
+};
+
+export function currencySymbol(currency: string = DEFAULT_CURRENCY): string {
+  return CURRENCY_SYMBOLS[currency] || currency;
+}
+
+/**
+ * Format currency with symbol and space thousands separator
+ * e.g., 1234567.89 -> "R 1 234 567.89"
+ */
 export function formatCurrency(
   amount: number,
-  currency: string = "ZAR",
+  currency: string = DEFAULT_CURRENCY,
   decimals: number = 2
 ): string {
-  const symbols: Record<string, string> = {
-    ZAR: "R",
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-  };
-  const symbol = symbols[currency] || currency;
-  return `${symbol} ${formatNumber(amount, decimals)}`;
+  return `${currencySymbol(currency)} ${formatNumber(amount, decimals)}`;
 }

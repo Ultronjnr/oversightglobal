@@ -30,6 +30,7 @@ import {
   type Quote,
 } from "@/services/finance.service";
 import { getQuoteDocumentUrl } from "@/services/quote-document.service";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { format } from "date-fns";
 
 interface QuoteComparisonViewProps {
@@ -38,6 +39,7 @@ interface QuoteComparisonViewProps {
 }
 
 export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonViewProps) {
+  const { format: formatCurrency } = useCurrency();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [filteredQuotes, setFilteredQuotes] = useState<Quote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,13 +122,6 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
     } else {
       toast.error("Failed to load document");
     }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-    }).format(amount);
   };
 
   const getStatusBadge = (status: string) => {

@@ -6,6 +6,7 @@ import type {
 } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
 import { logError, getSafeErrorMessage } from "@/lib/error-handler";
+import { formatCurrency } from "@/lib/utils";
 import { postSystemNote } from "@/services/pr-messaging.service";
 
 
@@ -755,10 +756,10 @@ export async function acceptQuote(
           user_id: user.id,
           user_name: userName,
           timestamp: new Date().toISOString(),
-          details: `Accepted quote from ${supplierName} for ${new Intl.NumberFormat("en-ZA", {
-            style: "currency",
-            currency: "ZAR",
-          }).format(quoteData.amount)}. Other quotes have been automatically rejected.`,
+          details: `Accepted quote from ${supplierName} for ${formatCurrency(
+            quoteData.amount,
+            pr.currency
+          )}. Other quotes have been automatically rejected.`,
         };
 
         const newHistory = [...currentHistory, historyEntry];
@@ -775,10 +776,10 @@ export async function acceptQuote(
         // Non-fatal: runs best-effort; failure does not block acceptance.
         postSystemNote(
           prId,
-          `✅ Quotation from ${supplierName} accepted by Finance (${new Intl.NumberFormat("en-ZA", {
-            style: "currency",
-            currency: "ZAR",
-          }).format(quoteData.amount)}). Awaiting final invoice from supplier.`
+          `✅ Quotation from ${supplierName} accepted by Finance (${formatCurrency(
+            quoteData.amount,
+            pr.currency
+          )}). Awaiting final invoice from supplier.`
         ).catch((err) => console.warn("[finance] postSystemNote failed:", err));
       }
     }

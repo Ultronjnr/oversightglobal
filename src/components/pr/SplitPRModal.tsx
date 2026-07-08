@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "@/lib/utils";
 import { Loader2, Scissors, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
@@ -34,6 +35,7 @@ interface SplitPRModalProps {
 }
 
 export function SplitPRModal({ pr, open, onClose, onConfirm, onSuccess, role = "HOD" }: SplitPRModalProps) {
+  const cur = currencySymbol(pr?.currency);
   const [splits, setSplits] = useState<SplitGroup[]>([
     { id: uuidv4(), items: [], comments: "" },
     { id: uuidv4(), items: [], comments: "" },
@@ -236,11 +238,11 @@ export function SplitPRModal({ pr, open, onClose, onConfirm, onSuccess, role = "
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{item.description}</p>
                             <p className="text-xs text-muted-foreground">
-                              {item.quantity} × R {item.unit_price.toFixed(2)}
+                              {item.quantity} × {cur} {item.unit_price.toFixed(2)}
                             </p>
                           </div>
                           <span className="text-sm font-medium">
-                            R {item.total.toFixed(2)}
+                            {cur} {item.total.toFixed(2)}
                           </span>
                         </div>
                       );

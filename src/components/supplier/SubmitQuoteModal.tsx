@@ -16,6 +16,7 @@ import { submitQuote, type SupplierQuoteRequest } from "@/services/supplier.serv
 import { uploadQuoteDocument } from "@/services/quote-document.service";
 import { Send, Banknote, Truck, Calendar, FileUp, X, Loader2, FileText } from "lucide-react";
 import { format, addDays } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 interface SubmitQuoteModalProps {
   open: boolean;
@@ -30,6 +31,7 @@ export function SubmitQuoteModal({
   quoteRequest,
   onSuccess,
 }: SubmitQuoteModalProps) {
+  const quoteCurrency = quoteRequest?.pr_currency || "ZAR";
   const [amount, setAmount] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("");
   const [validUntil, setValidUntil] = useState(
@@ -162,10 +164,7 @@ export function SubmitQuoteModal({
                       {item.quantity}x {item.description}
                     </span>
                     <span className="font-mono">
-                      {new Intl.NumberFormat("en-ZA", {
-                        style: "currency",
-                        currency: "ZAR",
-                      }).format(item.total || 0)}
+                      {formatCurrency(item.total || 0, quoteCurrency)}
                     </span>
                   </div>
                 ))}
@@ -173,10 +172,7 @@ export function SubmitQuoteModal({
               <div className="border-t pt-2 flex justify-between text-sm">
                 <span className="font-medium">Estimated Total:</span>
                 <span className="font-mono font-semibold">
-                  {new Intl.NumberFormat("en-ZA", {
-                    style: "currency",
-                    currency: "ZAR",
-                  }).format(calculateTotalFromItems())}
+                  {formatCurrency(calculateTotalFromItems(), quoteCurrency)}
                 </span>
               </div>
             </div>
@@ -192,7 +188,7 @@ export function SubmitQuoteModal({
 
           {/* Quote Amount */}
           <div className="space-y-2">
-            <Label htmlFor="amount">Your Quote Amount (ZAR) *</Label>
+            <Label htmlFor="amount">Your Quote Amount ({quoteCurrency}) *</Label>
             <div className="relative">
               <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

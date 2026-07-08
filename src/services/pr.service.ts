@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getOrgCurrency } from "@/lib/org-currency";
 import type {
   CreatePRInput,
   CreatePRResult,
@@ -128,7 +129,7 @@ export async function createPurchaseRequisition(
       requested_by_department: input.department || profile.department,
       items: input.items as unknown as Json,
       total_amount: totalAmount,
-      currency: "ZAR",
+      currency: await getOrgCurrency(profile.organization_id),
       urgency: input.urgency,
       hod_status: hasHOD ? "Pending" : "N/A",
       finance_status: "Pending",
@@ -225,7 +226,7 @@ export async function createPurchaseRequisitionBypassHOD(
       requested_by_department: input.department || profile.department,
       items: input.items as unknown as Json,
       total_amount: totalAmount,
-      currency: "ZAR",
+      currency: await getOrgCurrency(profile.organization_id),
       urgency: input.urgency,
       hod_status: "Auto-Approved",
       finance_status: "Pending",

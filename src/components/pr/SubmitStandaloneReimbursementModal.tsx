@@ -26,6 +26,7 @@ import {
   REIMBURSEMENT_PAYMENT_METHODS,
 } from "@/services/reimbursement.service";
 import { DocumentCaptureField } from "@/components/capture/DocumentCaptureField";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Props {
   open: boolean;
@@ -43,6 +44,7 @@ export function SubmitStandaloneReimbursementModal({
   onSubmitted,
   initialFile = null,
 }: Props) {
+  const { currency } = useCurrency();
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<string>("EFT");
@@ -152,7 +154,7 @@ export function SubmitStandaloneReimbursementModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Amount (ZAR) *</Label>
+              <Label>Amount ({currency}) *</Label>
               <Input
                 type="number"
                 step="0.01"

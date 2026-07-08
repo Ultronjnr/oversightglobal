@@ -26,6 +26,7 @@ import { getApprovedSuppliers, type ApprovedSupplier } from "@/services/supplier
 import { SuggestSupplierModal } from "@/components/pr/SuggestSupplierModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 
 const formSchema = z.object({
@@ -72,13 +73,9 @@ const getNumericPrice = (price: number | ''): number => {
   return price === '' ? 0 : price;
 };
 
-// Format currency for SA
-const formatZAR = (amount: number): string => {
-  return `ZAR ${amount.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
 export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypassHODApproval = false }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
+  const { currency, format: formatZAR } = useCurrency();
   const [transactionId, setTransactionId] = useState("");
   const [items, setItems] = useState<PRItemExtended[]>([createEmptyItem()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -500,7 +497,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                                 </div>
                                 <div className="space-y-2">
                                   <Label className="text-sm text-muted-foreground">
-                                    Unit Price (ZAR) <span className="text-destructive">*</span>
+                                    Unit Price ({currency}) <span className="text-destructive">*</span>
                                   </Label>
                                   <Input
                                     type="text"
@@ -638,7 +635,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                           {/* Divider */}
                           <div className="border-t border-primary/30 pt-3">
                             <div className="flex items-center justify-between">
-                              <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
+                              <span className="font-semibold text-foreground text-base">Grand Total ({currency}):</span>
                               <span className="text-2xl font-bold text-primary">
                                 {formatZAR(grandTotal)}
                               </span>

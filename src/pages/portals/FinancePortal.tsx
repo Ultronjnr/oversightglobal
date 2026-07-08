@@ -33,6 +33,7 @@ import { Percent } from "lucide-react";
 
 
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
@@ -105,6 +106,7 @@ const quoteWorkflowConfig: Record<QuoteWorkflowStatus, { label: string; classNam
 
 export default function FinancePortal() {
   const navigate = useNavigate();
+  const { currency: orgCurrency } = useCurrency();
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [prsWithQuoteStatus, setPrsWithQuoteStatus] = useState<PRWithQuoteStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -409,7 +411,7 @@ export default function FinancePortal() {
     toast.success("Purchase requisition submitted successfully");
   };
 
-  const formatCurrency = (amount: number, currency: string = "ZAR") => {
+  const formatCurrency = (amount: number, currency: string = orgCurrency) => {
     return new Intl.NumberFormat("en-ZA", {
       style: "currency",
       currency,

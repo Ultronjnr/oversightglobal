@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -44,6 +45,7 @@ import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 
 export function FinanceApprovalQueue() {
+  const { currency: orgCurrency } = useCurrency();
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -134,7 +136,7 @@ export function FinanceApprovalQueue() {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string = "ZAR") => {
+  const formatCurrency = (amount: number, currency: string = orgCurrency) => {
     return new Intl.NumberFormat("en-ZA", {
       style: "currency",
       currency,

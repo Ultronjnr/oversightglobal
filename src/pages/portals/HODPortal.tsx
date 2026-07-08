@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { currencySymbol } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
@@ -461,10 +462,10 @@ export default function HODPortal() {
                                             <td className="p-2">{item.description}</td>
                                             <td className="text-right p-2">{item.quantity}</td>
                                             <td className="text-right p-2">
-                                              R {item.unit_price.toFixed(2)}
+                                              {currencySymbol(pr.currency)} {item.unit_price.toFixed(2)}
                                             </td>
                                             <td className="text-right p-2 font-medium">
-                                              R {item.total.toFixed(2)}
+                                              {currencySymbol(pr.currency)} {item.total.toFixed(2)}
                                             </td>
                                           </tr>
                                         ))}

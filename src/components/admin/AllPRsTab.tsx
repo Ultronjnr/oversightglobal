@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,6 +44,7 @@ import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 
 export function AllPRsTab() {
+  const { currency: orgCurrency } = useCurrency();
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -103,7 +105,7 @@ export function AllPRsTab() {
     return matchesSearch && matchesStatus;
   });
 
-  const formatCurrency = (amount: number, currency: string = "ZAR") => {
+  const formatCurrency = (amount: number, currency: string = orgCurrency) => {
     return new Intl.NumberFormat("en-ZA", {
       style: "currency",
       currency,

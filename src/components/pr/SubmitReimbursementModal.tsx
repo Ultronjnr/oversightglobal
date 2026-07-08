@@ -25,6 +25,7 @@ import {
   REIMBURSEMENT_PAYMENT_METHODS,
 } from "@/services/reimbursement.service";
 import { DocumentCaptureField } from "@/components/capture/DocumentCaptureField";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Props {
   open: boolean;
@@ -43,6 +44,7 @@ export function SubmitReimbursementModal({
   prTransactionId,
   onSubmitted,
 }: Props) {
+  const { currency, symbol } = useCurrency();
   const [amount, setAmount] = useState<string>(prTotal.toFixed(2));
   const [method, setMethod] = useState<string>("EFT");
   const [reference, setReference] = useState("");
@@ -110,7 +112,7 @@ export function SubmitReimbursementModal({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Amount (ZAR) *</Label>
+              <Label>Amount ({currency}) *</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -118,7 +120,7 @@ export function SubmitReimbursementModal({
                 onChange={(e) => setAmount(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Max: ZAR {prTotal.toFixed(2)}
+                Max: {symbol} {prTotal.toFixed(2)}
               </p>
             </div>
             <div className="space-y-1.5">
