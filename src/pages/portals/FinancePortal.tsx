@@ -67,6 +67,7 @@ import { getTransactionStatusCounts, type TransactionStatusCounts } from "@/comp
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
+import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
 import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
