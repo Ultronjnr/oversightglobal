@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getOrgCurrency } from "@/lib/org-currency";
 import type {
   CreatePRInput,
   CreatePRResult,
