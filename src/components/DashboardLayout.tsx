@@ -218,6 +218,31 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
               </Button>
             </div>
           </div>
+
+          {/* Desktop navigation — second row so it always has room and never
+              overlaps the user info on smaller desktops */}
+          {navItems.length > 0 && (
+            <nav className="hidden md:flex items-center gap-1 h-11 -mt-px border-t border-border/40 overflow-x-auto">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "relative flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap rounded-lg transition-all shrink-0",
+                      isActive
+                        ? "text-primary font-bold after:absolute after:left-3 after:right-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-primary"
+                        : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    {item.icon}
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
         </div>
       </header>
 
