@@ -35,6 +35,7 @@ interface SplitPRModalProps {
 }
 
 export function SplitPRModal({ pr, open, onClose, onConfirm, onSuccess, role = "HOD" }: SplitPRModalProps) {
+  const cur = currencySymbol(pr?.currency);
   const [splits, setSplits] = useState<SplitGroup[]>([
     { id: uuidv4(), items: [], comments: "" },
     { id: uuidv4(), items: [], comments: "" },
