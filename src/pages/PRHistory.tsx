@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { Button } from "@/components/ui/button";
@@ -226,7 +227,8 @@ export default function PRHistory() {
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const formatCurrency = (amount: number, currency: string = "ZAR") => {
+  const { currency: orgCurrency } = useCurrency();
+  const formatCurrency = (amount: number, currency: string = orgCurrency) => {
     return new Intl.NumberFormat("en-ZA", {
       style: "currency",
       currency,
