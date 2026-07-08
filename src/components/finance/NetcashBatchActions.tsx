@@ -32,7 +32,7 @@ export function NetcashBatchActions({
 
   const submitted = payments.length > 0;
   const failed = payments.filter((p) => p.status === "FAILED");
-  const canSubmit = batchStatus === "CONFIRMED" && batchStatus !== "PAID";
+  const canSubmit = batchStatus === "CONFIRMED";
 
   const doSubmit = async () => {
     setBusy("submit");
