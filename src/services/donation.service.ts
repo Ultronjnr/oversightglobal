@@ -361,6 +361,9 @@ export async function createAllocation(
       source_type: input.source_type ?? "MANUAL",
       source_id: input.source_id ?? null,
       description: input.description ?? null,
+      expense_category: input.expense_category ?? null,
+      allocation_date:
+        input.allocation_date ?? new Date().toISOString().slice(0, 10),
     } as any)
     .select()
     .single();
