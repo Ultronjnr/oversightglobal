@@ -5,6 +5,7 @@ import {
   getReportBundle,
   getOrgProfile,
   getDashboard,
+  getDonorDetail,
   type ReportBundle,
 } from "@/services/donation.service";
 
