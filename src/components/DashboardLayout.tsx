@@ -165,28 +165,6 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
               <Link to="/">
                 <Logo size="sm" />
               </Link>
-              
-              {/* Desktop navigation */}
-              <nav className="hidden md:flex items-center gap-1">
-                {navItems.map((item) => {
-                  const isActive = location.pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={cn(
-                        "relative flex items-center gap-2 px-3 py-2 text-sm whitespace-nowrap rounded-lg transition-all",
-                        isActive
-                          ? "text-primary font-bold after:absolute after:left-3 after:right-3 after:-bottom-1 after:h-0.5 after:rounded-full after:bg-primary"
-                          : "text-muted-foreground font-medium hover:text-foreground hover:bg-muted/50"
-                      )}
-                    >
-                      {item.icon}
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </nav>
             </div>
 
             {/* Right side */}
