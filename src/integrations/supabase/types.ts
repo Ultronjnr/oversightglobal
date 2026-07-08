@@ -255,6 +255,364 @@ export type Database = {
           },
         ]
       }
+      donation_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_org_profiles: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          legal_name: string | null
+          logo_path: string | null
+          next_receipt_number: number
+          npo_number: string | null
+          organization_id: string
+          pbo_number: string | null
+          physical_address: string | null
+          postal_address: string | null
+          receipt_prefix: string
+          registration_number: string | null
+          signatory_designation: string | null
+          signatory_name: string | null
+          signature_path: string | null
+          stamp_path: string | null
+          template: Json
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          legal_name?: string | null
+          logo_path?: string | null
+          next_receipt_number?: number
+          npo_number?: string | null
+          organization_id: string
+          pbo_number?: string | null
+          physical_address?: string | null
+          postal_address?: string | null
+          receipt_prefix?: string
+          registration_number?: string | null
+          signatory_designation?: string | null
+          signatory_name?: string | null
+          signature_path?: string | null
+          stamp_path?: string | null
+          template?: Json
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          legal_name?: string | null
+          logo_path?: string | null
+          next_receipt_number?: number
+          npo_number?: string | null
+          organization_id?: string
+          pbo_number?: string | null
+          physical_address?: string | null
+          postal_address?: string | null
+          receipt_prefix?: string
+          registration_number?: string | null
+          signatory_designation?: string | null
+          signatory_name?: string | null
+          signature_path?: string | null
+          stamp_path?: string | null
+          template?: Json
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_org_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_projects: {
+        Row: {
+          budget: number
+          code: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donation_receipts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          donation_id: string | null
+          donor_id: string | null
+          id: string
+          issued_at: string | null
+          organization_id: string
+          pdf_path: string | null
+          receipt_number: string
+          snapshot: Json
+          status: Database["public"]["Enums"]["receipt_status"]
+          updated_at: string
+          updated_by: string | null
+          verification_hash: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          donation_id?: string | null
+          donor_id?: string | null
+          id?: string
+          issued_at?: string | null
+          organization_id: string
+          pdf_path?: string | null
+          receipt_number: string
+          snapshot?: Json
+          status?: Database["public"]["Enums"]["receipt_status"]
+          updated_at?: string
+          updated_by?: string | null
+          verification_hash?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          donation_id?: string | null
+          donor_id?: string | null
+          id?: string
+          issued_at?: string | null
+          organization_id?: string
+          pdf_path?: string | null
+          receipt_number?: string
+          snapshot?: Json
+          status?: Database["public"]["Enums"]["receipt_status"]
+          updated_at?: string
+          updated_by?: string | null
+          verification_hash?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donation_receipts_donation_id_fkey"
+            columns: ["donation_id"]
+            isOneToOne: false
+            referencedRelation: "donations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_receipts_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "organization_donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donation_receipts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          donation_date: string
+          donation_type: Database["public"]["Enums"]["donation_type"]
+          donor_id: string
+          id: string
+          in_kind_value: number | null
+          organization_id: string
+          receipt_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          donation_date?: string
+          donation_type?: Database["public"]["Enums"]["donation_type"]
+          donor_id: string
+          id?: string
+          in_kind_value?: number | null
+          organization_id: string
+          receipt_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          donation_date?: string
+          donation_type?: Database["public"]["Enums"]["donation_type"]
+          donor_id?: string
+          id?: string
+          in_kind_value?: number | null
+          organization_id?: string
+          receipt_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "organization_donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donor_funding_pools: {
+        Row: {
+          created_at: string
+          donor_id: string
+          id: string
+          organization_id: string
+          total_allocated: number
+          total_donated: number
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          donor_id: string
+          id?: string
+          organization_id: string
+          total_allocated?: number
+          total_donated?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          donor_id?: string
+          id?: string
+          organization_id?: string
+          total_allocated?: number
+          total_donated?: number
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donor_funding_pools_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: true
+            referencedRelation: "organization_donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donor_funding_pools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -413,6 +771,83 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      fund_allocations: {
+        Row: {
+          allocation_type: Database["public"]["Enums"]["allocation_type"]
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          donor_id: string
+          id: string
+          organization_id: string
+          pool_id: string | null
+          project_id: string | null
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["allocation_source"]
+          updated_at: string
+        }
+        Insert: {
+          allocation_type?: Database["public"]["Enums"]["allocation_type"]
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          donor_id: string
+          id?: string
+          organization_id: string
+          pool_id?: string | null
+          project_id?: string | null
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["allocation_source"]
+          updated_at?: string
+        }
+        Update: {
+          allocation_type?: Database["public"]["Enums"]["allocation_type"]
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          donor_id?: string
+          id?: string
+          organization_id?: string
+          pool_id?: string | null
+          project_id?: string | null
+          source_id?: string | null
+          source_type?: Database["public"]["Enums"]["allocation_source"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fund_allocations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "organization_donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_allocations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_allocations_pool_id_fkey"
+            columns: ["pool_id"]
+            isOneToOne: false
+            referencedRelation: "donor_funding_pools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fund_allocations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "donation_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invitations: {
         Row: {
@@ -649,6 +1084,65 @@ export type Database = {
             columns: ["reimbursement_id"]
             isOneToOne: false
             referencedRelation: "reimbursements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_donors: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          donor_type: Database["public"]["Enums"]["donor_type"]
+          email: string | null
+          id: string
+          id_or_reg_number: string | null
+          income_tax_number: string | null
+          is_active: boolean
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          donor_type?: Database["public"]["Enums"]["donor_type"]
+          email?: string | null
+          id?: string
+          id_or_reg_number?: string | null
+          income_tax_number?: string | null
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          donor_type?: Database["public"]["Enums"]["donor_type"]
+          email?: string | null
+          id?: string
+          id_or_reg_number?: string | null
+          income_tax_number?: string | null
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_donors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2285,6 +2779,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_donation_manager: { Args: { _user_id: string }; Returns: boolean }
       is_supplier_linked_to_org: {
         Args: { _org_id: string; _supplier_id: string }
         Returns: boolean
@@ -2323,6 +2818,10 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      next_donation_receipt_number: {
+        Args: { _org_id: string }
+        Returns: string
       }
       organization_has_active_hod: {
         Args: { _org_id: string }
@@ -2414,8 +2913,19 @@ export type Database = {
       }
       validate_pr_items: { Args: { items: Json }; Returns: boolean }
       validate_supplier_invitation: { Args: { _token: string }; Returns: Json }
+      verify_donation_receipt: {
+        Args: { _hash: string; _id: string }
+        Returns: {
+          issued_at: string
+          receipt_number: string
+          snapshot: Json
+          status: Database["public"]["Enums"]["receipt_status"]
+        }[]
+      }
     }
     Enums: {
+      allocation_source: "MANUAL" | "EXPENSE" | "TRANSACTION"
+      allocation_type: "RESERVED" | "SPENT"
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
       attachment_kind:
         | "INVOICE"
@@ -2426,6 +2936,8 @@ export type Database = {
         | "SUPPORTING"
       category_type: "EXPENSE" | "ASSET"
       company_type: "PTY_LTD" | "PLC" | "NPO"
+      donation_type: "CASH" | "IN_KIND"
+      donor_type: "INDIVIDUAL" | "ORGANIZATION"
       notification_type:
         | "requisition_submitted"
         | "requisition_approved"
@@ -2461,6 +2973,7 @@ export type Database = {
         | "ACCEPTED"
         | "REJECTED"
         | "EXPIRED"
+      receipt_status: "DRAFT" | "ISSUED" | "EMAILED" | "CANCELLED"
       reimbursement_status:
         | "PENDING"
         | "APPROVED"
@@ -2599,6 +3112,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      allocation_source: ["MANUAL", "EXPENSE", "TRANSACTION"],
+      allocation_type: ["RESERVED", "SPENT"],
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
       attachment_kind: [
         "INVOICE",
@@ -2610,6 +3125,8 @@ export const Constants = {
       ],
       category_type: ["EXPENSE", "ASSET"],
       company_type: ["PTY_LTD", "PLC", "NPO"],
+      donation_type: ["CASH", "IN_KIND"],
+      donor_type: ["INDIVIDUAL", "ORGANIZATION"],
       notification_type: [
         "requisition_submitted",
         "requisition_approved",
@@ -2642,6 +3159,7 @@ export const Constants = {
         "CLOSED",
       ],
       quote_status: ["PENDING", "SUBMITTED", "ACCEPTED", "REJECTED", "EXPIRED"],
+      receipt_status: ["DRAFT", "ISSUED", "EMAILED", "CANCELLED"],
       reimbursement_status: [
         "PENDING",
         "APPROVED",
