@@ -98,6 +98,13 @@ export function FundingPoolsTab() {
                   </Select>
                 </div>
               </div>
+              {form.allocation_type === "SPENT" && (
+                <div>
+                  <Label>Expense Category</Label>
+                  <Input placeholder="e.g. Transport, Salaries" value={form.expense_category} onChange={(e) => setForm({ ...form, expense_category: e.target.value })} />
+                </div>
+              )}
+              <div><Label>Date</Label><Input type="date" value={form.allocation_date} onChange={(e) => setForm({ ...form, allocation_date: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             </div>
             <DialogFooter>
