@@ -68,6 +68,9 @@ export interface AttachmentFilter {
   transaction_id?: string;
   reimbursement_id?: string;
   supplier_id?: string;
+  kind?: AttachmentKind;
+  /** Include superseded (older) versions. Defaults to false — current only. */
+  includeAllVersions?: boolean;
 }
 
 function safeName(name: string) {
