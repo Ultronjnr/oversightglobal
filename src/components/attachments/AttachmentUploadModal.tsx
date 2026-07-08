@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import {
   uploadAttachment,
   type AttachmentKind,
+  ATTACHMENT_KIND_LABELS,
 } from "@/services/attachment.service";
 
 const ACCEPT = ".pdf,application/pdf,image/jpeg,image/jpg,image/png";
@@ -50,7 +51,7 @@ export function AttachmentUploadModal({
   const [vatNumber, setVatNumber] = useState("");
 
   const isInvoice = kind === "INVOICE";
-  const title = kind === "INVOICE" ? "Upload Invoice" : kind === "RECEIPT" ? "Upload Receipt" : "Upload Attachment";
+  const title = `Upload ${ATTACHMENT_KIND_LABELS[kind] ?? "Attachment"}`;
 
   const reset = () => {
     setFile(null);
