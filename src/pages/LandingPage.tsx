@@ -360,7 +360,7 @@ const COMPARE_GOOD = [
 
 const FEATURES = [
   { title: "No more maverick spending", desc: "Every purchase goes through a proper approval chain before money moves — no exceptions, no surprises at month-end." },
-  { title: "Faster, error-free invoices", desc: "AI scans your invoices and pulls out the detail, so nothing gets typed in twice or wrong." },
+  { title: "Faster, error-free invoices", desc: "Smart scanning reads your invoices and pulls out the detail, so nothing gets typed in twice or wrong." },
   { title: "Pay less VAT", desc: "Every invoice is verified against SARS rules, so you never miss a valid input VAT claim or submit a broken one." },
   { title: "Full audit trail", desc: "Every decision, document and payment is logged and accessible in one place — ready the moment an auditor asks." },
   { title: "Supplier accountability", desc: "Suppliers submit quotes and track payment status through their own dedicated portal — no more chasing calls." },
