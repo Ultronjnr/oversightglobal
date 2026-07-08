@@ -24,17 +24,21 @@ export type Database = {
           id: string
           invoice_date: string | null
           invoice_number: string | null
+          is_current: boolean
           kind: Database["public"]["Enums"]["attachment_kind"]
           mime_type: string
           notes: string | null
           organization_id: string
           pr_id: string | null
           reimbursement_id: string | null
+          supersedes_id: string | null
           supplier_id: string | null
           supplier_name: string | null
           transaction_id: string | null
+          updated_at: string
           uploaded_by: string
           vat_number: string | null
+          version: number
         }
         Insert: {
           ai_extracted?: Json | null
@@ -45,17 +49,21 @@ export type Database = {
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          is_current?: boolean
           kind?: Database["public"]["Enums"]["attachment_kind"]
           mime_type: string
           notes?: string | null
           organization_id: string
           pr_id?: string | null
           reimbursement_id?: string | null
+          supersedes_id?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           transaction_id?: string | null
+          updated_at?: string
           uploaded_by: string
           vat_number?: string | null
+          version?: number
         }
         Update: {
           ai_extracted?: Json | null
@@ -66,17 +74,21 @@ export type Database = {
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
+          is_current?: boolean
           kind?: Database["public"]["Enums"]["attachment_kind"]
           mime_type?: string
           notes?: string | null
           organization_id?: string
           pr_id?: string | null
           reimbursement_id?: string | null
+          supersedes_id?: string | null
           supplier_id?: string | null
           supplier_name?: string | null
           transaction_id?: string | null
+          updated_at?: string
           uploaded_by?: string
           vat_number?: string | null
+          version?: number
         }
         Relationships: [
           {
@@ -98,6 +110,13 @@ export type Database = {
             columns: ["reimbursement_id"]
             isOneToOne: false
             referencedRelation: "reimbursements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
             referencedColumns: ["id"]
           },
           {
@@ -2377,7 +2396,13 @@ export type Database = {
     }
     Enums: {
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
-      attachment_kind: "INVOICE" | "RECEIPT" | "OTHER"
+      attachment_kind:
+        | "INVOICE"
+        | "RECEIPT"
+        | "OTHER"
+        | "QUOTE"
+        | "PURCHASE_ORDER"
+        | "SUPPORTING"
       category_type: "EXPENSE" | "ASSET"
       company_type: "PTY_LTD" | "PLC" | "NPO"
       notification_type:
@@ -2554,7 +2579,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
-      attachment_kind: ["INVOICE", "RECEIPT", "OTHER"],
+      attachment_kind: [
+        "INVOICE",
+        "RECEIPT",
+        "OTHER",
+        "QUOTE",
+        "PURCHASE_ORDER",
+        "SUPPORTING",
+      ],
       category_type: ["EXPENSE", "ASSET"],
       company_type: ["PTY_LTD", "PLC", "NPO"],
       notification_type: [
