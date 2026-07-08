@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, XCirc, Loader2 } from "lucide-react";
-import { ShieldCheck, ShieldX } from "lucide-react";
+import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
 
 export default function VerifyReceipt() {
   const { id } = useParams();
