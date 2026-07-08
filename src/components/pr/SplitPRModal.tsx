@@ -238,11 +238,11 @@ export function SplitPRModal({ pr, open, onClose, onConfirm, onSuccess, role = "
                           <div className="flex-1 min-w-0">
                             <p className="text-sm truncate">{item.description}</p>
                             <p className="text-xs text-muted-foreground">
-                              {item.quantity} × R {item.unit_price.toFixed(2)}
+                              {item.quantity} × {cur} {item.unit_price.toFixed(2)}
                             </p>
                           </div>
                           <span className="text-sm font-medium">
-                            R {item.total.toFixed(2)}
+                            {cur} {item.total.toFixed(2)}
                           </span>
                         </div>
                       );
