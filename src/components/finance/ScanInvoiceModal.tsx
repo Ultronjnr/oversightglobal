@@ -309,6 +309,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     const res = await createTransactionFromInvoice({
       file,
       supplier_name: supplierName.trim(),
+      currency,
       supplier_vat_number: supplierVat.trim() || null,
       bank_name: bankName.trim() || null,
       bank_account_number: bankAccountNumber.trim() || null,
