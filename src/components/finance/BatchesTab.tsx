@@ -519,6 +519,13 @@ export function BatchesTab() {
                           </Badge>
                         )}
                       </div>
+                      <div className="mb-3">
+                        <NetcashBatchActions
+                          batchId={b.id}
+                          batchStatus={status}
+                          providerStatus={b.provider_status}
+                        />
+                      </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
                           <TableHeader>
