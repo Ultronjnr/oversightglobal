@@ -658,6 +658,7 @@ export type Database = {
           address: string | null
           company_email: string | null
           created_at: string
+          currency: string
           id: string
           name: string
           registration_number: string | null
@@ -667,6 +668,7 @@ export type Database = {
           address?: string | null
           company_email?: string | null
           created_at?: string
+          currency?: string
           id?: string
           name: string
           registration_number?: string | null
@@ -676,6 +678,7 @@ export type Database = {
           address?: string | null
           company_email?: string | null
           created_at?: string
+          currency?: string
           id?: string
           name?: string
           registration_number?: string | null
