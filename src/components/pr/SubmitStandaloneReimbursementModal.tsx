@@ -154,7 +154,7 @@ export function SubmitStandaloneReimbursementModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Amount (ZAR) *</Label>
+              <Label>Amount ({currency}) *</Label>
               <Input
                 type="number"
                 step="0.01"
