@@ -33,6 +33,7 @@ import { Percent } from "lucide-react";
 
 
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
