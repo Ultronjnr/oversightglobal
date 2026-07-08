@@ -15,6 +15,7 @@ import { Loader2, FileText, Upload, CheckCircle, Banknote } from "lucide-react";
 import { uploadInvoice } from "@/services/invoice.service";
 import type { SupplierQuote } from "@/services/supplier.service";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
 
 interface UploadInvoiceModalProps {
   open: boolean;
@@ -77,13 +78,6 @@ export function UploadInvoiceModal({
   const handleClose = () => {
     setSelectedFile(null);
     onOpenChange(false);
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-ZA", {
-      style: "currency",
-      currency: "ZAR",
-    }).format(amount);
   };
 
   if (!quote) return null;
