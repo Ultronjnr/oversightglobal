@@ -1,71 +1,83 @@
-# Section 18A Donation Management + Donor Fund Tracking Module
+# Payment Providers: Yoco (subscriptions) + Netcash (supplier payments)
 
-A `/donations` module (Admin + Finance) for a reusable **organization-wide donor registry**, **donor funding pools**, Section 18A receipting, and the foundations for donor→funding→project→expense→transaction→reporting traceability discussed in the meeting.
+Two independent integrations. Both are custom bring-your-own-key providers (not Lovable built-ins), so each runs through Supabase edge functions with your own merchant credentials. Since no accounts exist yet, the full structure is built now and goes live once credentials are added.
 
-## User-facing surface
+## Part A — Yoco Subscription Billing
 
-New page `DonationsPage` (`/donations`) using `DashboardLayout`, opening on a **Dashboard**, then tabs:
+### Plans (seeded, ZAR/month)
+- Starter — R799 (visible)
+- Professional — R1,999 (visible, "Most Popular")
+- Business — R4,999 (backend, hidden until enabled)
+- Enterprise — Custom, "Contact Sales" (no online checkout)
+- Annual option per plan = 10× monthly (2 months free)
 
-1. **Dashboard** — metric cards: Total Donors, Total Donations, Receipts Issued, Pending Receipts, Available Funding, Allocated Funding. Global search box (donor / receipt / donation).
-2. **Donor Registry** — reusable donor CRUD (individuals & organizations), searchable.
-3. **Donations** — donation records linked to a donor + funding pool; searchable.
-4. **Funding Pools** — per-donor pool view: Total Donated, Allocated, Spent, Remaining/Available.
-5. **Projects** — lightweight project registry to allocate funding against (foundation for procurement link).
-6. **Receipts** — generate → preview → issue → download → email; searchable.
-7. **Template & Branding** — editable receipt template (colors, header/declaration text, signatory) + logo/signature/stamp uploads on the Org Profile sub-panel.
+### Model
+Yoco has no native subscriptions. Flow: customer enters card via Yoco's secure popup → we store the returned card **token** (vault) + last4/brand → a monthly scheduled job charges each active subscription → failures trigger retry logic → all events verified via webhook.
 
-Nav link "Donations / 18A" added to Admin and Finance portals.
+### Billing UI (`/billing`, Admin only)
+- Plan cards with feature lists, monthly/annual toggle, current-plan badge
+- Add/replace card (Yoco popup), show vaulted card (brand + last4), remove card
+- Subscription status (active / past_due / cancelled), next billing date
+- Billing history table with downloadable PDF invoices
+- Upgrade / downgrade / cancel
 
-## Data model (new tables, org-scoped, RLS + GRANTs + updated_at triggers)
+## Part B — Netcash Supplier Payments
 
-- **organization_donors** (Master Donor Registry, reusable platform-wide): `organization_id`, `donor_type`, `name`, `id_or_reg_number`, `income_tax_number`, `email`, `phone`, `address`, `notes`, `is_active`.
-- **donor_funding_pools** (one per donor, auto-created): `organization_id`, `donor_id`, `total_donated`, `total_allocated`, `total_spent`, computed `remaining`/`available`. Balances maintained by triggers on donations/allocations so they never drift.
-- **donation_projects** (project registry for allocation): `organization_id`, `name`, `code`, `description`, `status`, `budget`.
-- **donations**: `organization_id`, `donor_id`, `donation_date`, `amount`, `currency`, `donation_type` (`CASH`/`IN_KIND`), `description`, `in_kind_value`, `receipt_id` (nullable). Insert/update adjusts the donor's pool `total_donated`.
-- **fund_allocations** (foundation for procurement link): `organization_id`, `donor_id`, `pool_id`, `project_id`, `amount`, `allocation_type` (`RESERVED`/`SPENT`), `source_type` (`MANUAL`/`EXPENSE`/`TRANSACTION`), `source_id` (nullable, for future procurement `transactions`/`expenses`), `description`. Adjusts pool `total_allocated`/`total_spent`.
-- **donation_org_profiles** (one per org): `organization_id`, `legal_name`, `npo_number`, `pbo_number`, `vat_number`, `registration_number`, `physical_address`, `postal_address`, `contact_name`, `contact_email`, `contact_phone`, `signatory_name`, `signatory_designation`, `logo_path`, `signature_path`, `stamp_path`, `receipt_prefix` (default `18A`), `next_receipt_number`, `template` (JSONB).
-- **donation_receipts** (versioned, never overwritten): `id` (UUID), `organization_id`, `receipt_number`, `donation_id`, `donor_id`, `issued_at`, `status` (`DRAFT`/`ISSUED`/`EMAILED`/`CANCELLED`), `snapshot` (JSONB), `pdf_path`, `version`, `verification_hash`, `created_by`, `updated_by`, `created_at`, `updated_at`. Edits create a **new version row** rather than mutating the issued one.
-- **donation_audit_log**: `organization_id`, `entity_type` (donor/donation/receipt/allocation), `entity_id`, `action` (`CREATED`/`EDITED`/`ISSUED`/`DOWNLOADED`/`EMAILED`/`CANCELLED`), `actor_id`, `details` (JSONB), `created_at`.
+Automates the existing batch flow. CSV export stays; a **"Pay via Netcash"** action is added to confirmed batches.
 
-**Receipt numbering:** `SECURITY DEFINER` function `next_donation_receipt_number(org_id)` atomically increments and returns e.g. `18A-2026-0001`.
+### Flow
+Confirmed batch → submit creditor batch to Netcash → store provider reference → poll status → track settlement (pending → processing → settled/failed) per allocation → retry failed items → webhook updates → every step written to audit log.
 
-**Verification:** each receipt gets a UUID + `verification_hash` (deterministic hash of receipt number + donor + amount + issue date). A public verification URL pattern `/verify/receipt/:id` is reserved (lightweight read-only page that confirms a receipt's core details from the hash — built as part of this module).
+### Finance UI additions
+- "Pay via Netcash" button on confirmed batches (alongside existing export)
+- Per-batch settlement status column + per-allocation status
+- Retry action for failed payments
+- Payment history view (all provider payments, filterable) + audit trail drawer
 
-## Storage
+## Technical Section
 
-New **private** bucket `donation-assets` for logo/signature/stamp + generated receipt PDFs, namespaced by `organization_id`. RLS on `storage.objects` restricts to the owning org. Branding images embedded as base64 in the PDF; PDFs delivered via short-lived signed URLs.
+### Database migration
+New tables (all org-scoped, RLS restricted by organization, GRANTs for authenticated + service_role):
+- `subscription_plans` — code, name, price_monthly, price_annual, features (jsonb), is_public, tier
+- `organization_subscriptions` — plan_id, status, billing_cycle, current_period_start/end, cancel_at
+- `subscription_invoices` — amount, status, period, pdf_path, yoco_charge_id
+- `payment_methods` (card vault) — yoco_token, brand, last4, expiry, is_default
+- `subscription_payment_attempts` — invoice_id, attempt_no, status, error, next_retry_at
+- `netcash_payments` — batch_id, allocation_id, netcash_reference, status, settled_at, retries
+- `payment_provider_events` (webhooks) — provider, event_type, external_id (unique for idempotency), verified, payload, processed_at
 
-## Services
+Extend `payment_batches` with `provider`, `provider_status`, `submitted_at`. Reuse existing `payment_audit_log`.
 
-- `donation.service.ts` — CRUD for donors, pools, projects, donations, allocations, org profile; asset upload; audit-log writes; dashboard aggregates; search.
-- `donation-receipt.service.ts` — jsPDF + jspdf-autotable **professional A4 receipt**: official branding/logo, NPO/PBO/VAT + addresses/contacts, receipt + verification number, donor & donation details (amount in words + figures), editable SARS Section 18A declaration, **QR code** encoding the verification URL, subtle **watermark**, digital **signature** + org **stamp** images, dynamic footer. Returns a `Blob` reused for preview / download / email. QR via a small `qrcode` dependency.
+Enable `pg_cron` + `pg_net` for scheduling (via insert tool, since URLs/keys are project-specific).
 
-## Email
+### Edge functions
+Yoco:
+- `yoco-save-card` — exchange popup token, store vaulted card
+- `yoco-charge-subscription` — charge one subscription (idempotent)
+- `yoco-webhook` — verify signature (`webhook secret`), update invoice/subscription
+- `billing-cron` — scheduled monthly: create invoices, charge due subs, schedule retries (exponential backoff, max 3)
 
-Reuse existing app-email infra. Attachments unsupported → email contains a secure short-lived signed download link. New `donation-receipt` template scaffolded + wired to `send-transactional-email`. Delivery requires the org's email domain to be configured.
+Netcash:
+- `netcash-submit-batch` — build + submit creditor batch, store reference
+- `netcash-poll-status` — scheduled: fetch batch/settlement status, update allocations
+- `netcash-webhook` — verify + process status callbacks
+- `netcash-retry` — resubmit failed allocations
 
-## Extensibility (per meeting)
+All webhooks: signature verification, idempotency via `payment_provider_events.external_id`, structured error surfacing.
 
-`fund_allocations.source_type`/`source_id` are the seam for later procurement integration:
-`Donor → Funding Pool → Allocation → (future) Expense/Project → Transaction → Reporting → Section 18A`.
-No procurement tables are modified now; the columns and project registry make the future link additive.
+### Secrets (requested when you're ready to go live)
+- Yoco: `YOCO_SECRET_KEY`, `YOCO_WEBHOOK_SECRET`
+- Netcash: `NETCASH_SERVICE_KEY`, `NETCASH_ACCOUNT_KEY`, `NETCASH_SOFTWARE_VENDOR_KEY`
 
-## Technical notes
+Public Yoco key for the frontend popup lives in code/config (publishable).
 
-- Pool balances maintained by DB triggers (single source of truth) — the app reads, never recomputes ad hoc.
-- Amounts use org currency via existing `useCurrency`/`formatCurrency`.
-- Org Profile auto-populated from the existing `organizations` row on first load.
-- Preview-before-save: PDF rendered from in-memory data before any DB write.
-- Receipts immutable once issued; corrections = new version; audit log records every action.
-- RLS scoped to caller's organization using the existing membership pattern; `donation_audit_log` insert-only from app, read within org.
+### Build order
+1. Migration (tables, RLS, GRANTs, seed plans, extend batches)
+2. Services (`subscription.service.ts`, `netcash.service.ts`)
+3. Edge functions + webhook handlers
+4. Scheduling (pg_cron jobs)
+5. Billing UI + pricing
+6. Finance Netcash UI (button, status, retry, history, audit)
+7. Verification (typecheck, smoke tests). Webhooks/live charges verified after credentials are added.
 
-## Build order
-
-1. Migration: tables, GRANTs, RLS, numbering + balance/audit triggers, verification hash function.
-2. Storage bucket + policies.
-3. Services (data + PDF + QR).
-4. UI: page, dashboard, tabs, forms, search, receipt preview dialog.
-5. Public receipt verification page + route.
-6. Routing + portal nav links.
-7. Email template + wiring.
-8. Verify: typecheck + Playwright smoke test of receipt preview.
+Note: online charges and settlements can only be end-to-end tested once you provide Yoco and Netcash credentials. Everything else is fully functional before then.
