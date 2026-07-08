@@ -106,7 +106,7 @@ const quoteWorkflowConfig: Record<QuoteWorkflowStatus, { label: string; classNam
 
 export default function FinancePortal() {
   const navigate = useNavigate();
-  const { currency: orgCurrency, symbol: orgSymbol } = useCurrency();
+  const { currency: orgCurrency } = useCurrency();
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [prsWithQuoteStatus, setPrsWithQuoteStatus] = useState<PRWithQuoteStatus[]>([]);
   const [loading, setLoading] = useState(true);
