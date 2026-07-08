@@ -2,9 +2,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Bell, Shield, Globe } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Bell, Shield, Globe } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { SUPPORTED_CURRENCIES, CURRENCY_LABELS, type CurrencyCode } from "@/lib/utils";
 
 export function SettingsTab() {
+  const { profile } = useAuth();
+  const { currency, refreshCurrency } = useCurrency();
+  const [saving, setSaving] = useState(false);
+
+  const handleCurrencyChange = async (value: string) => {
+    if (!profile?.organization_id) {
+      toast.error("No organization found for your account.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("organizations")
+      .update({ currency: value })
+      .eq("id", profile.organization_id);
+    setSaving(false);
+    if (error) {
+      toast.error("Failed to update currency.");
+      return;
+    }
+    await refreshCurrency();
+    toast.success("Organization currency updated.");
+  };
+
   return (
     <div className="space-y-6">
       {/* Notification Settings */}
@@ -88,13 +124,29 @@ export function SettingsTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
-              <Label>Default currency: ZAR</Label>
+              <Label>Organization currency</Label>
               <p className="text-sm text-muted-foreground">
-                Currency used for all transactions
+                Currency used across all screens and reports
               </p>
             </div>
+            <Select
+              value={currency}
+              onValueChange={handleCurrencyChange}
+              disabled={saving}
+            >
+              <SelectTrigger className="w-56 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((c: CurrencyCode) => (
+                  <SelectItem key={c} value={c}>
+                    {CURRENCY_LABELS[c]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Separator />
           <div className="flex items-center justify-between">
