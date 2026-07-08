@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { LayoutDashboard, Building2, Receipt, User, FileText, HandCoins } from "lucide-react";
+import { LayoutDashboard, Building2, Receipt, User, FileText, HandCoins, CreditCard } from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
@@ -18,6 +18,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Cost Center / Department History", href: "/cost-center-history", icon: <Building2 className="h-4 w-4" /> },
   { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   { label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> },
+  { label: "Billing", href: "/billing", icon: <CreditCard className="h-4 w-4" /> },
 ];
 
 /**
