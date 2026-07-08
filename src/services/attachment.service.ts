@@ -4,7 +4,22 @@ const BUCKET = "attachments";
 const MAX_SIZE = 15 * 1024 * 1024; // 15MB
 const ALLOWED_MIME = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
 
-export type AttachmentKind = "INVOICE" | "RECEIPT" | "OTHER";
+export type AttachmentKind =
+  | "INVOICE"
+  | "RECEIPT"
+  | "QUOTE"
+  | "PURCHASE_ORDER"
+  | "SUPPORTING"
+  | "OTHER";
+
+export const ATTACHMENT_KIND_LABELS: Record<AttachmentKind, string> = {
+  INVOICE: "Invoice",
+  RECEIPT: "Receipt",
+  QUOTE: "Quote",
+  PURCHASE_ORDER: "Purchase Order",
+  SUPPORTING: "Supporting Document",
+  OTHER: "Attachment",
+};
 
 export interface Attachment {
   id: string;
@@ -26,6 +41,10 @@ export interface Attachment {
   ai_extracted: any | null;
   uploaded_by: string;
   created_at: string;
+  version: number;
+  is_current: boolean;
+  supersedes_id: string | null;
+  updated_at: string;
 }
 
 export interface UploadAttachmentInput {
