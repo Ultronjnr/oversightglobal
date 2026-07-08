@@ -28,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { getInvoiceDocumentUrl } from "@/services/invoice.service";
 
 type VATStatus =
@@ -85,9 +86,6 @@ function splitInclusive(gross: number) {
   return { exclusive, vat };
 }
 
-const formatCurrency = (amount: number, currency: string = "ZAR") =>
-  new Intl.NumberFormat("en-ZA", { style: "currency", currency }).format(amount);
-
 function deriveStatus(inv: any): VATStatus {
   const hasVat =
     inv.supplier?.vat_number &&
@@ -101,6 +99,9 @@ function deriveStatus(inv: any): VATStatus {
 
 export function InputVATTab() {
   const { role } = useAuth();
+  const { currency: orgCurrency } = useCurrency();
+  const formatCurrency = (amount: number, currency: string = orgCurrency) =>
+    new Intl.NumberFormat("en-ZA", { style: "currency", currency }).format(amount);
   const [rows, setRows] = useState<VATRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState<string>("");
