@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {Clock, CheckCircle2, XCircle, AlertCircle, FileText, Receipt, Wallet, Truck, SplitSquareVertical, HourglassIcon} from "lucide-react";
+import {Clock, CheckCircle2, XCircle, AlertCircle, FileText, ReceiptText as Receipt, Wallet, Truck, SplitSquareVertical, HourglassIcon} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PRStatus } from "@/types/pr.types";
 

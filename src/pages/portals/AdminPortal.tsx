@@ -2,18 +2,7 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  User,
-  Users,
-  Building2,
-  Settings,
-  Shield,
-  FileText,
-  Mail,
-  BarChart3,
-  Truck,
-  Receipt,
-} from "lucide-react";
+import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt} from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";

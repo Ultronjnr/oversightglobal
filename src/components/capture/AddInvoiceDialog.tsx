@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Camera, Upload, ScanLine, FileText, Receipt } from "lucide-react";
+import {Camera, Upload, ScanLine, FileText, ReceiptText as Receipt} from "lucide-react";
 import {
   Dialog,
   DialogContent,

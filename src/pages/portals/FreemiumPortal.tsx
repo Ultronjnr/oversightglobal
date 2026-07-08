@@ -12,23 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FreemiumDocumentStorage } from "@/components/freemium/FreemiumDocumentStorage";
 import { FreemiumBusinessProfile } from "@/components/freemium/FreemiumBusinessProfile";
 import { VatCountdownCard } from "@/components/freemium/VatCountdownCard";
-import {
-  LayoutDashboard,
-  FolderOpen,
-  UserCog,
-  Upload,
-  Receipt,
-  Landmark,
-  Wallet,
-  AlertTriangle,
-  Sparkles,
-  ArrowRight,
-  Building2,
-  CalendarClock,
-  CheckCircle2,
-  XCircle,
-  FileText,
-} from "lucide-react";
+import {LayoutDashboard, FolderOpen, UserCog, Upload, ReceiptText as Receipt, Landmark, Wallet, AlertTriangle, Sparkles, ArrowRight, Building2, CalendarClock, CheckCircle2, XCircle, FileText} from "lucide-react";
 import { toast } from "sonner";
 
 type View = "dashboard" | "documents" | "profile";

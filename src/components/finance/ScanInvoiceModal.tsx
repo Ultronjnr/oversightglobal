@@ -19,19 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {
-  Loader2,
-  Sparkles,
-  Upload,
-  CheckCircle2,
-  AlertTriangle,
-  Receipt,
-  ScanLine,
-  Camera,
-  FileText,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import {Loader2, Sparkles, Upload, CheckCircle2, AlertTriangle, ReceiptText as Receipt, ScanLine, Camera, FileText, Plus, Trash2} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";

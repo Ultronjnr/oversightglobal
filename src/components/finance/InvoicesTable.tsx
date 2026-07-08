@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
-import {Loader2, FileText, Receipt, Wallet, ExternalLink, Download, Building2, CheckCircle2} from "lucide-react";
+import {Loader2, FileText, ReceiptText as Receipt, Wallet, ExternalLink, Download, Building2, CheckCircle2} from "lucide-react";
 import {
   getOrganizationInvoices,
   getInvoiceDocumentUrl,

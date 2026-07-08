@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import {Loader2, FilePlus2, CheckCircle2, FileText, ThumbsUp, Receipt, Wallet, Layers, Clock, Circle, XCircle} from "lucide-react";
+import {Loader2, FilePlus2, CheckCircle2, FileText, ThumbsUp, ReceiptText as Receipt, Wallet, Layers, Clock, Circle, XCircle} from "lucide-react";
 
 import {
   Dialog,

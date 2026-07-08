@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
+import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
 import {Percent} from "lucide-react";
 
 
