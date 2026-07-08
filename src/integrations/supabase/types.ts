@@ -969,6 +969,72 @@ export type Database = {
           },
         ]
       }
+      netcash_payments: {
+        Row: {
+          allocation_id: string | null
+          amount: number
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          last_error: string | null
+          netcash_reference: string | null
+          organization_id: string
+          retry_count: number
+          settled_at: string | null
+          status: Database["public"]["Enums"]["netcash_status"]
+          updated_at: string
+        }
+        Insert: {
+          allocation_id?: string | null
+          amount?: number
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          last_error?: string | null
+          netcash_reference?: string | null
+          organization_id: string
+          retry_count?: number
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["netcash_status"]
+          updated_at?: string
+        }
+        Update: {
+          allocation_id?: string | null
+          amount?: number
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          last_error?: string | null
+          netcash_reference?: string | null
+          organization_id?: string
+          retry_count?: number
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["netcash_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "netcash_payments_allocation_id_fkey"
+            columns: ["allocation_id"]
+            isOneToOne: false
+            referencedRelation: "payment_allocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "netcash_payments_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "payment_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1153,6 +1219,59 @@ export type Database = {
           },
         ]
       }
+      organization_subscriptions: {
+        Row: {
+          billing_cycle: Database["public"]["Enums"]["billing_cycle"]
+          cancel_at_period_end: boolean
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          next_billing_date: string | null
+          organization_id: string
+          plan_id: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          next_billing_date?: string | null
+          organization_id: string
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: Database["public"]["Enums"]["billing_cycle"]
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          next_billing_date?: string | null
+          organization_id?: string
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -1325,7 +1444,10 @@ export type Database = {
           organization_id: string
           paid_at: string | null
           payment_reference: string | null
+          provider: string | null
+          provider_status: Database["public"]["Enums"]["netcash_status"] | null
           status: string
+          submitted_at: string | null
           total_amount: number
         }
         Insert: {
@@ -1342,7 +1464,10 @@ export type Database = {
           organization_id: string
           paid_at?: string | null
           payment_reference?: string | null
+          provider?: string | null
+          provider_status?: Database["public"]["Enums"]["netcash_status"] | null
           status?: string
+          submitted_at?: string | null
           total_amount?: number
         }
         Update: {
@@ -1359,8 +1484,89 @@ export type Database = {
           organization_id?: string
           paid_at?: string | null
           payment_reference?: string | null
+          provider?: string | null
+          provider_status?: Database["public"]["Enums"]["netcash_status"] | null
           status?: string
+          submitted_at?: string | null
           total_amount?: number
+        }
+        Relationships: []
+      }
+      payment_methods: {
+        Row: {
+          brand: string | null
+          created_at: string
+          created_by: string | null
+          expiry_month: number | null
+          expiry_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          organization_id: string
+          provider: string
+          provider_token: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          expiry_month?: number | null
+          expiry_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          organization_id: string
+          provider?: string
+          provider_token: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          expiry_month?: number | null
+          expiry_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          organization_id?: string
+          provider?: string
+          provider_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payment_provider_events: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          external_id: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          provider: string
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          external_id: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider: string
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          external_id?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          provider?: string
+          verified?: boolean
         }
         Relationships: []
       }
@@ -2039,6 +2245,179 @@ export type Database = {
           status?: Database["public"]["Enums"]["reimbursement_status"]
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscription_invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          due_date: string | null
+          id: string
+          invoice_number: string | null
+          organization_id: string
+          paid_at: string | null
+          pdf_path: string | null
+          period_end: string | null
+          period_start: string | null
+          plan_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subscription_id: string | null
+          updated_at: string
+          yoco_charge_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          organization_id: string
+          paid_at?: string | null
+          pdf_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          yoco_charge_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          organization_id?: string
+          paid_at?: string | null
+          pdf_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          plan_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          updated_at?: string
+          yoco_charge_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_invoices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "organization_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_payment_attempts: {
+        Row: {
+          attempt_no: number
+          created_at: string
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          next_retry_at: string | null
+          organization_id: string
+          status: string
+        }
+        Insert: {
+          attempt_no?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          next_retry_at?: string | null
+          organization_id: string
+          status?: string
+        }
+        Update: {
+          attempt_no?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          next_retry_at?: string | null
+          organization_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payment_attempts_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          is_custom: boolean
+          is_public: boolean
+          is_recommended: boolean
+          name: string
+          price_annual: number
+          price_monthly: number
+          storage_gb: number | null
+          tier: number
+          updated_at: string
+          user_limit: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          is_public?: boolean
+          is_recommended?: boolean
+          name: string
+          price_annual?: number
+          price_monthly?: number
+          storage_gb?: number | null
+          tier?: number
+          updated_at?: string
+          user_limit?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          is_custom?: boolean
+          is_public?: boolean
+          is_recommended?: boolean
+          name?: string
+          price_annual?: number
+          price_monthly?: number
+          storage_gb?: number | null
+          tier?: number
+          updated_at?: string
+          user_limit?: number | null
         }
         Relationships: []
       }
@@ -2940,10 +3319,20 @@ export type Database = {
         | "QUOTE"
         | "PURCHASE_ORDER"
         | "SUPPORTING"
+      billing_cycle: "MONTHLY" | "ANNUAL"
       category_type: "EXPENSE" | "ASSET"
       company_type: "PTY_LTD" | "PLC" | "NPO"
       donation_type: "CASH" | "IN_KIND"
       donor_type: "INDIVIDUAL" | "ORGANIZATION"
+      invoice_status: "DRAFT" | "OPEN" | "PAID" | "FAILED" | "VOID"
+      netcash_status:
+        | "PENDING"
+        | "SUBMITTED"
+        | "PROCESSING"
+        | "SETTLED"
+        | "FAILED"
+        | "RETRYING"
+        | "CANCELLED"
       notification_type:
         | "requisition_submitted"
         | "requisition_approved"
@@ -2986,6 +3375,12 @@ export type Database = {
         | "DECLINED"
         | "PAID"
         | "AWAITING_PAYMENT"
+      subscription_status:
+        | "TRIALING"
+        | "ACTIVE"
+        | "PAST_DUE"
+        | "CANCELLED"
+        | "INCOMPLETE"
       subscription_tier: "FREEMIUM" | "STANDARD" | "ADMIN"
       supplier_type: "REGISTERED" | "PREFERRED" | "ONE_TIME"
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
@@ -3129,10 +3524,21 @@ export const Constants = {
         "PURCHASE_ORDER",
         "SUPPORTING",
       ],
+      billing_cycle: ["MONTHLY", "ANNUAL"],
       category_type: ["EXPENSE", "ASSET"],
       company_type: ["PTY_LTD", "PLC", "NPO"],
       donation_type: ["CASH", "IN_KIND"],
       donor_type: ["INDIVIDUAL", "ORGANIZATION"],
+      invoice_status: ["DRAFT", "OPEN", "PAID", "FAILED", "VOID"],
+      netcash_status: [
+        "PENDING",
+        "SUBMITTED",
+        "PROCESSING",
+        "SETTLED",
+        "FAILED",
+        "RETRYING",
+        "CANCELLED",
+      ],
       notification_type: [
         "requisition_submitted",
         "requisition_approved",
@@ -3172,6 +3578,13 @@ export const Constants = {
         "DECLINED",
         "PAID",
         "AWAITING_PAYMENT",
+      ],
+      subscription_status: [
+        "TRIALING",
+        "ACTIVE",
+        "PAST_DUE",
+        "CANCELLED",
+        "INCOMPLETE",
       ],
       subscription_tier: ["FREEMIUM", "STANDARD", "ADMIN"],
       supplier_type: ["REGISTERED", "PREFERRED", "ONE_TIME"],
