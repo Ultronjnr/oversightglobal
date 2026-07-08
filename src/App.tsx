@@ -27,6 +27,7 @@ import PRHistory from "./pages/PRHistory";
 import ExpenseHistory from "./pages/ExpenseHistory";
 import CostCenterHistory from "./pages/CostCenterHistory";
 import Donations from "./pages/Donations";
+import Billing from "./pages/Billing";
 import VerifyReceipt from "./pages/VerifyReceipt";
 
 // Portals
@@ -88,6 +89,15 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["ADMIN", "FINANCE"]}>
                   <Donations />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/billing"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN"]}>
+                  <Billing />
                 </ProtectedRoute>
               }
             />

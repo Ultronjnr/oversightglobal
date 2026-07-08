@@ -44,6 +44,7 @@ import {
   batchStatusLabel,
   type BatchExportData,
 } from "@/services/batch-export.service";
+import { NetcashBatchActions } from "@/components/finance/NetcashBatchActions";
 
 interface BatchAllocation {
   id: string;
@@ -84,6 +85,7 @@ interface BatchRow {
   created_by: string | null;
   export_id: string | null;
   exported_at: string | null;
+  provider_status: string | null;
   allocations: BatchAllocation[];
 }
 
@@ -113,6 +115,7 @@ export function BatchesTab() {
       .from("payment_batches")
       .select(
         `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at, created_by, export_id, exported_at,
+         provider_status,
          allocations:payment_allocations (
            id, invoice_id, transaction_id, amount_paid,
            invoice:invoices (
@@ -515,6 +518,13 @@ export function BatchesTab() {
                             Exported
                           </Badge>
                         )}
+                      </div>
+                      <div className="mb-3">
+                        <NetcashBatchActions
+                          batchId={b.id}
+                          batchStatus={status}
+                          providerStatus={b.provider_status}
+                        />
                       </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
