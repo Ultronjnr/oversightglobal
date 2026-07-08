@@ -26,6 +26,7 @@ import { getApprovedSuppliers, type ApprovedSupplier } from "@/services/supplier
 import { SuggestSupplierModal } from "@/components/pr/SuggestSupplierModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 
 const formSchema = z.object({
