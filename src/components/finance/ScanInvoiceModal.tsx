@@ -33,6 +33,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
 import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
 import {
@@ -77,6 +78,7 @@ const codeLabels: Record<SarsValidationCode, string> = {
 };
 
 export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
+  const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
