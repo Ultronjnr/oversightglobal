@@ -659,7 +659,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               {/* Totals */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="si-sub" className="text-xs">Subtotal (ZAR)</Label>
+                  <Label htmlFor="si-sub" className="text-xs">Subtotal ({currency})</Label>
                   <Input
                     id="si-sub"
                     type="number"
@@ -669,7 +669,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="si-vata" className="text-xs">VAT Amount (ZAR)</Label>
+                  <Label htmlFor="si-vata" className="text-xs">VAT Amount ({currency})</Label>
                   <Input
                     id="si-vata"
                     type="number"
@@ -680,7 +680,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                 </div>
                 <div>
                   <Label htmlFor="si-total" className="text-xs">
-                    Total (ZAR) <span className="text-destructive">*</span>
+                    Total ({currency}) <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="si-total"
