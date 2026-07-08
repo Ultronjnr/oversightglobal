@@ -164,9 +164,8 @@ export function ReportsTab() {
               </TableHeader>
               <TableBody>
                 {bundle.donorRows.map((r) => (
-                  <>
+                  <Fragment key={r.donor_id}>
                     <TableRow
-                      key={r.donor_id}
                       className="cursor-pointer"
                       onClick={() => toggleRow(r.donor_id)}
                     >
@@ -182,7 +181,7 @@ export function ReportsTab() {
                       <TableCell className="text-right font-semibold">{format(r.remaining)}</TableCell>
                     </TableRow>
                     {expanded === r.donor_id && (
-                      <TableRow key={r.donor_id + "-detail"} className="bg-muted/30 hover:bg-muted/30">
+                      <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableCell colSpan={6} className="p-4">
                           {loadingRow === r.donor_id && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -195,7 +194,7 @@ export function ReportsTab() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))}
                 {bundle.donorRows.length === 0 && (
                   <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No donor activity yet.</TableCell></TableRow>
