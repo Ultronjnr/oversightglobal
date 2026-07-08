@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Banknote, FileText } from "lucide-react";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export function AnalyticsTab() {
+  const { format } = useCurrency();
+  const zero = format(0, 0);
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -11,7 +14,7 @@ export function AnalyticsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Spend</p>
-                <p className="text-2xl font-bold text-primary">R0</p>
+                <p className="text-2xl font-bold text-primary">{zero}</p>
               </div>
               <Banknote className="h-8 w-8 text-primary/30" />
             </div>
@@ -23,7 +26,7 @@ export function AnalyticsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">This Month</p>
-                <p className="text-2xl font-bold">R0</p>
+                <p className="text-2xl font-bold">{zero}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-success/30" />
             </div>
@@ -35,7 +38,7 @@ export function AnalyticsTab() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Avg. PR Value</p>
-                <p className="text-2xl font-bold">R0</p>
+                <p className="text-2xl font-bold">{zero}</p>
               </div>
               <BarChart3 className="h-8 w-8 text-warning/30" />
             </div>
