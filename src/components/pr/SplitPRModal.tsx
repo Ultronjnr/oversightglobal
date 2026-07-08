@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { currencySymbol } from "@/lib/utils";
 import { Loader2, Scissors, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
