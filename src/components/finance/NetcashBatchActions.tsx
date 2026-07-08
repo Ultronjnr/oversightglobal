@@ -32,7 +32,8 @@ export function NetcashBatchActions({
 
   const submitted = payments.length > 0;
   const failed = payments.filter((p) => p.status === "FAILED");
-  const canSubmit = batchStatus === "CONFIRMED";
+  // Netcash can pay any batch that is not already fully paid or cancelled.
+  const canSubmit = batchStatus === "DRAFT" || batchStatus === "CONFIRMED";
 
   const doSubmit = async () => {
     setBusy("submit");
