@@ -84,6 +84,7 @@ interface BatchRow {
   created_by: string | null;
   export_id: string | null;
   exported_at: string | null;
+  provider_status: string | null;
   allocations: BatchAllocation[];
 }
 
