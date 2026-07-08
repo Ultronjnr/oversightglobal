@@ -244,8 +244,7 @@ export function AttachmentsPanel({
           {preview && (
             <div className="w-full h-[70vh] bg-muted rounded-md overflow-auto flex items-center justify-center">
               {preview.att.mime_type.startsWith("image/") ? (
-                // eslint-disable-next-line jsx-a11y/img-redundant-alt
-                <img src={preview.url} alt={`Preview of ${preview.att.file_name}`} className="max-w-full max-h-full object-contain" />
+                <img src={preview.url} alt={preview.att.file_name} className="max-w-full max-h-full object-contain" />
               ) : (
                 <iframe src={preview.url} title={preview.att.file_name} className="w-full h-full rounded-md" />
               )}
