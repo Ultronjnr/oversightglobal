@@ -278,3 +278,14 @@
     }
   }
 }
+
+/* Hide scrollbars for horizontal mobile tab strips while keeping scroll */
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
