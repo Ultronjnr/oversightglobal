@@ -349,7 +349,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-5 w-5 text-primary" />
-            Scan Supplier Invoice
+            Supplier Invoice Scan
           </DialogTitle>
           <DialogDescription>
             Upload a supplier invoice. The system will extract the fields, validate SARS
