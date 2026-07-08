@@ -77,6 +77,8 @@ export interface FundAllocation {
   source_type: AllocationSource;
   source_id: string | null;
   description: string | null;
+  expense_category: string | null;
+  allocation_date: string;
   created_at: string;
 }
 
