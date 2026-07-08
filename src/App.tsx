@@ -26,6 +26,8 @@ import Analytics from "./pages/Analytics";
 import PRHistory from "./pages/PRHistory";
 import ExpenseHistory from "./pages/ExpenseHistory";
 import CostCenterHistory from "./pages/CostCenterHistory";
+import Donations from "./pages/Donations";
+import VerifyReceipt from "./pages/VerifyReceipt";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -69,6 +71,7 @@ const App = () => (
             <Route path="/supplier/register" element={<SupplierRegister />} />
             <Route path="/portal/supplier/register" element={<SupplierRegister />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
+            <Route path="/verify/receipt/:id" element={<VerifyReceipt />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
             <Route
@@ -76,6 +79,15 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN"]}>
                   <Analytics />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/donations"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN", "FINANCE"]}>
+                  <Donations />
                 </ProtectedRoute>
               }
             />
