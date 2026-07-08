@@ -774,12 +774,14 @@ export type Database = {
       }
       fund_allocations: {
         Row: {
+          allocation_date: string
           allocation_type: Database["public"]["Enums"]["allocation_type"]
           amount: number
           created_at: string
           created_by: string | null
           description: string | null
           donor_id: string
+          expense_category: string | null
           id: string
           organization_id: string
           pool_id: string | null
@@ -789,12 +791,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allocation_date?: string
           allocation_type?: Database["public"]["Enums"]["allocation_type"]
           amount?: number
           created_at?: string
           created_by?: string | null
           description?: string | null
           donor_id: string
+          expense_category?: string | null
           id?: string
           organization_id: string
           pool_id?: string | null
@@ -804,12 +808,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allocation_date?: string
           allocation_type?: Database["public"]["Enums"]["allocation_type"]
           amount?: number
           created_at?: string
           created_by?: string | null
           description?: string | null
           donor_id?: string
+          expense_category?: string | null
           id?: string
           organization_id?: string
           pool_id?: string | null

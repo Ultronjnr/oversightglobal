@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   getDashboard,
@@ -12,17 +13,32 @@ import {
   type DonationReceipt,
   type Donation,
 } from "@/services/donation.service";
-import { Users, HandCoins, Receipt, Clock, Wallet, PieChart, Search } from "lucide-react";
+import { generateDashboardPdf } from "@/services/donation-report.service";
+import { toast } from "sonner";
+import { Users, HandCoins, Receipt, Clock, Wallet, PieChart, Search, FolderKanban, TrendingDown, Download } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export function DonationDashboardTab() {
-  const { format } = useCurrency();
+  const { format, currency } = useCurrency();
   const [data, setData] = useState<DonationDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [donors, setDonors] = useState<Donor[]>([]);
   const [receipts, setReceipts] = useState<DonationReceipt[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [exporting, setExporting] = useState(false);
+
+  const exportPdf = async () => {
+    setExporting(true);
+    try {
+      await generateDashboardPdf(currency);
+      toast.success("Dashboard exported");
+    } catch {
+      toast.error("Failed to export dashboard");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -52,13 +68,20 @@ export function DonationDashboardTab() {
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={exportPdf} disabled={exporting}>
+          <Download className="h-4 w-4 mr-1" />{exporting ? "Exporting…" : "Export PDF"}
+        </Button>
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <StatCard label="Total Donors" value={data?.totalDonors ?? 0} isLoading={loading} icon={<Users />} valueColor="primary" />
-        <StatCard label="Total Donations" value={data ? format(data.totalDonations) : "-"} isLoading={loading} icon={<HandCoins />} valueColor="success" />
+        <StatCard label="Total Donated" value={data ? format(data.totalDonated) : "-"} isLoading={loading} icon={<HandCoins />} valueColor="success" />
+        <StatCard label="Allocated" value={data ? format(data.allocatedFunding) : "-"} isLoading={loading} icon={<PieChart />} />
+        <StatCard label="Spent" value={data ? format(data.spentFunding) : "-"} isLoading={loading} icon={<TrendingDown />} valueColor="warning" />
+        <StatCard label="Remaining" value={data ? format(data.remainingFunding) : "-"} isLoading={loading} icon={<Wallet />} valueColor="primary" />
+        <StatCard label="Projects Supported" value={data?.projectsSupported ?? 0} isLoading={loading} icon={<FolderKanban />} valueColor="primary" />
+        <StatCard label="Total Donors" value={data?.totalDonors ?? 0} isLoading={loading} icon={<Users />} />
         <StatCard label="Receipts Issued" value={data?.receiptsIssued ?? 0} isLoading={loading} icon={<Receipt />} />
         <StatCard label="Pending Receipts" value={Math.max(data?.pendingReceipts ?? 0, 0)} isLoading={loading} icon={<Clock />} valueColor="warning" />
-        <StatCard label="Available Funding" value={data ? format(data.availableFunding) : "-"} isLoading={loading} icon={<Wallet />} valueColor="primary" />
-        <StatCard label="Allocated Funding" value={data ? format(data.allocatedFunding) : "-"} isLoading={loading} icon={<PieChart />} />
       </div>
 
       <Card className="p-4">

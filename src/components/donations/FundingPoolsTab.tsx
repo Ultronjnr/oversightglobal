@@ -27,7 +27,8 @@ export function FundingPoolsTab() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({
-    donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType, description: "",
+    donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType,
+    expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "",
   });
 
   const load = async () => {
@@ -50,11 +51,13 @@ export function FundingPoolsTab() {
         project_id: form.project_id || null,
         amount: Number(form.amount),
         allocation_type: form.allocation_type,
+        expense_category: form.allocation_type === "SPENT" ? (form.expense_category || null) : null,
+        allocation_date: form.allocation_date,
         description: form.description || null,
       });
       toast.success("Allocation created");
       setOpen(false);
-      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED", description: "" });
+      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED", expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "" });
       load();
     } catch { toast.error("Failed to create allocation"); }
     finally { setSaving(false); }
@@ -95,6 +98,13 @@ export function FundingPoolsTab() {
                   </Select>
                 </div>
               </div>
+              {form.allocation_type === "SPENT" && (
+                <div>
+                  <Label>Expense Category</Label>
+                  <Input placeholder="e.g. Transport, Salaries" value={form.expense_category} onChange={(e) => setForm({ ...form, expense_category: e.target.value })} />
+                </div>
+              )}
+              <div><Label>Date</Label><Input type="date" value={form.allocation_date} onChange={(e) => setForm({ ...form, allocation_date: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             </div>
             <DialogFooter>
