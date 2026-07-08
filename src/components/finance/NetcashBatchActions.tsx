@@ -28,7 +28,7 @@ export function NetcashBatchActions({
   const load = async () => {
     try { setPayments(await listNetcashPayments(batchId)); } catch { /* ignore */ }
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [batchId]);
+  useEffect(() => { load();   }, [batchId]);
 
   const submitted = payments.length > 0;
   const failed = payments.filter((p) => p.status === "FAILED");

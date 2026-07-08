@@ -369,7 +369,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         .order("updated_at", { ascending: false });
       const invoices = (data || []) as any[];
       const ids = invoices.map((i) => i.id);
-      let paidMap: Record<string, number> = {};
+      const paidMap: Record<string, number> = {};
       if (ids.length > 0) {
         const { data: allocs } = await supabase
           .from("payment_allocations")
