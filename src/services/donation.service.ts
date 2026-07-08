@@ -717,3 +717,103 @@ export async function getReportBundle(year?: string): Promise<ReportBundle> {
 
   return { donorRows, totals, byCategory, byProject, byYear };
 }
+
+// ===== Per-donor detailed report =====
+export interface DonorAllocationLine {
+  id: string;
+  date: string;
+  project: string;
+  expense_category: string;
+  description: string;
+  amount: number;
+  allocation_type: AllocationType;
+  source_type: AllocationSource;
+}
+
+export interface DonorDonationLine {
+  id: string;
+  date: string;
+  amount: number;
+  donation_type: DonationKind;
+  description: string;
+}
+
+export interface DonorDetailReport {
+  donor: Donor;
+  totals: { donated: number; allocated: number; spent: number; remaining: number };
+  donations: DonorDonationLine[];
+  allocations: DonorAllocationLine[];
+  byProject: { project: string; allocated: number; spent: number }[];
+  byCategory: { category: string; amount: number }[];
+}
+
+export async function getDonorDetail(donorId: string): Promise<DonorDetailReport> {
+  const [donors, projects, donations, allocations] = await Promise.all([
+    listDonors(),
+    listProjects(),
+    listDonations(),
+    listAllocations(),
+  ]);
+  const donor = donors.find((d) => d.id === donorId);
+  if (!donor) throw new Error("Donor not found");
+  const projectName = (id: string | null) =>
+    id ? projects.find((p) => p.id === id)?.name || "Unassigned" : "Unassigned";
+
+  const dons = donations.filter((d) => d.donor_id === donorId);
+  const allocs = allocations.filter((a) => a.donor_id === donorId);
+
+  const donated = dons.reduce((s, x) => s + Number(x.amount), 0);
+  const allocated = allocs
+    .filter((a) => a.allocation_type === "RESERVED")
+    .reduce((s, a) => s + Number(a.amount), 0);
+  const spent = allocs
+    .filter((a) => a.allocation_type === "SPENT")
+    .reduce((s, a) => s + Number(a.amount), 0);
+
+  const projMap = new Map<string, { allocated: number; spent: number }>();
+  allocs.forEach((a) => {
+    const key = projectName(a.project_id);
+    const cur = projMap.get(key) || { allocated: 0, spent: 0 };
+    if (a.allocation_type === "SPENT") cur.spent += Number(a.amount);
+    else cur.allocated += Number(a.amount);
+    projMap.set(key, cur);
+  });
+  const byProject = [...projMap.entries()]
+    .map(([project, v]) => ({ project, ...v }))
+    .sort((a, b) => b.spent + b.allocated - (a.spent + a.allocated));
+
+  const catMap = new Map<string, number>();
+  allocs
+    .filter((a) => a.allocation_type === "SPENT")
+    .forEach((a) => {
+      const key = a.expense_category || "Uncategorised";
+      catMap.set(key, (catMap.get(key) || 0) + Number(a.amount));
+    });
+  const byCategory = [...catMap.entries()]
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  return {
+    donor,
+    totals: { donated, allocated, spent, remaining: donated - allocated - spent },
+    donations: dons.map((d) => ({
+      id: d.id,
+      date: d.donation_date,
+      amount: Number(d.amount),
+      donation_type: d.donation_type,
+      description: d.description || "—",
+    })),
+    allocations: allocs.map((a) => ({
+      id: a.id,
+      date: a.allocation_date || a.created_at,
+      project: projectName(a.project_id),
+      expense_category: a.expense_category || "—",
+      description: a.description || "—",
+      amount: Number(a.amount),
+      allocation_type: a.allocation_type,
+      source_type: a.source_type,
+    })),
+    byProject,
+    byCategory,
+  };
+}

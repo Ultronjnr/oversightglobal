@@ -5,6 +5,7 @@ import {
   getReportBundle,
   getOrgProfile,
   getDashboard,
+  getDonorDetail,
   type ReportBundle,
 } from "@/services/donation.service";
 
@@ -205,4 +206,154 @@ export async function generateDashboardPdf(currency: CurrencyCode): Promise<void
   });
 
   doc.save("Donor-Fund-Dashboard.pdf");
+}
+
+export async function generateDonorReportPdf(
+  donorId: string,
+  currency: CurrencyCode
+): Promise<void> {
+  const [detail, profile] = await Promise.all([
+    getDonorDetail(donorId),
+    getOrgProfile(),
+  ]);
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  let y = 48;
+
+  // Header
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(profile?.legal_name || "Organization", 40, y);
+  y += 20;
+  doc.setFontSize(13);
+  doc.setTextColor(60);
+  doc.text(`Donor Information Report — ${detail.donor.name}`, 40, y);
+  y += 16;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(120);
+  const meta: string[] = [];
+  if (profile?.npo_number) meta.push(`NPO: ${profile.npo_number}`);
+  if (profile?.pbo_number) meta.push(`PBO: ${profile.pbo_number}`);
+  meta.push(`Generated: ${new Date().toLocaleDateString()}`);
+  doc.text(meta.join("    "), 40, y);
+  y += 20;
+  doc.setTextColor(0);
+
+  // Donor details block
+  const d = detail.donor;
+  const details: string[] = [
+    `Type: ${d.donor_type === "ORGANIZATION" ? "Organization" : "Individual"}`,
+  ];
+  if (d.id_or_reg_number) details.push(`ID/Reg: ${d.id_or_reg_number}`);
+  if (d.income_tax_number) details.push(`Tax No: ${d.income_tax_number}`);
+  if (d.email) details.push(`Email: ${d.email}`);
+  if (d.phone) details.push(`Phone: ${d.phone}`);
+  if (d.address) details.push(`Address: ${d.address}`);
+  doc.setFontSize(9);
+  doc.setTextColor(70);
+  details.forEach((line) => {
+    doc.text(line, 40, y);
+    y += 13;
+  });
+  y += 8;
+  doc.setTextColor(0);
+
+  // Summary band
+  const t = detail.totals;
+  doc.setFillColor(243, 244, 246);
+  doc.rect(40, y, pageW - 80, 54, "F");
+  const cols = [
+    ["Total Donated", money(t.donated, currency)],
+    ["Allocated", money(t.allocated, currency)],
+    ["Spent", money(t.spent, currency)],
+    ["Remaining", money(t.remaining, currency)],
+  ];
+  const cw = (pageW - 80) / cols.length;
+  cols.forEach((c, i) => {
+    const cx = 40 + i * cw + 12;
+    doc.setTextColor(110);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(c[0], cx, y + 20);
+    doc.setTextColor(20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(c[1], cx, y + 40);
+  });
+  y += 74;
+  doc.setTextColor(0);
+
+  const addTable = (title: string, head: string[], body: any[][]) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(title, 40, y);
+    y += 10;
+    autoTable(doc, {
+      startY: y,
+      head: [head],
+      body: body.length ? body : [["No records", ...head.slice(1).map(() => "")]],
+      theme: "striped",
+      headStyles: { fillColor: [37, 99, 235] },
+      styles: { fontSize: 9, cellPadding: 5 },
+      margin: { left: 40, right: 40 },
+    });
+    // @ts-ignore
+    y = (doc.lastAutoTable?.finalY ?? y) + 24;
+  };
+
+  addTable(
+    "Donations",
+    ["Date", "Type", "Description", "Amount"],
+    detail.donations.map((x) => [
+      x.date,
+      x.donation_type === "IN_KIND" ? "In-kind" : "Cash",
+      x.description,
+      money(x.amount, currency),
+    ])
+  );
+
+  addTable(
+    "Project Tracking",
+    ["Project", "Allocated", "Spent"],
+    detail.byProject.map((p) => [
+      p.project,
+      money(p.allocated, currency),
+      money(p.spent, currency),
+    ])
+  );
+
+  addTable(
+    "Spending by Expense Category",
+    ["Expense Category", "Amount"],
+    detail.byCategory.map((c) => [c.category, money(c.amount, currency)])
+  );
+
+  addTable(
+    "Allocation & Expense Detail",
+    ["Date", "Project", "Category", "Description", "Type", "Amount"],
+    detail.allocations.map((a) => [
+      a.date,
+      a.project,
+      a.expense_category,
+      a.description,
+      a.allocation_type === "SPENT" ? "Spent" : "Reserved",
+      money(a.amount, currency),
+    ])
+  );
+
+  // Footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text(
+      `${profile?.legal_name || "Organization"} — Donor Report: ${detail.donor.name} — Page ${i} of ${pageCount}`,
+      40,
+      doc.internal.pageSize.getHeight() - 24
+    );
+  }
+
+  doc.save(`Donor-Report-${detail.donor.name.replace(/\s+/g, "-")}.pdf`);
 }
