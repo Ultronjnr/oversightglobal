@@ -224,7 +224,7 @@ export default function HODPortal() {
     <DashboardLayout title="HOD Dashboard" navItems={navItems}>
       <div className="space-y-6">
         {/* Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           <StatCard
             label="Pending Review"
             value={stats.pending}

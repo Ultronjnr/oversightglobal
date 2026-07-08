@@ -55,7 +55,7 @@ export default function AdminPortal() {
     <DashboardLayout title="Admin Dashboard" navItems={adminNavItems}>
       <div className="space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Card className="dashboard-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -112,7 +112,7 @@ export default function AdminPortal() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex flex-wrap h-auto gap-2">
+          <TabsList className="flex md:flex-wrap h-auto gap-2 overflow-x-auto no-scrollbar [&>button]:shrink-0 w-full justify-start">
             <TabsTrigger value="company" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Company Profile
