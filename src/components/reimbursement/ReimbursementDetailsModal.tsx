@@ -160,7 +160,7 @@ export function ReimbursementDetailsModal({
             {r.proof_document_url && (
               <section className="space-y-3">
                 <OcrAnalysisPanel
-                  title="AI proof analysis"
+                  title="Proof analysis"
                   input={{
                     document_type: "REIMBURSEMENT_PROOF",
                     bucket: "reimbursement-documents",
