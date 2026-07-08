@@ -560,14 +560,19 @@ export interface DonationDashboard {
   pendingReceipts: number;
   availableFunding: number;
   allocatedFunding: number;
+  totalDonated: number;
+  spentFunding: number;
+  remainingFunding: number;
+  projectsSupported: number;
 }
 
 export async function getDashboard(): Promise<DonationDashboard> {
-  const [donors, donations, receipts, pools] = await Promise.all([
+  const [donors, donations, receipts, pools, allocs] = await Promise.all([
     supabase.from("organization_donors").select("id", { count: "exact", head: true }),
     supabase.from("donations").select("amount"),
     supabase.from("donation_receipts").select("status"),
     supabase.from("donor_funding_pools").select("total_donated,total_allocated,total_spent"),
+    supabase.from("fund_allocations").select("project_id"),
   ]);
   const donationRows = (donations.data ?? []) as { amount: number }[];
   const receiptRows = (receipts.data ?? []) as { status: ReceiptStatus }[];
@@ -576,11 +581,16 @@ export async function getDashboard(): Promise<DonationDashboard> {
     total_allocated: number;
     total_spent: number;
   }[];
+  const allocRows = (allocs.data ?? []) as { project_id: string | null }[];
   const allocated = poolRows.reduce(
     (s, p) => s + Number(p.total_allocated) + Number(p.total_spent),
     0
   );
   const donated = poolRows.reduce((s, p) => s + Number(p.total_donated), 0);
+  const spent = poolRows.reduce((s, p) => s + Number(p.total_spent), 0);
+  const projectsSupported = new Set(
+    allocRows.map((a) => a.project_id).filter(Boolean) as string[]
+  ).size;
   return {
     totalDonors: donors.count ?? 0,
     totalDonations: donationRows.reduce((s, d) => s + Number(d.amount), 0),
@@ -588,5 +598,122 @@ export async function getDashboard(): Promise<DonationDashboard> {
     pendingReceipts: donationRows.length - receiptRows.filter((r) => r.status !== "CANCELLED").length,
     availableFunding: Math.max(donated - allocated, 0),
     allocatedFunding: allocated,
+    totalDonated: donated,
+    spentFunding: spent,
+    remainingFunding: Math.max(donated - allocated, 0),
+    projectsSupported,
   };
+}
+
+// ===== Reports =====
+export interface DonorReportRow {
+  donor_id: string;
+  donor_name: string;
+  donated: number;
+  allocated: number;
+  spent: number;
+  remaining: number;
+}
+
+export interface ReportBundle {
+  donorRows: DonorReportRow[];
+  totals: { donated: number; allocated: number; spent: number; remaining: number };
+  byCategory: { category: string; amount: number }[];
+  byProject: { project: string; allocated: number; spent: number }[];
+  byYear: { year: string; donated: number; spent: number }[];
+}
+
+export async function getReportBundle(year?: string): Promise<ReportBundle> {
+  const [donors, pools, allocations, projects, donations] = await Promise.all([
+    listDonors(),
+    listPools(),
+    listAllocations(),
+    listProjects(),
+    listDonations(),
+  ]);
+
+  const donorName = (id: string) => donors.find((d) => d.id === id)?.name || "Unknown";
+  const projectName = (id: string | null) =>
+    id ? projects.find((p) => p.id === id)?.name || "Unassigned" : "Unassigned";
+
+  const inYear = (dateStr: string) => !year || (dateStr || "").slice(0, 4) === year;
+
+  const allocs = allocations.filter((a) => inYear(a.allocation_date || a.created_at));
+  const dons = donations.filter((d) => inYear(d.donation_date));
+
+  const donorRows: DonorReportRow[] = donors
+    .map((d) => {
+      const donated = dons
+        .filter((x) => x.donor_id === d.id)
+        .reduce((s, x) => s + Number(x.amount), 0);
+      const allocated = allocs
+        .filter((x) => x.donor_id === d.id && x.allocation_type === "RESERVED")
+        .reduce((s, x) => s + Number(x.amount), 0);
+      const spent = allocs
+        .filter((x) => x.donor_id === d.id && x.allocation_type === "SPENT")
+        .reduce((s, x) => s + Number(x.amount), 0);
+      return {
+        donor_id: d.id,
+        donor_name: d.name,
+        donated,
+        allocated,
+        spent,
+        remaining: donated - allocated - spent,
+      };
+    })
+    .filter((r) => r.donated || r.allocated || r.spent);
+
+  const totals = donorRows.reduce(
+    (s, r) => ({
+      donated: s.donated + r.donated,
+      allocated: s.allocated + r.allocated,
+      spent: s.spent + r.spent,
+      remaining: s.remaining + r.remaining,
+    }),
+    { donated: 0, allocated: 0, spent: 0, remaining: 0 }
+  );
+
+  const catMap = new Map<string, number>();
+  allocs
+    .filter((a) => a.allocation_type === "SPENT")
+    .forEach((a) => {
+      const key = a.expense_category || "Uncategorised";
+      catMap.set(key, (catMap.get(key) || 0) + Number(a.amount));
+    });
+  const byCategory = [...catMap.entries()]
+    .map(([category, amount]) => ({ category, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const projMap = new Map<string, { allocated: number; spent: number }>();
+  allocs.forEach((a) => {
+    const key = projectName(a.project_id);
+    const cur = projMap.get(key) || { allocated: 0, spent: 0 };
+    if (a.allocation_type === "SPENT") cur.spent += Number(a.amount);
+    else cur.allocated += Number(a.amount);
+    projMap.set(key, cur);
+  });
+  const byProject = [...projMap.entries()]
+    .map(([project, v]) => ({ project, ...v }))
+    .sort((a, b) => b.spent + b.allocated - (a.spent + a.allocated));
+
+  const yearMap = new Map<string, { donated: number; spent: number }>();
+  donations.forEach((d) => {
+    const y = (d.donation_date || "").slice(0, 4) || "—";
+    const cur = yearMap.get(y) || { donated: 0, spent: 0 };
+    cur.donated += Number(d.amount);
+    yearMap.set(y, cur);
+  });
+  allocations
+    .filter((a) => a.allocation_type === "SPENT")
+    .forEach((a) => {
+      const y = (a.allocation_date || a.created_at || "").slice(0, 4) || "—";
+      const cur = yearMap.get(y) || { donated: 0, spent: 0 };
+      cur.spent += Number(a.amount);
+      yearMap.set(y, cur);
+    });
+  const byYear = [...yearMap.entries()]
+    .map(([yr, v]) => ({ year: yr, ...v }))
+    .sort((a, b) => a.year.localeCompare(b.year));
+
+  return { donorRows, totals, byCategory, byProject, byYear };
 }
