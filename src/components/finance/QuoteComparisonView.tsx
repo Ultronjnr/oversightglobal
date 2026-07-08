@@ -10,19 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import {
-  Loader2,
-  FileText,
-  Check,
-  X,
-  Clock,
-  Calendar,
-  Truck,
-  Banknote,
-  Download,
-  ExternalLink,
-  Building2,
-} from "lucide-react";
+import {Loader2, FileText, Check, X, Clock, Calendar, Truck, Wallet, Download, ExternalLink, Building2} from "lucide-react";
 import {
   getQuotes,
   acceptQuote,

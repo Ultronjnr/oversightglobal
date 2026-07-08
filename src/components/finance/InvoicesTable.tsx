@@ -17,16 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
-import {
-  Loader2,
-  FileText,
-  Receipt,
-  Banknote,
-  ExternalLink,
-  Download,
-  Building2,
-  CheckCircle2,
-} from "lucide-react";
+import {Loader2, FileText, Receipt, Wallet, ExternalLink, Download, Building2, CheckCircle2} from "lucide-react";
 import {
   getOrganizationInvoices,
   getInvoiceDocumentUrl,
@@ -300,7 +291,7 @@ export function InvoicesTable() {
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <>
-                                    <Banknote className="h-4 w-4" />
+                                    <Wallet className="h-4 w-4" />
                                     Mark Awaiting Payment
                                   </>
                                 )}

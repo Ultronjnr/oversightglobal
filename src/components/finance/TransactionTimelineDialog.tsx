@@ -1,19 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import {
-  Loader2,
-  FilePlus2,
-  CheckCircle2,
-  FileText,
-  ThumbsUp,
-  Receipt,
-  Banknote,
-  CircleDollarSign,
-  Layers,
-  Clock,
-  Circle,
-  XCircle,
-} from "lucide-react";
+import {Loader2, FilePlus2, CheckCircle2, FileText, ThumbsUp, Receipt, Wallet, Layers, Clock, Circle, XCircle} from "lucide-react";
 
 import {
   Dialog,
@@ -43,10 +30,10 @@ function eventIcon(type: string) {
   if (t === "CREATED") return FilePlus2;
   if (t === "FINANCE_APPROVED") return CheckCircle2;
   if (t.startsWith("QUOTE")) return t.includes("ACCEPTED") ? ThumbsUp : FileText;
-  if (t.startsWith("INVOICE")) return t.includes("PAID") ? Banknote : Receipt;
+  if (t.startsWith("INVOICE")) return t.includes("PAID") ? Wallet : Receipt;
   if (t === "BATCH_CREATED") return Layers;
-  if (t === "TXN_PAID") return CircleDollarSign;
-  if (t === "TXN_PARTIAL") return Banknote;
+  if (t === "TXN_PAID") return Wallet;
+  if (t === "TXN_PARTIAL") return Wallet;
   if (t.includes("REJECT")) return XCircle;
   if (t.includes("CLOSED") || t.includes("FULFILLED")) return CheckCircle2;
   return Circle;

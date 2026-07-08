@@ -7,7 +7,7 @@ import {
 } from "@/services/netcash.service";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { Banknote, RefreshCw, RotateCcw, Loader2 } from "lucide-react";
+import {Wallet, RefreshCw, RotateCcw, Loader2} from "lucide-react";
 
 const statusClass: Record<string, string> = {
   SETTLED: "bg-success/10 text-success border-success/30",
@@ -66,7 +66,7 @@ export function NetcashBatchActions({
         {canSubmit && (
           <Button size="sm" variant="secondary" disabled={busy === "submit"}
             onClick={(e) => { e.stopPropagation(); doSubmit(); }} className="gap-1">
-            {busy === "submit" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}
+            {busy === "submit" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
             {submitted ? "Re-submit to Netcash" : "Pay via Netcash"}
           </Button>
         )}

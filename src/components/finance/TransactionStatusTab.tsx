@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Loader2, Wallet, CheckCheck, AlertCircle, Undo2, Layers, Banknote } from "lucide-react";
+import {Loader2, Wallet, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Paperclip } from "lucide-react";
+import {Paperclip} from "lucide-react";
 
 export type TransactionStatusFilter =
   | "PARTIALLY_PAID"
@@ -196,7 +196,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
             )}
           </div>
           <Button onClick={handleCreateBatch} disabled={selectedIds.size === 0} className="gap-2">
-            <Banknote className="h-4 w-4" />
+            <Wallet className="h-4 w-4" />
             Create Batch
             {selectedIds.size > 0 && (
               <Badge variant="secondary" className="ml-1 bg-primary-foreground/20">{selectedIds.size}</Badge>

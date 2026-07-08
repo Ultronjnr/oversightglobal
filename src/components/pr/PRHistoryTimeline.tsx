@@ -1,16 +1,5 @@
 import { format } from "date-fns";
-import {
-  FilePlus2,
-  CheckCircle2,
-  XCircle,
-  Send,
-  Scissors,
-  ScanLine,
-  Banknote,
-  RefreshCw,
-  History as HistoryIcon,
-  CircleDot,
-} from "lucide-react";
+import {FilePlus2, CheckCircle2, XCircle, Send, Scissors, ScanLine, Wallet, RefreshCw, History as HistoryIcon, CircleDot} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PRHistoryEntry {
@@ -51,7 +40,7 @@ function metaFor(action: string): StyleMeta {
   }
   if (a.includes("paid") || a.includes("payment")) {
     return {
-      icon: Banknote,
+      icon: Wallet,
       ring: "border-success/30 bg-success/10",
       dot: "text-success",
       text: "text-success",

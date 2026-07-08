@@ -2,34 +2,8 @@ import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {
-  User,
-  Banknote,
-  BarChart3,
-  Building2,
-  FileText,
-  Inbox,
-  X,
-  RefreshCw,
-  ShoppingCart,
-  Check,
-  Scissors,
-  Send,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  AlertTriangle,
-  Clock,
-  CheckCircle2,
-  Receipt,
-  MessageSquare,
-  Wallet,
-  CheckCheck,
-  AlertCircle,
-  Undo2,
-  Layers,
-} from "lucide-react";
-import { Percent } from "lucide-react";
+import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
+import {Percent} from "lucide-react";
 
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -547,7 +521,7 @@ export default function FinancePortal() {
         {/* Main Content Card */}
         <SectionCard
           title="Finance Overview"
-          icon={<Banknote className="h-5 w-5" />}
+          icon={<Wallet className="h-5 w-5" />}
         >
           {showCleared ? (
             <EmptyState
@@ -559,7 +533,7 @@ export default function FinancePortal() {
             <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
               <TabsList className="flex md:flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl overflow-x-auto no-scrollbar [&>button]:shrink-0">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <Banknote className="h-4 w-4" />
+                  <Wallet className="h-4 w-4" />
                   <span className="text-sm">Approvals</span>
                   <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
@@ -578,7 +552,7 @@ export default function FinancePortal() {
                   <NotifDot n={invoicesNotif} />
                 </TabsTrigger>
                 <TabsTrigger value="payments" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <Banknote className="h-4 w-4" />
+                  <Wallet className="h-4 w-4" />
                   <span className="text-sm">Approved – Not Paid</span>
                   <NotifDot n={paymentsNotif} />
                 </TabsTrigger>
@@ -620,7 +594,7 @@ export default function FinancePortal() {
               <TabsContent value="approvals">
                 {prsWithQuoteStatus.length === 0 ? (
                   <EmptyState
-                    icon={<Banknote className="h-16 w-16" />}
+                    icon={<Wallet className="h-16 w-16" />}
                     title="No Quote Workflows"
                     description="Requisitions with quote activity will appear here. Send quote requests from the Incoming Purchase Requisitions modal."
                   />

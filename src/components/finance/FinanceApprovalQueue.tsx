@@ -17,19 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import {
-  Loader2,
-  ChevronDown,
-  ChevronUp,
-  Banknote,
-  Check,
-  X,
-  Split,
-  FileText,
-  Send,
-  AlertTriangle,
-  Clock,
-} from "lucide-react";
+import {Loader2, ChevronDown, ChevronUp, Wallet, Check, X, Split, FileText, Send, AlertTriangle, Clock} from "lucide-react";
 import {
   getFinancePendingPRs,
   financeApprovePR,
@@ -182,7 +170,7 @@ export function FinanceApprovalQueue() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Banknote className="h-5 w-5 text-muted-foreground" />
+            <Wallet className="h-5 w-5 text-muted-foreground" />
             Pending Finance Approvals
           </CardTitle>
         </CardHeader>
