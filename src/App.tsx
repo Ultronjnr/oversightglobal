@@ -53,6 +53,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CurrencyProvider>
           <PRNotificationProvider>
           <Routes>
             {/* Public routes */}
