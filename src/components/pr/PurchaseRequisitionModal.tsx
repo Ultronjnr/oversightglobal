@@ -72,13 +72,9 @@ const getNumericPrice = (price: number | ''): number => {
   return price === '' ? 0 : price;
 };
 
-// Format currency for SA
-const formatZAR = (amount: number): string => {
-  return `ZAR ${amount.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
 export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypassHODApproval = false }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
+  const { currency, format: formatZAR } = useCurrency();
   const [transactionId, setTransactionId] = useState("");
   const [items, setItems] = useState<PRItemExtended[]>([createEmptyItem()]);
   const [isSubmitting, setIsSubmitting] = useState(false);
