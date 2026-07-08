@@ -44,6 +44,7 @@ import {
   batchStatusLabel,
   type BatchExportData,
 } from "@/services/batch-export.service";
+import { NetcashBatchActions } from "@/components/finance/NetcashBatchActions";
 
 interface BatchAllocation {
   id: string;
