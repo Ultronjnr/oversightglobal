@@ -83,6 +83,15 @@ const App = () => (
               }
             />
 
+            <Route
+              path="/donations"
+              element={
+                <ProtectedRoute allowedRoles={["ADMIN", "FINANCE"]}>
+                  <Donations />
+                </ProtectedRoute>
+              }
+            />
+
             {/* PR History - accessible by EMPLOYEE, HOD, FINANCE, ADMIN */}
             <Route
               path="/pr-history"
