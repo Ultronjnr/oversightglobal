@@ -27,7 +27,8 @@ export function FundingPoolsTab() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>({
-    donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType, description: "",
+    donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType,
+    expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "",
   });
 
   const load = async () => {
@@ -50,11 +51,13 @@ export function FundingPoolsTab() {
         project_id: form.project_id || null,
         amount: Number(form.amount),
         allocation_type: form.allocation_type,
+        expense_category: form.allocation_type === "SPENT" ? (form.expense_category || null) : null,
+        allocation_date: form.allocation_date,
         description: form.description || null,
       });
       toast.success("Allocation created");
       setOpen(false);
-      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED", description: "" });
+      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED", expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "" });
       load();
     } catch { toast.error("Failed to create allocation"); }
     finally { setSaving(false); }
