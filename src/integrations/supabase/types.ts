@@ -1916,7 +1916,9 @@ export type Database = {
           created_at: string
           currency: string
           document_url: string | null
+          exclusive_amount: number | null
           id: string
+          inclusive_amount: number | null
           invoice_id: string | null
           invoiced_at: string | null
           organization_id: string
@@ -1926,6 +1928,10 @@ export type Database = {
           supplier_id: string | null
           supplier_name: string | null
           updated_at: string
+          vat_amount: number | null
+          vat_manual: boolean
+          vat_number: string | null
+          vat_rate: number
         }
         Insert: {
           amount?: number
@@ -1934,7 +1940,9 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          exclusive_amount?: number | null
           id?: string
+          inclusive_amount?: number | null
           invoice_id?: string | null
           invoiced_at?: string | null
           organization_id: string
@@ -1944,6 +1952,10 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           updated_at?: string
+          vat_amount?: number | null
+          vat_manual?: boolean
+          vat_number?: string | null
+          vat_rate?: number
         }
         Update: {
           amount?: number
@@ -1952,7 +1964,9 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          exclusive_amount?: number | null
           id?: string
+          inclusive_amount?: number | null
           invoice_id?: string | null
           invoiced_at?: string | null
           organization_id?: string
@@ -1962,6 +1976,10 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           updated_at?: string
+          vat_amount?: number | null
+          vat_manual?: boolean
+          vat_number?: string | null
+          vat_rate?: number
         }
         Relationships: [
           {

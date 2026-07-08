@@ -213,6 +213,24 @@ export async function createTransactionFromInvoice(
     const txnUpdate: Record<string, unknown> = {
       supplier_name: input.supplier_name.trim(),
     };
+    // Persist detected VAT figures on the single source-of-truth transaction.
+    {
+      const inclusive = total;
+      const vat = typeof input.vat_amount === "number" ? input.vat_amount : null;
+      const exclusive =
+        typeof input.subtotal === "number"
+          ? input.subtotal
+          : vat != null
+          ? Number((inclusive - vat).toFixed(2))
+          : Number((inclusive / 1.15).toFixed(2));
+      const computedVat = vat != null ? vat : Number((inclusive - exclusive).toFixed(2));
+      const rate = exclusive > 0 ? Number(((computedVat / exclusive) * 100).toFixed(2)) : 15;
+      txnUpdate.inclusive_amount = inclusive;
+      txnUpdate.exclusive_amount = exclusive;
+      txnUpdate.vat_amount = computedVat;
+      txnUpdate.vat_rate = rate;
+      if (input.supplier_vat_number) txnUpdate.vat_number = input.supplier_vat_number.trim();
+    }
     if (input.supplier_id) txnUpdate.supplier_id = input.supplier_id;
     if (input.bank_name) txnUpdate.bank_name = input.bank_name.trim();
     if (input.bank_account_number) txnUpdate.bank_account_number = input.bank_account_number.trim();
