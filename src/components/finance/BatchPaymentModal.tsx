@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Banknote, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
+import {Wallet, CheckCircle2, Loader2, AlertCircle} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,7 +128,7 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Banknote className="h-5 w-5 text-primary" />
+            <Wallet className="h-5 w-5 text-primary" />
             Create Payment Batch
           </DialogTitle>
           <DialogDescription>

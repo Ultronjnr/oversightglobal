@@ -15,7 +15,7 @@ import {
 } from "@/services/donation.service";
 import { generateDashboardPdf } from "@/services/donation-report.service";
 import { toast } from "sonner";
-import { Users, HandCoins, Receipt, Clock, Wallet, PieChart, Search, FolderKanban, TrendingDown, Download } from "lucide-react";
+import {Users, HandCoins, ReceiptText as Receipt, Clock, Wallet, PieChart, Search, FolderKanban, TrendingDown, Download} from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 export function DonationDashboardTab() {

@@ -1,22 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Building2,
-  User,
-  Loader2,
-  AlertCircle,
-  Clock,
-  Phone,
-  MapPin,
-  Briefcase,
-  Hash,
-  Receipt,
-} from "lucide-react";
+import {Mail, Lock, Eye, EyeOff, Building2, User, Loader2, AlertCircle, Clock, Phone, MapPin, Briefcase, Hash, ReceiptText as Receipt} from "lucide-react";
 
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";

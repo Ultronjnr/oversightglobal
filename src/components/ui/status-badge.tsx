@@ -1,16 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import {
-  Clock,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  FileText,
-  Receipt,
-  Banknote,
-  Truck,
-  SplitSquareVertical,
-  HourglassIcon,
-} from "lucide-react";
+import {Clock, CheckCircle2, XCircle, AlertCircle, FileText, ReceiptText as Receipt, Wallet, Truck, SplitSquareVertical, HourglassIcon} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PRStatus } from "@/types/pr.types";
 
@@ -129,7 +118,7 @@ const invoiceStatusConfig: Record<string, StatusConfig> = {
   AWAITING_PAYMENT: {
     label: "Awaiting Payment",
     variant: "warning",
-    icon: <Banknote className="h-3 w-3" />,
+    icon: <Wallet className="h-3 w-3" />,
   },
   PAID: {
     label: "Paid",

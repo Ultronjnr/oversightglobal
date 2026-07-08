@@ -14,21 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  User,
-  BarChart3,
-  TrendingUp,
-  Banknote,
-  CheckCircle,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  PieChart as PieChartIcon,
-  LineChart as LineChartIcon,
-  Download,
-  FileText,
-  FileSpreadsheet,
-} from "lucide-react";
+import {User, BarChart3, TrendingUp, Wallet, CheckCircle, Clock, ArrowUpRight, ArrowDownRight, PieChart as PieChartIcon, LineChart as LineChartIcon, Download, FileText, FileSpreadsheet} from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -476,7 +462,7 @@ export default function Analytics() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <Banknote className="h-5 w-5 text-primary" />
+                  <Wallet className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-xs text-muted-foreground">Avg Quote Value</p>
                     <p className="text-lg font-bold text-primary">{formatCurrency(analytics?.avgQuoteValue || 0)}</p>

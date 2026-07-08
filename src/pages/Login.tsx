@@ -193,7 +193,7 @@ export default function Login() {
         supabase.auth.signOut().catch(() => undefined);
       }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const handleResend = async (email: string) => {

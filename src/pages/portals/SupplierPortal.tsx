@@ -13,21 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Truck,
-  FileText,
-  ClipboardList,
-  Package,
-  CheckCircle,
-  Clock,
-  Banknote,
-  Send,
-  XCircle,
-  AlertCircle,
-  Eye,
-  Upload,
-  Receipt,
-} from "lucide-react";
+import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt} from "lucide-react";
 import {
   getSupplierProfile,
   getSupplierQuoteRequests,
@@ -227,7 +213,7 @@ export default function SupplierPortal() {
       case "AWAITING_PAYMENT":
         return (
           <Badge className="bg-warning/20 text-warning border-warning/30">
-            <Banknote className="h-3 w-3 mr-1" />
+            <Wallet className="h-3 w-3 mr-1" />
             Awaiting Payment
           </Badge>
         );
@@ -454,7 +440,7 @@ export default function SupplierPortal() {
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-accent/10">
-                      <Banknote className="h-5 w-5 text-accent-foreground" />
+                      <Wallet className="h-5 w-5 text-accent-foreground" />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Total Value</p>

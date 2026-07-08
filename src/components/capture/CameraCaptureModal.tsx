@@ -144,8 +144,7 @@ export function CameraCaptureModal({
               {error}
             </div>
           ) : snapshot ? (
-            // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
-            <img src={snapshot} className="w-full h-full object-contain" />
+            <img src={snapshot} alt="Captured document snapshot" className="w-full h-full object-contain" />
           ) : (
             <>
               <video

@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { submitQuote, type SupplierQuoteRequest } from "@/services/supplier.service";
 import { uploadQuoteDocument } from "@/services/quote-document.service";
-import { Send, Banknote, Truck, Calendar, FileUp, X, Loader2, FileText } from "lucide-react";
+import {Send, Wallet, Truck, Calendar, FileUp, X, Loader2, FileText} from "lucide-react";
 import { format, addDays } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 
@@ -190,7 +190,7 @@ export function SubmitQuoteModal({
           <div className="space-y-2">
             <Label htmlFor="amount">Your Quote Amount ({quoteCurrency}) *</Label>
             <div className="relative">
-              <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="amount"
                 type="number"

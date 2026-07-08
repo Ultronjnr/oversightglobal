@@ -239,6 +239,11 @@ Deno.serve(async (req) => {
           ],
           tools: [EXTRACTION_TOOL],
           tool_choice: { type: "function", function: { name: "extract_document_data" } },
+          // Speed: disable extended "thinking" and cap output — OCR extraction
+          // is a structured task that does not need chain-of-thought, so this
+          // cuts latency substantially without hurting accuracy.
+          reasoning_effort: "low",
+          max_completion_tokens: 2000,
         }),
       });
 

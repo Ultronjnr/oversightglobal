@@ -1,22 +1,8 @@
 import { useState, useEffect, useMemo, Fragment } from "react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {
-  Loader2,
-  FileText,
-  CheckSquare,
-  Square,
-  Banknote,
-  ExternalLink,
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  Image as ImageIcon,
-  AlertCircle,
-  Download,
-  Paperclip,
-} from "lucide-react";
-import { Clock } from "lucide-react";
+import {Loader2, FileText, CheckSquare, Square, Wallet, ExternalLink, Building2, ChevronDown, ChevronRight, Image as ImageIcon, AlertCircle, Download, Paperclip} from "lucide-react";
+import {Clock} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -254,7 +240,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   if (rows.length === 0) {
     return (
       <EmptyState
-        icon={<Banknote className="h-16 w-16" />}
+        icon={<Wallet className="h-16 w-16" />}
         title="No Pending Payments"
         description="All invoices and reimbursements are settled. New items will appear here once approved."
       />
@@ -298,7 +284,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
           disabled={selectedIds.size === 0}
           className="gap-2"
         >
-          <Banknote className="h-4 w-4" />
+          <Wallet className="h-4 w-4" />
           Create Payment Batch
           {selectedIds.size > 0 && (
             <Badge variant="secondary" className="ml-1 bg-primary-foreground/20">

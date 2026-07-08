@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Receipt, Filter, X, Loader2, Tag, BadgePercent, CalendarRange } from "lucide-react";
+import {ReceiptText as Receipt, Filter, X, Loader2, Tag, BadgePercent, CalendarRange} from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
