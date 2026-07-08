@@ -112,7 +112,7 @@ export default function AdminPortal() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex md:flex-wrap h-auto gap-2 overflow-x-auto no-scrollbar w-full justify-start">
+          <TabsList className="flex md:flex-wrap h-auto gap-2 overflow-x-auto no-scrollbar [&>button]:shrink-0 w-full justify-start">
             <TabsTrigger value="company" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Company Profile

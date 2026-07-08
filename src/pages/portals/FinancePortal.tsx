@@ -555,7 +555,7 @@ export default function FinancePortal() {
             />
           ) : (
             <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
-              <TabsList className="flex md:flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl overflow-x-auto no-scrollbar">
+              <TabsList className="flex md:flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl overflow-x-auto no-scrollbar [&>button]:shrink-0">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Banknote className="h-4 w-4" />
                   <span className="text-sm">Approvals</span>
