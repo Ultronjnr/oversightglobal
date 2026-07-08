@@ -53,6 +53,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   listVatTransactions,
   summariseVat,
@@ -63,11 +64,11 @@ import {
   type VatTransaction,
 } from "@/services/vat.service";
 
-const fmt = (n: number, currency = "ZAR") =>
-  new Intl.NumberFormat("en-ZA", { style: "currency", currency }).format(n || 0);
-
 export function VatDashboardTab() {
   const { role } = useAuth();
+  const { currency: orgCurrency } = useCurrency();
+  const fmt = (n: number, currency: string = orgCurrency) =>
+    new Intl.NumberFormat("en-ZA", { style: "currency", currency }).format(n || 0);
   const isFinance = role === "FINANCE" || role === "ADMIN";
   const [rows, setRows] = useState<VatTransaction[]>([]);
   const [loading, setLoading] = useState(true);
