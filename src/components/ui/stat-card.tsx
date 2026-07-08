@@ -32,7 +32,7 @@ export function StatCard({
 
   return (
     <div className={cn(
-      "relative bg-white rounded-xl border border-border/50 p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow",
+      "relative bg-white rounded-xl border border-border/50 p-3 sm:p-5 lg:p-6 shadow-sm hover:shadow-md transition-shadow",
       className
     )}>
       {badge && badge > 0 ? (
@@ -40,14 +40,14 @@ export function StatCard({
           {badge > 99 ? "99+" : badge}
         </span>
       ) : null}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
         <div className="space-y-1.5 sm:space-y-2 min-w-0 flex-1">
-          <p className="text-xs sm:text-sm text-muted-foreground font-medium truncate">{label}</p>
+          <p className="text-[11px] leading-tight sm:text-sm text-muted-foreground font-medium line-clamp-2 sm:truncate">{label}</p>
           {isLoading ? (
             <div className="h-8 sm:h-9 lg:h-10 w-2/3 rounded-md bg-muted animate-pulse" />
           ) : (
             <p className={cn(
-              "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words",
+              "text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words",
               colorClasses[valueColor]
             )}>
               {value}
@@ -56,7 +56,7 @@ export function StatCard({
           {footer && <div className="pt-1">{footer}</div>}
         </div>
         {icon && (
-          <div className="text-muted-foreground/50 flex-shrink-0">
+          <div className="text-muted-foreground/50 flex-shrink-0 hidden sm:block">
             {icon}
           </div>
         )}
