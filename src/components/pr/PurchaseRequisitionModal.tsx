@@ -497,7 +497,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                                 </div>
                                 <div className="space-y-2">
                                   <Label className="text-sm text-muted-foreground">
-                                    Unit Price (ZAR) <span className="text-destructive">*</span>
+                                    Unit Price ({currency}) <span className="text-destructive">*</span>
                                   </Label>
                                   <Input
                                     type="text"
@@ -635,7 +635,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                           {/* Divider */}
                           <div className="border-t border-primary/30 pt-3">
                             <div className="flex items-center justify-between">
-                              <span className="font-semibold text-foreground text-base">Grand Total (ZAR):</span>
+                              <span className="font-semibold text-foreground text-base">Grand Total ({currency}):</span>
                               <span className="text-2xl font-bold text-primary">
                                 {formatZAR(grandTotal)}
                               </span>
