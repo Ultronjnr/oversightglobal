@@ -193,7 +193,7 @@ export default function FreemiumPortal() {
       {view === "dashboard" && (
         <div className="space-y-6">
           {/* Overview Stats — same layout as Admin Dashboard */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <Card className="dashboard-card">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
