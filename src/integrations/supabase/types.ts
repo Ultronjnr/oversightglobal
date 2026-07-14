@@ -3086,6 +3086,26 @@ export type Database = {
         }
         Returns: Json
       }
+      complete_invitation_signup: {
+        Args: {
+          _email: string
+          _name: string
+          _surname?: string
+          _token: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      complete_supplier_profile: {
+        Args: {
+          _email: string
+          _name: string
+          _phone?: string
+          _token: string
+          _user_id: string
+        }
+        Returns: Json
+      }
       confirm_batch_paid: {
         Args: {
           _batch_id: string
