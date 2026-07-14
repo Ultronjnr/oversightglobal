@@ -98,16 +98,24 @@ export async function acceptSupplierInvitation(
       return { success: false, error: "Failed to create user account" };
     }
 
-    // Create profile (no organization for suppliers - they get org from invitation)
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: authData.user.id,
-      email: params.email.toLowerCase(),
-      name: params.companyName,
-      phone: params.phone || null,
-    });
+    // Create profile via secure RPC (works before email confirmation / no session).
+    const { data: profileRes, error: profileError } = await supabase.rpc(
+      "complete_supplier_profile",
+      {
+        _token: params.token,
+        _email: params.email,
+        _user_id: authData.user.id,
+        _name: params.companyName,
+        _phone: params.phone || null,
+      }
+    );
 
     if (profileError) {
       return { success: false, error: getSafeErrorMessage(profileError) };
+    }
+    const pRes = profileRes as unknown as { success: boolean; error?: string };
+    if (!pRes?.success) {
+      return { success: false, error: pRes?.error || "Failed to create profile" };
     }
 
     // Accept the supplier invitation and create supplier record

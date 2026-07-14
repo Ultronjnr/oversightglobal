@@ -317,35 +317,27 @@ export async function acceptInvitation(
       return { success: false, error: "Failed to create user" };
     }
 
-    // Create the profile
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: authData.user.id,
-      email: email.toLowerCase(),
-      name,
-      surname: surname || null,
-      department: invitation.department,
-      organization_id: invitation.organization_id,
-    });
+    // Finalise profile + role + mark invitation accepted in a single secure RPC.
+    // This works even when email confirmation is required (no session yet).
+    const { data: completion, error: completionError } = await supabase.rpc(
+      "complete_invitation_signup",
+      {
+        _token: token,
+        _email: email,
+        _user_id: authData.user.id,
+        _name: name,
+        _surname: surname || null,
+      }
+    );
 
-    if (profileError) {
-      return { success: false, error: getSafeErrorMessage(profileError) };
+    if (completionError) {
+      return { success: false, error: getSafeErrorMessage(completionError) };
     }
 
-    // Assign the role using secure function (bypasses RLS for privileged roles)
-    const { data: roleAssigned, error: roleError } = await supabase.rpc("assign_invitation_role", {
-      _user_id: authData.user.id,
-      _role: invitation.role as "ADMIN" | "EMPLOYEE" | "FINANCE" | "HOD" | "SUPPLIER",
-    });
-
-    if (roleError || !roleAssigned) {
-      return { success: false, error: getSafeErrorMessage(roleError) };
+    const res = completion as unknown as { success: boolean; error?: string; role?: string };
+    if (!res?.success) {
+      return { success: false, error: res?.error || "Failed to complete signup" };
     }
-
-    // Mark invitation as accepted
-    await supabase.rpc("accept_invitation", {
-      _token: token,
-      _email: email,
-    });
 
     return { success: true, role: invitation.role };
   } catch (error: any) {
