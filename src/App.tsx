@@ -29,6 +29,7 @@ import CostCenterHistory from "./pages/CostCenterHistory";
 import Donations from "./pages/Donations";
 import Billing from "./pages/Billing";
 import VerifyReceipt from "./pages/VerifyReceipt";
+import BlogSection18ADonationsInKind from "./pages/BlogSection18ADonationsInKind";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/portal/supplier/register" element={<SupplierRegister />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/verify/receipt/:id" element={<VerifyReceipt />} />
+            <Route path="/blog/section-18a-donations-in-kind" element={<BlogSection18ADonationsInKind />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
             <Route
