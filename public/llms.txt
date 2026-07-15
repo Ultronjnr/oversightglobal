@@ -1,0 +1,15 @@
+# Ovasyt
+
+> Procurement approvals, donor fund tracking, supplier management, invoice scanning and audit-ready compliance for South African NGOs and NPOs.
+
+Ovasyt is a South African procurement and compliance platform built for NGOs, NPOs and small businesses. It combines full purchase-request approval chains, SARS tax-invoice validation, supplier onboarding and quoting, donor-fund tracking, and Section 18A receipt generation into a single audit-ready workflow.
+
+## Pages
+
+- [Home](/): Product overview and what Ovasyt does for South African NGOs and SMEs.
+- [Pricing](/pricing): Platform, Funder-Ready and Tailored plans, comparison table, add-ons and FAQ.
+
+## Optional
+
+- [Sign in](/login): Existing customer login.
+- [Start a company account](/signup/company): Begin the 14-day Platform free trial.
