@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { PageSeo } from "@/components/site/PageSeo";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -274,6 +275,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen hero-gradient flex items-stretch">
+      <PageSeo
+        title="Sign in to Ovasyt"
+        description="Sign in to your Ovasyt account to manage procurement approvals, donor funds, suppliers and audit-ready compliance for your NGO."
+        path="/login"
+      />
       {/* Left brand panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary via-primary to-[hsl(245_70%_55%)] text-primary-foreground p-12 flex-col justify-between">
         {/* Decorative blobs */}
