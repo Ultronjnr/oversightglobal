@@ -152,11 +152,12 @@ export default function Pricing() {
             ● Pricing
           </p>
           <h1 className="text-center text-4xl sm:text-5xl font-extrabold text-slate-900 leading-tight mb-4">
-            Plans that scale with your spend, not your headcount
+            Plans that keep you funder-ready, all year round
           </h1>
           <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
-            Every plan includes the full approval chain, invoice scanning, and a
-            complete audit trail. No setup fees, no lock-in contracts.
+            Every plan includes the full approval chain, invoice scanning, donor
+            fund tracking, and a complete audit trail. No setup fees, no lock-in
+            contracts.
           </p>
 
           <div className="grid gap-6 lg:grid-cols-3 items-start">
@@ -221,9 +222,9 @@ export default function Pricing() {
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-mono uppercase tracking-wide text-slate-400">
                   <th className="text-left font-semibold py-4">Feature</th>
-                  <th className="text-center font-semibold py-4">Starter</th>
-                  <th className="text-center font-semibold py-4">Growth</th>
-                  <th className="text-center font-semibold py-4">Enterprise</th>
+                  <th className="text-center font-semibold py-4">Platform</th>
+                  <th className="text-center font-semibold py-4">Funder-Ready</th>
+                  <th className="text-center font-semibold py-4">Tailored</th>
                 </tr>
               </thead>
               <tbody>
