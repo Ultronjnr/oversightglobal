@@ -4,6 +4,7 @@ import { X, Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { PageSeo } from "@/components/site/PageSeo";
 
 import slideBg1 from "@/assets/slide-bg-1.png";
 import slideBg2 from "@/assets/slide-bg-2.png";
@@ -378,6 +379,11 @@ const SCAN_ROWS = [
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
+      <PageSeo
+        title="Ovasyt | Procurement & Compliance for NGOs and NPOs"
+        description="Ovasyt gives South African NGOs and NPOs procurement approvals, donor fund tracking, supplier management, invoice scanning and audit-ready compliance."
+        path="/"
+      />
       <SiteNav />
       <h1 className="sr-only">Ovasyt — Procurement & Compliance for South African NGOs and NPOs</h1>
       <main>
