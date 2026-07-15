@@ -302,9 +302,9 @@ export default function Login() {
               <Sparkles className="h-3.5 w-3.5" />
               <span>Quote Request & Approval System</span>
             </div>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight">
+            <h2 className="text-4xl font-bold leading-tight tracking-tight">
               Welcome back to <br /> Ovasyt
-            </h1>
+            </h2>
             <p className="text-primary-foreground/80 text-base max-w-md">
               Sign in to manage purchase requisitions, approvals, and supplier
               quotes — all in one premium workspace.
