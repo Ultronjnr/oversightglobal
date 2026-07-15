@@ -159,10 +159,10 @@ var list_notifications_default = defineTool5({
 // src/lib/mcp/index.ts
 var projectRef = "udnxnhvzowsjawpvfjuq";
 var mcp_default = defineMcp({
-  name: "oversight-mcp",
-  title: "Oversight Procurement MCP",
+  name: "ovasyt-mcp",
+  title: "Ovasyt Procurement MCP",
   version: "0.1.0",
-  instructions: "Tools for the Oversight procurement platform. Use `whoami` to identify the signed-in user, `list_purchase_requisitions` and `get_purchase_requisition` to inspect requisitions, `list_suppliers` to browse suppliers, and `list_notifications` for the user's alerts. All data is scoped to the signed-in user's access.",
+  instructions: "Tools for the Ovasyt procurement platform. Use `whoami` to identify the signed-in user, `list_purchase_requisitions` and `get_purchase_requisition` to inspect requisitions, `list_suppliers` to browse suppliers, and `list_notifications` for the user's alerts. All data is scoped to the signed-in user's access.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
