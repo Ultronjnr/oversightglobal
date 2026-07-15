@@ -158,6 +158,18 @@ Deno.serve(async (req) => {
       .single();
     if (!profile?.organization_id) return json({ error: "No organization" }, 403);
 
+    // Cross-tenant guard: the service-role client bypasses RLS on storage.
+    // Verify the requested storage_path actually belongs to the caller's
+    // organization before downloading. All app upload paths are prefixed with
+    // either <organization_id>/... or <user_id>/..., or (for PR chat) with
+    // chat/<pr_id>/... where the PR must belong to the caller's org.
+    const orgOk = await verifyStoragePathOwnership(
+      admin, storage_path, user.id, profile.organization_id,
+    );
+    if (!orgOk) {
+      return json({ error: "Not authorized for this document" }, 403);
+    }
+
     // Re-use existing analysis if present and not forced
     if (!body.force) {
       const { data: existing } = await admin
@@ -370,4 +382,37 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
     item.amount = total;
     item.needs_review = needsReview;
   }
+}
+
+async function verifyStoragePathOwnership(
+  admin: ReturnType<typeof createClient>,
+  storagePath: string,
+  userId: string,
+  organizationId: string,
+): Promise<boolean> {
+  const segments = storagePath.split("/").filter(Boolean);
+  if (segments.length === 0) return false;
+  const first = segments[0];
+  if (first === organizationId) return true;
+  if (first === userId) return true;
+  // PR chat uploads: chat/<pr_id>/<file>
+  if (first === "chat" && segments.length >= 2) {
+    const prId = segments[1];
+    const { data } = await admin
+      .from("purchase_requisitions")
+      .select("organization_id")
+      .eq("id", prId)
+      .maybeSingle();
+    if ((data as any)?.organization_id === organizationId) return true;
+  }
+  // Last-resort fallback: if we already indexed this document as an
+  // attachment for the caller's org, allow it.
+  const { data: attach } = await admin
+    .from("attachments")
+    .select("id")
+    .eq("file_path", storagePath)
+    .eq("organization_id", organizationId)
+    .limit(1)
+    .maybeSingle();
+  return !!attach;
 }

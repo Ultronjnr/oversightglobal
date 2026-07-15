@@ -2,6 +2,16 @@ import { corsHeaders, json, adminClient, auditPayment } from "../_shared/payment
 
 const YOCO_CHARGE_URL = "https://online.yoco.com/v1/charges/";
 
+// Decode a JWT payload without verifying (gateway already verified signature).
+function decodeJwtRole(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const j = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return (JSON.parse(j)?.role as string) ?? null;
+  } catch { return null; }
+}
+
 async function chargeCard(secretKey: string, token: string, amountCents: number, currency: string) {
   const res = await fetch(YOCO_CHARGE_URL, {
     method: "POST",
@@ -25,6 +35,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Authorization: only trusted service-role callers (billing-cron,
+    // yoco-save-card, admin retries) may trigger a card charge. Reject any
+    // request that does not present a service-role token.
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (decodeJwtRole(token) !== "service_role") {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const { organizationId, invoiceId } = await req.json();
     const admin = adminClient();
     const secretKey = Deno.env.get("YOCO_SECRET_KEY");

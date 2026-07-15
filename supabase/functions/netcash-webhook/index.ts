@@ -14,8 +14,15 @@ Deno.serve(async (req) => {
     const admin = adminClient();
     const expected = Deno.env.get("NETCASH_WEBHOOK_SECRET");
     const provided = payload["Extra1"] || payload["secret"] || req.headers.get("x-netcash-secret") || "";
-    const verified = expected ? provided === expected : false;
-    if (expected && !verified) return json({ error: "Invalid secret" }, 401);
+    // Fail closed: if the shared secret is not configured we cannot
+    // authenticate the webhook, so reject the request outright instead of
+    // accepting it as trusted.
+    if (!expected) {
+      console.error("netcash-webhook: NETCASH_WEBHOOK_SECRET not configured; rejecting");
+      return json({ error: "Webhook secret not configured" }, 503);
+    }
+    const verified = provided === expected;
+    if (!verified) return json({ error: "Invalid secret" }, 401);
 
     const reference = payload["Reference"] || payload["BatchReference"] || payload["PaymentReference"] || "";
     const externalId = payload["RequestTrace"] || reference || crypto.randomUUID();

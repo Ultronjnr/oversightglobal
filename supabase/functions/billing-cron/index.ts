@@ -1,10 +1,28 @@
 import { corsHeaders, json, adminClient } from "../_shared/payments.ts";
 
+// Decode a JWT payload without verifying (gateway already verified signature).
+function decodeJwtRole(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return (JSON.parse(json)?.role as string) ?? null;
+  } catch { return null; }
+}
+
 // Scheduled monthly: charges due subscriptions and processes retries.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Authorization: only a trusted service-role caller (pg_cron / internal)
+    // may trigger the billing cycle. Any other JWT is rejected.
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (decodeJwtRole(token) !== "service_role") {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const admin = adminClient();
     const today = new Date().toISOString().slice(0, 10);
     const nowIso = new Date().toISOString();
