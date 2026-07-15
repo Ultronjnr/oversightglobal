@@ -261,6 +261,7 @@ function HeroCarousel() {
                 alt=""
                 aria-hidden="true"
                 loading={i === 0 ? "eager" : "lazy"}
+                {...(i === 0 ? { fetchPriority: "high" as const } : {})}
                 width={1024}
                 height={1024}
                 className="pointer-events-none select-none absolute -top-24 -right-6 w-[130%] max-w-none opacity-20 blur-[1px]"
