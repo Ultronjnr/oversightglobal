@@ -4,11 +4,14 @@ import { PlansTab } from "@/components/billing/PlansTab";
 import { PaymentMethodTab } from "@/components/billing/PaymentMethodTab";
 import { BillingHistoryTab } from "@/components/billing/BillingHistoryTab";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getPortalNavItems } from "@/lib/admin-nav";
 
 export default function Billing() {
   const [tab, setTab] = useState("plans");
+  const { role } = useAuth();
   return (
-    <DashboardLayout title="Billing & Subscription">
+    <DashboardLayout title="Billing & Subscription" navItems={getPortalNavItems(role)}>
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="mb-4">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Billing &amp; Subscription</h1>
