@@ -38,7 +38,7 @@ export function PlansTab() {
 
   const choose = async (plan: SubscriptionPlan) => {
     if (plan.is_custom) {
-      window.location.href = "mailto:sales@oversight.global?subject=Enterprise Plan Enquiry";
+      window.location.href = "mailto:sales@ovasyt.tech?subject=Enterprise Plan Enquiry";
       return;
     }
     setBusy(plan.id);

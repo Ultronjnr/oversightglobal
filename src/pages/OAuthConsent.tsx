@@ -80,7 +80,7 @@ export default function OAuthConsent() {
                 Connect {details.client?.name ?? "an app"} to your account
               </h1>
               <p className="text-sm text-muted-foreground">
-                This lets {details.client?.name ?? "the client"} access Oversight
+                This lets {details.client?.name ?? "the client"} access Ovasyt
                 data on your behalf, scoped to what you can already see.
               </p>
             </div>
