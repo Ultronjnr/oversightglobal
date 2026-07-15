@@ -15,3 +15,7 @@ project_id = "udnxnhvzowsjawpvfjuq"
     verify_jwt = false
   [functions.register-supplier]
     verify_jwt = false
+  [functions.billing-cron]
+    verify_jwt = true
+  [functions.yoco-charge-subscription]
+    verify_jwt = true
