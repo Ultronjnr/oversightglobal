@@ -216,6 +216,11 @@ export default function SupplierRegister() {
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
+      <PageSeo
+        title="Register as an Ovasyt supplier"
+        description="Register your business as an Ovasyt supplier to receive quote requests, submit invoices and get paid by South African NGOs and NPOs."
+        path="/supplier/register"
+      />
       <div className="auth-card animate-slide-up">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
