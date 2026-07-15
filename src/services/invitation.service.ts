@@ -80,7 +80,7 @@ export async function createInvitation(
       email: params.email.toLowerCase(),
       role: params.role,
       department: params.department || null,
-      token,
+      token_hash: token, // hashed to SHA-256 by BEFORE INSERT trigger
       status: "pending",
       expires_at: expiresAt.toISOString(),
       organization_id: profile.organization_id,
