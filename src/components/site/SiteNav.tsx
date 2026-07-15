@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { label: "Home", to: "/" },
+  { label: "About", to: "/about" },
+  { label: "Insights", to: "/insights" },
   { label: "Pricing", to: "/pricing" },
+  { label: "Contact", to: "/contact" },
 ];
 
 export function SiteNav() {
