@@ -132,7 +132,6 @@ export function ReceiptsTab() {
     const donor = donors.find((d) => d.id === r.donor_id);
     if (!donor?.email) { toast.error("Donor has no email address"); return; }
     if (!r.pdf_path) { toast.error("PDF not available"); return; }
-    const url = await getSignedUrl(r.pdf_path, 60 * 60 * 24 * 7);
     try {
       await supabase.functions.invoke("send-transactional-email", {
         body: {
@@ -140,10 +139,10 @@ export function ReceiptsTab() {
           recipientEmail: donor.email,
           idempotencyKey: `donation-receipt-${r.id}`,
           templateData: {
-            donorName: donor.name,
-            receiptNumber: r.receipt_number,
-            downloadUrl: url,
-            verifyUrl: verificationUrl(r.id, r.verification_hash || ""),
+            // The edge function re-derives donorName, receiptNumber,
+            // downloadUrl and verifyUrl from the database using this id, so
+            // client-supplied values cannot be used for phishing.
+            receiptId: r.id,
           },
         },
       });
