@@ -34,7 +34,11 @@ export default function VerifyReceipt() {
       />
       <Card className="max-w-md w-full p-8 text-center space-y-4">
         {state === "loading" && (
-          <><Loader2 className="h-10 w-10 mx-auto animate-spin text-muted-foreground" /><p>Verifying receipt…</p></>
+          <>
+            <h1 className="sr-only">Verifying Receipt</h1>
+            <Loader2 className="h-10 w-10 mx-auto animate-spin text-muted-foreground" />
+            <p>Verifying receipt…</p>
+          </>
         )}
         {state === "valid" && (
           <>

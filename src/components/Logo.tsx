@@ -18,7 +18,7 @@ export function Logo({ className, size = "md" }: LogoProps) {
     <div className={cn("flex items-center", className)}>
       <img
         src={logoImage}
-        alt="Ovasyt"
+        alt="Ovasyt logo"
         className={cn("w-auto object-contain", sizeClasses[size])}
       />
     </div>
