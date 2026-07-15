@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface RequestBody {
-  document_url: string;
+  document_url?: string;
   pr_id: string;
 }
 
@@ -55,11 +55,11 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body: RequestBody = await req.json();
-    const { document_url, pr_id } = body;
+    const { pr_id } = body;
 
-    if (!document_url || !pr_id) {
+    if (!pr_id) {
       return new Response(
-        JSON.stringify({ error: "Missing document_url or pr_id" }),
+        JSON.stringify({ error: "Missing pr_id" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -84,6 +84,17 @@ Deno.serve(async (req) => {
     if (prError || !pr) {
       return new Response(
         JSON.stringify({ error: "Purchase requisition not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // SECURITY: derive storage path ONLY from the PR row loaded from the DB.
+    // Never trust a client-supplied document_url — that would let an authorized
+    // caller request a signed URL for any other PR's file in the shared bucket.
+    const prDocumentUrl = (pr as any).document_url as string | null;
+    if (!prDocumentUrl) {
+      return new Response(
+        JSON.stringify({ error: "This purchase requisition has no document" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -133,25 +144,25 @@ Deno.serve(async (req) => {
     // 2. Public URL: https://xxx.supabase.co/storage/v1/object/public/pr-documents/user-id/filename.pdf
     // 3. Just the path: user-id/filename.pdf
     
-    let storagePath = document_url;
+    let storagePath = prDocumentUrl;
     
     // Extract path from signed URL
-    if (document_url.includes("/storage/v1/object/sign/pr-documents/")) {
-      const match = document_url.match(/\/pr-documents\/([^?]+)/);
+    if (prDocumentUrl.includes("/storage/v1/object/sign/pr-documents/")) {
+      const match = prDocumentUrl.match(/\/pr-documents\/([^?]+)/);
       if (match) {
         storagePath = match[1];
       }
     }
     // Extract path from public URL
-    else if (document_url.includes("/storage/v1/object/public/pr-documents/")) {
-      const match = document_url.match(/\/pr-documents\/([^?]+)/);
+    else if (prDocumentUrl.includes("/storage/v1/object/public/pr-documents/")) {
+      const match = prDocumentUrl.match(/\/pr-documents\/([^?]+)/);
       if (match) {
         storagePath = match[1];
       }
     }
     // Handle direct path
-    else if (document_url.startsWith("pr-documents/")) {
-      storagePath = document_url.replace("pr-documents/", "");
+    else if (prDocumentUrl.startsWith("pr-documents/")) {
+      storagePath = prDocumentUrl.replace("pr-documents/", "");
     }
 
     // URL decode the path in case it has encoded characters
@@ -194,7 +205,7 @@ Deno.serve(async (req) => {
     if (!signedUrl) {
       console.error(
         "Signed URL generation failed for all candidates",
-        { candidates, lastError, pr_id, document_url }
+        { candidates, lastError, pr_id }
       );
       return new Response(
         JSON.stringify({

@@ -25,8 +25,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Allow both authed (manual) and service-role (scheduled) calls
-    const { orgId } = await getAuthContext(req);
+    // Authentication: either a scheduled cron caller presenting the shared
+    // CRON_SECRET, or an authenticated app user (scoped to their own org).
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const providedCronSecret = req.headers.get("x-cron-secret");
+    const isCron = !!cronSecret && providedCronSecret === cronSecret;
+
+    const { orgId } = isCron ? { orgId: null as string | null } : await getAuthContext(req);
+
+    if (!isCron && !orgId) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
     const body = await req.json().catch(() => ({}));
     const { batchId } = body;
     const admin = adminClient();
@@ -34,6 +44,8 @@ Deno.serve(async (req) => {
 
     let q = admin.from("netcash_payments").select("*").in("status", ["SUBMITTED", "PROCESSING", "RETRYING"]);
     if (batchId) q = q.eq("batch_id", batchId);
+    // Authenticated users may only ever refresh their own organization's payments.
+    // Cron callers (no orgId) refresh every pending payment.
     if (orgId) q = q.eq("organization_id", orgId);
     const { data: payments } = await q;
     const pays = payments ?? [];
