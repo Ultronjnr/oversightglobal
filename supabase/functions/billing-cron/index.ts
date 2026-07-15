@@ -1,13 +1,16 @@
 import { corsHeaders, json, adminClient } from "../_shared/payments.ts";
 
-// Decode a JWT payload without verifying (gateway already verified signature).
-function decodeJwtRole(token: string): string | null {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    return (JSON.parse(json)?.role as string) ?? null;
-  } catch { return null; }
+// Constant-time comparison of the presented bearer token against the
+// project's service-role key. verify_jwt=true on this function makes the
+// gateway reject unsigned/invalid JWTs before we get here; this final
+// check ensures only callers holding the real service-role secret (i.e.
+// pg_cron / internal invokers) may trigger the billing cycle.
+function isServiceRoleToken(token: string): boolean {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token || !secret || token.length !== secret.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ secret.charCodeAt(i);
+  return diff === 0;
 }
 
 // Scheduled monthly: charges due subscriptions and processes retries.
@@ -19,7 +22,7 @@ Deno.serve(async (req) => {
     // may trigger the billing cycle. Any other JWT is rejected.
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (decodeJwtRole(token) !== "service_role") {
+    if (!isServiceRoleToken(token)) {
       return json({ error: "Unauthorized" }, 401);
     }
 

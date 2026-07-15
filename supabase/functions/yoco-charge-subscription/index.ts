@@ -2,14 +2,17 @@ import { corsHeaders, json, adminClient, auditPayment } from "../_shared/payment
 
 const YOCO_CHARGE_URL = "https://online.yoco.com/v1/charges/";
 
-// Decode a JWT payload without verifying (gateway already verified signature).
-function decodeJwtRole(token: string): string | null {
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const j = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-    return (JSON.parse(j)?.role as string) ?? null;
-  } catch { return null; }
+// Constant-time comparison of the presented bearer token against the
+// project's service-role key. verify_jwt=true on this function makes the
+// gateway reject unsigned/invalid JWTs before we get here; this final
+// check ensures only callers holding the real service-role secret (i.e.
+// billing-cron, yoco-save-card, admin retries) may trigger a card charge.
+function isServiceRoleToken(token: string): boolean {
+  const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!token || !secret || token.length !== secret.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ secret.charCodeAt(i);
+  return diff === 0;
 }
 
 async function chargeCard(secretKey: string, token: string, amountCents: number, currency: string) {
@@ -40,7 +43,7 @@ Deno.serve(async (req) => {
     // request that does not present a service-role token.
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (decodeJwtRole(token) !== "service_role") {
+    if (!isServiceRoleToken(token)) {
       return json({ error: "Unauthorized" }, 401);
     }
 
