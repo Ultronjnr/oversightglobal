@@ -9,11 +9,14 @@ import { ProjectsTab } from "@/components/donations/ProjectsTab";
 import { ReceiptsTab } from "@/components/donations/ReceiptsTab";
 import { ReportsTab } from "@/components/donations/ReportsTab";
 import { BrandingTab } from "@/components/donations/BrandingTab";
+import { useAuth } from "@/contexts/AuthContext";
+import { getPortalNavItems } from "@/lib/admin-nav";
 
 export default function Donations() {
   const [tab, setTab] = useState("dashboard");
+  const { role } = useAuth();
   return (
-    <DashboardLayout title="Donations / 18A">
+    <DashboardLayout title="Donations / 18A" navItems={getPortalNavItems(role)}>
       <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
         <div className="mb-4">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
