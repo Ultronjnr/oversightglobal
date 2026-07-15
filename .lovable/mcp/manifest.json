@@ -11,9 +11,9 @@
   },
   "mcp": {
     "server": {
-      "name": "oversight-mcp",
+      "name": "ovasyt-mcp",
       "version": "0.1.0",
-      "title": "Oversight Procurement MCP"
+      "title": "Ovasyt Procurement MCP"
     },
     "tools": [
       {

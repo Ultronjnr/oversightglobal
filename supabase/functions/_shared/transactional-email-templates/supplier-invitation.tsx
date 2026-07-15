@@ -12,7 +12,7 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'Oversight'
+const SITE_NAME = 'Ovasyt'
 
 interface SupplierInvitationEmailProps {
   contactPerson?: string
@@ -29,10 +29,10 @@ const SupplierInvitationEmail = ({
 }: SupplierInvitationEmailProps) => {
   const heading =
     reminder === 'expiry'
-      ? 'Your Oversight Supplier Invitation Expires Soon'
+      ? 'Your Ovasyt Supplier Invitation Expires Soon'
       : reminder === 'reminder'
         ? 'Reminder: Complete your Supplier Registration'
-        : "You're Invited to Join Oversight Supplier Portal"
+        : "You're Invited to Join Ovasyt Supplier Portal"
 
   return (
     <Html lang="en" dir="ltr">
@@ -44,7 +44,7 @@ const SupplierInvitationEmail = ({
           <Text style={text}>Hello {contactPerson || 'there'},</Text>
           <Text style={text}>
             <strong>{companyName || 'Your company'}</strong> has been invited to
-            join the Oversight Supplier Network. Click the button below to
+            join the Ovasyt Supplier Network. Click the button below to
             complete your registration.
           </Text>
           <Button style={button} href={registrationUrl}>
@@ -69,10 +69,10 @@ export const template = {
   component: SupplierInvitationEmail,
   subject: (data: Record<string, any>) =>
     data?.reminder === 'expiry'
-      ? 'Your Oversight Supplier Invitation Expires Soon'
+      ? 'Your Ovasyt Supplier Invitation Expires Soon'
       : data?.reminder === 'reminder'
         ? 'Reminder: Complete your Supplier Registration'
-        : "You're Invited to Join Oversight Supplier Portal",
+        : "You're Invited to Join Ovasyt Supplier Portal",
   displayName: 'Supplier invitation',
   previewData: {
     contactPerson: 'Jane Doe',
