@@ -3035,7 +3035,7 @@ export type Database = {
             Returns: Json
           }
       accept_supplier_invitation_token: {
-        Args: { _token: string; _user_id: string }
+        Args: { _token: string; _user_id?: string }
         Returns: boolean
       }
       add_reimbursement_comment: {

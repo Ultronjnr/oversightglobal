@@ -27,11 +27,18 @@ Deno.serve(async (req) => {
     const timestamp = req.headers.get("webhook-timestamp") ?? "";
     const signature = req.headers.get("webhook-signature") ?? "";
 
-    let verified = false;
-    if (secret && id && signature) {
-      verified = await verifySignature(secret, id, timestamp, raw, signature);
-      if (!verified) return json({ error: "Invalid signature" }, 401);
+    // Fail closed: refuse to process any webhook we cannot cryptographically
+    // verify. If the signing secret is unset we cannot verify anything, so we
+    // reject the request instead of accepting it as trusted.
+    if (!secret) {
+      console.error("yoco-webhook: YOCO_WEBHOOK_SECRET not configured; rejecting");
+      return json({ error: "Webhook signing secret not configured" }, 503);
     }
+    if (!id || !signature) {
+      return json({ error: "Missing signature headers" }, 401);
+    }
+    const verified = await verifySignature(secret, id, timestamp, raw, signature);
+    if (!verified) return json({ error: "Invalid signature" }, 401);
 
     const event = JSON.parse(raw || "{}");
     const admin = adminClient();

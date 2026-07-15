@@ -33,7 +33,17 @@ function generateToken(): string {
 // caller to be an ADMIN of the organization the invitation actually belongs to.
 
 // Templates that can be abused for phishing/spam and must be tightly gated.
-const PRIVILEGED_TEMPLATES = new Set(['invitation', 'supplier-invitation'])
+// Each of these is re-derived from the database against the caller's org so a
+// low-privilege user cannot use them as an open email relay.
+const PRIVILEGED_TEMPLATES = new Set([
+  'invitation',
+  'supplier-invitation',
+  'donation-receipt',
+])
+
+// Canonical app URL used to rebuild receipt verification links server-side so
+// the caller cannot swap in a phishing/malicious URL.
+const APP_BASE_URL = 'https://ovasyt.tech'
 
 // Decode a JWT payload without verifying (gateway already verified the signature).
 function decodeJwtRole(token: string): string | null {
@@ -156,11 +166,12 @@ Deno.serve(async (req) => {
     }
 
     if (PRIVILEGED_TEMPLATES.has(templateName)) {
-      // Re-derive the invitation (and its organization) from the DB instead of
-      // trusting client-supplied templateData, then require the caller to be an
-      // ADMIN of that organization.
+      // Re-derive the record (and its organization) from the DB instead of
+      // trusting client-supplied templateData, then require the caller to
+      // belong to that organization with a suitable role.
       const inviteEmail = (recipientEmail || '').toLowerCase()
       let orgId: string | null = null
+      let requiredRoles: string[] = ['ADMIN']
 
       if (templateName === 'invitation') {
         const { data: inv } = await supabase
@@ -172,7 +183,7 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle()
         orgId = inv?.organization_id ?? null
-      } else {
+      } else if (templateName === 'supplier-invitation') {
         const { data: inv } = await supabase
           .from('supplier_invitations')
           .select('organization_id')
@@ -182,6 +193,70 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle()
         orgId = inv?.organization_id ?? null
+      } else if (templateName === 'donation-receipt') {
+        // Look up the receipt by id from templateData; do NOT trust any other
+        // caller-supplied fields (donorName, downloadUrl, verifyUrl).
+        const receiptId = String(
+          (templateData as any)?.receiptId ?? (templateData as any)?.receipt_id ?? '',
+        )
+        if (!receiptId) {
+          return new Response(
+            JSON.stringify({ error: 'receiptId is required for donation receipts' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+        const { data: receipt } = await supabase
+          .from('donation_receipts')
+          .select('id, organization_id, donor_id, receipt_number, verification_hash, pdf_path, status')
+          .eq('id', receiptId)
+          .maybeSingle()
+        if (!receipt) {
+          return new Response(
+            JSON.stringify({ error: 'Receipt not found' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+        if ((receipt as any).status === 'CANCELLED') {
+          return new Response(
+            JSON.stringify({ error: 'Receipt is cancelled' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+        orgId = (receipt as any).organization_id
+        // Donation receipts can be sent by ADMIN or FINANCE (donation manager).
+        requiredRoles = ['ADMIN', 'FINANCE']
+
+        // Verify the recipient email actually belongs to the donor on file.
+        const { data: donor } = await supabase
+          .from('organization_donors')
+          .select('id, name, email')
+          .eq('id', (receipt as any).donor_id)
+          .maybeSingle()
+        if (!donor || !(donor as any).email ||
+            String((donor as any).email).toLowerCase() !== inviteEmail) {
+          return new Response(
+            JSON.stringify({ error: 'Recipient does not match donor on receipt' }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          )
+        }
+
+        // Rebuild templateData from trusted DB values so client-supplied
+        // links/names cannot be used for phishing.
+        let signedDownloadUrl: string | null = null
+        const pdfPath = (receipt as any).pdf_path
+        if (pdfPath) {
+          const { data: signed } = await supabase.storage
+            .from('donation-receipts')
+            .createSignedUrl(pdfPath, 60 * 60 * 24 * 7)
+          signedDownloadUrl = signed?.signedUrl ?? null
+        }
+        templateData = {
+          donorName: (donor as any).name,
+          receiptNumber: (receipt as any).receipt_number,
+          downloadUrl: signedDownloadUrl ?? '',
+          verifyUrl: `${APP_BASE_URL}/verify/receipt/${(receipt as any).id}?h=${(receipt as any).verification_hash ?? ''}`,
+        }
+      }
       }
 
       if (!orgId) {
@@ -191,17 +266,17 @@ Deno.serve(async (req) => {
         )
       }
 
-      const [{ data: prof }, { data: adminRole }] = await Promise.all([
+      const [{ data: prof }, { data: roleRows }] = await Promise.all([
         supabase.from('profiles').select('organization_id').eq('id', caller.id).maybeSingle(),
         supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', caller.id)
-          .eq('role', 'ADMIN')
-          .maybeSingle(),
+          .in('role', requiredRoles),
       ])
 
-      if (!adminRole || !prof || prof.organization_id !== orgId) {
+      const hasRole = Array.isArray(roleRows) && roleRows.length > 0
+      if (!hasRole || !prof || prof.organization_id !== orgId) {
         return new Response(
           JSON.stringify({ error: 'Not authorized to send this email' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
