@@ -128,7 +128,7 @@ const FAQ = [
 
 function Cell({ value }: { value: string }) {
   if (value === "✓") return <Check className="h-4 w-4 text-emerald-600 mx-auto" />;
-  if (value === "—") return <Minus className="h-4 w-4 text-slate-300 mx-auto" />;
+  if (value === "—") return <Minus className="h-4 w-4 text-slate-500 mx-auto" aria-label="Not included" />;
   return <span className="text-sm text-slate-700">{value}</span>;
 }
 
@@ -226,7 +226,7 @@ export default function Pricing() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 text-xs font-mono uppercase tracking-wide text-slate-400">
+                <tr className="border-b border-slate-200 text-xs font-mono uppercase tracking-wide text-slate-600">
                   <th className="text-left font-semibold py-4">Feature</th>
                   <th className="text-center font-semibold py-4">Platform</th>
                   <th className="text-center font-semibold py-4">Funder-Ready</th>
