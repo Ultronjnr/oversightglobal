@@ -371,9 +371,9 @@ export default function Login() {
               <div className="flex justify-center mb-5">
                 <Logo size="lg" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">
                 Sign in to your account
-              </h2>
+              </h1>
               <p className="text-sm text-muted-foreground mt-1.5">
                 Enter your credentials to continue
               </p>
