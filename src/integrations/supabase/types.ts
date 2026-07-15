@@ -866,7 +866,7 @@ export type Database = {
           organization_id: string
           role: Database["public"]["Enums"]["app_role"]
           status: string
-          token: string
+          token_hash: string | null
         }
         Insert: {
           created_at?: string
@@ -878,7 +878,7 @@ export type Database = {
           organization_id: string
           role: Database["public"]["Enums"]["app_role"]
           status?: string
-          token: string
+          token_hash?: string | null
         }
         Update: {
           created_at?: string
@@ -890,7 +890,7 @@ export type Database = {
           organization_id?: string
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
-          token?: string
+          token_hash?: string | null
         }
         Relationships: []
       }
