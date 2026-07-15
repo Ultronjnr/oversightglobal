@@ -13,7 +13,7 @@ export function SiteFooter() {
             </p>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4">Product</h4>
+            <h3 className="text-sm font-semibold text-foreground mb-4">Product</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>Procurement workflow</li>
               <li>Invoice scanning</li>
@@ -26,7 +26,7 @@ export function SiteFooter() {
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4">Company</h4>
+            <h3 className="text-sm font-semibold text-foreground mb-4">Company</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>About us</li>
               <li>Blog</li>
@@ -34,7 +34,7 @@ export function SiteFooter() {
             </ul>
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4">Get started</h4>
+            <h3 className="text-sm font-semibold text-foreground mb-4">Get started</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <Link to="/signup/company" className="hover:text-foreground transition-colors">
