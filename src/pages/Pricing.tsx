@@ -229,11 +229,44 @@ export default function Pricing() {
               </tbody>
             </table>
           </div>
+          <p className="mt-6 text-xs text-slate-500 text-center">
+            *Available to SARS-approved Section 18A organisations.
+          </p>
+        </div>
+      </section>
+
+      {/* Add-ons */}
+      <section className="bg-slate-50 py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+            ● Add-ons
+          </p>
+          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+            Extend your Platform plan as you grow
+          </h2>
+          <p className="text-center text-slate-600 max-w-2xl mx-auto mb-12">
+            Optional extras for organisations on the Platform plan.
+          </p>
+          <div className="grid gap-6 md:grid-cols-2">
+            {ADDONS.map((addon) => (
+              <div
+                key={addon.name}
+                className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+              >
+                <h3 className="font-bold text-slate-900 mb-4">{addon.name}</h3>
+                <div className="mb-4">
+                  <span className="text-3xl font-extrabold text-slate-900 font-mono">{addon.price}</span>
+                  {addon.period && <span className="text-sm text-slate-500 font-mono">{addon.period}</span>}
+                </div>
+                <p className="text-sm text-slate-500 leading-relaxed">{addon.blurb}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="bg-slate-50 py-20">
+      <section className="bg-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
             ● FAQ
