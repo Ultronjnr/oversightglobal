@@ -260,6 +260,7 @@ export default function Invite() {
   if (status === "expired" || status === "invalid" || status === "used") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <h1 className="sr-only">Invitation status</h1>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
@@ -301,6 +302,7 @@ export default function Invite() {
   if (isSupplierInvite && supplierInvitation) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4 py-8">
+        <h1 className="sr-only">Accept supplier invitation</h1>
         <Card className="w-full max-w-lg">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
@@ -510,6 +512,7 @@ export default function Invite() {
   // Regular user invitation form
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <h1 className="sr-only">Accept your Ovasyt invitation</h1>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">

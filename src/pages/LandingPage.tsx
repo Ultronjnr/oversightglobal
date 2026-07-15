@@ -204,13 +204,13 @@ function HeroCarousel() {
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold leading-[1.05] tracking-tight text-white mb-8">
+              <h2 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-extrabold leading-[1.05] tracking-tight text-white mb-8">
                 {slide.headline.map((part, k) => (
                   <span key={k} style={part.accent ? { color: slide.accent } : undefined}>
                     {part.text}
                   </span>
                 ))}
-              </h1>
+              </h2>
 
               <div className="space-y-3 max-w-xl">
                 {slide.problems.map((p) => (
@@ -378,8 +378,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteNav />
-
-      <HeroCarousel />
+      <h1 className="sr-only">Ovasyt — Procurement & Compliance for South African NGOs and NPOs</h1>
+      <main>
+        <HeroCarousel />
 
       {/* Cost of doing nothing */}
       <section className="bg-white py-20">
@@ -533,7 +534,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+      </main>
       <SiteFooter />
     </div>
   );

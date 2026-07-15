@@ -132,10 +132,19 @@ function Cell({ value }: { value: string }) {
 }
 
 export default function Pricing() {
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a },
+    })),
+  };
   return (
     <div className="min-h-screen bg-background">
       <SiteNav />
-
+      <main>
       {/* Header */}
       <section className="bg-slate-50 pt-20 pb-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -284,7 +293,11 @@ export default function Pricing() {
           </div>
         </div>
       </section>
-
+      </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <SiteFooter />
     </div>
   );

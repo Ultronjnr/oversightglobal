@@ -80,9 +80,9 @@ export default function ResetPassword() {
             <div className="flex justify-center mb-5">
               <Logo size="lg" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Set a new password
-            </h2>
+            </h1>
             <p className="text-sm text-muted-foreground mt-1.5">
               Choose a strong password for your account
             </p>
@@ -119,6 +119,7 @@ export default function ResetPassword() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
