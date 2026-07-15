@@ -3,6 +3,7 @@ import { Check, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { PageSeo } from "@/components/site/PageSeo";
 
 const PLANS = [
   {
@@ -143,6 +144,11 @@ export default function Pricing() {
   };
   return (
     <div className="min-h-screen bg-background">
+      <PageSeo
+        title="Pricing — Ovasyt NGO Procurement & Compliance Plans"
+        description="Compare Ovasyt plans for South African NGOs: Platform, Funder-Ready and Tailored. Approval chains, invoice scanning, donor tracking and audit-ready compliance."
+        path="/pricing"
+      />
       <SiteNav />
       <main>
       {/* Header */}
