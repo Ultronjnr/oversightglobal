@@ -68,7 +68,11 @@ export default function Unsubscribe() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-sm">
+      <div className="w-full max-w-md">
+        <h1 className="text-2xl font-bold text-foreground mb-4 text-center">
+          Manage Email Subscriptions
+        </h1>
+        <Card className="w-full shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
@@ -120,7 +124,8 @@ export default function Unsubscribe() {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }

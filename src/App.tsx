@@ -30,6 +30,7 @@ import Donations from "./pages/Donations";
 import Billing from "./pages/Billing";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import BlogSection18ADonationsInKind from "./pages/BlogSection18ADonationsInKind";
+import BlogRegisterPboSection18A from "./pages/BlogRegisterPboSection18A";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/verify/receipt/:id" element={<VerifyReceipt />} />
             <Route path="/blog/section-18a-donations-in-kind" element={<BlogSection18ADonationsInKind />} />
+            <Route path="/blog/how-to-register-pbo-section-18a" element={<BlogRegisterPboSection18A />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
             <Route
