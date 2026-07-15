@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage, logError } from "@/lib/error-handler";
+import { PageSeo } from "@/components/site/PageSeo";
 
 // Formats raw input into the SA registration number mask YYYY/NNNNNN/NN
 const formatRegistrationNumber = (value: string): string => {
@@ -302,6 +303,11 @@ export default function SignupCompany() {
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">
+      <PageSeo
+        title="Register your NGO on Ovasyt"
+        description="Start your 14-day Ovasyt trial. Register your NGO to run procurement approvals, donor tracking and audit-ready compliance from day one."
+        path="/signup/company"
+      />
       <div className="auth-card animate-slide-up max-w-lg">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
