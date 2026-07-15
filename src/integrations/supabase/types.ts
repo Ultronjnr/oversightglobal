@@ -3172,6 +3172,14 @@ export type Database = {
             }
             Returns: string
           }
+      get_supplier_visible_organization: {
+        Args: { _org_id: string }
+        Returns: {
+          currency: string
+          id: string
+          name: string
+        }[]
+      }
       get_user_organization: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
