@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2, ShieldCheck, ShieldX } from "lucide-react";
+import { PageSeo } from "@/components/site/PageSeo";
 
 export default function VerifyReceipt() {
   const { id } = useParams();
@@ -26,6 +27,11 @@ export default function VerifyReceipt() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[hsl(220,30%,97%)] p-4">
+      <PageSeo
+        title="Verify Section 18A Receipt | Ovasyt"
+        description="Confirm the authenticity of a Section 18A donation receipt issued by an Ovasyt-registered NGO. Instant, tamper-evident receipt verification."
+        path="/verify/receipt"
+      />
       <Card className="max-w-md w-full p-8 text-center space-y-4">
         {state === "loading" && (
           <><Loader2 className="h-10 w-10 mx-auto animate-spin text-muted-foreground" /><p>Verifying receipt…</p></>

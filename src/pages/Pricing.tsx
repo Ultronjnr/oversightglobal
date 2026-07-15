@@ -182,7 +182,7 @@ export default function Pricing() {
                     Most popular
                   </span>
                 )}
-                <h3 className="font-bold text-slate-900 mb-4">{plan.name}</h3>
+                <h2 className="font-bold text-slate-900 mb-4">{plan.name}</h2>
                 <div className="mb-4">
                   <span className="text-3xl font-extrabold text-slate-900 font-mono">{plan.price}</span>
                   {plan.period && <span className="text-sm text-slate-500 font-mono">{plan.period}</span>}

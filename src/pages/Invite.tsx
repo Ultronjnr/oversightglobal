@@ -18,6 +18,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { validateInvitation, acceptInvitation } from "@/services/invitation.service";
 import { validateSupplierInvitation, acceptSupplierInvitation } from "@/services/supplier-invitation.service";
 import { AlertCircle, CheckCircle2, Clock, Shield, User, Lock, UserCircle, Truck, Building2 } from "lucide-react";
+import { PageSeo } from "@/components/site/PageSeo";
 
 type InvitationStatus = "loading" | "valid" | "expired" | "invalid" | "used" | "accepting";
 
@@ -512,6 +513,11 @@ export default function Invite() {
   // Regular user invitation form
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <PageSeo
+        title="Accept your Ovasyt invitation"
+        description="Set up your Ovasyt account from your invitation link and join your organisation's procurement, approvals and donor tracking workflow."
+        path="/invite"
+      />
       <h1 className="sr-only">Accept your Ovasyt invitation</h1>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">

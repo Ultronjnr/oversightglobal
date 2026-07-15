@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage } from "@/lib/error-handler";
+import { PageSeo } from "@/components/site/PageSeo";
 
 const INDUSTRY_OPTIONS = [
   "Construction & Building Materials",
@@ -260,6 +261,11 @@ export default function JoinSupplier() {
 
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
+      <PageSeo
+        title="Complete your Ovasyt supplier profile"
+        description="Finalise your Ovasyt supplier account: business details, banking and tax info so NGOs can send you quote requests and pay you securely."
+        path="/join/supplier"
+      />
       <div className="auth-card animate-slide-up">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
