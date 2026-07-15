@@ -23,7 +23,7 @@ import {
 } from "@/services/donation.service";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
-import { Plus, FolderOpen, Wallet, TrendingDown, PiggyBank } from "lucide-react";
+import { Plus, FolderOpen, Wallet, TrendingDown, PiggyBank, FolderSearch } from "lucide-react";
 
 export function FundingPoolsTab() {
   const { format } = useCurrency();
@@ -33,6 +33,7 @@ export function FundingPoolsTab() {
   const [allocations, setAllocations] = useState<FundAllocation[]>([]);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [form, setForm] = useState<any>({
     donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType,
     expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "",
@@ -82,16 +83,42 @@ export function FundingPoolsTab() {
     const pct = budget > 0 ? Math.min((committed / budget) * 100, 100) : 0;
     return { project: pr, rows, reserved, spent, budget, committed, remaining, pct };
   });
+  const activeStat = projectStats.find((s) => s.project.id === selectedProjectId);
+
+  const openAllocate = () => {
+    if (!selectedProjectId) {
+      toast.error("Choose a project first");
+      return;
+    }
+    setForm((f: any) => ({ ...f, project_id: selectedProjectId }));
+    setOpen(true);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold text-base">Funding allocations by project</h3>
-          <p className="text-xs text-muted-foreground">Choose a project, then reserve or record spending against donor funds.</p>
+      {/* Step 1: pick a project */}
+      <Card className="p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="flex-1 min-w-0">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">Step 1 · Choose a project</Label>
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder={projects.length ? "Select a project to view or allocate funds" : "No projects yet — create one in the Projects tab"} />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}{p.code ? ` · ${p.code}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={openAllocate} disabled={!selectedProjectId}>
+            <Plus className="h-4 w-4 mr-1" />Allocate Funds
+          </Button>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Allocate Funds</Button></DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader><DialogTitle>Allocate Donor Funds</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -137,20 +164,25 @@ export function FundingPoolsTab() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </Card>
 
-      {/* Per-project allocation drilldown */}
-      <Card className="p-4">
-        {projectStats.length === 0 ? (
-          <div className="text-center text-muted-foreground py-6 text-sm">
-            No projects yet. Create a project first, then allocate funds to it.
-          </div>
-        ) : (
-          <Accordion type="multiple" className="w-full">
-            {projectStats.map(({ project, rows, reserved, spent, budget, committed, remaining, pct }) => {
+      {/* Step 2: selected project detail (empty state until picked) */}
+      {!selectedProjectId ? (
+        <Card className="p-10 flex flex-col items-center justify-center text-center gap-2 border-dashed">
+          <FolderSearch className="h-10 w-10 text-muted-foreground" />
+          <h3 className="font-semibold">Select a project to begin</h3>
+          <p className="text-sm text-muted-foreground max-w-md">
+            Fund allocations must belong to a project. Pick one from the dropdown above to see its budget, reserved and spent totals, and to record new allocations.
+          </p>
+        </Card>
+      ) : activeStat && (
+        <Card className="p-4">
+          <Accordion type="single" collapsible defaultValue={activeStat.project.id} className="w-full">
+            {(() => {
+              const { project, rows, reserved, spent, budget, committed, remaining, pct } = activeStat;
               const over = budget > 0 && committed > budget;
               return (
-                <AccordionItem key={project.id} value={project.id}>
+                <AccordionItem value={project.id} className="border-none">
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex-1 flex flex-col gap-2 pr-4">
                       <div className="flex items-center justify-between gap-3">
@@ -186,7 +218,9 @@ export function FundingPoolsTab() {
                       <div className="rounded border p-2"><div className="text-muted-foreground">{over ? "Over" : "Left"}</div><div className={`font-semibold ${over ? "text-destructive" : "text-emerald-600"}`}>{format(over ? committed - budget : remaining)}</div></div>
                     </div>
                     {rows.length === 0 ? (
-                      <div className="text-xs text-muted-foreground py-3">No allocations recorded for this project yet.</div>
+                      <div className="text-xs text-muted-foreground py-3">
+                        No allocations recorded for this project yet. Use “Allocate Funds” above to add the first one.
+                      </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <Table>
@@ -220,10 +254,10 @@ export function FundingPoolsTab() {
                   </AccordionContent>
                 </AccordionItem>
               );
-            })}
+            })()}
           </Accordion>
-        )}
-      </Card>
+        </Card>
+      )}
 
       {/* Donor pool summary */}
       <Card className="p-4 space-y-2">
