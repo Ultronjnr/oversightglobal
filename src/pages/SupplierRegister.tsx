@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage } from "@/lib/error-handler";
+import { PageSeo } from "@/components/site/PageSeo";
 
 interface InvitationData {
   id: string;
