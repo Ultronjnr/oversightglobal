@@ -12,5 +12,20 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /employee/portal
+Disallow: /hod/portal
+Disallow: /finance/portal
+Disallow: /admin/portal
+Disallow: /dashboard
+Disallow: /analytics
+Disallow: /donations
+Disallow: /billing
+Disallow: /pr-history
+Disallow: /expenses
+Disallow: /cost-center-history
+Disallow: /invite
+Disallow: /reset-password
+Disallow: /unsubscribe
+Disallow: /.lovable/
 
 Sitemap: https://ovasyt.tech/sitemap.xml
