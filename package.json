@@ -10,8 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-sitemap": "bun scripts/generate-sitemap.ts",
-    "predev": "bun run generate-sitemap",
-    "prebuild": "bun run generate-sitemap"
+    "validate-sitemap": "bun scripts/validate-sitemap.ts",
+    "predev": "bun run generate-sitemap && bun run validate-sitemap",
+    "prebuild": "bun run generate-sitemap && bun run validate-sitemap"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
