@@ -14,34 +14,22 @@ interface SitemapEntry {
   sources?: string[];
 }
 
+// Public, indexable routes only. Auth-only routes (portals, dashboard,
+// analytics, donations, billing, PR history, expenses, cost-center-history,
+// invite, reset-password, unsubscribe, .lovable/*) are excluded here AND
+// disallowed in robots.txt.
 const staticEntries: SitemapEntry[] = [
   { path: "/", changefreq: "weekly", priority: "1.0", sources: ["src/pages/LandingPage.tsx"] },
   { path: "/pricing", changefreq: "weekly", priority: "0.9", sources: ["src/pages/Pricing.tsx"] },
-  { path: "/login", changefreq: "monthly", priority: "0.5", sources: ["src/pages/Login.tsx"] },
-  { path: "/signup/company", changefreq: "monthly", priority: "0.7", sources: ["src/pages/SignupCompany.tsx"] },
-  { path: "/invite", changefreq: "monthly", priority: "0.3", sources: ["src/pages/Invite.tsx"] },
-  { path: "/join/supplier", changefreq: "monthly", priority: "0.4", sources: ["src/pages/JoinSupplier.tsx"] },
-  { path: "/reset-password", changefreq: "monthly", priority: "0.3", sources: ["src/pages/ResetPassword.tsx"] },
-  { path: "/dashboard", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Index.tsx"] },
-  { path: "/supplier/register", changefreq: "monthly", priority: "0.5", sources: ["src/pages/SupplierRegister.tsx"] },
-  { path: "/portal/supplier/register", changefreq: "monthly", priority: "0.4", sources: ["src/pages/SupplierRegister.tsx"] },
-  { path: "/unsubscribe", changefreq: "yearly", priority: "0.2", sources: ["src/pages/Unsubscribe.tsx"] },
-  { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogSection18ADonationsInKind.tsx"] },
-  { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogRegisterPboSection18A.tsx"] },
-  { path: "/analytics", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Analytics.tsx"] },
-  { path: "/donations", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Donations.tsx"] },
-  { path: "/billing", changefreq: "monthly", priority: "0.4", sources: ["src/pages/Billing.tsx"] },
   { path: "/about", changefreq: "monthly", priority: "0.7", sources: ["src/pages/About.tsx"] },
   { path: "/contact", changefreq: "monthly", priority: "0.7", sources: ["src/pages/Contact.tsx"] },
   { path: "/insights", changefreq: "weekly", priority: "0.8", sources: ["src/pages/Insights.tsx"] },
-  { path: "/.lovable/oauth/consent", changefreq: "monthly", priority: "0.3", sources: ["src/pages/OAuthConsent.tsx"] },
-  { path: "/pr-history", changefreq: "weekly", priority: "0.4", sources: ["src/pages/PRHistory.tsx"] },
-  { path: "/expenses", changefreq: "weekly", priority: "0.4", sources: ["src/pages/ExpenseHistory.tsx"] },
-  { path: "/cost-center-history", changefreq: "weekly", priority: "0.4", sources: ["src/pages/CostCenterHistory.tsx"] },
-  { path: "/employee/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/EmployeePortal.tsx"] },
-  { path: "/hod/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/HODPortal.tsx"] },
-  { path: "/finance/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/FinancePortal.tsx"] },
-  { path: "/admin/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/AdminPortal.tsx"] },
+  { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogSection18ADonationsInKind.tsx"] },
+  { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogRegisterPboSection18A.tsx"] },
+  { path: "/login", changefreq: "monthly", priority: "0.4", sources: ["src/pages/Login.tsx"] },
+  { path: "/signup/company", changefreq: "monthly", priority: "0.8", sources: ["src/pages/SignupCompany.tsx"] },
+  { path: "/join/supplier", changefreq: "monthly", priority: "0.4", sources: ["src/pages/JoinSupplier.tsx"] },
+  { path: "/supplier/register", changefreq: "monthly", priority: "0.5", sources: ["src/pages/SupplierRegister.tsx"] },
 ];
 
 function newestMtime(sources?: string[]): string | undefined {
