@@ -199,22 +199,22 @@ export function AttachmentsPanel({
               </div>
               <div className="flex gap-1">
                 {busyId === a.id && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground self-center" />}
-                <Button size="sm" variant="ghost" onClick={() => openSignedUrl(a, false)} title="Preview">
+                <Button size="sm" variant="ghost" onClick={() => openSignedUrl(a, false)} title="Preview" aria-label={`Preview ${a.file_name}`}>
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => openSignedUrl(a, true)} title="Download">
+                <Button size="sm" variant="ghost" onClick={() => openSignedUrl(a, true)} title="Download" aria-label={`Download ${a.file_name}`}>
                   <Download className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => onReplacePick(a)} title="Replace (keeps history)">
+                <Button size="sm" variant="ghost" onClick={() => onReplacePick(a)} title="Replace (keeps history)" aria-label={`Replace ${a.file_name} (keeps history)`}>
                   <RefreshCw className="h-4 w-4" />
                 </Button>
                 {a.version > 1 && (
-                  <Button size="sm" variant="ghost" onClick={() => openVersions(a)} title="Version history">
+                  <Button size="sm" variant="ghost" onClick={() => openVersions(a)} title="Version history" aria-label={`Version history for ${a.file_name}`}>
                     <History className="h-4 w-4" />
                   </Button>
                 )}
                 {canDelete && (
-                  <Button size="sm" variant="ghost" onClick={() => onDelete(a)} title="Delete">
+                  <Button size="sm" variant="ghost" onClick={() => onDelete(a)} title="Delete" aria-label={`Delete ${a.file_name}`}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 )}
@@ -281,10 +281,10 @@ export function AttachmentsPanel({
                     <p className="truncate font-medium">{v.file_name}</p>
                     <p className="text-[11px] text-muted-foreground">{format(new Date(v.created_at), "dd MMM yyyy HH:mm")}</p>
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => openSignedUrl(v, false)} title="Preview">
+                  <Button size="sm" variant="ghost" onClick={() => openSignedUrl(v, false)} title="Preview" aria-label={`Preview version ${v.version} of ${v.file_name}`}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => openSignedUrl(v, true)} title="Download">
+                  <Button size="sm" variant="ghost" onClick={() => openSignedUrl(v, true)} title="Download" aria-label={`Download version ${v.version} of ${v.file_name}`}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>

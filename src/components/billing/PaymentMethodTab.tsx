@@ -72,7 +72,7 @@ export function PaymentMethodTab() {
                 )}
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={remove}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            <Button variant="ghost" size="icon" onClick={remove} aria-label="Remove stored card"><Trash2 className="h-4 w-4 text-destructive" /></Button>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No card on file. Add one to enable automatic monthly billing.</p>
