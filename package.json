@@ -8,7 +8,10 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-sitemap": "bun scripts/generate-sitemap.ts",
+    "predev": "bun run generate-sitemap",
+    "prebuild": "bun run generate-sitemap"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
