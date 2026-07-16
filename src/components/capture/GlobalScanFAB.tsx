@@ -24,7 +24,7 @@ export function GlobalScanFAB() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Scan an invoice"
-        className="fixed top-20 right-4 sm:right-6 z-40 group flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all px-4 py-3 animate-fade-in"
+        className="fixed bottom-6 right-4 sm:right-6 z-40 group flex items-center gap-2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all px-4 py-3 animate-fade-in"
       >
         <span className="absolute inset-0 rounded-full bg-primary/40 blur-md animate-pulse opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
         <ScanLine className="h-5 w-5" />
