@@ -1,5 +1,6 @@
 import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { statSync, existsSync } from "node:fs";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const BASE_URL = "https://ovasyt.tech";
@@ -9,38 +10,52 @@ interface SitemapEntry {
   lastmod?: string;
   changefreq?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
   priority?: string;
+  /** Optional source file(s); newest mtime becomes lastmod when set. */
+  sources?: string[];
 }
 
 const staticEntries: SitemapEntry[] = [
-  { path: "/", changefreq: "weekly", priority: "1.0" },
-  { path: "/pricing", changefreq: "weekly", priority: "0.9" },
-  { path: "/login", changefreq: "monthly", priority: "0.5" },
-  { path: "/signup/company", changefreq: "monthly", priority: "0.7" },
-  { path: "/invite", changefreq: "monthly", priority: "0.3" },
-  { path: "/join/supplier", changefreq: "monthly", priority: "0.4" },
-  { path: "/reset-password", changefreq: "monthly", priority: "0.3" },
-  { path: "/dashboard", changefreq: "weekly", priority: "0.5" },
-  { path: "/supplier/register", changefreq: "monthly", priority: "0.5" },
-  { path: "/portal/supplier/register", changefreq: "monthly", priority: "0.4" },
-  { path: "/unsubscribe", changefreq: "yearly", priority: "0.2" },
-  { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7" },
-  { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7" },
-  { path: "/analytics", changefreq: "weekly", priority: "0.5" },
-  { path: "/donations", changefreq: "weekly", priority: "0.5" },
-  { path: "/billing", changefreq: "monthly", priority: "0.4" },
-  { path: "/about", changefreq: "monthly", priority: "0.7" },
-  { path: "/contact", changefreq: "monthly", priority: "0.7" },
-  { path: "/insights", changefreq: "weekly", priority: "0.8" },
-  // Routes surfaced by the SEO sitemap check
-  { path: "/.lovable/oauth/consent", changefreq: "monthly", priority: "0.3" },
-  { path: "/pr-history", changefreq: "weekly", priority: "0.4" },
-  { path: "/expenses", changefreq: "weekly", priority: "0.4" },
-  { path: "/cost-center-history", changefreq: "weekly", priority: "0.4" },
-  { path: "/employee/portal", changefreq: "weekly", priority: "0.4" },
-  { path: "/hod/portal", changefreq: "weekly", priority: "0.4" },
-  { path: "/finance/portal", changefreq: "weekly", priority: "0.4" },
-  { path: "/admin/portal", changefreq: "weekly", priority: "0.4" },
+  { path: "/", changefreq: "weekly", priority: "1.0", sources: ["src/pages/LandingPage.tsx"] },
+  { path: "/pricing", changefreq: "weekly", priority: "0.9", sources: ["src/pages/Pricing.tsx"] },
+  { path: "/login", changefreq: "monthly", priority: "0.5", sources: ["src/pages/Login.tsx"] },
+  { path: "/signup/company", changefreq: "monthly", priority: "0.7", sources: ["src/pages/SignupCompany.tsx"] },
+  { path: "/invite", changefreq: "monthly", priority: "0.3", sources: ["src/pages/Invite.tsx"] },
+  { path: "/join/supplier", changefreq: "monthly", priority: "0.4", sources: ["src/pages/JoinSupplier.tsx"] },
+  { path: "/reset-password", changefreq: "monthly", priority: "0.3", sources: ["src/pages/ResetPassword.tsx"] },
+  { path: "/dashboard", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Index.tsx"] },
+  { path: "/supplier/register", changefreq: "monthly", priority: "0.5", sources: ["src/pages/SupplierRegister.tsx"] },
+  { path: "/portal/supplier/register", changefreq: "monthly", priority: "0.4", sources: ["src/pages/SupplierRegister.tsx"] },
+  { path: "/unsubscribe", changefreq: "yearly", priority: "0.2", sources: ["src/pages/Unsubscribe.tsx"] },
+  { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogSection18ADonationsInKind.tsx"] },
+  { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogRegisterPboSection18A.tsx"] },
+  { path: "/analytics", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Analytics.tsx"] },
+  { path: "/donations", changefreq: "weekly", priority: "0.5", sources: ["src/pages/Donations.tsx"] },
+  { path: "/billing", changefreq: "monthly", priority: "0.4", sources: ["src/pages/Billing.tsx"] },
+  { path: "/about", changefreq: "monthly", priority: "0.7", sources: ["src/pages/About.tsx"] },
+  { path: "/contact", changefreq: "monthly", priority: "0.7", sources: ["src/pages/Contact.tsx"] },
+  { path: "/insights", changefreq: "weekly", priority: "0.8", sources: ["src/pages/Insights.tsx"] },
+  { path: "/.lovable/oauth/consent", changefreq: "monthly", priority: "0.3", sources: ["src/pages/OAuthConsent.tsx"] },
+  { path: "/pr-history", changefreq: "weekly", priority: "0.4", sources: ["src/pages/PRHistory.tsx"] },
+  { path: "/expenses", changefreq: "weekly", priority: "0.4", sources: ["src/pages/ExpenseHistory.tsx"] },
+  { path: "/cost-center-history", changefreq: "weekly", priority: "0.4", sources: ["src/pages/CostCenterHistory.tsx"] },
+  { path: "/employee/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/EmployeePortal.tsx"] },
+  { path: "/hod/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/HODPortal.tsx"] },
+  { path: "/finance/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/FinancePortal.tsx"] },
+  { path: "/admin/portal", changefreq: "weekly", priority: "0.4", sources: ["src/pages/portals/AdminPortal.tsx"] },
 ];
+
+function newestMtime(sources?: string[]): string | undefined {
+  if (!sources || sources.length === 0) return undefined;
+  let newest = 0;
+  for (const src of sources) {
+    const p = resolve(src);
+    if (!existsSync(p)) continue;
+    const t = statSync(p).mtimeMs;
+    if (t > newest) newest = t;
+  }
+  if (!newest) return undefined;
+  return new Date(newest).toISOString().split("T")[0];
+}
 
 async function getReceiptEntries(client: SupabaseClient): Promise<SitemapEntry[]> {
   const { data, error } = await client
@@ -67,18 +82,19 @@ async function getReceiptEntries(client: SupabaseClient): Promise<SitemapEntry[]
 
 function generateSitemap(entries: SitemapEntry[]) {
   const today = new Date().toISOString().split("T")[0];
-  const urls = entries.map((e) =>
-    [
+  const urls = entries.map((e) => {
+    const lastmod = e.lastmod ?? newestMtime(e.sources) ?? today;
+    return [
       `  <url>`,
       `    <loc>${BASE_URL}${e.path}</loc>`,
-      e.lastmod ? `    <lastmod>${e.lastmod}</lastmod>` : `    <lastmod>${today}</lastmod>`,
+      `    <lastmod>${lastmod}</lastmod>`,
       e.changefreq ? `    <changefreq>${e.changefreq}</changefreq>` : null,
       e.priority ? `    <priority>${e.priority}</priority>` : null,
       `  </url>`,
     ]
       .filter((line): line is string => line !== null)
-      .join("\n"),
-  );
+      .join("\n");
+  });
 
   return [
     `<?xml version="1.0" encoding="UTF-8"?>`,
