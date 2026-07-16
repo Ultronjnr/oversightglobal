@@ -36,6 +36,10 @@ const staticEntries: SitemapEntry[] = [
   { path: "/pr-history", changefreq: "weekly", priority: "0.4" },
   { path: "/expenses", changefreq: "weekly", priority: "0.4" },
   { path: "/cost-center-history", changefreq: "weekly", priority: "0.4" },
+  { path: "/employee/portal", changefreq: "weekly", priority: "0.4" },
+  { path: "/hod/portal", changefreq: "weekly", priority: "0.4" },
+  { path: "/finance/portal", changefreq: "weekly", priority: "0.4" },
+  { path: "/admin/portal", changefreq: "weekly", priority: "0.4" },
 ];
 
 async function getReceiptEntries(client: SupabaseClient): Promise<SitemapEntry[]> {

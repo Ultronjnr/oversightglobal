@@ -8,6 +8,29 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { Helmet } from "react-helmet-async";
+
+const LOCAL_BUSINESS_JSONLD = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  name: "Ovasyt",
+  email: "hello@ovasyt.tech",
+  url: "https://ovasyt.tech/",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Johannesburg",
+    addressCountry: "ZA",
+  },
+  areaServed: "ZA",
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+      opens: "08:00",
+      closes: "17:00",
+    },
+  ],
+};
 
 export default function Contact() {
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +57,11 @@ export default function Contact() {
         description="Get in touch with Ovasyt — book a demo, ask about pricing, or speak to our team about procurement, VAT and Section 18A compliance for South African NGOs."
         path="/contact"
       />
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(LOCAL_BUSINESS_JSONLD)}
+        </script>
+      </Helmet>
       <SiteNav />
       <main>
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 grid gap-10 lg:grid-cols-[1fr_1.2fr]">
