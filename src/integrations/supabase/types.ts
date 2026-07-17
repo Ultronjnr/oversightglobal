@@ -3193,6 +3193,7 @@ export type Database = {
         Returns: boolean
       }
       is_donation_manager: { Args: { _user_id: string }; Returns: boolean }
+      is_internal_staff: { Args: { _user_id: string }; Returns: boolean }
       is_supplier_linked_to_org: {
         Args: { _org_id: string; _supplier_id: string }
         Returns: boolean
