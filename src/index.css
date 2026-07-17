@@ -291,6 +291,49 @@
     50% { background-position: 100% 50%; }
   }
 
+  /* Floating blob background animation */
+  @keyframes blobFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -20px) scale(1.08); }
+    66% { transform: translate(-20px, 25px) scale(0.95); }
+  }
+  .animated-blobs {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .animated-blobs::before,
+  .animated-blobs::after {
+    content: "";
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .animated-blobs::before {
+    top: -160px;
+    left: -120px;
+    background: radial-gradient(circle, hsl(225 90% 65% / 0.55), transparent 70%);
+    animation: blobFloat 18s ease-in-out infinite;
+  }
+  .animated-blobs::after {
+    bottom: -180px;
+    right: -140px;
+    background: radial-gradient(circle, hsl(200 90% 60% / 0.55), transparent 70%);
+    animation: blobFloat 22s ease-in-out infinite reverse;
+  }
+  .animated-blobs.dark::before {
+    background: radial-gradient(circle, hsl(225 90% 55% / 0.35), transparent 70%);
+  }
+  .animated-blobs.dark::after {
+    background: radial-gradient(circle, hsl(200 90% 50% / 0.35), transparent 70%);
+  }
+
   /* Scroll-reveal (activated by IntersectionObserver adding .is-visible) */
   .reveal {
     opacity: 0;
