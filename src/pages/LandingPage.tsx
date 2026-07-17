@@ -6,11 +6,12 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 
-import slideBg1 from "@/assets/slide-bg-1.png";
-import slideBg2 from "@/assets/slide-bg-2.png";
-import slideBg3 from "@/assets/slide-bg-3.png";
-import slideBg4 from "@/assets/slide-bg-4.png";
-import slideBg5 from "@/assets/slide-bg-5.png";
+import slideBg1 from "@/assets/slide-leaking-money.jpg.asset.json";
+import slideBg2 from "@/assets/slide-sars-proof.jpg.asset.json";
+import slideBg3 from "@/assets/slide-every-rand.jpg.asset.json";
+import slideBg4 from "@/assets/slide-whatsapp.jpg.asset.json";
+import slideBg5 from "@/assets/slide-vat.jpg.asset.json";
+import spendControlBg from "@/assets/spend-control-bg.jpg.asset.json";
 
 type Slide = {
   accent: string;
@@ -34,7 +35,7 @@ const SLIDES: Slide[] = [
       { text: "Your business is leaking money. " },
       { text: "You just can't see where.", accent: true },
     ],
-    image: slideBg1,
+    image: slideBg1.url,
     problems: [
       { title: "Untracked expenditure", desc: "Purchases made and approved after the fact, if at all" },
       { title: "Unclaimed VAT", desc: "Valid claims lost simply because the invoice wasn't checked" },
@@ -58,7 +59,7 @@ const SLIDES: Slide[] = [
       { text: "If SARS asked for proof right now, " },
       { text: "could you find it?", accent: true },
     ],
-    image: slideBg2,
+    image: slideBg2.url,
     problems: [
       { title: "No single source of truth", desc: "Approvals live in inboxes, chats, and someone's memory" },
       { title: "Incomplete invoices", desc: "Missing the detail SARS needs to support a claim" },
@@ -82,7 +83,7 @@ const SLIDES: Slide[] = [
       { text: "Know exactly where every rand goes. " },
       { text: "Before it goes.", accent: true },
     ],
-    image: slideBg3,
+    image: slideBg3.url,
     problems: [
       { title: "Spending happens, then gets explained", desc: "Approval comes after the money's already moved" },
       { title: "No clear chain of sign-off", desc: "\"Who approved this?\" rarely has a fast answer" },
@@ -106,7 +107,7 @@ const SLIDES: Slide[] = [
       { text: "Stop running your business " },
       { text: "through WhatsApp.", accent: true },
     ],
-    image: slideBg4,
+    image: slideBg4.url,
     problems: [
       { title: "Approvals lost in group chats", desc: "No record, no structure, no accountability" },
       { title: "Invoices typed in by hand", desc: "Manual capture means manual mistakes" },
@@ -130,7 +131,7 @@ const SLIDES: Slide[] = [
       { text: "Ovasyt usually pays for itself " },
       { text: "in unclaimed VAT alone.", accent: true },
     ],
-    image: slideBg5,
+    image: slideBg5.url,
     problems: [
       { title: "Valid VAT claims, missed", desc: "Often over one missing invoice detail" },
       { title: "Claims never checked before filing", desc: "Nobody catches it until it's too late" },
