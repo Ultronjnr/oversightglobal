@@ -71,7 +71,7 @@ export function ReceiptsTab() {
       setPreviewUrl(URL.createObjectURL(blob));
     } catch (e) {
       console.error(e);
-      toast.error("Failed to generate preview");
+      toast.error(e instanceof Error ? e.message : "Failed to generate preview");
     } finally { setBusy(false); }
   };
 
@@ -120,11 +120,52 @@ export function ReceiptsTab() {
   };
 
   const download = async (r: DonationReceipt) => {
-    if (!r.pdf_path) { toast.error("PDF not available"); return; }
-    const url = await getSignedUrl(r.pdf_path);
-    if (url) {
-      window.open(url, "_blank");
-      logAudit("receipt", r.id, "DOWNLOADED", {});
+    try {
+      let path = r.pdf_path;
+      let url = path ? await getSignedUrl(path) : null;
+      // Fallback: regenerate PDF from stored snapshot + current donor/donation
+      // so previously-issued receipts can always be re-downloaded even if
+      // the stored PDF is missing.
+      if (!url) {
+        const donation = donations.find((d) => d.id === r.donation_id);
+        const donor = donors.find((d) => d.id === r.donor_id);
+        if (!donation || !donor) { toast.error("Receipt source data not found"); return; }
+        const blob = await generateReceiptPdf({
+          receiptNumber: r.receipt_number,
+          receiptId: r.id,
+          verificationHash: r.verification_hash || "",
+          profile, donor, donation,
+          currency: (r.snapshot as any)?.currency || currency,
+          declaration: (profile?.template as any)?.declaration,
+        });
+        const newPath = `${r.organization_id}/receipts/${r.receipt_number}.pdf`;
+        const up = await supabase.storage
+          .from(DONATION_BUCKET)
+          .upload(newPath, blob, { upsert: true, contentType: "application/pdf" });
+        if (!up.error) {
+          await supabase.from("donation_receipts").update({ pdf_path: newPath } as any).eq("id", r.id);
+          path = newPath;
+          url = await getSignedUrl(newPath);
+        } else {
+          // Offline fallback: download the freshly generated blob directly.
+          const objectUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objectUrl; a.download = `${r.receipt_number}.pdf`;
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(objectUrl);
+          logAudit("receipt", r.id, "DOWNLOADED", { regenerated: true });
+          return;
+        }
+      }
+      if (url) {
+        window.open(url, "_blank");
+        logAudit("receipt", r.id, "DOWNLOADED", {});
+      } else {
+        toast.error("Failed to open receipt");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error(e instanceof Error ? e.message : "Failed to download receipt");
     }
   };
 
