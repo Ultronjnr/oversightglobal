@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { X, Check, ArrowRight, Sparkles, ShieldCheck, TrendingUp } from "lucide-react";
+import {
+  X,
+  Check,
+  ArrowRight,
+  ShieldCheck,
+  TrendingUp,
+  ScanLine,
+  Percent,
+  FileSearch,
+  Handshake,
+  Activity,
+  ShieldAlert,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -367,12 +379,12 @@ const COMPARE_GOOD = [
 ];
 
 const FEATURES = [
-  { title: "No more maverick spending", desc: "Every purchase goes through a proper approval chain before money moves — no exceptions, no surprises at month-end." },
-  { title: "Faster, error-free invoices", desc: "Smart scanning reads your invoices and pulls out the detail, so nothing gets typed in twice or wrong." },
-  { title: "Pay less VAT", desc: "Every invoice is verified against SARS rules, so you never miss a valid input VAT claim or submit a broken one." },
-  { title: "Full audit trail", desc: "Every decision, document and payment is logged and accessible in one place — ready the moment an auditor asks." },
-  { title: "Supplier accountability", desc: "Suppliers submit quotes and track payment status through their own dedicated portal — no more chasing calls." },
-  { title: "Real-time visibility", desc: "Always know what's approved, outstanding and paid, without chasing your finance team for an update." },
+  { icon: ShieldAlert, title: "No more maverick spending", desc: "Every purchase goes through a proper approval chain before money moves — no exceptions, no surprises at month-end." },
+  { icon: ScanLine, title: "Faster, error-free invoices", desc: "Smart scanning reads your invoices and pulls out the detail, so nothing gets typed in twice or wrong." },
+  { icon: Percent, title: "Pay less VAT", desc: "Every invoice is verified against SARS rules, so you never miss a valid input VAT claim or submit a broken one." },
+  { icon: FileSearch, title: "Full audit trail", desc: "Every decision, document and payment is logged and accessible in one place — ready the moment an auditor asks." },
+  { icon: Handshake, title: "Supplier accountability", desc: "Suppliers submit quotes and track payment status through their own dedicated portal — no more chasing calls." },
+  { icon: Activity, title: "Real-time visibility", desc: "Always know what's approved, outstanding and paid, without chasing your finance team for an update." },
 ];
 
 const SCAN_ROWS = [
@@ -484,19 +496,22 @@ export default function LandingPage() {
             Spend control that doesn't slow you down
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f, i) => (
+            {FEATURES.map((f, i) => {
+              const Icon = f.icon;
+              return (
               <div
                 key={f.title}
                 className="reveal group rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.12] hover:border-primary/50 hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 70}ms` }}
               >
-                <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/30 to-[hsl(200_90%_55%/0.3)] border border-white/20 group-hover:scale-110 transition-transform">
-                  <Sparkles className="h-4 w-4 text-white" />
+                <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/40 to-[hsl(200_90%_55%/0.4)] border border-white/20 group-hover:scale-110 group-hover:rotate-3 transition-transform shadow-lg shadow-primary/20">
+                  <Icon className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-bold text-white mb-2">{f.title}</h3>
                 <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
