@@ -454,22 +454,37 @@ export default function LandingPage() {
       </section>
 
       {/* Spend control features */}
-      <section className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+      <section
+        className="relative py-20 overflow-hidden bg-[hsl(222_60%_9%)]"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${spendControlBg.url})` }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(222 60% 8% / 0.92) 0%, hsl(222 55% 10% / 0.82) 50%, hsl(222 60% 8% / 0.94) 100%)",
+          }}
+        />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary-foreground/80 mb-3">
             ● Why businesses choose Ovasyt
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
+          <h2 className="text-center text-3xl sm:text-4xl font-bold text-white mb-12">
             Spend control that doesn't slow you down
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.09] hover:-translate-y-0.5 transition-all"
               >
-                <h3 className="font-bold text-slate-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+                <h3 className="font-bold text-white mb-2">{f.title}</h3>
+                <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
