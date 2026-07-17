@@ -229,7 +229,7 @@
 
   /* Animated gradient text */
   .gradient-text {
-    background: linear-gradient(135deg, hsl(225 73% 45%), hsl(265 70% 55%), hsl(225 73% 45%));
+    background: linear-gradient(135deg, hsl(225 73% 45%), hsl(200 90% 50%), hsl(225 73% 45%));
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -248,7 +248,7 @@
     pointer-events: none;
     background:
       radial-gradient(50% 40% at 15% 0%, hsl(225 73% 57% / 0.10), transparent 70%),
-      radial-gradient(50% 40% at 85% 100%, hsl(265 70% 60% / 0.10), transparent 70%);
+      radial-gradient(50% 40% at 85% 100%, hsl(200 90% 55% / 0.10), transparent 70%);
   }
 }
 
@@ -314,7 +314,7 @@
     bottom: -6px;
     height: 2px;
     width: 100%;
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(265 70% 60%));
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(200 90% 55%));
     transform: scaleX(0);
     transform-origin: right;
     transition: transform 0.35s ease;

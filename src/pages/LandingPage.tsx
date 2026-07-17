@@ -102,7 +102,7 @@ const SLIDES: Slide[] = [
     },
   },
   {
-    accent: "#8b5cf6",
+    accent: "#0ea5e9",
     kicker: "For South African SMEs",
     headline: [
       { text: "Stop running your business " },
@@ -490,7 +490,7 @@ export default function LandingPage() {
                 className="reveal group rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.12] hover:border-primary/50 hover:-translate-y-1 transition-all duration-300"
                 style={{ transitionDelay: `${i * 70}ms` }}
               >
-                <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/30 to-[hsl(265_70%_60%/0.3)] border border-white/20 group-hover:scale-110 transition-transform">
+                <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/30 to-[hsl(200_90%_55%/0.3)] border border-white/20 group-hover:scale-110 transition-transform">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <h3 className="font-bold text-white mb-2">{f.title}</h3>
@@ -518,7 +518,7 @@ export default function LandingPage() {
               incomplete — so your bookkeeper gets a clean, defensible claim.
             </p>
             <Link to="/signup/company">
-              <Button className="group bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] hover:shadow-lg hover:shadow-primary/40 hover:scale-[1.03] text-primary-foreground font-semibold transition-all">
+              <Button className="group bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] hover:shadow-lg hover:shadow-primary/40 hover:scale-[1.03] text-primary-foreground font-semibold transition-all">
                 See invoice scanning <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </Link>
@@ -566,7 +566,7 @@ export default function LandingPage() {
           <div className="reveal relative overflow-hidden rounded-3xl px-8 py-16 text-center border border-white/10 shadow-[0_30px_80px_-30px_hsl(225_73%_57%/0.5)]"
             style={{
               background:
-                "linear-gradient(135deg, hsl(222 60% 10%) 0%, hsl(240 55% 16%) 50%, hsl(265 55% 18%) 100%)",
+                "linear-gradient(135deg, hsl(222 60% 10%) 0%, hsl(240 55% 16%) 50%, hsl(210 70% 22%) 100%)",
             }}
           >
             <div
@@ -574,7 +574,7 @@ export default function LandingPage() {
               className="absolute inset-0 opacity-70 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(50% 60% at 20% 20%, hsl(225 73% 60% / 0.35), transparent 70%), radial-gradient(50% 60% at 80% 80%, hsl(265 70% 60% / 0.35), transparent 70%)",
+                  "radial-gradient(50% 60% at 20% 20%, hsl(225 73% 60% / 0.35), transparent 70%), radial-gradient(50% 60% at 80% 80%, hsl(200 90% 55% / 0.35), transparent 70%)",
               }}
             />
             <div className="relative">
@@ -591,7 +591,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link to="/signup/company">
-                <Button size="lg" className="group bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] hover:shadow-lg hover:shadow-primary/50 hover:scale-[1.03] text-primary-foreground font-semibold px-8 transition-all">
+                <Button size="lg" className="group bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] hover:shadow-lg hover:shadow-primary/50 hover:scale-[1.03] text-primary-foreground font-semibold px-8 transition-all">
                   Book a demo <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
               </Link>

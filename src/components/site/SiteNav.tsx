@@ -58,7 +58,7 @@ export function SiteNav() {
           <Link to="/login">
             <Button
               size="sm"
-              className="relative overflow-hidden font-semibold px-5 text-primary-foreground bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] shadow-lg shadow-primary/25 hover:shadow-primary/45 hover:scale-[1.03] transition-all"
+              className="relative overflow-hidden font-semibold px-5 text-primary-foreground bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] shadow-lg shadow-primary/25 hover:shadow-primary/45 hover:scale-[1.03] transition-all"
             >
               Sign In
             </Button>
@@ -66,7 +66,7 @@ export function SiteNav() {
         </div>
         <div className="md:hidden flex items-center gap-2">
           <Link to="/login">
-            <Button size="sm" className="bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] text-primary-foreground font-semibold">
+            <Button size="sm" className="bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] text-primary-foreground font-semibold">
               Sign In
             </Button>
           </Link>
