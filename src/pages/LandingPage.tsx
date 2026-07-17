@@ -166,16 +166,36 @@ function HeroCarousel() {
 
   return (
     <section
-      className="relative overflow-hidden bg-[hsl(222_60%_11%)]"
+      className="relative overflow-hidden bg-[hsl(222_60%_8%)]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      {/* Full-bleed background images (crossfade) */}
+      {SLIDES.map((slide, i) => (
+        <div
+          key={`bg-${i}`}
+          aria-hidden="true"
+          className="absolute inset-0 transition-opacity duration-[1200ms] ease-out bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${slide.image})`,
+            opacity: i === active ? 1 : 0,
+          }}
+        />
+      ))}
+      {/* Dark tint + gradient so text stays readable */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(115deg, hsl(222 60% 8% / 0.94) 0%, hsl(222 55% 10% / 0.82) 45%, hsl(222 55% 10% / 0.55) 100%)",
+        }}
+      />
       {/* ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none opacity-70"
         style={{
           background:
-            "radial-gradient(60% 60% at 80% 20%, hsl(222 70% 22% / 0.9), transparent 70%)",
+            "radial-gradient(55% 55% at 82% 22%, hsl(222 70% 25% / 0.55), transparent 70%)",
         }}
       />
 
@@ -258,28 +278,12 @@ function HeroCarousel() {
 
             {/* Right: stat card with blended background image */}
             <div className="relative">
-              <img
-                src={slide.image}
-                alt=""
-                aria-hidden="true"
-                loading={i === 0 ? "eager" : "lazy"}
-                {...(i === 0 ? { fetchPriority: "high" as const } : {})}
-                width={1024}
-                height={1024}
-                className="pointer-events-none select-none absolute -top-24 -right-6 w-[130%] max-w-none opacity-20 blur-[1px]"
-                style={{
-                  maskImage:
-                    "radial-gradient(closest-side, black 55%, transparent 90%)",
-                  WebkitMaskImage:
-                    "radial-gradient(closest-side, black 55%, transparent 90%)",
-                }}
-              />
               <div
-                className="relative rounded-2xl border p-6 sm:p-7 backdrop-blur-md shadow-2xl"
+                className="relative rounded-2xl border p-6 sm:p-7 backdrop-blur-xl shadow-2xl"
                 style={{
                   borderColor: `${slide.accent}66`,
                   background:
-                    "linear-gradient(160deg, hsl(222 55% 15% / 0.85), hsl(222 60% 10% / 0.85))",
+                    "linear-gradient(160deg, hsl(222 55% 15% / 0.62), hsl(222 60% 10% / 0.72))",
                 }}
               >
                 <div className="flex items-center gap-2 mb-6">
