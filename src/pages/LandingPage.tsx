@@ -6,11 +6,12 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 
-import slideBg1 from "@/assets/slide-bg-1.png";
-import slideBg2 from "@/assets/slide-bg-2.png";
-import slideBg3 from "@/assets/slide-bg-3.png";
-import slideBg4 from "@/assets/slide-bg-4.png";
-import slideBg5 from "@/assets/slide-bg-5.png";
+import slideBg1 from "@/assets/slide-leaking-money.jpg.asset.json";
+import slideBg2 from "@/assets/slide-sars-proof.jpg.asset.json";
+import slideBg3 from "@/assets/slide-every-rand.jpg.asset.json";
+import slideBg4 from "@/assets/slide-whatsapp.jpg.asset.json";
+import slideBg5 from "@/assets/slide-vat.jpg.asset.json";
+import spendControlBg from "@/assets/spend-control-bg.jpg.asset.json";
 
 type Slide = {
   accent: string;
@@ -34,7 +35,7 @@ const SLIDES: Slide[] = [
       { text: "Your business is leaking money. " },
       { text: "You just can't see where.", accent: true },
     ],
-    image: slideBg1,
+    image: slideBg1.url,
     problems: [
       { title: "Untracked expenditure", desc: "Purchases made and approved after the fact, if at all" },
       { title: "Unclaimed VAT", desc: "Valid claims lost simply because the invoice wasn't checked" },
@@ -58,7 +59,7 @@ const SLIDES: Slide[] = [
       { text: "If SARS asked for proof right now, " },
       { text: "could you find it?", accent: true },
     ],
-    image: slideBg2,
+    image: slideBg2.url,
     problems: [
       { title: "No single source of truth", desc: "Approvals live in inboxes, chats, and someone's memory" },
       { title: "Incomplete invoices", desc: "Missing the detail SARS needs to support a claim" },
@@ -82,7 +83,7 @@ const SLIDES: Slide[] = [
       { text: "Know exactly where every rand goes. " },
       { text: "Before it goes.", accent: true },
     ],
-    image: slideBg3,
+    image: slideBg3.url,
     problems: [
       { title: "Spending happens, then gets explained", desc: "Approval comes after the money's already moved" },
       { title: "No clear chain of sign-off", desc: "\"Who approved this?\" rarely has a fast answer" },
@@ -106,7 +107,7 @@ const SLIDES: Slide[] = [
       { text: "Stop running your business " },
       { text: "through WhatsApp.", accent: true },
     ],
-    image: slideBg4,
+    image: slideBg4.url,
     problems: [
       { title: "Approvals lost in group chats", desc: "No record, no structure, no accountability" },
       { title: "Invoices typed in by hand", desc: "Manual capture means manual mistakes" },
@@ -130,7 +131,7 @@ const SLIDES: Slide[] = [
       { text: "Ovasyt usually pays for itself " },
       { text: "in unclaimed VAT alone.", accent: true },
     ],
-    image: slideBg5,
+    image: slideBg5.url,
     problems: [
       { title: "Valid VAT claims, missed", desc: "Often over one missing invoice detail" },
       { title: "Claims never checked before filing", desc: "Nobody catches it until it's too late" },
@@ -165,16 +166,36 @@ function HeroCarousel() {
 
   return (
     <section
-      className="relative overflow-hidden bg-[hsl(222_60%_11%)]"
+      className="relative overflow-hidden bg-[hsl(222_60%_8%)]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      {/* Full-bleed background images (crossfade) */}
+      {SLIDES.map((slide, i) => (
+        <div
+          key={`bg-${i}`}
+          aria-hidden="true"
+          className="absolute inset-0 transition-opacity duration-[1200ms] ease-out bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${slide.image})`,
+            opacity: i === active ? 1 : 0,
+          }}
+        />
+      ))}
+      {/* Dark tint + gradient so text stays readable */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(115deg, hsl(222 60% 8% / 0.94) 0%, hsl(222 55% 10% / 0.82) 45%, hsl(222 55% 10% / 0.55) 100%)",
+        }}
+      />
       {/* ambient glow */}
       <div
         className="absolute inset-0 pointer-events-none opacity-70"
         style={{
           background:
-            "radial-gradient(60% 60% at 80% 20%, hsl(222 70% 22% / 0.9), transparent 70%)",
+            "radial-gradient(55% 55% at 82% 22%, hsl(222 70% 25% / 0.55), transparent 70%)",
         }}
       />
 
@@ -257,28 +278,12 @@ function HeroCarousel() {
 
             {/* Right: stat card with blended background image */}
             <div className="relative">
-              <img
-                src={slide.image}
-                alt=""
-                aria-hidden="true"
-                loading={i === 0 ? "eager" : "lazy"}
-                {...(i === 0 ? { fetchPriority: "high" as const } : {})}
-                width={1024}
-                height={1024}
-                className="pointer-events-none select-none absolute -top-24 -right-6 w-[130%] max-w-none opacity-20 blur-[1px]"
-                style={{
-                  maskImage:
-                    "radial-gradient(closest-side, black 55%, transparent 90%)",
-                  WebkitMaskImage:
-                    "radial-gradient(closest-side, black 55%, transparent 90%)",
-                }}
-              />
               <div
-                className="relative rounded-2xl border p-6 sm:p-7 backdrop-blur-md shadow-2xl"
+                className="relative rounded-2xl border p-6 sm:p-7 backdrop-blur-xl shadow-2xl"
                 style={{
                   borderColor: `${slide.accent}66`,
                   background:
-                    "linear-gradient(160deg, hsl(222 55% 15% / 0.85), hsl(222 60% 10% / 0.85))",
+                    "linear-gradient(160deg, hsl(222 55% 15% / 0.62), hsl(222 60% 10% / 0.72))",
                 }}
               >
                 <div className="flex items-center gap-2 mb-6">
@@ -449,22 +454,37 @@ export default function LandingPage() {
       </section>
 
       {/* Spend control features */}
-      <section className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+      <section
+        className="relative py-20 overflow-hidden bg-[hsl(222_60%_9%)]"
+      >
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${spendControlBg.url})` }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, hsl(222 60% 8% / 0.92) 0%, hsl(222 55% 10% / 0.82) 50%, hsl(222 60% 8% / 0.94) 100%)",
+          }}
+        />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary-foreground/80 mb-3">
             ● Why businesses choose Ovasyt
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
+          <h2 className="text-center text-3xl sm:text-4xl font-bold text-white mb-12">
             Spend control that doesn't slow you down
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.09] hover:-translate-y-0.5 transition-all"
               >
-                <h3 className="font-bold text-slate-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+                <h3 className="font-bold text-white mb-2">{f.title}</h3>
+                <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
