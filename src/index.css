@@ -218,6 +218,38 @@
   .badge-pending {
     @apply bg-accent text-accent-foreground;
   }
+
+  /* Premium glass panel used across marketing sections */
+  .premium-glass {
+    @apply relative rounded-2xl border border-white/60 bg-white/70 backdrop-blur-xl shadow-[0_10px_40px_-20px_hsl(225_73%_57%/0.35)] transition-all duration-300;
+  }
+  .premium-glass:hover {
+    @apply -translate-y-1 shadow-[0_20px_60px_-20px_hsl(225_73%_57%/0.45)] border-primary/40;
+  }
+
+  /* Animated gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(225 73% 45%), hsl(265 70% 55%), hsl(225 73% 45%));
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradientShift 8s ease infinite;
+  }
+
+  /* Section separator glow */
+  .section-glow {
+    position: relative;
+  }
+  .section-glow::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(50% 40% at 15% 0%, hsl(225 73% 57% / 0.10), transparent 70%),
+      radial-gradient(50% 40% at 85% 100%, hsl(265 70% 60% / 0.10), transparent 70%);
+  }
 }
 
 @layer utilities {
@@ -252,6 +284,45 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Scroll-reveal (activated by IntersectionObserver adding .is-visible) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    will-change: opacity, transform;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Nav link with animated underline */
+  .nav-underline {
+    position: relative;
+  }
+  .nav-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(265 70% 60%));
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.35s ease;
+  }
+  .nav-underline:hover::after,
+  .nav-underline[data-active="true"]::after {
+    transform: scaleX(1);
+    transform-origin: left;
   }
 
   /* Dot animation for loading */
