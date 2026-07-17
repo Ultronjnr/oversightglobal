@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.next_donation_receipt_number(uuid) TO authenticated;
