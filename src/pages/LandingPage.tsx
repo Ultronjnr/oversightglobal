@@ -410,6 +410,7 @@ export default function LandingPage() {
 
       {/* Cost of doing nothing */}
       <section className="section-glow relative bg-gradient-to-b from-white via-[hsl(220_40%_98%)] to-white py-24">
+        <div aria-hidden="true" className="animated-blobs" />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
             ● The real cost of doing nothing
@@ -435,6 +436,7 @@ export default function LandingPage() {
 
       {/* The difference isn't subtle */}
       <section className="section-glow relative bg-gradient-to-br from-[hsl(220_40%_97%)] via-white to-[hsl(225_50%_96%)] py-24">
+        <div aria-hidden="true" className="animated-blobs" />
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
             ● Before / after
@@ -518,6 +520,7 @@ export default function LandingPage() {
 
       {/* VAT scanning panel */}
       <section className="section-glow relative bg-gradient-to-b from-white via-[hsl(220_40%_98%)] to-[hsl(225_50%_96%)] py-24">
+        <div aria-hidden="true" className="animated-blobs" />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 lg:grid-cols-2 items-center">
           <div className="reveal">
             <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
@@ -562,6 +565,7 @@ export default function LandingPage() {
 
       {/* Testimonial */}
       <section className="section-glow relative bg-gradient-to-br from-white via-[hsl(225_50%_97%)] to-white py-24">
+        <div aria-hidden="true" className="animated-blobs" />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="reveal inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-6">
             <TrendingUp className="h-4 w-4 text-primary" />
