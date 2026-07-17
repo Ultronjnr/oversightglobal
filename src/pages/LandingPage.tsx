@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { X, Check, ArrowRight } from "lucide-react";
+import { X, Check, ArrowRight, Sparkles, ShieldCheck, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
+import { useRevealOnScroll } from "@/hooks/use-reveal-on-scroll";
 
 import slideBg1 from "@/assets/slide-leaking-money.jpg.asset.json";
 import slideBg2 from "@/assets/slide-sars-proof.jpg.asset.json";
@@ -382,6 +383,7 @@ const SCAN_ROWS = [
 ];
 
 export default function LandingPage() {
+  useRevealOnScroll();
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
@@ -395,20 +397,24 @@ export default function LandingPage() {
         <HeroCarousel />
 
       {/* Cost of doing nothing */}
-      <section className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+      <section className="section-glow relative bg-gradient-to-b from-white via-[hsl(220_40%_98%)] to-white py-24">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
             ● The real cost of doing nothing
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
-            This is what "we'll sort it out later" costs an SME
+          <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
+            This is what <span className="gradient-text">"we'll sort it out later"</span> costs an SME
           </h2>
           <div className="grid gap-6 md:grid-cols-3">
-            {COST_STATS.map((s) => (
-              <div key={s.title} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
-                <p className="text-3xl font-extrabold text-slate-900 mb-3">{s.value}</p>
+            {COST_STATS.map((s, i) => (
+              <div
+                key={s.title}
+                className="reveal premium-glass p-7"
+                style={{ transitionDelay: `${i * 80}ms` }}
+              >
+                <p className="text-4xl font-extrabold gradient-text mb-3">{s.value}</p>
                 <p className="font-semibold text-slate-800 mb-1">{s.title}</p>
-                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
+                <p className="text-sm text-slate-600 leading-relaxed">{s.desc}</p>
               </div>
             ))}
           </div>
@@ -416,16 +422,16 @@ export default function LandingPage() {
       </section>
 
       {/* The difference isn't subtle */}
-      <section className="bg-slate-50 py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+      <section className="section-glow relative bg-gradient-to-br from-[hsl(220_40%_97%)] via-white to-[hsl(225_50%_96%)] py-24">
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
             ● Before / after
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
+          <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
             The difference isn't subtle
           </h2>
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-red-200 bg-red-50/60 p-7">
+            <div className="reveal rounded-2xl border border-red-200/70 bg-gradient-to-br from-red-50/80 to-white/70 backdrop-blur-xl p-7 shadow-[0_10px_40px_-20px_hsl(0_84%_60%/0.35)] hover:-translate-y-1 transition-all duration-300">
               <h3 className="flex items-center gap-2 font-semibold text-red-700 mb-5">
                 <X className="h-5 w-5" /> Spreadsheets &amp; WhatsApp
               </h3>
@@ -437,7 +443,7 @@ export default function LandingPage() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-7">
+            <div className="reveal rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/80 to-white/70 backdrop-blur-xl p-7 shadow-[0_10px_40px_-20px_hsl(142_71%_45%/0.35)] hover:-translate-y-1 transition-all duration-300" style={{ transitionDelay: "80ms" }}>
               <h3 className="flex items-center gap-2 font-semibold text-emerald-700 mb-5">
                 <Check className="h-5 w-5" /> Ovasyt
               </h3>
@@ -471,18 +477,22 @@ export default function LandingPage() {
           }}
         />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary-foreground/80 mb-3">
+          <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-white/80 mb-3">
             ● Why businesses choose Ovasyt
           </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-white mb-12">
+          <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-white mb-12">
             Spend control that doesn't slow you down
           </h2>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
+            {FEATURES.map((f, i) => (
               <div
                 key={f.title}
-                className="rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.09] hover:-translate-y-0.5 transition-all"
+                className="reveal group rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-xl p-6 shadow-2xl hover:bg-white/[0.12] hover:border-primary/50 hover:-translate-y-1 transition-all duration-300"
+                style={{ transitionDelay: `${i * 70}ms` }}
               >
+                <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary/30 to-[hsl(265_70%_60%/0.3)] border border-white/20 group-hover:scale-110 transition-transform">
+                  <Sparkles className="h-4 w-4 text-white" />
+                </div>
                 <h3 className="font-bold text-white mb-2">{f.title}</h3>
                 <p className="text-sm text-white/70 leading-relaxed">{f.desc}</p>
               </div>
@@ -492,14 +502,14 @@ export default function LandingPage() {
       </section>
 
       {/* VAT scanning panel */}
-      <section className="bg-slate-50 py-20">
+      <section className="section-glow relative bg-gradient-to-b from-white via-[hsl(220_40%_98%)] to-[hsl(225_50%_96%)] py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 lg:grid-cols-2 items-center">
-          <div>
+          <div className="reveal">
             <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
               ● VAT savings
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Every invoice, SARS-checked before it's filed
+              Every invoice, <span className="gradient-text">SARS-checked</span> before it's filed
             </h2>
             <p className="text-slate-600 leading-relaxed mb-6 max-w-lg">
               Most businesses under-claim input VAT simply because invoices are
@@ -508,20 +518,24 @@ export default function LandingPage() {
               incomplete — so your bookkeeper gets a clean, defensible claim.
             </p>
             <Link to="/signup/company">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                See invoice scanning <ArrowRight className="ml-1 h-4 w-4" />
+              <Button className="group bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] hover:shadow-lg hover:shadow-primary/40 hover:scale-[1.03] text-primary-foreground font-semibold transition-all">
+                See invoice scanning <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </Link>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+          <div className="reveal premium-glass p-7" style={{ transitionDelay: "100ms" }}>
             <p className="text-xs font-mono font-semibold tracking-[0.18em] uppercase text-primary mb-5">
               ● Invoice check
             </p>
             <div className="divide-y divide-slate-100">
-              {SCAN_ROWS.map((r) => (
-                <div key={r.label} className="flex items-center justify-between py-4">
+              {SCAN_ROWS.map((r, i) => (
+                <div
+                  key={r.label}
+                  className="flex items-center justify-between py-4 group hover:pl-1 transition-all"
+                  style={{ transitionDelay: `${i * 40}ms` }}
+                >
                   <span className="text-sm text-slate-700">{r.label}</span>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-emerald-600 group-hover:scale-105 transition-transform">
                     <Check className="h-4 w-4" /> {r.state}
                   </span>
                 </div>
@@ -532,20 +546,42 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonial */}
-      <section className="bg-white py-20">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <blockquote className="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
+      <section className="section-glow relative bg-gradient-to-br from-white via-[hsl(225_50%_97%)] to-white py-24">
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="reveal inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-6">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <span className="text-xs font-mono font-semibold tracking-[0.18em] uppercase text-primary">Real results</span>
+          </div>
+          <blockquote className="reveal text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
             "We found three months of unclaimed VAT in our first week on Ovasyt.
-            It paid for the platform before we'd even finished onboarding."
+            <span className="gradient-text"> It paid for the platform before we'd even finished onboarding.</span>"
           </blockquote>
-          <p className="mt-6 text-sm text-slate-500">Finance lead, manufacturing SME, Gauteng</p>
+          <p className="reveal mt-6 text-sm text-slate-500">— Finance lead, manufacturing SME, Gauteng</p>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="bg-white pb-24">
+      <section className="bg-gradient-to-b from-white to-[hsl(220_40%_96%)] pb-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl bg-[hsl(222_60%_12%)] px-8 py-14 text-center">
+          <div className="reveal relative overflow-hidden rounded-3xl px-8 py-16 text-center border border-white/10 shadow-[0_30px_80px_-30px_hsl(225_73%_57%/0.5)]"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(222 60% 10%) 0%, hsl(240 55% 16%) 50%, hsl(265 55% 18%) 100%)",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 opacity-70 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(50% 60% at 20% 20%, hsl(225 73% 60% / 0.35), transparent 70%), radial-gradient(50% 60% at 80% 80%, hsl(265 70% 60% / 0.35), transparent 70%)",
+              }}
+            />
+            <div className="relative">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 mb-5 backdrop-blur">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+              <span className="text-[11px] font-mono tracking-[0.18em] uppercase text-white/80">SARS &amp; POPIA aligned</span>
+            </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3">
               Stop guessing where the money went.
             </h2>
@@ -553,11 +589,19 @@ export default function LandingPage() {
               Book a 15-minute walkthrough and see exactly how Ovasyt would handle
               your team's purchases, approvals and invoices.
             </p>
-            <Link to="/signup/company">
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8">
-                Book a demo
-              </Button>
-            </Link>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link to="/signup/company">
+                <Button size="lg" className="group bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] hover:shadow-lg hover:shadow-primary/50 hover:scale-[1.03] text-primary-foreground font-semibold px-8 transition-all">
+                  Book a demo <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </Button>
+              </Link>
+              <Link to="/pricing">
+                <Button size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 backdrop-blur">
+                  See pricing
+                </Button>
+              </Link>
+            </div>
+            </div>
           </div>
         </div>
       </section>
