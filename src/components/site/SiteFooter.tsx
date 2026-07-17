@@ -32,7 +32,7 @@ export function SiteFooter() {
         className="pointer-events-none absolute inset-0 opacity-70"
         style={{
           background:
-            "radial-gradient(50% 60% at 15% 0%, hsl(225 73% 57% / 0.10), transparent 70%), radial-gradient(50% 60% at 90% 100%, hsl(265 70% 60% / 0.12), transparent 70%)",
+            "radial-gradient(50% 60% at 15% 0%, hsl(225 73% 57% / 0.10), transparent 70%), radial-gradient(50% 60% at 90% 100%, hsl(200 90% 55% / 0.12), transparent 70%)",
         }}
       />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
@@ -46,7 +46,7 @@ export function SiteFooter() {
           </div>
           <Link
             to="/signup/company"
-            className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(265_70%_58%)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.03] transition-all"
+            className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.03] transition-all"
           >
             Book a demo
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
