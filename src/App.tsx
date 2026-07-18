@@ -31,6 +31,7 @@ import Billing from "./pages/Billing";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import BlogSection18ADonationsInKind from "./pages/BlogSection18ADonationsInKind";
 import BlogRegisterPboSection18A from "./pages/BlogRegisterPboSection18A";
+import BlogBestNpoBankAccountsSouthAfrica from "./pages/BlogBestNpoBankAccountsSouthAfrica";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Insights from "./pages/Insights";
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/verify/receipt/:id" element={<VerifyReceipt />} />
             <Route path="/blog/section-18a-donations-in-kind" element={<BlogSection18ADonationsInKind />} />
             <Route path="/blog/how-to-register-pbo-section-18a" element={<BlogRegisterPboSection18A />} />
+            <Route path="/blog/best-npo-bank-accounts-south-africa" element={<BlogBestNpoBankAccountsSouthAfrica />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/insights" element={<Insights />} />
