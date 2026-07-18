@@ -6,6 +6,13 @@ import { ArrowRight, BookOpen } from "lucide-react";
 
 const POSTS = [
   {
+    title: "Best NPO bank accounts in South Africa (2026)",
+    excerpt:
+      "Compare FNB, Nedbank, Standard Bank, Absa and Capitec on NPO fees, setup, FICA requirements and audit-ready features.",
+    to: "/blog/best-npo-bank-accounts-south-africa",
+    tag: "NPO finance",
+  },
+  {
     title: "Section 18A receipts for donations in kind",
     excerpt:
       "Can non-cash donations receive a Section 18A receipt? SARS rules, valuation methods, and what a compliant certificate must show.",
