@@ -26,6 +26,7 @@ const staticEntries: SitemapEntry[] = [
   { path: "/insights", changefreq: "weekly", priority: "0.8", sources: ["src/pages/Insights.tsx"] },
   { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogSection18ADonationsInKind.tsx"] },
   { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogRegisterPboSection18A.tsx"] },
+  { path: "/blog/best-npo-bank-accounts-south-africa", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogBestNpoBankAccountsSouthAfrica.tsx"] },
   { path: "/login", changefreq: "monthly", priority: "0.4", sources: ["src/pages/Login.tsx"] },
   { path: "/signup/company", changefreq: "monthly", priority: "0.8", sources: ["src/pages/SignupCompany.tsx"] },
   { path: "/join/supplier", changefreq: "monthly", priority: "0.4", sources: ["src/pages/JoinSupplier.tsx"] },
