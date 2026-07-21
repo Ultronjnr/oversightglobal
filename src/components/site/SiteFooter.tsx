@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone, ShieldCheck, Linkedin, Twitter, Facebook, ArrowRight } from "lucide-react";
+import logoImage from "@/assets/ovasyt-logo.png";
 
 const PRODUCT = [
   { label: "Procurement workflow", to: "/insights" },
@@ -13,7 +14,7 @@ const COMPANY = [
   { label: "About us", to: "/about" },
   { label: "Insights", to: "/insights" },
   { label: "Contact us", to: "/contact" },
-  { label: "Book a demo", to: "/signup/company" },
+  { label: "Book a demo", to: "/contact" },
 ];
 
 const RESOURCES = [
@@ -45,7 +46,7 @@ export function SiteFooter() {
             </h3>
           </div>
           <Link
-            to="/signup/company"
+            to="/contact"
             className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.03] transition-all"
           >
             Book a demo
@@ -56,7 +57,9 @@ export function SiteFooter() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
           <div className="lg:col-span-2 max-w-sm">
-            <span className="text-xl font-extrabold gradient-text">Ovasyt</span>
+            <Link to="/" className="inline-flex items-center">
+              <img src={logoImage} alt="Ovasyt" className="h-12 w-auto object-contain" />
+            </Link>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Audit-ready procurement, VAT and Section&nbsp;18A compliance for
               South African NGOs, NPOs and SMEs — every rand approved, evidenced
@@ -65,28 +68,39 @@ export function SiteFooter() {
             <ul className="mt-5 space-y-2 text-sm text-slate-600">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <a href="mailto:hello@ovasyt.tech" className="hover:text-primary transition-colors">
-                  hello@ovasyt.tech
+                <a href="mailto:info@ovasyt.tech" className="hover:text-primary transition-colors">
+                  info@ovasyt.tech
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
-                <span>+27 (0) 11 000 0000</span>
+                <a href="tel:+27849231405" className="hover:text-primary transition-colors">
+                  +27 84 923 1405
+                </a>
               </li>
-              <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                <span>Johannesburg, South Africa</span>
+              <li className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <span>
+                  2 Willowbrooke, Vlakhaas Ave, Weltevredenpark,<br />
+                  Roodepoort, 1709
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <span>96 Rivonia Road, Sandton, Gauteng, 2196</span>
               </li>
             </ul>
             <div className="mt-5 flex items-center gap-2">
               {[
-                { Icon: Linkedin, label: "LinkedIn" },
-                { Icon: Twitter, label: "Twitter" },
-                { Icon: Facebook, label: "Facebook" },
-              ].map(({ Icon, label }) => (
+                { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/ovasyt" },
+                { Icon: Twitter, label: "Twitter", href: "https://twitter.com/ovasyt" },
+                { Icon: Facebook, label: "Facebook", href: "https://www.facebook.com/ovasyt" },
+              ].map(({ Icon, label, href }) => (
                 <a
                   key={label}
-                  href="#"
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer noopener"
                   aria-label={label}
                   className="p-2 rounded-lg border border-border/60 bg-white/70 text-slate-600 hover:text-primary hover:border-primary/50 hover:-translate-y-0.5 transition-all"
                 >

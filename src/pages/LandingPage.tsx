@@ -272,7 +272,7 @@ function HeroCarousel() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/signup/company">
+                <Link to="/contact">
                   <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6">
                     Book a demo
                   </Button>
@@ -609,7 +609,7 @@ export default function LandingPage() {
               your team's purchases, approvals and invoices.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/signup/company">
+              <Link to="/contact">
                 <Button size="lg" className="group bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] hover:shadow-lg hover:shadow-primary/50 hover:scale-[1.03] text-primary-foreground font-semibold px-8 transition-all">
                   Book a demo <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
