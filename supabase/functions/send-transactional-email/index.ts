@@ -257,7 +257,6 @@ Deno.serve(async (req) => {
           verifyUrl: `${APP_BASE_URL}/verify/receipt/${(receipt as any).id}?h=${(receipt as any).verification_hash ?? ''}`,
         }
       }
-      }
 
       if (!orgId) {
         return new Response(
