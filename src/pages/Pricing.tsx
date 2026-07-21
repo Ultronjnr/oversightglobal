@@ -1,136 +1,41 @@
 import { Link } from "react-router-dom";
-import { Check, Minus } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 
-const PLANS = [
-  {
-    name: "Platform",
-    price: "R1 999",
-    period: "/month",
-    blurb: "For NPOs that run their own books — or whose accountant works straight off their Ovasyt data.",
-    cta: "Start free trial",
-    to: "/signup/company",
-    popular: false,
-    features: [
-      "5 users (Admin, Finance Manager, HOD, Team Member)",
-      "Full approval chain: Request → Approve → Invoice → Paid",
-      "Invoice scanning (150/month)",
-      "SARS tax invoice validation",
-      "Project & donor fund tracking",
-      "30 donor profiles",
-      "Donor Reports",
-      "Project Reports",
-      "Supplier portal",
-      "Invite up to 50 suppliers",
-      "Request & receive quotes inside Ovasyt",
-      "Section 18A receipt generation (50/year)",
-      "10 GB storage",
-      "Standard audit trail",
-    ],
-  },
-  {
-    name: "Funder-Ready",
-    price: "R5 998",
-    period: "/month",
-    blurb: "Everything in Platform — plus we carry your compliance. Never think about SARS or year-end again.",
-    cta: "Book a demo",
-    to: "/signup/company",
-    popular: true,
-    features: [
-      "Everything in Platform",
-      "10 users",
-      "Unlimited donor profiles",
-      "150 supplier accounts",
-      "Invoice scanning (300/month)",
-      "25 GB storage",
-      "Unlimited Section 18A receipts",
-      "Monthly bookkeeping",
-      "Independently reviewed Annual Financial Statements",
-      "Income tax submissions",
-      "Priority support",
-      "Guided onboarding",
-      "Staff training",
-    ],
-  },
-  {
-    name: "Tailored",
-    price: "Custom",
-    period: "",
-    blurb: "For NPO networks, federations and multi-entity organisations with complex funder requirements.",
-    cta: "Talk to sales",
-    to: "/signup/company",
-    popular: false,
-    features: [
-      "Unlimited users",
-      "Multi-entity support",
-      "Custom approval logic",
-      "Reviewed or audited AFS",
-      "Priority processing",
-      "Dedicated account manager",
-      "Supplier accounts as agreed",
-      "Custom storage",
-      "Custom integrations",
-    ],
-  },
-];
-
-const COMPARE: { feature: string; starter: string; growth: string; enterprise: string }[] = [
-  { feature: "Users Included", starter: "5", growth: "10", enterprise: "Unlimited" },
-  { feature: "Supplier Accounts", starter: "50", growth: "150", enterprise: "As agreed" },
-  { feature: "Invoice Scans", starter: "150/month", growth: "300/month", enterprise: "Unlimited" },
-  { feature: "Donor Profiles", starter: "30", growth: "Unlimited", enterprise: "Unlimited" },
-  { feature: "Storage", starter: "10 GB", growth: "25 GB", enterprise: "As agreed" },
-  { feature: "Approval Chain", starter: "Full", growth: "Full", enterprise: "Full + Custom Logic" },
-  { feature: "Project & Donor Fund Tracking", starter: "✓", growth: "✓", enterprise: "✓" },
-  { feature: "Donor Reports", starter: "✓", growth: "✓", enterprise: "✓" },
-  { feature: "Project Reports", starter: "✓", growth: "✓", enterprise: "✓" },
-  { feature: "Supplier Portal", starter: "✓", growth: "✓", enterprise: "✓" },
-  { feature: "SARS Invoice Validation", starter: "✓", growth: "✓", enterprise: "✓" },
-  { feature: "Section 18A Receipts", starter: "50/year", growth: "Unlimited", enterprise: "Unlimited" },
-  { feature: "Monthly Bookkeeping", starter: "—", growth: "✓", enterprise: "✓" },
-  { feature: "Independently Reviewed AFS", starter: "—", growth: "✓", enterprise: "✓ (or Audited)" },
-  { feature: "Income Tax Submissions", starter: "—", growth: "✓", enterprise: "✓" },
-  { feature: "Support", starter: "Next Business Day", growth: "Priority Same Day", enterprise: "Dedicated Account Manager" },
-  { feature: "Onboarding", starter: "Standard + Setup Call", growth: "Guided + Staff Training", enterprise: "White-glove" },
-  { feature: "Entities", starter: "1", growth: "1", enterprise: "Multiple" },
+const PLATFORM_FEATURES = [
+  "Everything on the features page",
+  "5 users · 150 scans · 30 donors",
+  "50 suppliers · 18A · 10 GB",
 ];
 
 const ADDONS = [
-  {
-    name: "Additional Users",
-    price: "R39",
-    period: "/user/month",
-    blurb:
-      "Add additional HOD and Team Member users. Each organisation includes one Admin and one Finance Manager by design to maintain segregation of duties and a single point of accountability.",
-  },
-  {
-    name: "Unlimited Section 18A Receipts",
-    price: "R49",
-    period: "/month",
-    blurb:
-      "Platform includes 50 receipts annually. Upgrade to unlimited generation at any time. Already included in Funder-Ready.",
-  },
+  { name: "Monthly Bookkeeping", price: "from R1 999/mo" },
+  { name: "Independently Reviewed AFS", price: "from R1 499/mo" },
+  { name: "Income Tax Submissions", price: "from R499/mo" },
+  { name: "Additional users", price: "R39/user/mo" },
+  { name: "Extra suppliers (+50)", price: "R99/mo" },
+  { name: "Unlimited 18A receipts", price: "R49/mo" },
+];
+
+const CUSTOM_FEATURES = [
+  "NPO networks & federations",
+  "Multi-entity organisations",
+  "Special funder requirements",
+  "Reviewed or audited AFS",
+  "Custom users & volumes",
 ];
 
 const FAQ = [
-  { q: "Is there a free trial?", a: "Yes — Platform starts with a 14-day free trial, no card required. Run real purchases through the system and generate your first donor report before committing. The trial applies to Platform only." },
-  { q: "Can I change plans later?", a: "Absolutely. Upgrade any time — most organisations move to Funder-Ready the day a funder asks for independently reviewed financials. We'll prorate the difference on your next invoice." },
-  { q: "Do I need Funder-Ready, or is Platform enough?", a: "Platform is ideal if your own accountant or bookkeeper manages compliance — it gives them perfect, allocated, audit-ready data to work from. Funder-Ready is for organisations who'd rather have Ovasyt handle bookkeeping, tax submissions and year-end compliance." },
-  { q: "What counts as a \"scan\"?", a: "Every invoice or receipt that Ovasyt reads, checks against SARS tax invoice requirements and captures counts as one scan, regardless of length or supplier." },
-  { q: "Why only one Finance Manager and one Admin?", a: "By design. One ultimate approver and one account owner means clean segregation of duties and a single point of accountability — exactly what auditors and funders look for. Add as many HODs and Team Members as you need at R39 per user per month." },
-  { q: "How do supplier accounts work?", a: "Your Admin invites suppliers to open a free Ovasyt account. Your Finance Manager sends quote requests in-platform, suppliers respond in-platform, and the full chain of custody — requisition, approvals, quotes, selection, invoice, payment — stays in one auditable line." },
-  { q: "We joined mid-financial-year — what about the earlier months?", a: "On Funder-Ready, Ovasyt offers a once-off historical bookkeeping catch-up service, quoted after a quick look at your records, so your first Annual Financial Statements cover the full year." },
+  { q: "Is there a free trial?", a: "Yes — Platform starts with a 14-day free trial, no card required. Run real purchases through the system and generate your first donor report before committing." },
+  { q: "How do add-ons work?", a: "Activate any add-on from the Billing section of your account. Compliance add-ons show minimum pricing — confirmed after a short scoping call (volume, entity type, historical months)." },
+  { q: "What counts as a scan?", a: "Every invoice or receipt Ovasyt reads, checks against SARS tax invoice requirements and captures counts as one scan — regardless of length or supplier." },
+  { q: "Why only one Finance Manager and one Admin?", a: "By design. One ultimate approver and one account owner means clean segregation of duties and a single point of accountability. Add HODs and Team Members at R39/user/mo." },
+  { q: "How do supplier accounts work?", a: "Your Admin invites suppliers to open a free Ovasyt account. Your Finance Manager sends quote requests in-platform, suppliers respond in-platform — the full chain of custody stays in one auditable line." },
   { q: "Are prices VAT inclusive?", a: "Yes. All prices are in ZAR including VAT where applicable, billed monthly by debit order. 30 days' notice to cancel, with no long-term contracts." },
 ];
-
-function Cell({ value }: { value: string }) {
-  if (value === "✓") return <Check className="h-4 w-4 text-emerald-600 mx-auto" />;
-  if (value === "—") return <Minus className="h-4 w-4 text-slate-500 mx-auto" aria-label="Not included" />;
-  return <span className="text-sm text-slate-700">{value}</span>;
-}
 
 export default function Pricing() {
   const faqJsonLd = {
@@ -142,164 +47,162 @@ export default function Pricing() {
       acceptedAnswer: { "@type": "Answer", text: item.a },
     })),
   };
+
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
         title="Pricing — Ovasyt NGO Procurement & Compliance Plans"
-        description="Compare Ovasyt plans for South African NGOs: Platform, Funder-Ready and Tailored. Approval chains, invoice scanning, donor tracking and audit-ready compliance."
+        description="One Ovasyt Platform plan at R1 999/month, with modular compliance add-ons. Custom quotes for NPO networks, federations and multi-entity organisations."
         path="/pricing"
       />
       <SiteNav />
       <main>
-      {/* Header */}
-      <section className="bg-slate-50 pt-20 pb-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-4">
-            ● Pricing
-          </p>
-          <h1 className="text-center text-4xl sm:text-5xl font-extrabold text-slate-900 leading-tight mb-4">
-            Plans that keep you funder-ready, all year round
-          </h1>
-          <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
-            Every plan includes the full approval chain, invoice scanning, donor
-            fund tracking, and a complete audit trail. No setup fees, no lock-in
-            contracts.
-          </p>
+        {/* Header */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-white via-slate-50 to-[hsl(220_40%_96%)] pt-20 pb-24">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(50% 60% at 15% 0%, hsl(225 73% 57% / 0.10), transparent 70%), radial-gradient(50% 60% at 90% 100%, hsl(200 90% 55% / 0.10), transparent 70%)",
+            }}
+          />
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-4">
+              ● Pricing
+            </p>
+            <h1 className="text-center text-4xl sm:text-5xl font-extrabold text-slate-900 leading-tight mb-4">
+              One platform. Add what you need, when you need it.
+            </h1>
+            <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
+              Start on Platform for R1 999/month. Activate compliance add-ons
+              from inside your account as your organisation grows.
+            </p>
 
-          <div className="grid gap-6 lg:grid-cols-3 items-start">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.name}
-                className={
-                  "relative rounded-2xl bg-white p-7 shadow-sm " +
-                  (plan.popular
-                    ? "border-2 border-primary shadow-lg lg:-mt-4 lg:mb-4"
-                    : "border border-slate-200")
-                }
-              >
-                {plan.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">
-                    Most popular
-                  </span>
-                )}
-                <h2 className="font-bold text-slate-900 mb-4">{plan.name}</h2>
+            <div className="grid gap-6 lg:grid-cols-3 items-stretch">
+              {/* Platform */}
+              <div className="relative rounded-2xl bg-white border-2 border-primary p-7 shadow-[0_20px_60px_-30px_hsl(225_73%_57%/0.5)] flex flex-col">
+                <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+                  Platform
+                </p>
                 <div className="mb-4">
-                  <span className="text-3xl font-extrabold text-slate-900 font-mono">{plan.price}</span>
-                  {plan.period && <span className="text-sm text-slate-500 font-mono">{plan.period}</span>}
+                  <span className="text-4xl font-extrabold text-slate-900 font-mono">R1 999</span>
+                  <span className="text-sm text-slate-500 font-mono">/month</span>
                 </div>
-                <p className="text-sm text-slate-500 mb-6 leading-relaxed">{plan.blurb}</p>
-                <ul className="space-y-3 mb-7">
-                  {plan.features.map((f) => (
+                <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                  The full software. Your team runs it — your accountant works
+                  straight off your Ovasyt data.
+                </p>
+                <ul className="space-y-3 mb-7 flex-1">
+                  {PLATFORM_FEATURES.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
-                      <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" /> {f}
+                      <Check className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                      {f}
                     </li>
                   ))}
                 </ul>
-                <Link to={plan.to} className="block">
-                  <Button
-                    className={
-                      "w-full font-semibold " +
-                      (plan.popular
-                        ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                        : "")
-                    }
-                    variant={plan.popular ? "default" : "outline"}
-                  >
-                    {plan.cta}
+                <Link to="/signup/company" className="block">
+                  <Button className="w-full font-semibold bg-primary hover:bg-primary/90 text-primary-foreground">
+                    Free trial — 14 days, no card
                   </Button>
                 </Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Comparison */}
-      <section className="bg-white py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-            ● Compare plans
-          </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
-            Every detail, side by side
-          </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs font-mono uppercase tracking-wide text-slate-600">
-                  <th className="text-left font-semibold py-4">Feature</th>
-                  <th className="text-center font-semibold py-4">Platform</th>
-                  <th className="text-center font-semibold py-4">Funder-Ready</th>
-                  <th className="text-center font-semibold py-4">Tailored</th>
-                </tr>
-              </thead>
-              <tbody>
-                {COMPARE.map((row) => (
-                  <tr key={row.feature} className="border-b border-slate-100">
-                    <td className="py-4 text-sm font-semibold text-slate-800">{row.feature}</td>
-                    <td className="py-4 text-center"><Cell value={row.starter} /></td>
-                    <td className="py-4 text-center"><Cell value={row.growth} /></td>
-                    <td className="py-4 text-center"><Cell value={row.enterprise} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-6 text-xs text-slate-500 text-center">
-            *Available to SARS-approved Section 18A organisations.
-          </p>
-        </div>
-      </section>
+              {/* Add-ons */}
+              <div className="relative rounded-2xl bg-white border border-slate-200 p-7 shadow-sm flex flex-col">
+                <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-slate-500 mb-3">
+                  Add-ons
+                </p>
+                <p className="text-sm italic text-slate-500 mb-6">
+                  Activated from the Billing section of your account
+                </p>
+                <ul className="space-y-4 mb-6 flex-1">
+                  {ADDONS.map((addon, i) => (
+                    <li key={addon.name}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="font-semibold text-slate-900">{addon.name}</span>
+                        <span className="text-sm font-mono text-primary whitespace-nowrap">
+                          {addon.price}
+                        </span>
+                      </div>
+                      {i === 2 && <div className="mt-4 border-t border-slate-100" />}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs italic text-slate-500 leading-relaxed">
+                  Compliance add-ons show minimum pricing — confirmed after a
+                  short scoping call (volume, entity type, historical months).
+                </p>
+              </div>
 
-      {/* Add-ons */}
-      <section className="bg-slate-50 py-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-            ● Add-ons
-          </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-            Extend your Platform plan as you grow
-          </h2>
-          <p className="text-center text-slate-600 max-w-2xl mx-auto mb-12">
-            Optional extras for organisations on the Platform plan.
-          </p>
-          <div className="grid gap-6 md:grid-cols-2">
-            {ADDONS.map((addon) => (
-              <div
-                key={addon.name}
-                className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
-              >
-                <h3 className="font-bold text-slate-900 mb-4">{addon.name}</h3>
+              {/* Custom */}
+              <div className="relative rounded-2xl bg-slate-900 border border-slate-800 p-7 shadow-lg flex flex-col text-white">
+                <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+                  Custom
+                </p>
                 <div className="mb-4">
-                  <span className="text-3xl font-extrabold text-slate-900 font-mono">{addon.price}</span>
-                  {addon.period && <span className="text-sm text-slate-500 font-mono">{addon.period}</span>}
+                  <span className="text-4xl font-extrabold text-white">Quoted</span>
                 </div>
-                <p className="text-sm text-slate-500 leading-relaxed">{addon.blurb}</p>
+                <ul className="space-y-3 mb-7 flex-1">
+                  {CUSTOM_FEATURES.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-slate-200">
+                      <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/contact" className="block">
+                  <Button
+                    variant="outline"
+                    className="w-full font-semibold border-primary/60 text-white bg-transparent hover:bg-primary/20 hover:text-white"
+                  >
+                    Talk to us
+                  </Button>
+                </Link>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* FAQ */}
-      <section className="bg-slate-50 py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-            ● FAQ
-          </p>
-          <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
-            Pricing questions, answered
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {FAQ.map((item) => (
-              <div key={item.q} className="rounded-2xl border border-slate-200 bg-white p-6">
-                <h3 className="font-semibold text-slate-900 mb-2">{item.q}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{item.a}</p>
-              </div>
-            ))}
+            <p className="mt-10 text-center text-sm text-slate-600">
+              Most NPOs choose: Platform + full compliance stack — typically
+              from <span className="font-semibold text-slate-900">R7 999/month</span> · All prices incl. VAT where applicable · monthly debit
+              order · no lock-in
+            </p>
+            <p className="mt-3 text-center text-sm">
+              <span className="font-semibold text-slate-900">Book a demo or start your trial:</span>{" "}
+              <a href="tel:+27849231405" className="text-primary hover:underline font-mono">
+                +27 84 923 1405
+              </a>{" "}
+              ·{" "}
+              <a href="mailto:info@ovasyt.tech" className="text-primary hover:underline">
+                info@ovasyt.tech
+              </a>{" "}
+              ·{" "}
+              <Link to="/contact" className="text-primary hover:underline font-semibold">
+                ovasyt.tech
+              </Link>
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* FAQ */}
+        <section className="bg-slate-50 py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
+              ● FAQ
+            </p>
+            <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
+              Pricing questions, answered
+            </h2>
+            <div className="grid gap-6 md:grid-cols-2">
+              {FAQ.map((item) => (
+                <div key={item.q} className="rounded-2xl border border-slate-200 bg-white p-6">
+                  <h3 className="font-semibold text-slate-900 mb-2">{item.q}</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
       <script
         type="application/ld+json"
