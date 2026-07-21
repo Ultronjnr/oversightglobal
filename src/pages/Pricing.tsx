@@ -51,8 +51,8 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
-        title="Pricing — Ovasyt NGO Procurement & Compliance Plans"
-        description="One Ovasyt Platform plan at R1 999/month, with modular compliance add-ons. Custom quotes for NPO networks, federations and multi-entity organisations."
+        title="Ovasyt Pricing | Platform R1 999/mo + Funder-Ready add-ons"
+        description="Ovasyt Platform at R1 999/month for South African NGOs — approvals, invoice scanning, donor tracking, Section 18A receipts. Add bookkeeping, AFS & tax with Funder-Ready add-ons, or request a Tailored quote."
         path="/pricing"
       />
       <SiteNav />

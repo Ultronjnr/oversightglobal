@@ -153,7 +153,14 @@ Deno.serve(async (req) => {
   const callerToken = authHeader.replace(/^Bearer\s+/i, '').trim()
   const callerRole = decodeJwtRole(callerToken)
 
-  if (callerRole !== 'service_role') {
+  // Templates that hard-code their recipient via `template.to` and are NOT in
+  // PRIVILEGED_TEMPLATES cannot be used for open-relay abuse: the recipient is
+  // fixed server-side. We allow those to bypass the caller-auth gate so public
+  // edge functions (e.g. the contact form) can notify the site owner.
+  const isFixedRecipientPublic =
+    !!template.to && !PRIVILEGED_TEMPLATES.has(templateName)
+
+  if (callerRole !== 'service_role' && !isFixedRecipientPublic) {
     // Must be a genuine signed-in user (anon-key JWT resolves to no user).
     const { data: userData, error: userErr } = await supabase.auth.getUser(callerToken)
     const caller = userData?.user
@@ -256,7 +263,6 @@ Deno.serve(async (req) => {
           downloadUrl: signedDownloadUrl ?? '',
           verifyUrl: `${APP_BASE_URL}/verify/receipt/${(receipt as any).id}?h=${(receipt as any).verification_hash ?? ''}`,
         }
-      }
       }
 
       if (!orgId) {

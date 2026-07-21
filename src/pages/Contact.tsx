@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
@@ -59,23 +61,65 @@ export default function Contact() {
   const [submitting, setSubmitting] = useState(false);
   const [subject, setSubject] = useState("Book a demo");
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const schema = z.object({
+    name: z.string().trim().min(1, "Please enter your name").max(120),
+    email: z.string().trim().email("Enter a valid email address").max(255),
+    phone: z
+      .string()
+      .trim()
+      .min(6, "Enter a valid phone number")
+      .max(40),
+    organisation: z.string().trim().max(160).optional().or(z.literal("")),
+    subject: z.string().trim().min(1).max(120),
+    message: z.string().trim().min(5, "Tell us a little more").max(4000),
+  });
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
     const form = e.currentTarget;
     const data = new FormData(form);
-    const name = String(data.get("name") ?? "");
-    const email = String(data.get("email") ?? "");
-    const phone = String(data.get("phone") ?? "");
-    const organisation = String(data.get("organisation") ?? "");
-    const message = String(data.get("message") ?? "");
-    const subjectLine = encodeURIComponent(`[${subject}] Ovasyt enquiry from ${name}`);
-    const body = encodeURIComponent(
-      `${message}\n\n— ${name}${organisation ? ` · ${organisation}` : ""}\n${email}${phone ? ` · ${phone}` : ""}`,
-    );
-    window.location.href = `mailto:info@ovasyt.tech?subject=${subjectLine}&body=${body}`;
-    toast.success("Opening your email client…");
-    setTimeout(() => setSubmitting(false), 500);
+    const parsed = schema.safeParse({
+      name: data.get("name"),
+      email: data.get("email"),
+      phone: data.get("phone"),
+      organisation: data.get("organisation") ?? "",
+      subject,
+      message: data.get("message"),
+    });
+
+    if (!parsed.success) {
+      const first = parsed.error.issues[0]?.message ?? "Please check the form.";
+      toast.error(first);
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      const { data: res, error } = await supabase.functions.invoke("submit-contact", {
+        body: { ...parsed.data, source: "contact-page" },
+      });
+      if (error) {
+        const detail =
+          (error as any)?.context && typeof (error as any).context.text === "function"
+            ? await (error as any).context.text()
+            : error.message;
+        console.error("submit-contact failed:", detail);
+        throw new Error("We couldn't send your message. Please try again or email info@ovasyt.tech.");
+      }
+      if (!res?.ok) {
+        throw new Error("We couldn't send your message. Please try again or email info@ovasyt.tech.");
+      }
+      toast.success("Message sent! We'll reply within one business day.");
+      form.reset();
+      setSubject("Book a demo");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

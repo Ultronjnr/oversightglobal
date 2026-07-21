@@ -211,6 +211,51 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          email_error: string | null
+          email_status: string
+          id: string
+          message: string
+          name: string
+          organisation: string | null
+          phone: string | null
+          source: string | null
+          subject: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          email_error?: string | null
+          email_status?: string
+          id?: string
+          message: string
+          name: string
+          organisation?: string | null
+          phone?: string | null
+          source?: string | null
+          subject: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          email_error?: string | null
+          email_status?: string
+          id?: string
+          message?: string
+          name?: string
+          organisation?: string | null
+          phone?: string | null
+          source?: string | null
+          subject?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           budget_limit: number | null
