@@ -943,10 +943,14 @@ export type Database = {
         Row: {
           created_at: string
           document_url: string
+          donor_id: string | null
           id: string
           organization_id: string
           pr_id: string
+          project_id: string | null
           quote_id: string
+          scan_document_bucket: string | null
+          scan_document_path: string | null
           status: string
           supplier_id: string
           transaction_id: string | null
@@ -955,10 +959,14 @@ export type Database = {
         Insert: {
           created_at?: string
           document_url: string
+          donor_id?: string | null
           id?: string
           organization_id: string
           pr_id: string
+          project_id?: string | null
           quote_id: string
+          scan_document_bucket?: string | null
+          scan_document_path?: string | null
           status?: string
           supplier_id: string
           transaction_id?: string | null
@@ -967,16 +975,27 @@ export type Database = {
         Update: {
           created_at?: string
           document_url?: string
+          donor_id?: string | null
           id?: string
           organization_id?: string
           pr_id?: string
+          project_id?: string | null
           quote_id?: string
+          scan_document_bucket?: string | null
+          scan_document_path?: string | null
           status?: string
           supplier_id?: string
           transaction_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invoices_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donation_org_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoices_organization_id_fkey"
             columns: ["organization_id"]
@@ -989,6 +1008,13 @@ export type Database = {
             columns: ["pr_id"]
             isOneToOne: false
             referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "donation_projects"
             referencedColumns: ["id"]
           },
           {
@@ -1119,10 +1145,12 @@ export type Database = {
       ocr_analyses: {
         Row: {
           bucket: string
+          category_id: string | null
           confidence: number | null
           created_at: string
           created_by: string
           document_type: Database["public"]["Enums"]["ocr_document_type"]
+          donor_id: string | null
           error_message: string | null
           extracted: Json | null
           id: string
@@ -1130,6 +1158,7 @@ export type Database = {
           model: string | null
           organization_id: string
           pr_id: string | null
+          project_id: string | null
           raw_text: string | null
           reimbursement_id: string | null
           status: Database["public"]["Enums"]["ocr_status"]
@@ -1138,10 +1167,12 @@ export type Database = {
         }
         Insert: {
           bucket: string
+          category_id?: string | null
           confidence?: number | null
           created_at?: string
           created_by: string
           document_type: Database["public"]["Enums"]["ocr_document_type"]
+          donor_id?: string | null
           error_message?: string | null
           extracted?: Json | null
           id?: string
@@ -1149,6 +1180,7 @@ export type Database = {
           model?: string | null
           organization_id: string
           pr_id?: string | null
+          project_id?: string | null
           raw_text?: string | null
           reimbursement_id?: string | null
           status?: Database["public"]["Enums"]["ocr_status"]
@@ -1157,10 +1189,12 @@ export type Database = {
         }
         Update: {
           bucket?: string
+          category_id?: string | null
           confidence?: number | null
           created_at?: string
           created_by?: string
           document_type?: Database["public"]["Enums"]["ocr_document_type"]
+          donor_id?: string | null
           error_message?: string | null
           extracted?: Json | null
           id?: string
@@ -1168,6 +1202,7 @@ export type Database = {
           model?: string | null
           organization_id?: string
           pr_id?: string | null
+          project_id?: string | null
           raw_text?: string | null
           reimbursement_id?: string | null
           status?: Database["public"]["Enums"]["ocr_status"]
@@ -1175,6 +1210,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ocr_analyses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_analyses_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donation_org_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ocr_analyses_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -1194,6 +1243,13 @@ export type Database = {
             columns: ["pr_id"]
             isOneToOne: false
             referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ocr_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "donation_projects"
             referencedColumns: ["id"]
           },
           {
@@ -1754,6 +1810,7 @@ export type Database = {
           created_at: string
           currency: string
           document_url: string | null
+          donor_id: string | null
           due_date: string | null
           finance_status: string
           history: Json
@@ -1763,6 +1820,8 @@ export type Database = {
           organization_id: string
           parent_pr_id: string | null
           payment_due_date: string | null
+          pr_locked: boolean
+          project_id: string | null
           requested_by: string
           requested_by_department: string | null
           requested_by_name: string
@@ -1778,6 +1837,7 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          donor_id?: string | null
           due_date?: string | null
           finance_status?: string
           history?: Json
@@ -1787,6 +1847,8 @@ export type Database = {
           organization_id: string
           parent_pr_id?: string | null
           payment_due_date?: string | null
+          pr_locked?: boolean
+          project_id?: string | null
           requested_by: string
           requested_by_department?: string | null
           requested_by_name: string
@@ -1802,6 +1864,7 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          donor_id?: string | null
           due_date?: string | null
           finance_status?: string
           history?: Json
@@ -1811,6 +1874,8 @@ export type Database = {
           organization_id?: string
           parent_pr_id?: string | null
           payment_due_date?: string | null
+          pr_locked?: boolean
+          project_id?: string | null
           requested_by?: string
           requested_by_department?: string | null
           requested_by_name?: string
@@ -1830,6 +1895,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "purchase_requisitions_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donation_org_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "purchase_requisitions_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -1841,6 +1913,13 @@ export type Database = {
             columns: ["parent_pr_id"]
             isOneToOne: false
             referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requisitions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "donation_projects"
             referencedColumns: ["id"]
           },
           {
@@ -2843,6 +2922,7 @@ export type Database = {
           created_at: string
           currency: string
           document_url: string | null
+          donor_id: string | null
           exclusive_amount: number | null
           id: string
           inclusive_amount: number | null
@@ -2851,6 +2931,9 @@ export type Database = {
           organization_id: string
           paid_at: string | null
           pr_id: string
+          project_id: string | null
+          scan_document_bucket: string | null
+          scan_document_path: string | null
           status: string
           supplier_id: string | null
           supplier_name: string | null
@@ -2867,6 +2950,7 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          donor_id?: string | null
           exclusive_amount?: number | null
           id?: string
           inclusive_amount?: number | null
@@ -2875,6 +2959,9 @@ export type Database = {
           organization_id: string
           paid_at?: string | null
           pr_id: string
+          project_id?: string | null
+          scan_document_bucket?: string | null
+          scan_document_path?: string | null
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
@@ -2891,6 +2978,7 @@ export type Database = {
           created_at?: string
           currency?: string
           document_url?: string | null
+          donor_id?: string | null
           exclusive_amount?: number | null
           id?: string
           inclusive_amount?: number | null
@@ -2899,6 +2987,9 @@ export type Database = {
           organization_id?: string
           paid_at?: string | null
           pr_id?: string
+          project_id?: string | null
+          scan_document_bucket?: string | null
+          scan_document_path?: string | null
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
@@ -2909,6 +3000,13 @@ export type Database = {
           vat_rate?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donation_org_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -2928,6 +3026,13 @@ export type Database = {
             columns: ["pr_id"]
             isOneToOne: true
             referencedRelation: "purchase_requisitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "donation_projects"
             referencedColumns: ["id"]
           },
           {
@@ -3089,6 +3194,17 @@ export type Database = {
       }
       admin_approve_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
+        Returns: Json
+      }
+      allocate_project_funds: {
+        Args: {
+          _amount: number
+          _description?: string
+          _donor_id: string
+          _project_id: string
+          _source_id?: string
+          _source_type?: string
+        }
         Returns: Json
       }
       approve_reimbursement: {
