@@ -225,12 +225,10 @@ Deno.serve(async (req) => {
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
 
-      // Gemini 3.5 Flash: fastest reliable vision+tool-call model for
-      // structured OCR on the Lovable gateway. Flash-Lite was returning
-      // empty tool calls on some invoice/PDF inputs, blocking the scan
-      // flow — 3.5 Flash keeps sub-second-per-page latency while
-      // reliably emitting the extract_document_data tool call.
-      const model = "google/gemini-3.5-flash";
+      // Gemini 2.5 Flash: most reliable vision + tool-call model on the
+      // Lovable gateway for structured OCR. Newer Flash variants have
+      // been returning empty tool_calls on some invoice/PDF inputs.
+      const model = "google/gemini-2.5-flash";
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -254,8 +252,9 @@ Deno.serve(async (req) => {
           ],
           tools: [EXTRACTION_TOOL],
           tool_choice: { type: "function", function: { name: "extract_document_data" } },
-          // Tight cap: structured OCR needs only ~1k tokens.
-          max_completion_tokens: 1500,
+          // Multi-item invoices can exceed 1.5k output tokens and truncate
+          // the tool-call JSON, producing empty structured data.
+          max_completion_tokens: 4000,
         }),
       });
 
@@ -266,15 +265,31 @@ Deno.serve(async (req) => {
         throw new Error(`AI gateway error ${aiResp.status}: ${t.slice(0, 300)}`);
       }
       const aiJson = await aiResp.json();
-      const toolCall = aiJson?.choices?.[0]?.message?.tool_calls?.[0];
-      if (!toolCall?.function?.arguments) {
-        throw new Error("AI returned no structured data");
+      const msg = aiJson?.choices?.[0]?.message;
+      const toolCall = msg?.tool_calls?.[0];
+      let extracted: Record<string, unknown> | null = null;
+      if (toolCall?.function?.arguments) {
+        try {
+          extracted = JSON.parse(toolCall.function.arguments);
+        } catch {
+          // fall through to content-parse fallback
+        }
       }
-      let extracted: Record<string, unknown>;
-      try {
-        extracted = JSON.parse(toolCall.function.arguments);
-      } catch {
-        throw new Error("AI returned invalid JSON");
+      // Fallback: some models emit JSON in message.content instead of tool_calls
+      if (!extracted && typeof msg?.content === "string" && msg.content.trim()) {
+        const raw = msg.content.trim();
+        const jsonStr = raw.startsWith("{")
+          ? raw
+          : raw.match(/\{[\s\S]*\}/)?.[0];
+        if (jsonStr) {
+          try { extracted = JSON.parse(jsonStr); } catch { /* ignore */ }
+        }
+      }
+      if (!extracted) {
+        const finish = aiJson?.choices?.[0]?.finish_reason;
+        throw new Error(
+          `AI returned no structured data${finish ? ` (finish_reason=${finish})` : ""}`,
+        );
       }
       normalizeLineItems(extracted);
       const confidence = typeof extracted.confidence === "number" ? extracted.confidence : null;
