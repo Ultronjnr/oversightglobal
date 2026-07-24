@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
+import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers, Lock} from "lucide-react";
 import {Percent} from "lucide-react";
 
 
@@ -43,6 +43,7 @@ import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
+import { CostCenterHistoryContent } from "@/components/finance/CostCenterHistoryContent";
 import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
@@ -508,14 +509,6 @@ export default function FinancePortal() {
             <RefreshCw className="h-4 w-4" />
             Refresh Dashboard
           </Button>
-          <Button
-            variant="outline"
-            className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
-            onClick={() => navigate("/cost-center-history")}
-          >
-            <Building2 className="h-4 w-4" />
-            Cost Center / Department History
-          </Button>
         </div>
 
         {/* Main Content Card */}
@@ -589,6 +582,10 @@ export default function FinancePortal() {
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
                 </TabsTrigger>
+                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-sm">Cost Center</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="approvals">
@@ -633,7 +630,14 @@ export default function FinancePortal() {
                             return (
                               <TableRow key={pr.id} className="hover:bg-muted/20">
                                 <TableCell className="font-mono text-sm font-medium">
-                                  {pr.transaction_id}
+                                  <div className="flex items-center gap-2">
+                                    <span>{pr.transaction_id}</span>
+                                    {(pr as any).pr_locked && (
+                                      <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground border-muted-foreground/30">
+                                        <Lock className="h-3 w-3" /> Locked
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   <div>
@@ -715,6 +719,9 @@ export default function FinancePortal() {
               </TabsContent>
               <TabsContent value="vat_dashboard">
                 <VatDashboardTab />
+              </TabsContent>
+              <TabsContent value="cost_center">
+                <CostCenterHistoryContent />
               </TabsContent>
             </Tabs>
           )}

@@ -403,6 +403,7 @@ export async function getFinancePendingPRs(): Promise<{
       .from("purchase_requisitions")
       .select("*")
       .eq("status", "PENDING_FINANCE_APPROVAL")
+      .or("pr_locked.is.null,pr_locked.eq.false")
       .order("created_at", { ascending: false });
 
     if (error) {
