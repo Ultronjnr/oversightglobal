@@ -36,6 +36,8 @@ import {
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
 import { compressImage } from "@/lib/image-compression";
+import { listProjects, listDonors } from "@/services/donation.service";
+import type { DonationProject, Donor } from "@/services/donation.service";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
@@ -93,6 +95,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
+  const [projectId, setProjectId] = useState<string>("");
+  const [donorId, setDonorId] = useState<string>("");
+  const [projects, setProjects] = useState<DonationProject[]>([]);
+  const [donors, setDonors] = useState<Donor[]>([]);
 
   // Inline create-category
   const [showCreateCat, setShowCreateCat] = useState(false);
@@ -103,6 +109,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   useEffect(() => {
     if (!open) return;
     getCategories().then((r) => r.success && setCategories(r.data));
+    listProjects().then((p) => setProjects(p)).catch(() => setProjects([]));
+    listDonors().then((d) => setDonors(d)).catch(() => setDonors([]));
   }, [open]);
 
   const reset = () => {
@@ -127,6 +135,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setTotalAmount("");
     setCategoryId("");
     setLineItems([]);
+    setProjectId("");
+    setDonorId("");
   };
 
   const handleClose = () => {
