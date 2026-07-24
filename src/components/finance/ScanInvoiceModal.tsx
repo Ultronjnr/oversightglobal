@@ -767,6 +767,54 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                   )}
                 </div>
               </div>
+
+              {/* Donor / Project linkage — enforces budget allocation */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">
+                    Project <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Select value={projectId || "__none"} onValueChange={(v) => setProjectId(v === "__none" ? "" : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Link to a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— No project —</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                          {p.budget ? (
+                            <span className="text-xs text-muted-foreground"> · Budget {p.budget}</span>
+                          ) : null}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {projectId && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Funds will be reserved from this project on save.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">
+                    Donor <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Select value={donorId || "__none"} onValueChange={(v) => setDonorId(v === "__none" ? "" : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Link to a donor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— No donor —</SelectItem>
+                      {donors.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </>
           )}
 
