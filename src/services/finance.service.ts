@@ -76,8 +76,14 @@ export interface Quote {
   document_url: string | null;
   created_at: string;
   updated_at: string;
+  item_prices?: Array<{ description: string; quantity: number; unit_price: number; total: number }> | null;
+  counter_offer_amount?: number | null;
+  counter_offer_notes?: string | null;
+  counter_offer_by?: string | null;
+  counter_offer_at?: string | null;
   supplier?: Supplier;
   pr?: PurchaseRequisition;
+  pr_items?: Array<{ description: string; quantity: number; unit_price: number; total: number }>;
 }
 
 /**
@@ -672,7 +678,8 @@ export async function getQuotes(): Promise<{
       .select(`
         *,
         transaction:transactions (*),
-        supplier:suppliers (*)
+        supplier:suppliers (*),
+        pr:purchase_requisitions ( items, currency, transaction_id )
       `)
       .order("created_at", { ascending: false });
 
@@ -681,7 +688,11 @@ export async function getQuotes(): Promise<{
       return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
-    return { success: true, data: (data || []) as unknown as Quote[] };
+    const normalized = (data || []).map((q: any) => ({
+      ...q,
+      pr_items: Array.isArray(q?.pr?.items) ? q.pr.items : [],
+    }));
+    return { success: true, data: normalized as unknown as Quote[] };
   } catch (error: any) {
     logError("getQuotes", error);
     return { success: false, error: getSafeErrorMessage(error), data: [] };
