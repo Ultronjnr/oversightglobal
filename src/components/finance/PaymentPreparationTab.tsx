@@ -84,6 +84,9 @@ type PayRow =
       prId?: string;
       items?: any[];
       invoiceId?: string | null;
+      category?: string | null;
+      project?: string | null;
+      donor?: string | null;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
@@ -141,6 +144,9 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         prId: t.pr?.id || t.pr_id,
         items: Array.isArray(t.pr?.items) ? (t.pr?.items as any[]) : [],
         invoiceId: t.invoice_id,
+        category: t.pr?.category?.name || null,
+        project: t.pr?.project?.name || null,
+        donor: t.pr?.donor?.name || null,
       };
     });
     return [...reimbRows, ...txnRows].sort(
