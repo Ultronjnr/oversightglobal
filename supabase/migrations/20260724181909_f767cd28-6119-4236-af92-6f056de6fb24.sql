@@ -1,0 +1,2 @@
+ALTER TABLE public.ocr_analyses ADD COLUMN IF NOT EXISTS file_hash TEXT;
+CREATE INDEX IF NOT EXISTS idx_ocr_analyses_org_hash ON public.ocr_analyses(organization_id, file_hash) WHERE status = 'COMPLETED';

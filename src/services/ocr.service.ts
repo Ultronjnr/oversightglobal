@@ -52,12 +52,14 @@ export interface OcrAnalysis {
 
 export interface AnalyzeDocumentInput {
   document_type: OcrDocumentType;
-  bucket: "pr-documents" | "reimbursement-documents" | "invoice-documents";
-  storage_path: string;
+  bucket?: "pr-documents" | "reimbursement-documents" | "invoice-documents";
+  storage_path?: string;
   invoice_id?: string;
   reimbursement_id?: string;
   pr_id?: string;
   force?: boolean;
+  file_hash?: string;
+  probe_only?: boolean;
 }
 
 export async function analyzeDocument(
@@ -74,11 +76,20 @@ export async function analyzeDocument(
     if (!data?.success) {
       return { success: false, error: data?.error || "OCR analysis failed" };
     }
-    return { success: true, analysis: data.analysis as OcrAnalysis, cached: !!data.cached };
+    return { success: true, analysis: (data.analysis as OcrAnalysis) ?? undefined, cached: !!data.cached };
   } catch (e) {
     logError("analyzeDocument", e);
     return { success: false, error: getSafeErrorMessage(e) };
   }
+}
+
+/** SHA-256 hex fingerprint of a file for OCR cache lookups. */
+export async function computeFileHash(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export async function getLatestAnalysisFor(filter: {

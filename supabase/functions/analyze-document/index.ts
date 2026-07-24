@@ -16,6 +16,8 @@ interface RequestBody {
   reimbursement_id?: string | null;
   pr_id?: string | null;
   force?: boolean;
+  file_hash?: string | null;
+  probe_only?: boolean;
 }
 
 const EXTRACTION_SCHEMA = `{
@@ -54,6 +56,8 @@ function systemPromptFor(docType: DocType): string {
     "",
     "RULES:",
     "- ALWAYS extract EVERY line item as a separate object. Never skip a line.",
+    "- The document MAY span multiple pages. Read every page and MERGE line items from ALL pages into a single flat line_items array. Never restart numbering or drop rows on later pages.",
+    "- Totals (subtotal, vat_amount, total_amount) refer to the WHOLE document — take them from the final summary page.",
     "- For each line item, ALWAYS output:",
     "  * description (string, clean item name)",
     "  * quantity (number, default 1 if missing)",
@@ -117,11 +121,16 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: "Invalid authentication" }, 401);
 
     const body = (await req.json()) as RequestBody;
-    const { document_type, bucket, storage_path } = body;
-    if (!document_type || !bucket || !storage_path) {
-      return json({ error: "Missing document_type, bucket or storage_path" }, 400);
+    const { document_type, bucket, storage_path, file_hash, probe_only } = body;
+    if (!document_type) {
+      return json({ error: "Missing document_type" }, 400);
     }
-    if (
+    if (probe_only) {
+      if (!file_hash) return json({ error: "probe_only requires file_hash" }, 400);
+    } else if (!bucket || !storage_path) {
+      return json({ error: "Missing bucket or storage_path" }, 400);
+    }
+    if (bucket &&
       !["pr-documents", "reimbursement-documents", "invoice-documents"].includes(bucket)
     ) {
       return json({ error: "Invalid bucket" }, 400);
@@ -137,13 +146,37 @@ Deno.serve(async (req) => {
       .single();
     if (!profile?.organization_id) return json({ error: "No organization" }, 403);
 
+    // Fast cache: if the caller precomputed a SHA-256 hash of the file, reuse
+    // any prior COMPLETED analysis for the same org+hash without touching
+    // storage or the AI model. Enables instant re-scan and zero-cost dedup.
+    if (file_hash && !body.force) {
+      const { data: hashHit } = await admin
+        .from("ocr_analyses")
+        .select("*")
+        .eq("organization_id", profile.organization_id)
+        .eq("file_hash", file_hash)
+        .eq("status", "COMPLETED")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (hashHit) {
+        return json({ success: true, analysis: hashHit, cached: true });
+      }
+      if (probe_only) {
+        return json({ success: true, analysis: null, cached: false });
+      }
+    }
+    if (probe_only) {
+      return json({ success: true, analysis: null, cached: false });
+    }
+
     // Cross-tenant guard: the service-role client bypasses RLS on storage.
     // Verify the requested storage_path actually belongs to the caller's
     // organization before downloading. All app upload paths are prefixed with
     // either <organization_id>/... or <user_id>/..., or (for PR chat) with
     // chat/<pr_id>/... where the PR must belong to the caller's org.
     const orgOk = await verifyStoragePathOwnership(
-      admin, storage_path, user.id, profile.organization_id,
+      admin, storage_path!, user.id, profile.organization_id,
     );
     if (!orgOk) {
       return json({ error: "Not authorized for this document" }, 403);
@@ -179,6 +212,7 @@ Deno.serve(async (req) => {
         pr_id: body.pr_id ?? null,
         status: "PROCESSING",
         created_by: user.id,
+        file_hash: file_hash ?? null,
       })
       .select("*")
       .single();
@@ -201,6 +235,25 @@ Deno.serve(async (req) => {
       }
 
       const buf = new Uint8Array(await fileBlob.arrayBuffer());
+      // Compute (or verify) a SHA-256 fingerprint so we can dedup future scans
+      // even when the client didn't precompute a hash.
+      const computedHash = await sha256Hex(buf);
+      if (!file_hash && !body.force) {
+        const { data: postHit } = await admin
+          .from("ocr_analyses")
+          .select("*")
+          .eq("organization_id", profile.organization_id)
+          .eq("file_hash", computedHash)
+          .eq("status", "COMPLETED")
+          .neq("id", created.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (postHit) {
+          await admin.from("ocr_analyses").delete().eq("id", created.id);
+          return json({ success: true, analysis: postHit, cached: true });
+        }
+      }
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
       const fileName = storage_path.split("/").pop() || "invoice";
@@ -266,6 +319,7 @@ Deno.serve(async (req) => {
           extracted,
           confidence,
           model,
+          file_hash: computedHash,
         })
         .eq("id", created.id)
         .select("*")
@@ -360,6 +414,12 @@ function encodeBase64(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
   }
   return btoa(binary);
+}
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const arr = Array.from(new Uint8Array(digest));
+  return arr.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function toNum(v: unknown): number | null {

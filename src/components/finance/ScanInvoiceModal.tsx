@@ -19,10 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import {Loader2, Sparkles, Upload, CheckCircle2, AlertTriangle, ReceiptText as Receipt, ScanLine, Camera, FileText, Plus, Trash2} from "lucide-react";
+import {Loader2, Sparkles, Upload, CheckCircle2, AlertTriangle, ReceiptText as Receipt, ScanLine, Camera, FileText, Plus, Trash2, RefreshCw, Zap} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { analyzeDocument, type OcrAnalysis } from "@/services/ocr.service";
+import { analyzeDocument, computeFileHash, type OcrAnalysis } from "@/services/ocr.service";
+import { Progress } from "@/components/ui/progress";
 import { CameraCaptureModal } from "@/components/capture/CameraCaptureModal";
 import {
   getCategories,
@@ -77,6 +78,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanStage, setScanStage] = useState<"idle" | "hashing" | "cache" | "uploading" | "extracting" | "done" | "failed">("idle");
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanAttempts, setScanAttempts] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
+  const [fileHash, setFileHash] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
@@ -129,6 +136,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setAnalysis(null);
     setScanPath(null);
     setCameraMode(null);
+    setScanStage("idle");
+    setScanProgress(0);
+    setScanError(null);
+    setScanAttempts(0);
+    setFromCache(false);
+    setFileHash(null);
     setSupplierName("");
     setSupplierVat("");
     setBankName("");
@@ -163,6 +176,9 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       return;
     }
     setAnalysis(null);
+    setScanError(null);
+    setFromCache(false);
+    setFileHash(null);
     setCompressing(true);
     try {
       const compressed = await compressImage(f, {
@@ -241,35 +257,88 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const runScan = async () => {
     if (!file) return;
     setScanning(true);
+    setScanError(null);
+    setScanAttempts((n) => n + 1);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Not authenticated");
+        setScanStage("failed");
+        setScanError("Not authenticated");
         return;
       }
+
+      // 1. Fingerprint file — enables instant reuse of prior OCR runs.
+      setScanStage("hashing");
+      setScanProgress(10);
+      let hash = fileHash;
+      if (!hash) {
+        hash = await computeFileHash(file);
+        setFileHash(hash);
+      }
+
+      // 2. Ask backend if we already have a completed analysis for this hash.
+      setScanStage("cache");
+      setScanProgress(25);
+      const probe = await analyzeDocument({
+        document_type: "INVOICE",
+        file_hash: hash,
+        probe_only: true,
+      });
+      if (probe.success && probe.analysis) {
+        applyAnalysis(probe.analysis);
+        setFromCache(true);
+        setScanStage("done");
+        setScanProgress(100);
+        toast.success("Loaded instantly from cache — no AI call needed");
+        return;
+      }
+
+      // 3. Upload staging file.
+      setScanStage("uploading");
+      setScanProgress(45);
       const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
       const path = `${user.id}/scan/${Date.now()}-${safe}`;
       const { error: upErr } = await supabase.storage
         .from("invoice-documents")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) {
-        toast.error(`Upload failed: ${upErr.message}`);
+        setScanStage("failed");
+        setScanError(`Upload failed: ${upErr.message}`);
         return;
       }
       setScanPath(path);
 
+      // 4. Extract with AI (multi-page PDFs are handled server-side).
+      setScanStage("extracting");
+      setScanProgress(70);
       const res = await analyzeDocument({
         document_type: "INVOICE",
         bucket: "invoice-documents",
         storage_path: path,
+        file_hash: hash,
         force: true,
       });
       if (!res.success || !res.analysis) {
-        toast.error(res.error || "Scan failed");
+        setScanStage("failed");
+        setScanError(res.error || "AI could not extract data from this document.");
         return;
       }
-      setAnalysis(res.analysis);
-      const e = res.analysis.extracted || {};
+      applyAnalysis(res.analysis);
+      setFromCache(!!res.cached);
+      setScanStage("done");
+      setScanProgress(100);
+      toast.success(res.cached ? "Loaded instantly from cache" : "Invoice scanned. Review and confirm.");
+    } catch (err) {
+      setScanStage("failed");
+      setScanError(err instanceof Error ? err.message : "Unexpected scan error");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const applyAnalysis = (a: OcrAnalysis) => {
+      setAnalysis(a);
+      const e = a.extracted || {};
       setSupplierName(e.supplier_name ?? "");
       setSupplierVat(e.supplier_vat_number ?? "");
       setBankName(e.bank_name ?? "");
@@ -293,10 +362,6 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             : "",
       }));
       setLineItems(li);
-      toast.success("Invoice scanned. Review and confirm.");
-    } finally {
-      setScanning(false);
-    }
   };
 
   const sars = useMemo(() => {
@@ -531,6 +596,66 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             )}
             {analysis ? "Re-scan invoice" : "Scan invoice"}
           </Button>
+
+          {/* Progress + retry — never leaves the user with a blank screen */}
+          {(scanning || scanStage === "failed" || (fromCache && analysis)) && (
+            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                {scanning ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : scanStage === "failed" ? (
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                )}
+                <span className="font-medium">
+                  {scanStage === "hashing" && "Fingerprinting document…"}
+                  {scanStage === "cache" && "Checking cache for identical scans…"}
+                  {scanStage === "uploading" && "Uploading securely…"}
+                  {scanStage === "extracting" && "AI extracting fields from all pages…"}
+                  {scanStage === "done" && fromCache && "Loaded instantly from cache"}
+                  {scanStage === "done" && !fromCache && "Extraction complete"}
+                  {scanStage === "failed" && "Scan failed"}
+                </span>
+                {fromCache && scanStage === "done" && (
+                  <Badge variant="outline" className="ml-auto gap-1 border-success/40 text-success">
+                    <Zap className="h-3 w-3" /> Cached
+                  </Badge>
+                )}
+              </div>
+              {scanning && <Progress value={scanProgress} className="h-1.5" />}
+              {scanStage === "failed" && (
+                <>
+                  <p className="text-xs text-destructive">{scanError}</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs"
+                      onClick={runScan}
+                      disabled={!file}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Retry extraction {scanAttempts > 1 ? `(attempt ${scanAttempts + 1})` : ""}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        setScanStage("idle");
+                        setScanError(null);
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {analysis && (
             <>

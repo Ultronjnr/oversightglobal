@@ -1153,6 +1153,7 @@ export type Database = {
           donor_id: string | null
           error_message: string | null
           extracted: Json | null
+          file_hash: string | null
           id: string
           invoice_id: string | null
           model: string | null
@@ -1175,6 +1176,7 @@ export type Database = {
           donor_id?: string | null
           error_message?: string | null
           extracted?: Json | null
+          file_hash?: string | null
           id?: string
           invoice_id?: string | null
           model?: string | null
@@ -1197,6 +1199,7 @@ export type Database = {
           donor_id?: string | null
           error_message?: string | null
           extracted?: Json | null
+          file_hash?: string | null
           id?: string
           invoice_id?: string | null
           model?: string | null
