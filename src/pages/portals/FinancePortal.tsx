@@ -935,9 +935,10 @@ export default function FinancePortal() {
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        if (!pr.document_url) return;
                                         setDocumentModal({
                                           isOpen: true,
-                                          url: pr.document_url!,
+                                          url: pr.document_url,
                                           transactionId: pr.transaction_id,
                                           prId: pr.id,
                                         });

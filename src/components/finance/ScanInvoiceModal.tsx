@@ -230,8 +230,9 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       toast.error(res.error || "Failed to create category");
       return;
     }
-    setCategories((prev) => [...prev, res.data!]);
-    setCategoryId(res.data.id);
+    const category = res.data;
+    setCategories((prev) => [...prev, category]);
+    setCategoryId(category.id);
     setNewCatName("");
     setShowCreateCat(false);
     toast.success("Category created");
