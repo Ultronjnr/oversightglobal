@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt} from "lucide-react";
+import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt, Handshake} from "lucide-react";
 import {
   getSupplierProfile,
   getSupplierQuoteRequests,
@@ -21,6 +21,7 @@ import {
   getSupplierStats,
   acceptQuoteRequest,
   declineQuoteRequest,
+  respondToCounterOffer,
   type SupplierProfile,
   type SupplierQuoteRequest,
   type SupplierQuote,
@@ -194,6 +195,13 @@ export default function SupplierPortal() {
           <Badge variant="outline" className="border-primary/30 text-primary">
             <Clock className="h-3 w-3 mr-1" />
             Pending Review
+          </Badge>
+        );
+      case "COUNTER_OFFERED":
+        return (
+          <Badge className="bg-warning/20 text-warning border-warning/30">
+            <Handshake className="h-3 w-3 mr-1" />
+            Counter-Offer Received
           </Badge>
         );
       case "ACCEPTED":
@@ -739,7 +747,52 @@ export default function SupplierPortal() {
                               </TableCell>
                               <TableCell>{getQuoteStatusBadge(quote.status)}</TableCell>
                               <TableCell>
-                                {quote.status === "ACCEPTED" && !invoiceUploaded ? (
+                                {quote.status === "COUNTER_OFFERED" ? (
+                                  <div className="flex flex-col gap-1">
+                                    <div className="text-xs">
+                                      <span className="text-muted-foreground">New offer: </span>
+                                      <span className="font-mono font-semibold text-warning">
+                                        {formatCurrency(quote.counter_offer_amount || 0)}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-7 gap-1"
+                                        onClick={async () => {
+                                          const res = await respondToCounterOffer(quote.id, true);
+                                          if (res.success) {
+                                            toast.success("Counter-offer accepted");
+                                            loadData();
+                                          } else {
+                                            toast.error(res.error || "Failed to accept");
+                                          }
+                                        }}
+                                      >
+                                        <CheckCircle className="h-3 w-3" />
+                                        Accept
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-7 gap-1"
+                                        onClick={async () => {
+                                          const res = await respondToCounterOffer(quote.id, false);
+                                          if (res.success) {
+                                            toast.success("Counter-offer declined");
+                                            loadData();
+                                          } else {
+                                            toast.error(res.error || "Failed to decline");
+                                          }
+                                        }}
+                                      >
+                                        <XCircle className="h-3 w-3" />
+                                        Decline
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : quote.status === "ACCEPTED" && !invoiceUploaded ? (
                                   <Button
                                     size="sm"
                                     onClick={() => handleUploadInvoice(quote)}

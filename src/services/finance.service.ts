@@ -76,8 +76,14 @@ export interface Quote {
   document_url: string | null;
   created_at: string;
   updated_at: string;
+  item_prices?: Array<{ description: string; quantity: number; unit_price: number; total: number }> | null;
+  counter_offer_amount?: number | null;
+  counter_offer_notes?: string | null;
+  counter_offer_by?: string | null;
+  counter_offer_at?: string | null;
   supplier?: Supplier;
   pr?: PurchaseRequisition;
+  pr_items?: Array<{ description: string; quantity: number; unit_price: number; total: number }>;
 }
 
 /**
@@ -672,7 +678,8 @@ export async function getQuotes(): Promise<{
       .select(`
         *,
         transaction:transactions (*),
-        supplier:suppliers (*)
+        supplier:suppliers (*),
+        pr:purchase_requisitions ( items, currency, transaction_id )
       `)
       .order("created_at", { ascending: false });
 
@@ -681,7 +688,11 @@ export async function getQuotes(): Promise<{
       return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
-    return { success: true, data: (data || []) as unknown as Quote[] };
+    const normalized = (data || []).map((q: any) => ({
+      ...q,
+      pr_items: Array.isArray(q?.pr?.items) ? q.pr.items : [],
+    }));
+    return { success: true, data: normalized as unknown as Quote[] };
   } catch (error: any) {
     logError("getQuotes", error);
     return { success: false, error: getSafeErrorMessage(error), data: [] };
@@ -809,6 +820,80 @@ export async function rejectQuote(quoteId: string): Promise<ApprovalResult> {
     return { success: true };
   } catch (error: any) {
     logError("rejectQuote", error);
+    return { success: false, error: getSafeErrorMessage(error) };
+  }
+}
+
+/**
+ * Send a counter-offer back to the supplier for negotiation.
+ * Sets the quote to COUNTER_OFFERED so the supplier can accept or revise.
+ */
+export async function sendCounterOffer(
+  quoteId: string,
+  counterAmount: number,
+  counterNotes?: string
+): Promise<ApprovalResult> {
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    if (!(counterAmount > 0)) {
+      return { success: false, error: "Counter-offer amount must be greater than zero" };
+    }
+
+    const { data: quote, error: fetchError } = await supabase
+      .from("quotes")
+      .select("id, pr_id, status, supplier_id")
+      .eq("id", quoteId)
+      .single();
+
+    if (fetchError || !quote) {
+      return { success: false, error: "Quote not found" };
+    }
+
+    if (quote.status !== "SUBMITTED" && quote.status !== "COUNTER_OFFERED") {
+      return {
+        success: false,
+        error: "Counter-offers can only be sent on quotes that are still open",
+      };
+    }
+
+    const { error } = await supabase
+      .from("quotes")
+      .update({
+        status: "COUNTER_OFFERED",
+        counter_offer_amount: counterAmount,
+        counter_offer_notes: counterNotes || null,
+        counter_offer_by: user.id,
+        counter_offer_at: new Date().toISOString(),
+      })
+      .eq("id", quoteId);
+
+    if (error) {
+      logError("sendCounterOffer", error);
+      return { success: false, error: getSafeErrorMessage(error) };
+    }
+
+    // Best-effort audit note on the PR conversation
+    try {
+      const { data: sup } = await supabase
+        .from("suppliers")
+        .select("company_name")
+        .eq("id", quote.supplier_id)
+        .single();
+      await postSystemNote(
+        quote.pr_id,
+        `💬 Finance sent a counter-offer to ${sup?.company_name || "supplier"}: ${formatCurrency(counterAmount)}${counterNotes ? ` — "${counterNotes}"` : ""}. Awaiting supplier response.`
+      );
+    } catch (err) {
+      console.warn("[finance] counter-offer postSystemNote failed:", err);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    logError("sendCounterOffer", error);
     return { success: false, error: getSafeErrorMessage(error) };
   }
 }
