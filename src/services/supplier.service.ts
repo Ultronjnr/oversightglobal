@@ -54,6 +54,10 @@ export interface SupplierQuote {
   document_url: string | null;
   created_at: string;
   updated_at: string;
+  item_prices?: Array<{ description: string; quantity: number; unit_price: number; total: number }> | null;
+  counter_offer_amount?: number | null;
+  counter_offer_notes?: string | null;
+  counter_offer_at?: string | null;
 }
 
 export interface SupplierStats {
@@ -232,6 +236,7 @@ export async function submitQuote(params: {
   validUntil?: string;
   notes?: string;
   documentUrl?: string;
+  itemPrices?: Array<{ description: string; quantity: number; unit_price: number; total: number }>;
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -280,6 +285,9 @@ export async function submitQuote(params: {
       valid_until: params.validUntil || null,
       notes: params.notes || null,
       document_url: params.documentUrl || null,
+      item_prices: params.itemPrices && params.itemPrices.length > 0
+        ? (params.itemPrices as unknown as Json)
+        : null,
       status: "SUBMITTED",
     });
 
