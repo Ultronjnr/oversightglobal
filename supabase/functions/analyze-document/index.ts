@@ -235,6 +235,25 @@ Deno.serve(async (req) => {
       }
 
       const buf = new Uint8Array(await fileBlob.arrayBuffer());
+      // Compute (or verify) a SHA-256 fingerprint so we can dedup future scans
+      // even when the client didn't precompute a hash.
+      const computedHash = await sha256Hex(buf);
+      if (!file_hash && !body.force) {
+        const { data: postHit } = await admin
+          .from("ocr_analyses")
+          .select("*")
+          .eq("organization_id", profile.organization_id)
+          .eq("file_hash", computedHash)
+          .eq("status", "COMPLETED")
+          .neq("id", created.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (postHit) {
+          await admin.from("ocr_analyses").delete().eq("id", created.id);
+          return json({ success: true, analysis: postHit, cached: true });
+        }
+      }
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
       const fileName = storage_path.split("/").pop() || "invoice";
@@ -300,6 +319,7 @@ Deno.serve(async (req) => {
           extracted,
           confidence,
           model,
+          file_hash: computedHash,
         })
         .eq("id", created.id)
         .select("*")
