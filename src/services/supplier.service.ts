@@ -360,6 +360,62 @@ export async function respondToCounterOffer(
 }
 
 /**
+ * Supplier proposes a revised price back to Finance in response to a
+ * counter-offer. Updates the quote with the new amount / per-item pricing
+ * and moves the status back to SUBMITTED so Finance can review again.
+ */
+export async function counterBackQuote(params: {
+  quoteId: string;
+  amount: number;
+  itemPrices?: Array<{ description: string; quantity: number; unit_price: number; total: number }>;
+  notes?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    if (!(params.amount > 0)) {
+      return { success: false, error: "Enter a valid revised amount" };
+    }
+
+    const { data: quote, error: fetchError } = await supabase
+      .from("quotes")
+      .select("id, status, notes")
+      .eq("id", params.quoteId)
+      .single();
+    if (fetchError || !quote) return { success: false, error: "Quote not found" };
+    if (quote.status !== "COUNTER_OFFERED") {
+      return { success: false, error: "This quote has no pending counter-offer" };
+    }
+
+    const mergedNotes = params.notes
+      ? (quote.notes ? `${quote.notes}\n---\nSupplier counter: ${params.notes}` : `Supplier counter: ${params.notes}`)
+      : quote.notes;
+
+    const { error } = await supabase
+      .from("quotes")
+      .update({
+        amount: params.amount,
+        item_prices: params.itemPrices && params.itemPrices.length > 0
+          ? (params.itemPrices as unknown as Json)
+          : null,
+        notes: mergedNotes,
+        status: "SUBMITTED",
+        counter_offer_amount: null,
+        counter_offer_notes: null,
+        counter_offer_by: null,
+        counter_offer_at: null,
+      })
+      .eq("id", params.quoteId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Get supplier statistics
  */
 export async function getSupplierStats(): Promise<{
