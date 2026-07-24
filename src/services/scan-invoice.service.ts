@@ -73,6 +73,9 @@ export interface CreateTxnFromInvoiceInput {
   total_amount: number;
   currency?: string;
   category_id: string;
+  /** Optional Donor / Project linkage (Donation Management). */
+  project_id?: string | null;
+  donor_id?: string | null;
   notes?: string | null;
   /** Editable, AI-extracted line items */
   line_items?: Array<{
