@@ -3521,7 +3521,7 @@ export type Database = {
       }
     }
     Enums: {
-      allocation_source: "MANUAL" | "EXPENSE" | "TRANSACTION"
+      allocation_source: "MANUAL" | "EXPENSE" | "TRANSACTION" | "PR"
       allocation_type: "RESERVED" | "SPENT"
       app_role: "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER"
       attachment_kind:
@@ -3725,7 +3725,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      allocation_source: ["MANUAL", "EXPENSE", "TRANSACTION"],
+      allocation_source: ["MANUAL", "EXPENSE", "TRANSACTION", "PR"],
       allocation_type: ["RESERVED", "SPENT"],
       app_role: ["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"],
       attachment_kind: [
