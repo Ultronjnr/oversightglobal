@@ -3351,6 +3351,30 @@ export type Database = {
             }
             Returns: string
           }
+      get_approved_not_paid_queue: {
+        Args: never
+        Returns: {
+          amount: number
+          amount_paid: number
+          amount_remaining: number
+          approved_at: string
+          category_name: string
+          currency: string
+          document_url: string
+          donor_name: string
+          invoice_id: string
+          organization_id: string
+          pr_id: string
+          pr_transaction_ref: string
+          project_name: string
+          requested_by_department: string
+          requested_by_name: string
+          source: string
+          status: string
+          supplier_name: string
+          transaction_id: string
+        }[]
+      }
       get_supplier_visible_organization: {
         Args: { _org_id: string }
         Returns: {

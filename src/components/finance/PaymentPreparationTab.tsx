@@ -105,35 +105,41 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
 
   const fetchAll = async () => {
     setLoading(true);
-    const [reimbRes, txnRes] = await Promise.all([
+    // Canonical payables queue is provided by the backend RPC
+    // `get_approved_not_paid_queue`, which unifies direct-approved PRs and
+    // invoice-received PRs and always keys them by the PR's transaction ID.
+    // This is the single source of truth — no client-side reconciliation.
+    const [reimbRes, queueRes] = await Promise.all([
       getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
-      getTransactionsByStatus(["FINANCE_APPROVED", "SUPPLIER_INVOICE", "AWAITING_PAYMENT", "PAYMENT_BATCH"]),
+      (supabase as any).rpc("get_approved_not_paid_queue"),
     ]);
-    // Exclude FINANCE_APPROVED transactions that are going through the
-    // quote (RFQ) flow — those should only surface in "Approved – Not Paid"
-    // once the supplier invoice is received (status becomes SUPPLIER_INVOICE
-    // or AWAITING_PAYMENT). Direct approvals (no quote requests) appear
-    // immediately with their PR transaction ID.
-    const financeApprovedPrIds = txnRes
-      .filter((t) => t.status === "FINANCE_APPROVED" && t.pr_id)
-      .map((t) => t.pr_id);
-    let excludedPrIds = new Set<string>();
-    if (financeApprovedPrIds.length > 0) {
-      const { data: qrs } = await supabase
-        .from("quote_requests")
-        .select("pr_id, status")
-        .in("pr_id", financeApprovedPrIds);
-      excludedPrIds = new Set(
-        (qrs || [])
-          .filter((q: any) => q.status !== "DECLINED" && q.status !== "CANCELLED")
-          .map((q: any) => q.pr_id),
-      );
-    }
-    const filteredTxns = txnRes.filter(
-      (t) => !(t.status === "FINANCE_APPROVED" && excludedPrIds.has(t.pr_id)),
-    );
+    const queueRows: any[] = Array.isArray(queueRes?.data) ? queueRes.data : [];
+    const mapped: OrgTransaction[] = queueRows.map((r) => ({
+      id: r.transaction_id,
+      pr_id: r.pr_id,
+      organization_id: r.organization_id,
+      supplier_name: r.supplier_name,
+      amount: Number(r.amount || 0),
+      amount_paid: Number(r.amount_paid || 0),
+      currency: r.currency,
+      status: r.status,
+      approved_at: r.approved_at,
+      invoice_id: r.invoice_id,
+      document_url: r.document_url,
+      pr: {
+        id: r.pr_id,
+        transaction_id: r.pr_transaction_ref,
+        requested_by_name: r.requested_by_name,
+        requested_by_department: r.requested_by_department,
+        document_url: r.document_url,
+        category: r.category_name ? { name: r.category_name } : null,
+        project: r.project_name ? { name: r.project_name } : null,
+        donor: r.donor_name ? { name: r.donor_name } : null,
+        items: [],
+      },
+    })) as any;
     setReimbursements(reimbRes.rows);
-    setTransactions(filteredTxns);
+    setTransactions(mapped);
     setLoading(false);
   };
 
