@@ -709,6 +709,146 @@ export default function SupplierPortal() {
             </Card>
           </TabsContent>
 
+          {/* Negotiations Tab */}
+          <TabsContent value="negotiations">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Handshake className="h-5 w-5 text-warning" />
+                  Negotiations
+                  <Badge variant="secondary" className="ml-2">
+                    {quotes.filter((q) => q.status === "COUNTER_OFFERED").length} awaiting your response
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {quotes.filter((q) => q.status === "COUNTER_OFFERED").length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="p-4 rounded-full bg-muted mb-4">
+                      <Handshake className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium text-foreground mb-1">No Active Negotiations</h3>
+                    <p className="text-sm text-muted-foreground">
+                      When Finance sends a counter-offer on one of your quotes, it will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Organization / PR</TableHead>
+                          <TableHead className="text-right">Your Quote</TableHead>
+                          <TableHead className="text-right">Finance Counter</TableHead>
+                          <TableHead className="text-right">Δ</TableHead>
+                          <TableHead>Received</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {quotes
+                          .filter((q) => q.status === "COUNTER_OFFERED")
+                          .map((q) => {
+                            const req = quoteRequests.find((r) => r.id === q.quote_request_id);
+                            const counter = Number(q.counter_offer_amount) || 0;
+                            const prev = Number(q.amount) || 0;
+                            const deltaPct = prev > 0 ? ((counter - prev) / prev) * 100 : 0;
+                            return (
+                              <TableRow key={q.id}>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium">
+                                      {req?.organization_name || "Organization"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-mono">
+                                      {req?.pr_transaction_id || "—"}
+                                    </p>
+                                    {q.counter_offer_notes && (
+                                      <p className="text-xs italic text-muted-foreground mt-1 max-w-xs truncate">
+                                        "{q.counter_offer_notes}"
+                                      </p>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                  {formatCurrency(prev)}
+                                </TableCell>
+                                <TableCell className="text-right font-mono font-semibold text-warning">
+                                  {formatCurrency(counter)}
+                                </TableCell>
+                                <TableCell
+                                  className={`text-right text-xs font-medium ${
+                                    deltaPct < 0 ? "text-destructive" : "text-success"
+                                  }`}
+                                >
+                                  {deltaPct > 0 ? "+" : ""}
+                                  {deltaPct.toFixed(1)}%
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">
+                                  {q.counter_offer_at
+                                    ? format(new Date(q.counter_offer_at), "MMM d, HH:mm")
+                                    : "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex gap-1 justify-end">
+                                    <Button
+                                      size="sm"
+                                      className="h-8 gap-1"
+                                      onClick={async () => {
+                                        const res = await respondToCounterOffer(q.id, true);
+                                        if (res.success) {
+                                          toast.success("Counter-offer accepted. Awaiting Finance decision.");
+                                          loadData();
+                                        } else {
+                                          toast.error(res.error || "Failed to accept");
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle className="h-3.5 w-3.5" />
+                                      Accept
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="h-8 gap-1"
+                                      onClick={() => {
+                                        setNegotiationQuote(q);
+                                        setCounterBackOpen(true);
+                                      }}
+                                    >
+                                      <Handshake className="h-3.5 w-3.5" />
+                                      Counter Back
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="h-8 gap-1"
+                                      onClick={async () => {
+                                        const res = await respondToCounterOffer(q.id, false);
+                                        if (res.success) {
+                                          toast.success("Counter-offer declined");
+                                          loadData();
+                                        } else {
+                                          toast.error(res.error || "Failed to decline");
+                                        }
+                                      }}
+                                    >
+                                      <XCircle className="h-3.5 w-3.5" />
+                                      Decline
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* My Quotes Tab */}
           <TabsContent value="quotes">
             <Card>
@@ -956,6 +1096,18 @@ export default function SupplierPortal() {
         onOpenChange={setInvoiceModalOpen}
         quote={selectedQuoteForInvoice}
         onSuccess={handleInvoiceSuccess}
+      />
+
+      {/* Counter Back Modal */}
+      <CounterBackModal
+        open={counterBackOpen}
+        onOpenChange={setCounterBackOpen}
+        quote={negotiationQuote}
+        onSuccess={() => {
+          setCounterBackOpen(false);
+          setNegotiationQuote(null);
+          loadData();
+        }}
       />
     </DashboardLayout>
   );
