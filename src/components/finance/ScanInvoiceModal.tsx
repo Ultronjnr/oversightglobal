@@ -368,6 +368,50 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
         </DialogHeader>
 
         <div className={`${analysis ? "grid grid-cols-1 lg:grid-cols-[minmax(0,42%)_minmax(0,58%)] gap-5" : "space-y-4"}`}>
+          {/* Left pane — document preview shown during OCR review */}
+          {analysis && (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-border/60 bg-background/60">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-medium truncate flex-1">{file?.name ?? "Uploaded document"}</p>
+                  {typeof confidence === "number" && (
+                    <Badge variant="outline" className="gap-1">
+                      <Sparkles className="h-3 w-3 text-indigo-600" />
+                      {Math.round(confidence * 100)}%
+                    </Badge>
+                  )}
+                </div>
+                <div className="p-2 max-h-[70vh] overflow-auto">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="Invoice preview"
+                      className="w-full rounded-lg border border-border object-contain bg-white"
+                    />
+                  ) : pdfObjectUrl ? (
+                    <iframe
+                      src={pdfObjectUrl}
+                      className="w-full h-[65vh] rounded-lg border border-border bg-white"
+                      title="Invoice PDF preview"
+                    />
+                  ) : (
+                    <div className="p-8 text-center text-sm text-muted-foreground">
+                      Preview not available for this file type.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-[11px] text-muted-foreground px-1">
+                Compare each auto-filled field to the source document. Fields tagged
+                <Badge variant="outline" className="mx-1 text-[10px] py-0 gap-1">
+                  <Sparkles className="h-2.5 w-2.5 text-indigo-600" /> AI
+                </Badge>
+                were extracted by OCR — override anything that looks wrong before saving.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-4">
           {/* Capture options */}
           {!file ? (
