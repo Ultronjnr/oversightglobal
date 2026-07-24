@@ -58,6 +58,9 @@ export interface OrgTransaction {
     document_url: string | null;
     total_amount: number;
     currency: string;
+    category?: { id: string; name: string } | null;
+    project?: { id: string; name: string } | null;
+    donor?: { id: string; name: string } | null;
   } | null;
 }
 
@@ -71,7 +74,7 @@ export async function getTransactionsByStatus(
   const { data, error } = await supabase
     .from("transactions" as any)
     .select(
-      "*, pr:purchase_requisitions(id, transaction_id, requested_by_name, requested_by_department, payment_due_date, items, document_url, total_amount, currency), invoice:invoices!transactions_invoice_id_fkey(id, document_url, status, quote:quotes(id, amount, transaction_id), supplier:suppliers(id, company_name, contact_email))",
+      "*, pr:purchase_requisitions(id, transaction_id, requested_by_name, requested_by_department, payment_due_date, items, document_url, total_amount, currency, category:categories(id, name), project:donation_projects(id, name), donor:organization_donors(id, name)), invoice:invoices!transactions_invoice_id_fkey(id, document_url, status, quote:quotes(id, amount, transaction_id), supplier:suppliers(id, company_name, contact_email))",
     )
     .in("status", expandedStatuses)
     .order("approved_at", { ascending: false });
