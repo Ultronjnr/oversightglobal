@@ -993,7 +993,7 @@ export type Database = {
             foreignKeyName: "invoices_donor_id_fkey"
             columns: ["donor_id"]
             isOneToOne: false
-            referencedRelation: "donation_org_profiles"
+            referencedRelation: "organization_donors"
             referencedColumns: ["id"]
           },
           {
@@ -1224,7 +1224,7 @@ export type Database = {
             foreignKeyName: "ocr_analyses_donor_id_fkey"
             columns: ["donor_id"]
             isOneToOne: false
-            referencedRelation: "donation_org_profiles"
+            referencedRelation: "organization_donors"
             referencedColumns: ["id"]
           },
           {
@@ -1901,7 +1901,7 @@ export type Database = {
             foreignKeyName: "purchase_requisitions_donor_id_fkey"
             columns: ["donor_id"]
             isOneToOne: false
-            referencedRelation: "donation_org_profiles"
+            referencedRelation: "organization_donors"
             referencedColumns: ["id"]
           },
           {
@@ -3022,7 +3022,7 @@ export type Database = {
             foreignKeyName: "transactions_donor_id_fkey"
             columns: ["donor_id"]
             isOneToOne: false
-            referencedRelation: "donation_org_profiles"
+            referencedRelation: "organization_donors"
             referencedColumns: ["id"]
           },
           {
