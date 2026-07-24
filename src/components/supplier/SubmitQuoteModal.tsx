@@ -38,6 +38,8 @@ export function SubmitQuoteModal({
   const quoteCurrency = quoteRequest?.pr_currency || "ZAR";
   const [amount, setAmount] = useState("");
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [validUntilOpen, setValidUntilOpen] = useState(false);
   const [validUntil, setValidUntil] = useState(
     format(addDays(new Date(), 30), "yyyy-MM-dd")
   );
@@ -83,7 +85,7 @@ export function SubmitQuoteModal({
   // When toggling revise on, auto-fill the amount from the revised total
   useEffect(() => {
     if (reviseItems && itemPrices.length > 0) {
-      setAmount(revisedTotal.toFixed(2));
+      setAmount(revisedTotal > 0 ? revisedTotal.toFixed(2) : "");
     }
   }, [reviseItems, revisedTotal, itemPrices.length]);
 
@@ -261,8 +263,9 @@ export function SubmitQuoteModal({
                             type="number"
                             step="0.01"
                             min="0"
-                            value={it.unit_price}
+                            value={it.unit_price === 0 ? "" : it.unit_price}
                             onChange={(e) => handleItemPriceChange(idx, parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
                             className="h-8 text-sm"
                             disabled={isSubmitting}
                             aria-label={`Unit price for ${it.description}`}
@@ -321,7 +324,7 @@ export function SubmitQuoteModal({
           {/* Estimated Delivery Date (calendar) */}
           <div className="space-y-2">
             <Label>Estimated Delivery Date *</Label>
-            <Popover>
+            <Popover open={deliveryOpen} onOpenChange={setDeliveryOpen}>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
@@ -340,7 +343,10 @@ export function SubmitQuoteModal({
                 <CalendarPicker
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={setDeliveryDate}
+                  onSelect={(d) => {
+                    setDeliveryDate(d);
+                    if (d) setDeliveryOpen(false);
+                  }}
                   initialFocus
                   disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                   className={cn("p-3 pointer-events-auto")}
@@ -352,7 +358,7 @@ export function SubmitQuoteModal({
           {/* Valid Until */}
           <div className="space-y-2">
             <Label>Quote Valid Until *</Label>
-            <Popover>
+            <Popover open={validUntilOpen} onOpenChange={setValidUntilOpen}>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
@@ -374,6 +380,7 @@ export function SubmitQuoteModal({
                   onSelect={(d) => {
                     setValidUntilDate(d);
                     if (d) setValidUntil(format(d, "yyyy-MM-dd"));
+                    if (d) setValidUntilOpen(false);
                   }}
                   initialFocus
                   disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
