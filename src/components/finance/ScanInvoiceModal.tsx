@@ -1046,6 +1046,58 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                       Funds will be reserved from this project on save.
                     </p>
                   )}
+                  {!showCreateProject ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 mt-1 gap-1 text-xs text-primary"
+                      onClick={() => setShowCreateProject(true)}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Create Project
+                    </Button>
+                  ) : (
+                    <div className="mt-2 rounded-lg border border-border bg-muted/30 p-2 space-y-2">
+                      <Input
+                        className="h-8 text-xs"
+                        placeholder="New project name"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                      />
+                      <Input
+                        className="h-8 text-xs"
+                        type="number"
+                        step="0.01"
+                        placeholder="Budget (optional)"
+                        value={newProjectBudget}
+                        onChange={(e) => setNewProjectBudget(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs flex-1"
+                          onClick={handleCreateProject}
+                          disabled={creatingProject}
+                        >
+                          {creatingProject ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setShowCreateProject(false);
+                            setNewProjectName("");
+                            setNewProjectBudget("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">
@@ -1064,6 +1116,57 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {!showCreateDonor ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 mt-1 gap-1 text-xs text-primary"
+                      onClick={() => setShowCreateDonor(true)}
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Create Donor
+                    </Button>
+                  ) : (
+                    <div className="mt-2 rounded-lg border border-border bg-muted/30 p-2 space-y-2">
+                      <Input
+                        className="h-8 text-xs"
+                        placeholder="Donor name"
+                        value={newDonorName}
+                        onChange={(e) => setNewDonorName(e.target.value)}
+                      />
+                      <Input
+                        className="h-8 text-xs"
+                        type="email"
+                        placeholder="Email (optional)"
+                        value={newDonorEmail}
+                        onChange={(e) => setNewDonorEmail(e.target.value)}
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-7 text-xs flex-1"
+                          onClick={handleCreateDonor}
+                          disabled={creatingDonor}
+                        >
+                          {creatingDonor ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setShowCreateDonor(false);
+                            setNewDonorName("");
+                            setNewDonorEmail("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </>
