@@ -206,23 +206,9 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         return null;
       }
 
-      // Store the storage path instead of signed URL
-      // The edge function will generate fresh signed URLs on demand
-      const storagePath = fileName;
-      
-      // Create a temporary signed URL to verify upload was successful
-      const { error: urlError } = await supabase.storage
-        .from("pr-documents")
-        .createSignedUrl(fileName, 60);
-
-      if (urlError) {
-        console.error("Failed to verify upload:", urlError);
-        toast.error("Failed to verify document upload");
-        return null;
-      }
-
-      // Return the path (prefixed to match edge function expectations)
-      return `pr-documents/${storagePath}`;
+      // Upload succeeded — return the storage path.
+      // The edge function generates fresh signed URLs on demand.
+      return `pr-documents/${fileName}`;
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload document");
