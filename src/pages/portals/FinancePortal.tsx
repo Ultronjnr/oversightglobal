@@ -509,14 +509,6 @@ export default function FinancePortal() {
             <RefreshCw className="h-4 w-4" />
             Refresh Dashboard
           </Button>
-          <Button
-            variant="outline"
-            className="gap-2 bg-white hover:bg-muted/50 border-primary/30 text-primary w-full lg:w-auto justify-center"
-            onClick={() => navigate("/cost-center-history")}
-          >
-            <Building2 className="h-4 w-4" />
-            Cost Center / Department History
-          </Button>
         </div>
 
         {/* Main Content Card */}
@@ -589,6 +581,10 @@ export default function FinancePortal() {
                 <TabsTrigger value="vat_dashboard" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-sm">Cost Center</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -716,6 +712,9 @@ export default function FinancePortal() {
               </TabsContent>
               <TabsContent value="vat_dashboard">
                 <VatDashboardTab />
+              </TabsContent>
+              <TabsContent value="cost_center">
+                <CostCenterHistoryContent />
               </TabsContent>
             </Tabs>
           )}
