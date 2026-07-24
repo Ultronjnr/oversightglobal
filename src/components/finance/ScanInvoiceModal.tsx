@@ -869,8 +869,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               </div>
             </>
           )}
+          </div>
+        </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 pt-4 border-t border-border/50 mt-4">
             <Button variant="outline" onClick={handleClose} disabled={submitting || scanning}>
               Cancel
             </Button>
@@ -884,9 +886,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
               ) : (
                 <Receipt className="h-4 w-4" />
               )}
-              Create Transaction from Invoice
+              Confirm &amp; Save Transaction
             </Button>
-          </div>
         </div>
       </DialogContent>
 
