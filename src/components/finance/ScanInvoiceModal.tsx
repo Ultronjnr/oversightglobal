@@ -176,6 +176,9 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       return;
     }
     setAnalysis(null);
+    setScanError(null);
+    setFromCache(false);
+    setFileHash(null);
     setCompressing(true);
     try {
       const compressed = await compressImage(f, {
