@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt} from "lucide-react";
+import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt, Handshake} from "lucide-react";
 import {
   getSupplierProfile,
   getSupplierQuoteRequests,
@@ -21,6 +21,7 @@ import {
   getSupplierStats,
   acceptQuoteRequest,
   declineQuoteRequest,
+  respondToCounterOffer,
   type SupplierProfile,
   type SupplierQuoteRequest,
   type SupplierQuote,
@@ -194,6 +195,13 @@ export default function SupplierPortal() {
           <Badge variant="outline" className="border-primary/30 text-primary">
             <Clock className="h-3 w-3 mr-1" />
             Pending Review
+          </Badge>
+        );
+      case "COUNTER_OFFERED":
+        return (
+          <Badge className="bg-warning/20 text-warning border-warning/30">
+            <Handshake className="h-3 w-3 mr-1" />
+            Counter-Offer Received
           </Badge>
         );
       case "ACCEPTED":
