@@ -450,7 +450,23 @@ export async function getFinancePendingPRs(): Promise<{
       return { success: false, error: getSafeErrorMessage(error), data: [] };
     }
 
-    return { success: true, data: (data || []) as unknown as PurchaseRequisition[] };
+    // Exclude PRs that already have an accepted quote (or beyond) — those
+    // now move through the invoice → payment pipeline and should not appear
+    // as pending finance approvals anymore. Prevents duplicate handling.
+    const prs = (data || []) as any[];
+    const prIds = prs.map((p) => p.id);
+    if (prIds.length > 0) {
+      const { data: acceptedQuotes } = await supabase
+        .from("quotes")
+        .select("pr_id, status")
+        .in("pr_id", prIds)
+        .in("status", ["ACCEPTED", "INVOICE_UPLOADED", "AWAITING_PAYMENT", "PAID"]);
+      const excluded = new Set((acceptedQuotes || []).map((q: any) => q.pr_id));
+      const filtered = prs.filter((p) => !excluded.has(p.id));
+      return { success: true, data: filtered as unknown as PurchaseRequisition[] };
+    }
+
+    return { success: true, data: prs as unknown as PurchaseRequisition[] };
   } catch (error: any) {
     logError("getFinancePendingPRs", error);
     return { success: false, error: getSafeErrorMessage(error), data: [] };
