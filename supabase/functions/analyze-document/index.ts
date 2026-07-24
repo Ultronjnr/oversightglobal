@@ -72,6 +72,35 @@ const EXTRACTION_TOOL = {
   },
 };
 
+const EXTRACTION_SCHEMA = `{
+  "supplier_name": "string",
+  "supplier_vat_number": "string",
+  "document_number": "string",
+  "document_date": "YYYY-MM-DD",
+  "due_date": "YYYY-MM-DD",
+  "currency": "ZAR",
+  "subtotal": 0,
+  "vat_amount": 0,
+  "vat_rate": 15,
+  "total_amount": 0,
+  "payment_method": "string",
+  "payment_reference": "string",
+  "bank_name": "string",
+  "bank_account_number": "digits only",
+  "bank_branch_code": "digits only",
+  "bank_account_type": "Current/Cheque|Savings|Transmission",
+  "line_items": [{
+    "description": "string",
+    "quantity": 1,
+    "unit_price": 0,
+    "total_price": 0,
+    "vat_amount": 0,
+    "needs_review": false
+  }],
+  "confidence": 0.85,
+  "notes": "string"
+}`;
+
 function systemPromptFor(docType: DocType): string {
   const base = [
     "You are an expert South African tax invoice OCR extractor for SARS-compliant receipts.",
@@ -224,6 +253,10 @@ Deno.serve(async (req) => {
       const buf = new Uint8Array(await fileBlob.arrayBuffer());
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
+      const fileName = storage_path.split("/").pop() || "invoice";
+      const documentBlock = contentType === "application/pdf"
+        ? { type: "file", file: { filename: fileName, file_data: dataUrl } }
+        : { type: "image_url", image_url: { url: dataUrl } };
 
       // Gemini 2.5 Flash: most reliable vision + tool-call model on the
       // Lovable gateway for structured OCR. Newer Flash variants have
@@ -238,23 +271,24 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           model,
           messages: [
-            { role: "system", content: systemPromptFor(document_type) },
+            {
+              role: "system",
+              content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
+            },
             {
               role: "user",
               content: [
                 {
                   type: "text",
-                  text: "Extract the structured fields from this document. Use the extract_document_data tool. If a field is unreadable, omit it. Confidence is your overall trust score from 0 to 1.",
+                  text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
                 },
-                { type: "image_url", image_url: { url: dataUrl } },
+                documentBlock,
               ],
             },
           ],
-          tools: [EXTRACTION_TOOL],
-          tool_choice: { type: "function", function: { name: "extract_document_data" } },
-          // Multi-item invoices can exceed 1.5k output tokens and truncate
-          // the tool-call JSON, producing empty structured data.
-          max_completion_tokens: 4000,
+          response_format: { type: "json_object" },
+          // Keep output compact for speed while still allowing multi-line invoices.
+          max_completion_tokens: 3000,
         }),
       });
 
@@ -278,12 +312,13 @@ Deno.serve(async (req) => {
       // Fallback: some models emit JSON in message.content instead of tool_calls
       if (!extracted && typeof msg?.content === "string" && msg.content.trim()) {
         const raw = msg.content.trim();
-        const jsonStr = raw.startsWith("{")
-          ? raw
-          : raw.match(/\{[\s\S]*\}/)?.[0];
+        const jsonStr = extractJsonObject(raw);
         if (jsonStr) {
           try { extracted = JSON.parse(jsonStr); } catch { /* ignore */ }
         }
+      }
+      if (extracted) {
+        coerceExtracted(extracted);
       }
       if (!extracted) {
         const finish = aiJson?.choices?.[0]?.finish_reason;
@@ -396,6 +431,65 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
     item.total_price = total;
     item.amount = total;
     item.needs_review = needsReview;
+  }
+}
+
+function extractJsonObject(raw: string): string | null {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
+
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) return cleaned.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function coerceExtracted(extracted: Record<string, unknown>) {
+  for (const key of ["subtotal", "vat_amount", "vat_rate", "total_amount", "confidence"]) {
+    const n = toNum(extracted[key]);
+    if (n != null) extracted[key] = n;
+  }
+  if (!extracted.currency) extracted.currency = "ZAR";
+  const confidence = toNum(extracted.confidence);
+  if (confidence == null || confidence <= 0) extracted.confidence = 0.7;
+
+  const total = toNum(extracted.total_amount);
+  const lineItems = extracted.line_items;
+  if (total != null && (!Array.isArray(lineItems) || lineItems.length === 0)) {
+    extracted.line_items = [{
+      description: String(extracted.document_number ? `Invoice ${extracted.document_number}` : "Invoice total"),
+      quantity: 1,
+      unit_price: total,
+      total_price: total,
+      needs_review: true,
+    }];
   }
 }
 

@@ -43,7 +43,6 @@ import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
-import { CostCenterHistoryContent } from "@/components/finance/CostCenterHistoryContent";
 import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
@@ -539,10 +538,6 @@ export default function FinancePortal() {
                   <span className="text-sm">Approvals</span>
                   <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
-                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm">Cost Center</span>
-                </TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm">Suppliers</span>
@@ -728,9 +723,6 @@ export default function FinancePortal() {
               </TabsContent>
               <TabsContent value="vat_dashboard">
                 <VatDashboardTab />
-              </TabsContent>
-              <TabsContent value="cost_center">
-                <CostCenterHistoryContent />
               </TabsContent>
             </Tabs>
           )}

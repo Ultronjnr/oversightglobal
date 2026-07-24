@@ -39,9 +39,10 @@ import { compressImage } from "@/lib/image-compression";
 import { listProjects, listDonors } from "@/services/donation.service";
 import type { DonationProject, Donor } from "@/services/donation.service";
 
-const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
+const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
+const SUPPORTED_SCAN_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 
 type CameraMode = "capture" | "scan" | null;
 
@@ -148,6 +149,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
   const onFile = async (f: File | null) => {
     if (!f) return;
+    if (!SUPPORTED_SCAN_TYPES.has(f.type)) {
+      toast.error("Unsupported scan type. Upload a PDF, JPG, PNG or WebP invoice.");
+      return;
+    }
     if (f.size > MAX_SIZE) {
       toast.error("File must be smaller than 15MB");
       return;
@@ -155,7 +160,11 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setAnalysis(null);
     setCompressing(true);
     try {
-      const compressed = await compressImage(f);
+      const compressed = await compressImage(f, {
+        maxDimension: 1600,
+        quality: 0.76,
+        skipUnder: 350 * 1024,
+      });
       setFile(compressed);
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
