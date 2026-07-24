@@ -121,11 +121,16 @@ Deno.serve(async (req) => {
     if (authError || !user) return json({ error: "Invalid authentication" }, 401);
 
     const body = (await req.json()) as RequestBody;
-    const { document_type, bucket, storage_path } = body;
-    if (!document_type || !bucket || !storage_path) {
-      return json({ error: "Missing document_type, bucket or storage_path" }, 400);
+    const { document_type, bucket, storage_path, file_hash, probe_only } = body;
+    if (!document_type) {
+      return json({ error: "Missing document_type" }, 400);
     }
-    if (
+    if (probe_only) {
+      if (!file_hash) return json({ error: "probe_only requires file_hash" }, 400);
+    } else if (!bucket || !storage_path) {
+      return json({ error: "Missing bucket or storage_path" }, 400);
+    }
+    if (bucket &&
       !["pr-documents", "reimbursement-documents", "invoice-documents"].includes(bucket)
     ) {
       return json({ error: "Invalid bucket" }, 400);
@@ -141,13 +146,37 @@ Deno.serve(async (req) => {
       .single();
     if (!profile?.organization_id) return json({ error: "No organization" }, 403);
 
+    // Fast cache: if the caller precomputed a SHA-256 hash of the file, reuse
+    // any prior COMPLETED analysis for the same org+hash without touching
+    // storage or the AI model. Enables instant re-scan and zero-cost dedup.
+    if (file_hash && !body.force) {
+      const { data: hashHit } = await admin
+        .from("ocr_analyses")
+        .select("*")
+        .eq("organization_id", profile.organization_id)
+        .eq("file_hash", file_hash)
+        .eq("status", "COMPLETED")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (hashHit) {
+        return json({ success: true, analysis: hashHit, cached: true });
+      }
+      if (probe_only) {
+        return json({ success: true, analysis: null, cached: false });
+      }
+    }
+    if (probe_only) {
+      return json({ success: true, analysis: null, cached: false });
+    }
+
     // Cross-tenant guard: the service-role client bypasses RLS on storage.
     // Verify the requested storage_path actually belongs to the caller's
     // organization before downloading. All app upload paths are prefixed with
     // either <organization_id>/... or <user_id>/..., or (for PR chat) with
     // chat/<pr_id>/... where the PR must belong to the caller's org.
     const orgOk = await verifyStoragePathOwnership(
-      admin, storage_path, user.id, profile.organization_id,
+      admin, storage_path!, user.id, profile.organization_id,
     );
     if (!orgOk) {
       return json({ error: "Not authorized for this document" }, 403);
@@ -183,6 +212,7 @@ Deno.serve(async (req) => {
         pr_id: body.pr_id ?? null,
         status: "PROCESSING",
         created_by: user.id,
+        file_hash: file_hash ?? null,
       })
       .select("*")
       .single();
