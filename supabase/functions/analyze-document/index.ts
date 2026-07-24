@@ -225,9 +225,11 @@ Deno.serve(async (req) => {
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
 
-      // Flash is dramatically faster than Pro for OCR-style extraction while
-      // keeping strong accuracy — chosen to keep scan latency low.
-      const model = "google/gemini-2.5-flash";
+      // Gemini 3.1 Flash-Lite is Google's cost-efficient extraction model:
+      // markedly lower latency than 2.5-flash for structured OCR while
+      // retaining accuracy — the best fit for high-volume invoice/receipt
+      // scans.
+      const model = "google/gemini-3.1-flash-lite";
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -251,10 +253,9 @@ Deno.serve(async (req) => {
           ],
           tools: [EXTRACTION_TOOL],
           tool_choice: { type: "function", function: { name: "extract_document_data" } },
-          // Speed: disable extended "thinking" and cap output — OCR extraction
-          // is a structured task that does not need chain-of-thought, so this
-          // cuts latency substantially without hurting accuracy.
-          reasoning_effort: "low",
+          // OCR extraction is a bounded structured task — keep output tight
+          // to minimise latency and cost. Flash-Lite has no extended
+          // reasoning knob, so we omit reasoning_effort entirely.
           max_completion_tokens: 2000,
         }),
       });
