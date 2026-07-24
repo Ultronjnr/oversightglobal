@@ -107,6 +107,24 @@ export function BatchesTab() {
 
   useEffect(() => {
     void fetchBatches();
+    // Live refresh: reload when batches or their allocations change (create,
+    // confirm, cancel, or netcash status transitions).
+    const channel = supabase
+      .channel("batches-tab-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_batches" },
+        () => void fetchBatches(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_allocations" },
+        () => void fetchBatches(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchBatches = async () => {

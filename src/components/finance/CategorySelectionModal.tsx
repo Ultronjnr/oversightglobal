@@ -55,6 +55,9 @@ import {
   type Supplier,
 } from "@/services/finance.service";
 import { Badge } from "@/components/ui/badge";
+import { listProjects, listDonors, upsertProject, upsertDonor } from "@/services/donation.service";
+import type { DonationProject, Donor as DonationDonor } from "@/services/donation.service";
+import { HandCoins, HeartHandshake } from "lucide-react";
 
 interface CategorySelectionModalProps {
   pr: PurchaseRequisition | null;
@@ -65,6 +68,8 @@ interface CategorySelectionModalProps {
     categoryId: string,
     comments: string,
     supplierId: string,
+    projectId: string | null,
+    donorId: string | null,
   ) => Promise<void>;
 }
 
@@ -106,10 +111,28 @@ export function CategorySelectionModal({
     supplier_type: "REGISTERED" as "REGISTERED" | "PREFERRED" | "ONE_TIME",
   });
 
+  // Project / Donor linkage (optional — enables budget allocation)
+  const [projects, setProjects] = useState<DonationProject[]>([]);
+  const [donors, setDonors] = useState<DonationDonor[]>([]);
+  const [projectId, setProjectId] = useState<string>("");
+  const [donorId, setDonorId] = useState<string>("");
+  const [projectQuery, setProjectQuery] = useState("");
+  const [donorQuery, setDonorQuery] = useState("");
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectBudget, setNewProjectBudget] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [newDonorName, setNewDonorName] = useState("");
+  const [newDonorEmail, setNewDonorEmail] = useState("");
+  const [creatingDonor, setCreatingDonor] = useState(false);
+  const [showCreateDonor, setShowCreateDonor] = useState(false);
+
   useEffect(() => {
     if (open) {
       fetchCategories();
       fetchSuppliers();
+      listProjects().then(setProjects).catch(() => setProjects([]));
+      listDonors().then(setDonors).catch(() => setDonors([]));
       // Reset state when modal opens
       setSelectedCategoryId(null);
       setComments("");
@@ -121,6 +144,16 @@ export function CategorySelectionModal({
       setSelectedSupplierId(null);
       setSupplierQuery("");
       setShowNewSupplierForm(false);
+      setProjectId("");
+      setDonorId("");
+      setProjectQuery("");
+      setDonorQuery("");
+      setShowCreateProject(false);
+      setShowCreateDonor(false);
+      setNewProjectName("");
+      setNewProjectBudget("");
+      setNewDonorName("");
+      setNewDonorEmail("");
       setNewSupplier({
         company_name: "",
         registration_number: "",
@@ -288,13 +321,87 @@ export function CategorySelectionModal({
 
     setIsSubmitting(true);
     try {
-      await onConfirm(pr.id, selectedCategoryId, comments, selectedSupplierId);
+      await onConfirm(
+        pr.id,
+        selectedCategoryId,
+        comments,
+        selectedSupplierId,
+        projectId || null,
+        donorId || null,
+      );
     } catch (error) {
       console.error("Category selection error:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    setCreatingProject(true);
+    try {
+      const created = await upsertProject({
+        name: newProjectName.trim(),
+        budget: newProjectBudget ? Number(newProjectBudget) : 0,
+      });
+      setProjects((prev) => [...prev, created]);
+      setProjectId(created.id);
+      setShowCreateProject(false);
+      setNewProjectName("");
+      setNewProjectBudget("");
+      toast.success("Project created");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create project");
+    } finally {
+      setCreatingProject(false);
+    }
+  };
+
+  const handleCreateDonor = async () => {
+    if (!newDonorName.trim()) {
+      toast.error("Donor name is required");
+      return;
+    }
+    setCreatingDonor(true);
+    try {
+      const created = await upsertDonor({
+        name: newDonorName.trim(),
+        email: newDonorEmail.trim() || null,
+      });
+      setDonors((prev) => [...prev, created]);
+      setDonorId(created.id);
+      setShowCreateDonor(false);
+      setNewDonorName("");
+      setNewDonorEmail("");
+      toast.success("Donor created");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create donor");
+    } finally {
+      setCreatingDonor(false);
+    }
+  };
+
+  const filteredProjects = useMemo(() => {
+    const q = projectQuery.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter((p) => p.name.toLowerCase().includes(q));
+  }, [projects, projectQuery]);
+  const filteredDonors = useMemo(() => {
+    const q = donorQuery.trim().toLowerCase();
+    if (!q) return donors;
+    return donors.filter((d) => d.name.toLowerCase().includes(q));
+  }, [donors, donorQuery]);
+  const selectedProject = useMemo(
+    () => projects.find((p) => p.id === projectId),
+    [projects, projectId],
+  );
+  const selectedDonor = useMemo(
+    () => donors.find((d) => d.id === donorId),
+    [donors, donorId],
+  );
 
   const handleClose = () => {
     if (!isSubmitting && !isCreatingCategory && !isCreatingSupplier) {
@@ -828,6 +935,212 @@ export function CategorySelectionModal({
 
           {/* Approval Comments */}
           {!showNewCategoryForm && !showNewSupplierForm && (
+            <>
+              {/* Project / Donor linkage — optional; enables budget allocation */}
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <div>
+                  <Label className="flex items-center gap-2">
+                    <HandCoins className="h-4 w-4 text-primary" />
+                    Project <span className="text-xs text-muted-foreground">(optional)</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Link this PR to a donation project. Funds will be reserved on approval and
+                    blocked if the project has no budget left.
+                  </p>
+                </div>
+                {showCreateProject ? (
+                  <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <Input
+                      placeholder="New project name"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      autoFocus
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Total budget (optional)"
+                      value={newProjectBudget}
+                      onChange={(e) => setNewProjectBudget(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowCreateProject(false)}
+                        disabled={creatingProject}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleCreateProject}
+                        disabled={creatingProject || !newProjectName.trim()}
+                        className="flex-1"
+                      >
+                        {creatingProject ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Project"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Command className="rounded-lg border border-border" shouldFilter={false}>
+                      <div className="flex items-center border-b border-border px-3">
+                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                        <input
+                          className="flex h-10 w-full rounded-md bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
+                          placeholder="Search projects..."
+                          value={projectQuery}
+                          onChange={(e) => setProjectQuery(e.target.value)}
+                        />
+                      </div>
+                      <CommandList className="max-h-[160px]">
+                        <CommandEmpty>
+                          <p className="text-sm text-muted-foreground py-2">No projects found.</p>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="__none"
+                            onSelect={() => setProjectId("")}
+                            className="cursor-pointer"
+                          >
+                            <span className="text-sm text-muted-foreground">— No project —</span>
+                            {!projectId && <Check className="h-4 w-4 text-success ml-auto" />}
+                          </CommandItem>
+                          {filteredProjects.map((p) => (
+                            <CommandItem
+                              key={p.id}
+                              value={p.name}
+                              onSelect={() => setProjectId(p.id)}
+                              className="cursor-pointer"
+                            >
+                              <HandCoins className="h-4 w-4 text-primary mr-2" />
+                              <span className="flex-1 truncate text-sm">{p.name}</span>
+                              {p.budget ? (
+                                <span className="text-[11px] text-muted-foreground mr-2">
+                                  Budget {Number(p.budget).toLocaleString()}
+                                </span>
+                              ) : null}
+                              {projectId === p.id && <Check className="h-4 w-4 text-success" />}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                    {selectedProject && (
+                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-xs text-primary">
+                        Funds will be reserved from <span className="font-semibold">{selectedProject.name}</span> when Finance approves.
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCreateProject(true)}
+                      className="w-full border-dashed"
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Create New Project
+                    </Button>
+                  </>
+                )}
+
+                <div className="pt-2">
+                  <Label className="flex items-center gap-2">
+                    <HeartHandshake className="h-4 w-4 text-primary" />
+                    Donor <span className="text-xs text-muted-foreground">(optional)</span>
+                  </Label>
+                </div>
+                {showCreateDonor ? (
+                  <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                    <Input
+                      placeholder="New donor name"
+                      value={newDonorName}
+                      onChange={(e) => setNewDonorName(e.target.value)}
+                      autoFocus
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Donor email (optional)"
+                      value={newDonorEmail}
+                      onChange={(e) => setNewDonorEmail(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setShowCreateDonor(false)}
+                        disabled={creatingDonor}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleCreateDonor}
+                        disabled={creatingDonor || !newDonorName.trim()}
+                        className="flex-1"
+                      >
+                        {creatingDonor ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Donor"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Command className="rounded-lg border border-border" shouldFilter={false}>
+                      <div className="flex items-center border-b border-border px-3">
+                        <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                        <input
+                          className="flex h-10 w-full rounded-md bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
+                          placeholder="Search donors..."
+                          value={donorQuery}
+                          onChange={(e) => setDonorQuery(e.target.value)}
+                        />
+                      </div>
+                      <CommandList className="max-h-[160px]">
+                        <CommandEmpty>
+                          <p className="text-sm text-muted-foreground py-2">No donors found.</p>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="__none"
+                            onSelect={() => setDonorId("")}
+                            className="cursor-pointer"
+                          >
+                            <span className="text-sm text-muted-foreground">— No donor —</span>
+                            {!donorId && <Check className="h-4 w-4 text-success ml-auto" />}
+                          </CommandItem>
+                          {filteredDonors.map((d) => (
+                            <CommandItem
+                              key={d.id}
+                              value={d.name}
+                              onSelect={() => setDonorId(d.id)}
+                              className="cursor-pointer"
+                            >
+                              <HeartHandshake className="h-4 w-4 text-primary mr-2" />
+                              <span className="flex-1 truncate text-sm">{d.name}</span>
+                              {donorId === d.id && <Check className="h-4 w-4 text-success" />}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                    {selectedDonor && (
+                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-xs text-primary">
+                        Linked donor: <span className="font-semibold">{selectedDonor.name}</span>
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCreateDonor(true)}
+                      className="w-full border-dashed"
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Create New Donor
+                    </Button>
+                  </>
+                )}
+              </div>
+
             <div className="space-y-2">
               <Label htmlFor="comments">
                 Approval Comments <span className="text-destructive">*</span>
@@ -841,6 +1154,7 @@ export function CategorySelectionModal({
                 className="bg-background/50"
               />
             </div>
+            </>
           )}
         </div>
 

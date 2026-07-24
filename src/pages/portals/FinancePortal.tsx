@@ -346,9 +346,18 @@ export default function FinancePortal() {
     categoryId: string,
     comments: string,
     supplierId?: string,
+    projectId?: string | null,
+    donorId?: string | null,
   ) => {
     try {
-      const result = await financeApprovePR(prId, comments, categoryId, supplierId);
+      const result = await financeApprovePR(
+        prId,
+        comments,
+        categoryId,
+        supplierId,
+        projectId ?? null,
+        donorId ?? null,
+      );
 
       if (result.success) {
         toast.success("PR approved and categorized successfully");
@@ -530,6 +539,10 @@ export default function FinancePortal() {
                   <span className="text-sm">Approvals</span>
                   <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
+                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-sm">Cost Center</span>
+                </TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm">Suppliers</span>
@@ -581,10 +594,6 @@ export default function FinancePortal() {
                 <TabsTrigger value="vat_dashboard" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
-                </TabsTrigger>
-                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm">Cost Center</span>
                 </TabsTrigger>
               </TabsList>
 

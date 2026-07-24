@@ -1,84 +1,41 @@
+## Scope
 
-# Phased delivery plan
+Five focused changes across the Finance portal. All are UI/service-layer; no schema changes required (Phase 1 already added project_id/donor_id + allocation RPC).
 
-Ship in 5 phases. You test after each phase before I move to the next. This prevents regressions before your paygate launch.
+### 1. Move "Cost Center" into Finance Overview top tab row
+- Finance portal already renders `CostCenterHistoryContent` inside a tab, but it sits at the far right of a wrapping second row. Reorder the `TabsList` so **Cost Center** appears in the primary (top) row, matching the Admin portal's tab layout in the reference screenshot.
+- Also rename the tab label from "Cost Center" to "Cost Center / Department" for consistency with the standalone route.
 
-Decisions locked in from your answers:
-- Project + Donor are **required** on every PR and scanned invoice.
-- Project budget is a **hard block** — approval fails if allocation exceeds remaining funds.
-- Negotiation button is labelled **"Counter-offer"** on both supplier and finance sides.
-- **Phased** rollout.
+### 2. Fix Batches tab
+- Investigate current failures in `BatchesTab.tsx` / `BatchPaymentModal.tsx`: verify list load, refresh triggers, and the batch-create → batch-submit path against `payment_batches` RLS.
+- Ensure the tab respects `refreshTrigger` and rebinds after batch creation. Surface real error messages via toast.
 
----
+### 3. Project / Donor selectors on Categorize Purchase Requisition
+- Add two searchable Combobox fields to `CategorySelectionModal.tsx`:
+  - **Project (optional)** — "— No project —" default; list `donation_projects` for org; inline "Create new project" action (name + optional budget, uses existing donation service).
+  - **Donor (optional)** — "— No donor —" default; list `organization_donors`; inline "Create new donor" (name + email).
+- Persist the selection through `financeApprovePR` → set `project_id` / `donor_id` on the PR + downstream transaction, and (when project selected) call `allocate_project_funds` RPC to reserve budget at approval time. Block approval with a clear error if the budget check fails.
 
-## Phase 1 — Foundation: data model + duplicate prevention + critical bug fix
-Covers items **5, 6 (data half), 8, 9, 11 (data half)**.
+### 4. Scan AI Invoice — allow the scan to run
+- Debug the modal end-to-end (upload → `analyze-document` invocation → PR creation). Recent OCR model change to `google/gemini-3.1-flash-lite` may be returning empty extractions on some files; confirm and fall back to `google/gemini-3.6-flash` when the lite model returns an empty payload.
+- Fix upload / storage errors by ensuring the modal writes to the correct bucket (`invoice-documents`) with the user-scoped path and passes both `bucket` + `storage_path` to the edge function.
+- Preserve the existing Project/Donor pickers and budget guard.
 
-**Migration:**
-- Add `project_id uuid` (FK → `donation_projects`) and `donor_id uuid` (FK → `donation_org_profiles`) to `purchase_requisitions`, `transactions`, `invoices`, and `ocr_analyses`. NOT NULL enforced at the app layer for new records; existing rows nullable.
-- Add `scan_document_path text` + `scan_document_bucket text` on `transactions` and `invoices` so the scanned file is persisted and previewable.
-- Add UNIQUE constraint `transactions_pr_id_key` on `transactions(pr_id)` → **one transaction per PR**, DB-enforced.
-- Add UNIQUE partial index on `invoices(quote_id) WHERE quote_id IS NOT NULL` → **one invoice per accepted quote**.
-- Add `pr_locked boolean default false` on `purchase_requisitions`; trigger flips it to true when a transaction is created OR an invoice is scanned against it → PR disappears from "Incoming PRs" queries.
-- Fix `invoices_status_check`: audit the current CHECK values against every code path that writes to `invoices.status`, extend the CHECK to cover missing values (`PARTIALLY_PAID`, `FULLY_PAID`, `AWAITING_PAYMENT`).
-- New RPC `public.allocate_project_funds(project_id, donor_id, amount)` — SECURITY DEFINER, atomic: locks the project row, checks `spent + reserved + amount <= budget`, raises if exceeded, else records the allocation. Called by PR approval and scan-invoice create-transaction.
-- RLS + GRANTs updated to match.
+### 5. Fast OCR + inline review mode
+- **Speed**: keep the lite model as primary, cap `max_output_tokens`, drop unnecessary reasoning fields, and stream the response back to the modal so fields render as soon as they arrive.
+- **Review UI**: after OCR completes, show a two-pane review step inside `ScanInvoiceModal`:
+  - Left: the uploaded document preview (image thumb or PDF iframe) with translucent highlight boxes over recognised regions when the model returns bounding hints (fallback: label chips above the preview when no coordinates).
+  - Right: editable form for `supplier_name`, `supplier_vat_number`, `document_number`, `document_date`, `subtotal`, `vat_amount`, `total_amount`, line items, banking details. Each field shows a confidence pill (High / Medium / Low) coloured from `confidence`.
+  - "Confirm & Save" commits via existing `createTransactionFromInvoice`; "Rescan" re-runs `analyze-document` with `force: true`.
 
-**Code:**
-- `getIncomingPRs` / `FinanceApprovalQueue` query filters out `pr_locked = true` and anything with an existing `transactions` row.
-- Batch payment path stops writing an invalid `invoices.status` value.
+## Technical Notes
 
-**Deliverable:** you can approve, quote, invoice, batch, and mark paid without duplicates or the `invoices_status_check` error. No UI changes yet beyond the incoming-PR filter.
+- Types: no migration needed for review mode — reuse existing `OcrExtracted`. Bounding-box overlay is best-effort based on whatever the model returns; when absent, fall back to per-field confidence chips only.
+- Reordering the Finance tabs will change tab counts widths; verify wrapping on 1119px viewport (current preview width).
+- `financeApprovePR` currently accepts `(prId, comments, categoryId, supplierId)`. Extend it to accept `projectId?` and `donorId?` and call `allocate_project_funds` server-side when a project is chosen.
 
----
+## Out of Scope
 
-## Phase 2 — Scan Invoice pipeline
-Covers items **2, 6 (UI half), 7, 10, 12**.
-
-- `ScanInvoiceModal`: persist the uploaded PDF/image path to `transactions.scan_document_path` (already uploads to `invoice-documents`, currently discards path).
-- Add **Category → Project → Donor** required pickers after OCR completes. Project list filtered by selected donor. Shows remaining budget live.
-- On "Create Transaction from Invoice": call `allocate_project_funds` RPC; on success route the record straight into **Approved – Not Paid**.
-- `TransactionStatusTab` row expander: show Project, Donor, Category, and an inline **Preview Document** button that fetches a short-lived signed URL via existing `get-document-url` edge function.
-- OCR speed: switch `analyze-document` to Lovable AI `google/gemini-2.5-flash` (fastest vision model), parallelize upload + kick off analysis (don't await upload completion before starting the signed-URL step where safe), and stream progress toasts.
-
----
-
-## Phase 3 — Quotes, Approvals, Counter-offer UX
-Covers items **1, 3, 11, 13**.
-
-- **Supplier quote form** (`SubmitQuoteModal`): replace text input for Delivery with shadcn date picker. Render one price input per PR line item; total auto-sums and is read-only.
-- **Finance Quote Comparison** (`QuoteComparisonView`): expand each quote card to list items + supplier per-item prices. Add **"Counter-offer"** button that opens a modal — Finance edits per-item prices, adds a note, submits. This creates a new `quote_requests` row with `parent_quote_id` and sets original quote to `COUNTERED`; supplier sees it in their portal and can submit revised quote.
-- **Approve PR modal** (`FinanceApprovalQueue`): add required Project + Donor pickers next to Supplier picker. Blocks approval via `allocate_project_funds` if over budget, with clear inline error.
-- **Redesign Approvals tab → "Workflow & Audit Trail" view**: for each PR, a vertical timeline (PR Created → HOD Approved → Finance Approved + Supplier assigned → Quote Received → Quote Accepted/Countered → Invoice Received → Batch Created → Paid) with actor name + timestamp on each node. Uses existing `pr-history.service` + `transaction_events` — no new tables.
-
----
-
-## Phase 4 — Navigation polish
-Covers item **4**.
-
-- Move **Cost Center / Department History** from the action-bar button to a top-level tab next to **Expense History** in `FinancePortal` (and HOD/Admin portals where present).
-
----
-
-## Phase 5 — Full audit + paygate readiness
-Covers item **14**.
-
-- Dead-code sweep: grep for unused components, unused RPCs, orphaned edge functions.
-- Full RLS re-scan.
-- Duplicate-prevention smoke test: create-approve-quote-invoice-batch-pay on a fresh PR, then attempt every duplicate path (re-approve, re-invoice same quote, re-batch same invoice) and confirm each is blocked.
-- Paygate readiness checklist (Yoco subscription flow + Netcash supplier batches already exist — confirm both against live keys before enabling billing charges).
-
-**Advice on what you may be missing (item 14 answer):**
-1. **Idempotency keys on the batch-payment webhook** — Netcash can replay; without a UNIQUE `provider_event_id` you'll double-mark invoices as paid. I'll add this in Phase 5.
-2. **Concurrency lock on batch creation** — two Finance users clicking "Create Batch" at the same time can add the same invoice to two batches. Needs an `advisory_lock` or a UNIQUE index on `(invoice_id, batch_status IN ('DRAFT','CONFIRMED'))`.
-3. **Reversal path** — if a batch fails at Netcash, invoices need to move back to Approved – Not Paid. Currently they can get stuck in `PAYMENT_BATCH`.
-4. **PR edit-after-approval** — should be locked (I'll add via `pr_locked` in Phase 1).
-5. **Donor budget over-allocation across reservations** — hard block covers new allocations, but existing reservations should be validated on project edit too.
-
----
-
-## Ordering & your ETA
-
-Phase 1 first (biggest impact, unblocks the current `invoices_status_check` error and the duplicate problem). I'll implement Phase 1 as one migration + one code pass, you smoke-test, then I move to Phase 2.
-
-Reply **"go phase 1"** to start.
+- No changes to landing page, donations panel, or other portals.
+- No schema migrations (columns/RPCs from Phase 1 are reused).
+- Not touching the OCR review overlay for reimbursements or PR documents (only the scan-invoice flow).
