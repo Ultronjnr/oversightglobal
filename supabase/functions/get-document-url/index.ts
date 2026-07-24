@@ -92,7 +92,23 @@ Deno.serve(async (req) => {
     // Never trust a client-supplied document_url — that would let an authorized
     // caller request a signed URL for any other PR's file in the shared bucket.
     const prDocumentUrl = (pr as any).document_url as string | null;
-    if (!prDocumentUrl) {
+    let resolvedDocUrl: string | null = prDocumentUrl;
+
+    // Fallback: scanned invoices persist the file on the transaction row
+    // (scan_document_path / document_url) even when the PR row wasn't updated.
+    if (!resolvedDocUrl) {
+      const { data: txn } = await adminClient
+        .from("transactions")
+        .select("document_url, scan_document_path")
+        .eq("pr_id", pr_id)
+        .maybeSingle();
+      resolvedDocUrl =
+        (txn as any)?.scan_document_path ||
+        (txn as any)?.document_url ||
+        null;
+    }
+
+    if (!resolvedDocUrl) {
       return new Response(
         JSON.stringify({ error: "This purchase requisition has no document" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -144,25 +160,25 @@ Deno.serve(async (req) => {
     // 2. Public URL: https://xxx.supabase.co/storage/v1/object/public/pr-documents/user-id/filename.pdf
     // 3. Just the path: user-id/filename.pdf
     
-    let storagePath = prDocumentUrl;
-    
+    let storagePath = resolvedDocUrl;
+
     // Extract path from signed URL
-    if (prDocumentUrl.includes("/storage/v1/object/sign/pr-documents/")) {
-      const match = prDocumentUrl.match(/\/pr-documents\/([^?]+)/);
+    if (resolvedDocUrl.includes("/storage/v1/object/sign/pr-documents/")) {
+      const match = resolvedDocUrl.match(/\/pr-documents\/([^?]+)/);
       if (match) {
         storagePath = match[1];
       }
     }
     // Extract path from public URL
-    else if (prDocumentUrl.includes("/storage/v1/object/public/pr-documents/")) {
-      const match = prDocumentUrl.match(/\/pr-documents\/([^?]+)/);
+    else if (resolvedDocUrl.includes("/storage/v1/object/public/pr-documents/")) {
+      const match = resolvedDocUrl.match(/\/pr-documents\/([^?]+)/);
       if (match) {
         storagePath = match[1];
       }
     }
     // Handle direct path
-    else if (prDocumentUrl.startsWith("pr-documents/")) {
-      storagePath = prDocumentUrl.replace("pr-documents/", "");
+    else if (resolvedDocUrl.startsWith("pr-documents/")) {
+      storagePath = resolvedDocUrl.replace("pr-documents/", "");
     }
 
     // URL decode the path in case it has encoded characters
