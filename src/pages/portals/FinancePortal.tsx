@@ -530,6 +530,10 @@ export default function FinancePortal() {
                   <span className="text-sm">Approvals</span>
                   <NotifDot n={approvalsNotif} />
                 </TabsTrigger>
+                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <Building2 className="h-4 w-4" />
+                  <span className="text-sm">Cost Center</span>
+                </TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Building2 className="h-4 w-4" />
                   <span className="text-sm">Suppliers</span>
@@ -581,10 +585,6 @@ export default function FinancePortal() {
                 <TabsTrigger value="vat_dashboard" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
-                </TabsTrigger>
-                <TabsTrigger value="cost_center" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-sm">Cost Center</span>
                 </TabsTrigger>
               </TabsList>
 
