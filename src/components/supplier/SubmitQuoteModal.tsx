@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -49,24 +50,32 @@ export function SubmitQuoteModal({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Toggle: accept original pricing as-is, or propose own per-item prices
+  const [proposePricing, setProposePricing] = useState(false);
+
   // Per-item revised pricing (always visible; supplier proposes their unit price)
   const [itemPrices, setItemPrices] = useState<Array<{ description: string; quantity: number; unit_price: number; total: number }>>([]);
 
-  // Initialize per-item prices whenever the request changes
+  // Initialize per-item prices whenever the request or toggle changes
   useEffect(() => {
     if (quoteRequest?.items?.length) {
       setItemPrices(
-        quoteRequest.items.map((it) => ({
-          description: it.description,
-          quantity: Number(it.quantity) || 0,
-          unit_price: 0,
-          total: 0,
-        }))
+        quoteRequest.items.map((it) => {
+          const qty = Number(it.quantity) || 0;
+          const originalUnit = Number(it.unit_price) || 0;
+          const unit = proposePricing ? 0 : originalUnit;
+          return {
+            description: it.description,
+            quantity: qty,
+            unit_price: unit,
+            total: Number((qty * unit).toFixed(2)),
+          };
+        })
       );
     } else {
       setItemPrices([]);
     }
-  }, [quoteRequest?.id]);
+  }, [quoteRequest?.id, proposePricing]);
 
   const handleItemPriceChange = (index: number, unitPrice: number) => {
     setItemPrices((prev) => {
@@ -211,10 +220,24 @@ export function SubmitQuoteModal({
                   <Handshake className="h-4 w-4 text-primary" />
                   Requested Items
                 </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Enter your price per unit — quantities are locked
-                </p>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="propose-pricing" className="text-xs text-muted-foreground cursor-pointer">
+                    Propose your price per item
+                  </Label>
+                  <Switch
+                    id="propose-pricing"
+                    checked={proposePricing}
+                    onCheckedChange={setProposePricing}
+                    disabled={isSubmitting}
+                  />
+                </div>
               </div>
+
+              {!proposePricing && (
+                <p className="text-[11px] text-muted-foreground px-1">
+                  Accepting the requested pricing as-is. Toggle on to propose your own price per item.
+                </p>
+              )}
 
               <div className="grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
                 <div className="col-span-5">Item / Qty</div>
@@ -253,7 +276,8 @@ export function SubmitQuoteModal({
                             }
                             placeholder="0.00"
                             className="h-8 text-sm text-right"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !proposePricing}
+                            readOnly={!proposePricing}
                             aria-label={`Your unit price for ${it.description}`}
                           />
                         </div>
