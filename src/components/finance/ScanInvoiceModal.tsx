@@ -257,35 +257,88 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const runScan = async () => {
     if (!file) return;
     setScanning(true);
+    setScanError(null);
+    setScanAttempts((n) => n + 1);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error("Not authenticated");
+        setScanStage("failed");
+        setScanError("Not authenticated");
         return;
       }
+
+      // 1. Fingerprint file — enables instant reuse of prior OCR runs.
+      setScanStage("hashing");
+      setScanProgress(10);
+      let hash = fileHash;
+      if (!hash) {
+        hash = await computeFileHash(file);
+        setFileHash(hash);
+      }
+
+      // 2. Ask backend if we already have a completed analysis for this hash.
+      setScanStage("cache");
+      setScanProgress(25);
+      const probe = await analyzeDocument({
+        document_type: "INVOICE",
+        file_hash: hash,
+        probe_only: true,
+      });
+      if (probe.success && probe.analysis) {
+        applyAnalysis(probe.analysis);
+        setFromCache(true);
+        setScanStage("done");
+        setScanProgress(100);
+        toast.success("Loaded instantly from cache — no AI call needed");
+        return;
+      }
+
+      // 3. Upload staging file.
+      setScanStage("uploading");
+      setScanProgress(45);
       const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
       const path = `${user.id}/scan/${Date.now()}-${safe}`;
       const { error: upErr } = await supabase.storage
         .from("invoice-documents")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) {
-        toast.error(`Upload failed: ${upErr.message}`);
+        setScanStage("failed");
+        setScanError(`Upload failed: ${upErr.message}`);
         return;
       }
       setScanPath(path);
 
+      // 4. Extract with AI (multi-page PDFs are handled server-side).
+      setScanStage("extracting");
+      setScanProgress(70);
       const res = await analyzeDocument({
         document_type: "INVOICE",
         bucket: "invoice-documents",
         storage_path: path,
+        file_hash: hash,
         force: true,
       });
       if (!res.success || !res.analysis) {
-        toast.error(res.error || "Scan failed");
+        setScanStage("failed");
+        setScanError(res.error || "AI could not extract data from this document.");
         return;
       }
-      setAnalysis(res.analysis);
-      const e = res.analysis.extracted || {};
+      applyAnalysis(res.analysis);
+      setFromCache(!!res.cached);
+      setScanStage("done");
+      setScanProgress(100);
+      toast.success(res.cached ? "Loaded instantly from cache" : "Invoice scanned. Review and confirm.");
+    } catch (err) {
+      setScanStage("failed");
+      setScanError(err instanceof Error ? err.message : "Unexpected scan error");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const applyAnalysis = (a: OcrAnalysis) => {
+      setAnalysis(a);
+      const e = a.extracted || {};
       setSupplierName(e.supplier_name ?? "");
       setSupplierVat(e.supplier_vat_number ?? "");
       setBankName(e.bank_name ?? "");
@@ -309,10 +362,6 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             : "",
       }));
       setLineItems(li);
-      toast.success("Invoice scanned. Review and confirm.");
-    } finally {
-      setScanning(false);
-    }
   };
 
   const sars = useMemo(() => {
