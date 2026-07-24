@@ -319,6 +319,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       vat_amount: vatAmount ? Number(vatAmount) : null,
       total_amount: total,
       category_id: categoryId,
+      project_id: projectId || null,
+      donor_id: donorId || null,
       line_items: lineItems.map((li) => ({
         description: li.description,
         quantity: Number(li.quantity) || undefined,
