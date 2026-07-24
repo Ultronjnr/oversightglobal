@@ -38,6 +38,7 @@ import {
 } from "@/services/scan-invoice.service";
 import { compressImage } from "@/lib/image-compression";
 import { listProjects, listDonors } from "@/services/donation.service";
+import { upsertProject, upsertDonor } from "@/services/donation.service";
 import type { DonationProject, Donor } from "@/services/donation.service";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp";
@@ -119,6 +120,64 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState<CategoryType>("EXPENSE");
   const [creatingCat, setCreatingCat] = useState(false);
+
+  // Inline create-project / create-donor
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectBudget, setNewProjectBudget] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [showCreateDonor, setShowCreateDonor] = useState(false);
+  const [newDonorName, setNewDonorName] = useState("");
+  const [newDonorEmail, setNewDonorEmail] = useState("");
+  const [creatingDonor, setCreatingDonor] = useState(false);
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    setCreatingProject(true);
+    try {
+      const created = await upsertProject({
+        name: newProjectName.trim(),
+        budget: newProjectBudget ? Number(newProjectBudget) : 0,
+      });
+      setProjects((prev) => [...prev, created]);
+      setProjectId(created.id);
+      setShowCreateProject(false);
+      setNewProjectName("");
+      setNewProjectBudget("");
+      toast.success("Project created");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create project");
+    } finally {
+      setCreatingProject(false);
+    }
+  };
+
+  const handleCreateDonor = async () => {
+    if (!newDonorName.trim()) {
+      toast.error("Donor name is required");
+      return;
+    }
+    setCreatingDonor(true);
+    try {
+      const created = await upsertDonor({
+        name: newDonorName.trim(),
+        email: newDonorEmail.trim() || null,
+      });
+      setDonors((prev) => [...prev, created]);
+      setDonorId(created.id);
+      setShowCreateDonor(false);
+      setNewDonorName("");
+      setNewDonorEmail("");
+      toast.success("Donor created");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create donor");
+    } finally {
+      setCreatingDonor(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
