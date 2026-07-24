@@ -2,7 +2,7 @@ import { Fragment, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers} from "lucide-react";
+import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers, Lock} from "lucide-react";
 import {Percent} from "lucide-react";
 
 
@@ -43,6 +43,7 @@ import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
+import { CostCenterHistoryContent } from "@/components/finance/CostCenterHistoryContent";
 import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
