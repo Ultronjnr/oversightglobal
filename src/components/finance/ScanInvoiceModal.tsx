@@ -36,6 +36,8 @@ import {
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
 import { compressImage } from "@/lib/image-compression";
+import { listProjects, listDonors } from "@/services/donation.service";
+import type { DonationProject, Donor } from "@/services/donation.service";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
 const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
@@ -93,6 +95,10 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [categoryId, setCategoryId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [lineItems, setLineItems] = useState<LineItemRow[]>([]);
+  const [projectId, setProjectId] = useState<string>("");
+  const [donorId, setDonorId] = useState<string>("");
+  const [projects, setProjects] = useState<DonationProject[]>([]);
+  const [donors, setDonors] = useState<Donor[]>([]);
 
   // Inline create-category
   const [showCreateCat, setShowCreateCat] = useState(false);
@@ -103,6 +109,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   useEffect(() => {
     if (!open) return;
     getCategories().then((r) => r.success && setCategories(r.data));
+    listProjects().then((p) => setProjects(p)).catch(() => setProjects([]));
+    listDonors().then((d) => setDonors(d)).catch(() => setDonors([]));
   }, [open]);
 
   const reset = () => {
@@ -127,6 +135,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setTotalAmount("");
     setCategoryId("");
     setLineItems([]);
+    setProjectId("");
+    setDonorId("");
   };
 
   const handleClose = () => {
@@ -309,6 +319,8 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       vat_amount: vatAmount ? Number(vatAmount) : null,
       total_amount: total,
       category_id: categoryId,
+      project_id: projectId || null,
+      donor_id: donorId || null,
       line_items: lineItems.map((li) => ({
         description: li.description,
         quantity: Number(li.quantity) || undefined,
@@ -753,6 +765,54 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Donor / Project linkage — enforces budget allocation */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">
+                    Project <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Select value={projectId || "__none"} onValueChange={(v) => setProjectId(v === "__none" ? "" : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Link to a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— No project —</SelectItem>
+                      {projects.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                          {p.budget ? (
+                            <span className="text-xs text-muted-foreground"> · Budget {p.budget}</span>
+                          ) : null}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {projectId && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Funds will be reserved from this project on save.
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">
+                    Donor <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Select value={donorId || "__none"} onValueChange={(v) => setDonorId(v === "__none" ? "" : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Link to a donor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— No donor —</SelectItem>
+                      {donors.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          {d.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </>

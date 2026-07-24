@@ -73,6 +73,9 @@ export interface CreateTxnFromInvoiceInput {
   total_amount: number;
   currency?: string;
   category_id: string;
+  /** Optional Donor / Project linkage (Donation Management). */
+  project_id?: string | null;
+  donor_id?: string | null;
   notes?: string | null;
   /** Editable, AI-extracted line items */
   line_items?: Array<{
@@ -199,6 +202,8 @@ export async function createTransactionFromInvoice(
         finance_status: "Approved",
         status: "FINANCE_APPROVED",
         category_id: input.category_id,
+        project_id: input.project_id ?? null,
+        donor_id: input.donor_id ?? null,
         history: history as any,
       } as any)
       .select("id")
@@ -236,6 +241,8 @@ export async function createTransactionFromInvoice(
     if (input.bank_account_number) txnUpdate.bank_account_number = input.bank_account_number.trim();
     if (input.bank_branch_code) txnUpdate.bank_branch_code = input.bank_branch_code.trim();
     if (input.bank_account_type) txnUpdate.bank_account_type = input.bank_account_type.trim();
+    if (input.project_id) txnUpdate.project_id = input.project_id;
+    if (input.donor_id) txnUpdate.donor_id = input.donor_id;
     const { data: txnRow } = await supabase
       .from("transactions" as any)
       .update(txnUpdate)
@@ -336,13 +343,39 @@ export async function createTransactionFromInvoice(
           // the invoice/scan document from the transaction itself.
           await supabase
             .from("transactions" as any)
-            .update({ document_url: docPath })
+            .update({
+              document_url: docPath,
+              scan_document_path: docPath,
+              scan_document_bucket: "pr-documents",
+            })
             .eq("pr_id", prRow.id);
         } else {
           console.warn("[scan-invoice] pr-documents upload failed:", docUpErr.message);
         }
       } catch (docErr) {
         console.warn("[scan-invoice] pr document persist failed:", docErr);
+      }
+    }
+
+    // Reserve project budget (best-effort — surfaces a warning on failure).
+    if (input.project_id) {
+      const { data: allocRes, error: allocErr } = await supabase.rpc("allocate_project_funds", {
+        _project_id: input.project_id,
+        _donor_id: input.donor_id ?? null,
+        _amount: total,
+        _source_type: "PR",
+        _source_id: prRow.id,
+        _description: `Scanned invoice ${input.document_number ?? ""} — ${input.supplier_name}`.trim(),
+      });
+      if (allocErr || (allocRes as any)?.success === false) {
+        const msg = (allocRes as any)?.error || allocErr?.message || "Project budget allocation failed";
+        console.warn("[scan-invoice] allocate_project_funds:", msg);
+        return {
+          success: false,
+          error: msg,
+          pr_id: prRow.id,
+          transaction_id: transactionId,
+        };
       }
     }
 
