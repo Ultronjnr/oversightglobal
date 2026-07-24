@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { submitQuote, type SupplierQuoteRequest } from "@/services/supplier.service";
@@ -50,8 +49,7 @@ export function SubmitQuoteModal({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Per-item revised pricing (counter-price the buyer's requested items)
-  const [reviseItems, setReviseItems] = useState(false);
+  // Per-item revised pricing (always visible; supplier proposes their unit price)
   const [itemPrices, setItemPrices] = useState<Array<{ description: string; quantity: number; unit_price: number; total: number }>>([]);
 
   // Initialize per-item prices whenever the request changes
@@ -61,14 +59,13 @@ export function SubmitQuoteModal({
         quoteRequest.items.map((it) => ({
           description: it.description,
           quantity: Number(it.quantity) || 0,
-          unit_price: Number(it.unit_price) || 0,
-          total: Number(it.total) || 0,
+          unit_price: 0,
+          total: 0,
         }))
       );
     } else {
       setItemPrices([]);
     }
-    setReviseItems(false);
   }, [quoteRequest?.id]);
 
   const handleItemPriceChange = (index: number, unitPrice: number) => {
@@ -87,12 +84,12 @@ export function SubmitQuoteModal({
 
   const revisedTotal = itemPrices.reduce((sum, it) => sum + (it.total || 0), 0);
 
-  // When toggling revise on, auto-fill the amount from the revised total
+  // Always keep the top-line amount in sync with the per-item revised total
   useEffect(() => {
-    if (reviseItems && itemPrices.length > 0) {
+    if (itemPrices.length > 0) {
       setAmount(revisedTotal > 0 ? revisedTotal.toFixed(2) : "");
     }
-  }, [reviseItems, revisedTotal, itemPrices.length]);
+  }, [revisedTotal, itemPrices.length]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,7 +160,7 @@ export function SubmitQuoteModal({
         validUntil: validUntilDate ? format(validUntilDate, "yyyy-MM-dd") : validUntil || undefined,
         notes: notes || undefined,
         documentUrl,
-        itemPrices: reviseItems ? itemPrices : undefined,
+        itemPrices: itemPrices.length > 0 ? itemPrices : undefined,
       });
 
       if (!result.success) {
@@ -187,15 +184,9 @@ export function SubmitQuoteModal({
     setValidUntilDate(addDays(new Date(), 30));
     setNotes("");
     setSelectedFile(null);
-    setReviseItems(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const calculateTotalFromItems = () => {
-    if (!quoteRequest?.items) return 0;
-    return quoteRequest.items.reduce((sum, item) => sum + (item.total || 0), 0);
   };
 
   return (
