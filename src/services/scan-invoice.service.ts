@@ -202,6 +202,8 @@ export async function createTransactionFromInvoice(
         finance_status: "Approved",
         status: "FINANCE_APPROVED",
         category_id: input.category_id,
+        project_id: input.project_id ?? null,
+        donor_id: input.donor_id ?? null,
         history: history as any,
       } as any)
       .select("id")
@@ -239,6 +241,8 @@ export async function createTransactionFromInvoice(
     if (input.bank_account_number) txnUpdate.bank_account_number = input.bank_account_number.trim();
     if (input.bank_branch_code) txnUpdate.bank_branch_code = input.bank_branch_code.trim();
     if (input.bank_account_type) txnUpdate.bank_account_type = input.bank_account_type.trim();
+    if (input.project_id) txnUpdate.project_id = input.project_id;
+    if (input.donor_id) txnUpdate.donor_id = input.donor_id;
     const { data: txnRow } = await supabase
       .from("transactions" as any)
       .update(txnUpdate)
