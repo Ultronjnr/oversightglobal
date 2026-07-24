@@ -597,6 +597,66 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             {analysis ? "Re-scan invoice" : "Scan invoice"}
           </Button>
 
+          {/* Progress + retry — never leaves the user with a blank screen */}
+          {(scanning || scanStage === "failed" || (fromCache && analysis)) && (
+            <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                {scanning ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : scanStage === "failed" ? (
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                )}
+                <span className="font-medium">
+                  {scanStage === "hashing" && "Fingerprinting document…"}
+                  {scanStage === "cache" && "Checking cache for identical scans…"}
+                  {scanStage === "uploading" && "Uploading securely…"}
+                  {scanStage === "extracting" && "AI extracting fields from all pages…"}
+                  {scanStage === "done" && fromCache && "Loaded instantly from cache"}
+                  {scanStage === "done" && !fromCache && "Extraction complete"}
+                  {scanStage === "failed" && "Scan failed"}
+                </span>
+                {fromCache && scanStage === "done" && (
+                  <Badge variant="outline" className="ml-auto gap-1 border-success/40 text-success">
+                    <Zap className="h-3 w-3" /> Cached
+                  </Badge>
+                )}
+              </div>
+              {scanning && <Progress value={scanProgress} className="h-1.5" />}
+              {scanStage === "failed" && (
+                <>
+                  <p className="text-xs text-destructive">{scanError}</p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 gap-1 text-xs"
+                      onClick={runScan}
+                      disabled={!file}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Retry extraction {scanAttempts > 1 ? `(attempt ${scanAttempts + 1})` : ""}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        setScanStage("idle");
+                        setScanError(null);
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {analysis && (
             <>
               {/* Confidence + SARS validation */}
