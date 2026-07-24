@@ -113,6 +113,8 @@ export async function financeApprovePR(
   comments: string,
   categoryId?: string,
   supplierId?: string,
+  projectId?: string | null,
+  donorId?: string | null,
 ): Promise<ApprovalResult> {
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -164,6 +166,8 @@ export async function financeApprovePR(
     if (categoryId) {
       updateData.category_id = categoryId;
     }
+    if (projectId) updateData.project_id = projectId;
+    if (donorId) updateData.donor_id = donorId;
 
     const { error: updateError } = await supabase
       .from("purchase_requisitions")
@@ -189,6 +193,41 @@ export async function financeApprovePR(
           supplier_name: sup?.company_name ?? null,
         })
         .eq("pr_id", prId);
+    }
+
+    // Propagate project / donor linkage to the auto-created transaction
+    if (projectId || donorId) {
+      const txnPatch: Record<string, unknown> = {};
+      if (projectId) txnPatch.project_id = projectId;
+      if (donorId) txnPatch.donor_id = donorId;
+      await supabase
+        .from("transactions" as any)
+        .update(txnPatch)
+        .eq("pr_id", prId);
+    }
+
+    // Reserve budget against the selected project (hard block on overrun)
+    if (projectId) {
+      const { data: allocRes, error: allocErr } = await supabase.rpc(
+        "allocate_project_funds",
+        {
+          _project_id: projectId,
+          _donor_id: donorId ?? null,
+          _amount: Number((prData as any).total_amount ?? 0),
+          _source_type: "PR",
+          _source_id: prId,
+          _description: `PR ${(prData as any).transaction_id ?? ""} approved by Finance`.trim(),
+        }
+      );
+      if (allocErr || (allocRes as any)?.success === false) {
+        return {
+          success: false,
+          error:
+            (allocRes as any)?.error ||
+            allocErr?.message ||
+            "Project budget allocation failed",
+        };
+      }
     }
 
     // Post immutable system note for audit trail (non-fatal)
