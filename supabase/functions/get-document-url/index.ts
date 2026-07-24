@@ -11,6 +11,66 @@ interface RequestBody {
   pr_id: string;
 }
 
+type DocumentCandidate = {
+  bucket: string;
+  pathOrUrl: string;
+};
+
+const ALLOWED_BUCKETS = new Set(["pr-documents", "invoice-documents", "attachments"]);
+
+function firstText(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function detectBucket(pathOrUrl: string, fallbackBucket = "pr-documents"): string {
+  const match = pathOrUrl.match(/\/storage\/v1\/object\/(?:sign|public)\/([^/]+)\//);
+  if (match?.[1] && ALLOWED_BUCKETS.has(match[1])) return match[1];
+
+  const prefix = pathOrUrl.split("/")[0];
+  if (ALLOWED_BUCKETS.has(prefix)) return prefix;
+
+  return ALLOWED_BUCKETS.has(fallbackBucket) ? fallbackBucket : "pr-documents";
+}
+
+function normalizeCandidates(pathOrUrl: string, bucket: string): string[] {
+  const raw = pathOrUrl.trim();
+  if (!raw) return [];
+
+  let path = raw;
+  const storageMatch = raw.match(new RegExp(`/storage/v1/object/(?:sign|public)/${bucket}/([^?]+)`));
+  if (storageMatch?.[1]) {
+    path = storageMatch[1];
+  } else if (raw.startsWith(`${bucket}/`)) {
+    path = raw.replace(new RegExp(`^${bucket}/`), "");
+  }
+
+  const candidates = new Set<string>();
+  const add = (value: string) => {
+    const cleaned = value.replace(/^\/+/, "").replace(new RegExp(`^${bucket}/`), "");
+    if (cleaned) candidates.add(cleaned);
+  };
+
+  add(path);
+  try {
+    add(decodeURIComponent(path));
+  } catch {
+    // Keep original candidate when decoding fails.
+  }
+
+  return Array.from(candidates);
+}
+
+function addCandidate(candidates: DocumentCandidate[], pathOrUrl: unknown, fallbackBucket = "pr-documents") {
+  if (typeof pathOrUrl !== "string" || !pathOrUrl.trim()) return;
+  candidates.push({
+    bucket: detectBucket(pathOrUrl, fallbackBucket),
+    pathOrUrl: pathOrUrl.trim(),
+  });
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -88,33 +148,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // SECURITY: derive storage path ONLY from the PR row loaded from the DB.
-    // Never trust a client-supplied document_url — that would let an authorized
-    // caller request a signed URL for any other PR's file in the shared bucket.
-    const prDocumentUrl = (pr as any).document_url as string | null;
-    let resolvedDocUrl: string | null = prDocumentUrl;
-
-    // Fallback: scanned invoices persist the file on the transaction row
-    // (scan_document_path / document_url) even when the PR row wasn't updated.
-    if (!resolvedDocUrl) {
-      const { data: txn } = await adminClient
-        .from("transactions")
-        .select("document_url, scan_document_path")
-        .eq("pr_id", pr_id)
-        .maybeSingle();
-      resolvedDocUrl =
-        (txn as any)?.scan_document_path ||
-        (txn as any)?.document_url ||
-        null;
-    }
-
-    if (!resolvedDocUrl) {
-      return new Response(
-        JSON.stringify({ error: "This purchase requisition has no document" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // Check if user has access:
     // 1. Same organization
     // 2. Supplier linked via quote request
@@ -154,87 +187,115 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract the storage path from the document_url
-    // URLs can be:
-    // 1. Full signed URL: https://xxx.supabase.co/storage/v1/object/sign/pr-documents/user-id/filename.pdf?token=xxx
-    // 2. Public URL: https://xxx.supabase.co/storage/v1/object/public/pr-documents/user-id/filename.pdf
-    // 3. Just the path: user-id/filename.pdf
-    
-    let storagePath = resolvedDocUrl;
+    // SECURITY: derive storage paths ONLY from database rows the user is allowed
+    // to access. The client-supplied document_url is intentionally ignored.
+    const documentCandidates: DocumentCandidate[] = [];
+    addCandidate(documentCandidates, (pr as any).document_url, "pr-documents");
 
-    // Extract path from signed URL
-    if (resolvedDocUrl.includes("/storage/v1/object/sign/pr-documents/")) {
-      const match = resolvedDocUrl.match(/\/pr-documents\/([^?]+)/);
-      if (match) {
-        storagePath = match[1];
+    // Scanned invoices and payment transactions may carry the invoice document
+    // even when purchase_requisitions.document_url remains empty.
+    const { data: txns } = await adminClient
+      .from("transactions")
+      .select("id, document_url, scan_document_path, scan_document_bucket, invoice_id, updated_at")
+      .eq("pr_id", pr_id)
+      .order("updated_at", { ascending: false });
+
+    const transactionIds: string[] = [];
+    const invoiceIds: string[] = [];
+    for (const txn of (txns || []) as any[]) {
+      if (txn.id) transactionIds.push(txn.id);
+      if (txn.invoice_id) invoiceIds.push(txn.invoice_id);
+      addCandidate(documentCandidates, txn.scan_document_path, firstText(txn.scan_document_bucket, "pr-documents") || "pr-documents");
+      addCandidate(documentCandidates, txn.document_url, firstText(txn.scan_document_bucket, "pr-documents") || "pr-documents");
+    }
+
+    const invoiceQuery = adminClient
+      .from("invoices")
+      .select("document_url, updated_at")
+      .eq("pr_id", pr_id)
+      .order("updated_at", { ascending: false });
+    const { data: invoicesByPr } = await invoiceQuery;
+    for (const invoice of (invoicesByPr || []) as any[]) {
+      addCandidate(documentCandidates, invoice.document_url, "invoice-documents");
+    }
+
+    if (invoiceIds.length > 0) {
+      const { data: invoicesById } = await adminClient
+        .from("invoices")
+        .select("document_url, updated_at")
+        .in("id", invoiceIds)
+        .order("updated_at", { ascending: false });
+      for (const invoice of (invoicesById || []) as any[]) {
+        addCandidate(documentCandidates, invoice.document_url, "invoice-documents");
       }
     }
-    // Extract path from public URL
-    else if (resolvedDocUrl.includes("/storage/v1/object/public/pr-documents/")) {
-      const match = resolvedDocUrl.match(/\/pr-documents\/([^?]+)/);
-      if (match) {
-        storagePath = match[1];
+
+    let attachmentQuery = adminClient
+      .from("attachments")
+      .select("file_path, file_name, mime_type, created_at")
+      .eq("is_current", true)
+      .eq("pr_id", pr_id)
+      .order("created_at", { ascending: false });
+    const { data: prAttachments } = await attachmentQuery;
+    for (const attachment of (prAttachments || []) as any[]) {
+      addCandidate(documentCandidates, attachment.file_path, "attachments");
+    }
+
+    if (transactionIds.length > 0) {
+      const { data: txnAttachments } = await adminClient
+        .from("attachments")
+        .select("file_path, file_name, mime_type, created_at")
+        .eq("is_current", true)
+        .in("transaction_id", transactionIds)
+        .order("created_at", { ascending: false });
+      for (const attachment of (txnAttachments || []) as any[]) {
+        addCandidate(documentCandidates, attachment.file_path, "attachments");
       }
     }
-    // Handle direct path
-    else if (resolvedDocUrl.startsWith("pr-documents/")) {
-      storagePath = resolvedDocUrl.replace("pr-documents/", "");
-    }
 
-    // URL decode the path in case it has encoded characters
-    try {
-      storagePath = decodeURIComponent(storagePath);
-    } catch {
-      // keep as-is
+    const uniqueDocuments = new Map<string, DocumentCandidate>();
+    for (const candidate of documentCandidates) {
+      if (!ALLOWED_BUCKETS.has(candidate.bucket)) continue;
+      uniqueDocuments.set(`${candidate.bucket}:${candidate.pathOrUrl}`, candidate);
     }
-    storagePath = storagePath.replace(/^\/+/, "");
-
-    // Build candidate paths to try, in order
-    const candidates = Array.from(
-      new Set(
-        [
-          storagePath,
-          storagePath.replace(/^pr-documents\//, ""),
-          // sometimes paths are double-encoded
-          (() => {
-            try { return decodeURIComponent(storagePath); } catch { return storagePath; }
-          })(),
-        ].filter(Boolean)
-      )
-    );
 
     let signedUrl: string | null = null;
     let lastError: unknown = null;
-    let resolvedPath = storagePath;
-    for (const candidate of candidates) {
-      const { data, error } = await adminClient.storage
-        .from("pr-documents")
-        .createSignedUrl(candidate, 600);
-      if (data?.signedUrl) {
-        signedUrl = data.signedUrl;
-        resolvedPath = candidate;
-        break;
+    let resolvedPath = "";
+    let resolvedBucket = "pr-documents";
+    for (const document of uniqueDocuments.values()) {
+      for (const candidatePath of normalizeCandidates(document.pathOrUrl, document.bucket)) {
+        const { data, error } = await adminClient.storage
+          .from(document.bucket)
+          .createSignedUrl(candidatePath, 600);
+        if (data?.signedUrl) {
+          signedUrl = data.signedUrl;
+          resolvedPath = candidatePath;
+          resolvedBucket = document.bucket;
+          break;
+        }
+        lastError = error;
       }
-      lastError = error;
+      if (signedUrl) break;
     }
 
     if (!signedUrl) {
       console.error(
         "Signed URL generation failed for all candidates",
-        { candidates, lastError, pr_id }
+        { candidates: Array.from(uniqueDocuments.values()), lastError, pr_id }
       );
       return new Response(
         JSON.stringify({
-          error: "Document file not found in storage",
-          attempted_path: storagePath,
+          error: uniqueDocuments.size > 0
+            ? "Document file not found in storage"
+            : "This purchase requisition has no document",
         }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    storagePath = resolvedPath;
 
     // Extract file info from path
-    const fileName = storagePath.split("/").pop() || "document";
+    const fileName = resolvedPath.split("/").pop() || "document";
     const fileExtension = fileName.split(".").pop()?.toLowerCase() || "";
 
     // Determine file type for preview handling
@@ -251,6 +312,7 @@ Deno.serve(async (req) => {
         signed_url: signedUrl,
         file_name: fileName,
         file_type: fileType,
+        bucket: resolvedBucket,
         expires_in: 600,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
