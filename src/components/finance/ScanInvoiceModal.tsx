@@ -78,6 +78,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanStage, setScanStage] = useState<"idle" | "hashing" | "cache" | "uploading" | "extracting" | "done" | "failed">("idle");
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanAttempts, setScanAttempts] = useState(0);
+  const [fromCache, setFromCache] = useState(false);
+  const [fileHash, setFileHash] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const [analysis, setAnalysis] = useState<OcrAnalysis | null>(null);
