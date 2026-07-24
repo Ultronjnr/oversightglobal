@@ -84,6 +84,9 @@ type PayRow =
       prId?: string;
       items?: any[];
       invoiceId?: string | null;
+      category?: string | null;
+      project?: string | null;
+      donor?: string | null;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
@@ -141,6 +144,9 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         prId: t.pr?.id || t.pr_id,
         items: Array.isArray(t.pr?.items) ? (t.pr?.items as any[]) : [],
         invoiceId: t.invoice_id,
+        category: t.pr?.category?.name || null,
+        project: t.pr?.project?.name || null,
+        donor: t.pr?.donor?.name || null,
       };
     });
     return [...reimbRows, ...txnRows].sort(
@@ -658,6 +664,29 @@ function ExpandedDetails({ row }: { row: PayRow }) {
             <p className="font-medium">{formatCurrency(row.amount, row.currency)}</p>
           </div>
         </div>
+
+        {row.kind === "transaction" && (row.category || row.project || row.donor) && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-sm">
+            <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+              <p className="text-xs text-muted-foreground">Category</p>
+              <p className="font-medium truncate" title={row.category || ""}>
+                {row.category || <span className="text-muted-foreground">—</span>}
+              </p>
+            </div>
+            <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+              <p className="text-xs text-muted-foreground">Project</p>
+              <p className="font-medium truncate" title={row.project || ""}>
+                {row.project || <span className="text-muted-foreground">—</span>}
+              </p>
+            </div>
+            <div className="p-2 rounded-md bg-muted/30 border border-border/40">
+              <p className="text-xs text-muted-foreground">Donor</p>
+              <p className="font-medium truncate" title={row.donor || ""}>
+                {row.donor || <span className="text-muted-foreground">—</span>}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right: document preview */}
