@@ -99,6 +99,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
   const [donorId, setDonorId] = useState<string>("");
   const [projects, setProjects] = useState<DonationProject[]>([]);
   const [donors, setDonors] = useState<Donor[]>([]);
+  const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
 
   // Inline create-category
   const [showCreateCat, setShowCreateCat] = useState(false);
@@ -159,6 +160,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return compressed.type.startsWith("image/")
+          ? URL.createObjectURL(compressed)
+          : null;
+      });
+      setPdfObjectUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return compressed.type === "application/pdf"
           ? URL.createObjectURL(compressed)
           : null;
       });
