@@ -203,7 +203,7 @@ export function SubmitQuoteModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Items Summary + Per-item pricing toggle */}
+          {/* Requested Items — always show per-item pricing */}
           {quoteRequest?.items && quoteRequest.items.length > 0 && (
             <div className="bg-muted/50 rounded-lg p-3 space-y-3">
               <div className="flex items-center justify-between">
@@ -211,104 +211,71 @@ export function SubmitQuoteModal({
                   <Handshake className="h-4 w-4 text-primary" />
                   Requested Items
                 </p>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="revise-items" className="text-xs text-muted-foreground cursor-pointer">
-                    Propose your price per item
-                  </Label>
-                  <Switch
-                    id="revise-items"
-                    checked={reviseItems}
-                    onCheckedChange={setReviseItems}
-                    disabled={isSubmitting}
-                  />
-                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Enter your price per unit — quantities are locked
+                </p>
               </div>
 
-              {!reviseItems ? (
-                <>
-                  <div className="space-y-1">
-                    {quoteRequest.items.map((item, idx) => (
-                      <div key={idx} className="text-sm flex justify-between">
+              <div className="grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+                <div className="col-span-5">Item / Qty</div>
+                <div className="col-span-3 text-right">Original Amount</div>
+                <div className="col-span-4 text-right">Your Price / unit</div>
+              </div>
+              <div className="space-y-2">
+                {itemPrices.map((it, idx) => {
+                  const originalTotal = Number(quoteRequest?.items?.[idx]?.total)
+                    || (Number(quoteRequest?.items?.[idx]?.unit_price) || 0) * (Number(it.quantity) || 0);
+                  const qty = Number(it.quantity) || 0;
+                  const lineTotal = qty * (Number(it.unit_price) || 0);
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-background/60 rounded-md p-2 border border-border/40 space-y-2"
+                    >
+                      <div className="grid grid-cols-12 gap-2 items-center">
+                        <div className="col-span-5 text-xs">
+                          <p className="font-medium truncate">{it.description}</p>
+                          <p className="text-muted-foreground">Qty: {qty}</p>
+                        </div>
+                        <div className="col-span-3 text-right text-xs">
+                          <p className="font-mono text-muted-foreground">
+                            {formatCurrency(originalTotal, quoteCurrency)}
+                          </p>
+                        </div>
+                        <div className="col-span-4">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={it.unit_price === 0 ? "" : it.unit_price}
+                            onChange={(e) =>
+                              handleItemPriceChange(idx, parseFloat(e.target.value) || 0)
+                            }
+                            placeholder="0.00"
+                            className="h-8 text-sm text-right"
+                            disabled={isSubmitting}
+                            aria-label={`Your unit price for ${it.description}`}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center text-xs border-t border-border/40 pt-1.5">
                         <span className="text-muted-foreground">
-                          {item.quantity}× {item.description}
+                          Your Total = {qty} × {formatCurrency(Number(it.unit_price) || 0, quoteCurrency)}
                         </span>
-                        <span className="font-mono">
-                          {formatCurrency(item.total || 0, quoteCurrency)}
+                        <span className="font-mono font-semibold">
+                          {formatCurrency(lineTotal, quoteCurrency)}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="border-t pt-2 flex justify-between text-sm">
-                    <span className="font-medium">Buyer's Estimated Total:</span>
-                    <span className="font-mono font-semibold">
-                      {formatCurrency(calculateTotalFromItems(), quoteCurrency)}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-12 gap-2 px-2 text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-                    <div className="col-span-5">Item / Qty</div>
-                    <div className="col-span-3 text-right">Requested / unit</div>
-                    <div className="col-span-4 text-right">Your price / unit</div>
-                  </div>
-                  <div className="space-y-2">
-                    {itemPrices.map((it, idx) => {
-                      const requestedUnit = Number(quoteRequest?.items?.[idx]?.unit_price) || 0;
-                      const qty = Number(it.quantity) || 0;
-                      const lineTotal = qty * (Number(it.unit_price) || 0);
-                      return (
-                        <div
-                          key={idx}
-                          className="bg-background/60 rounded-md p-2 border border-border/40 space-y-2"
-                        >
-                          <div className="grid grid-cols-12 gap-2 items-center">
-                            <div className="col-span-5 text-xs">
-                              <p className="font-medium truncate">{it.description}</p>
-                              <p className="text-muted-foreground">Qty: {qty} (locked)</p>
-                            </div>
-                            <div className="col-span-3 text-right text-xs">
-                              <p className="font-mono text-muted-foreground">
-                                {formatCurrency(requestedUnit, quoteCurrency)}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">read-only</p>
-                            </div>
-                            <div className="col-span-4">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={it.unit_price === 0 ? "" : it.unit_price}
-                                onChange={(e) =>
-                                  handleItemPriceChange(idx, parseFloat(e.target.value) || 0)
-                                }
-                                placeholder="0.00"
-                                className="h-8 text-sm text-right"
-                                disabled={isSubmitting}
-                                aria-label={`Your unit price for ${it.description}`}
-                              />
-                            </div>
-                          </div>
-                          <div className="flex justify-between items-center text-xs border-t border-border/40 pt-1.5">
-                            <span className="text-muted-foreground">
-                              Line total = {qty} × {formatCurrency(Number(it.unit_price) || 0, quoteCurrency)}
-                            </span>
-                            <span className="font-mono font-semibold">
-                              {formatCurrency(lineTotal, quoteCurrency)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="border-t pt-2 flex justify-between text-sm">
-                    <span className="font-medium">Your Revised Total:</span>
-                    <span className="font-mono font-semibold text-primary">
-                      {formatCurrency(revisedTotal, quoteCurrency)}
-                    </span>
-                  </div>
-                </>
-              )}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="border-t pt-2 flex justify-between text-sm">
+                <span className="font-medium">Your Revised Total:</span>
+                <span className="font-mono font-semibold text-primary">
+                  {formatCurrency(revisedTotal, quoteCurrency)}
+                </span>
+              </div>
             </div>
           )}
 
@@ -335,14 +302,13 @@ export function SubmitQuoteModal({
                 placeholder="Enter your quoted price"
                 className="pl-10"
                 required
-                disabled={isSubmitting || reviseItems}
+                readOnly
+                disabled={isSubmitting}
               />
             </div>
-            {reviseItems && (
-              <p className="text-xs text-muted-foreground">
-                Total is auto-calculated from your per-item pricing.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Total is auto-calculated from your per-item pricing.
+            </p>
           </div>
 
           {/* Estimated Delivery Date (calendar) */}
