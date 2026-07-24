@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import {FilePlus2, CheckCircle2, XCircle, Send, Scissors, ScanLine, Wallet, RefreshCw, History as HistoryIcon, CircleDot} from "lucide-react";
+import {FilePlus2, CheckCircle2, XCircle, Send, Scissors, ScanLine, Wallet, RefreshCw, History as HistoryIcon, CircleDot, ShieldCheck} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PRHistoryEntry {
@@ -113,9 +113,17 @@ export function PRHistoryTimeline({ history, title = "History / Activity", class
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="flex items-center gap-2">
-        <HistoryIcon className="h-4 w-4 text-primary" />
-        <h4 className="font-semibold text-sm text-foreground">{title}</h4>
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <HistoryIcon className="h-4 w-4 text-primary" />
+          <h4 className="font-semibold text-sm text-foreground">{title}</h4>
+        </div>
+        {entries.length > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 text-success text-[10px] font-medium px-2 py-0.5">
+            <ShieldCheck className="h-3 w-3" />
+            Verified digital trail
+          </span>
+        )}
       </div>
 
       {entries.length === 0 ? (
@@ -126,6 +134,7 @@ export function PRHistoryTimeline({ history, title = "History / Activity", class
             const meta = metaFor(entry.action);
             const Icon = meta.icon;
             const isLast = idx === entries.length - 1;
+            const step = idx + 1;
             return (
               <li key={idx} className="relative flex gap-3 pb-4 last:pb-0">
                 {/* connector line */}
@@ -138,6 +147,7 @@ export function PRHistoryTimeline({ history, title = "History / Activity", class
                     "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border",
                     meta.ring,
                   )}
+                  title={`Step ${step}`}
                 >
                   <Icon className={cn("h-4 w-4", meta.dot)} />
                 </span>
@@ -145,12 +155,19 @@ export function PRHistoryTimeline({ history, title = "History / Activity", class
                 <div className="flex-1 min-w-0 rounded-lg border border-border/60 bg-card px-3 py-2 shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5">
                     <p className={cn("text-sm font-semibold tracking-tight", meta.text)}>
+                      <span className="mr-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded bg-muted text-[10px] font-mono text-muted-foreground px-1">
+                        {step}
+                      </span>
                       {entry.action}
                       {entry.user_name ? (
                         <span className="text-foreground font-medium"> — {entry.user_name}</span>
                       ) : null}
                     </p>
-                    <time className="text-xs text-muted-foreground whitespace-nowrap">
+                    <time
+                      className="text-xs text-muted-foreground whitespace-nowrap"
+                      title={entry.timestamp}
+                      dateTime={entry.timestamp}
+                    >
                       {formatStamp(entry.timestamp)}
                     </time>
                   </div>
@@ -162,6 +179,12 @@ export function PRHistoryTimeline({ history, title = "History / Activity", class
             );
           })}
         </ol>
+      )}
+
+      {entries.length > 0 && (
+        <p className="text-[11px] text-muted-foreground italic pl-1">
+          Immutable audit log · {entries.length} recorded event{entries.length === 1 ? "" : "s"} · timestamps stored in UTC
+        </p>
       )}
     </div>
   );
