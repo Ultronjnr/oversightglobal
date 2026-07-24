@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         .download(storage_path);
       if (dlErr || !fileBlob) throw new Error(`Storage download failed: ${dlErr?.message}`);
 
-      const contentType = fileBlob.type || guessMime(storage_path);
+      const contentType = normalizeMime(fileBlob.type, storage_path);
       const supported = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "application/pdf"];
       if (!supported.includes(contentType)) {
         throw new Error(`Unsupported file type for OCR: ${contentType}`);
@@ -204,68 +204,48 @@ Deno.serve(async (req) => {
         ? { type: "file", file: { filename: fileName, file_data: dataUrl } }
         : { type: "image_url", image_url: { url: dataUrl } };
 
-      // Gemini 2.5 Flash: most reliable vision + tool-call model on the
-      // Lovable gateway for structured OCR. Newer Flash variants have
-      // been returning empty tool_calls on some invoice/PDF inputs.
-      const model = "google/gemini-2.5-flash";
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+      const messages = [
+        {
+          role: "system",
+          content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
         },
-        body: JSON.stringify({
-          model,
-          messages: [
+        {
+          role: "user",
+          content: [
             {
-              role: "system",
-              content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
+              type: "text",
+              text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
             },
-            {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
-                },
-                documentBlock,
-              ],
-            },
+            documentBlock,
           ],
-          response_format: { type: "json_object" },
-          // Keep output compact for speed while still allowing multi-line invoices.
-          max_completion_tokens: 3000,
-        }),
-      });
+        },
+      ];
 
-      if (!aiResp.ok) {
-        const t = await aiResp.text();
-        if (aiResp.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
-        if (aiResp.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
-        throw new Error(`AI gateway error ${aiResp.status}: ${t.slice(0, 300)}`);
+      // Fast path: Flash is normally quickest. If it returns no parseable JSON,
+      // retry once with Pro for difficult/low-quality photos instead of failing.
+      let model = "google/gemini-2.5-flash";
+      let aiJson = await callAi(LOVABLE_API_KEY, {
+        model,
+        messages,
+        response_format: { type: "json_object" },
+        temperature: 0,
+        max_completion_tokens: 3000,
+      });
+      let extracted = parseExtraction(aiJson);
+
+      if (!extracted) {
+        console.warn("Fast OCR returned no structured data; retrying with robust model");
+        model = "google/gemini-2.5-pro";
+        aiJson = await callAi(LOVABLE_API_KEY, {
+          model,
+          messages,
+          temperature: 0,
+          max_completion_tokens: 3500,
+        });
+        extracted = parseExtraction(aiJson);
       }
-      const aiJson = await aiResp.json();
-      const msg = aiJson?.choices?.[0]?.message;
-      const toolCall = msg?.tool_calls?.[0];
-      let extracted: Record<string, unknown> | null = null;
-      if (toolCall?.function?.arguments) {
-        try {
-          extracted = JSON.parse(toolCall.function.arguments);
-        } catch {
-          // fall through to content-parse fallback
-        }
-      }
-      // Fallback: some models emit JSON in message.content instead of tool_calls
-      if (!extracted && typeof msg?.content === "string" && msg.content.trim()) {
-        const raw = msg.content.trim();
-        const jsonStr = extractJsonObject(raw);
-        if (jsonStr) {
-          try { extracted = JSON.parse(jsonStr); } catch { /* ignore */ }
-        }
-      }
-      if (extracted) {
-        coerceExtracted(extracted);
-      }
+
+      if (extracted) coerceExtracted(extracted);
       if (!extracted) {
         const finish = aiJson?.choices?.[0]?.finish_reason;
         throw new Error(
@@ -319,6 +299,54 @@ function guessMime(path: string): string {
   if (ext === "gif") return "image/gif";
   if (["jpg", "jpeg"].includes(ext)) return "image/jpeg";
   return "application/octet-stream";
+}
+
+function normalizeMime(blobType: string | undefined, path: string): string {
+  const guessed = guessMime(path);
+  if (!blobType || blobType === "application/octet-stream") return guessed;
+  if (blobType === "image/jpg") return "image/jpeg";
+  return blobType;
+}
+
+async function callAi(apiKey: string, payload: Record<string, unknown>) {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
+    if (response.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
+    throw new Error(`AI gateway error ${response.status}: ${text.slice(0, 500)}`);
+  }
+  return response.json();
+}
+
+function parseExtraction(aiJson: unknown): Record<string, unknown> | null {
+  const msg = (aiJson as any)?.choices?.[0]?.message;
+  const toolCall = msg?.tool_calls?.[0];
+  if (toolCall?.function?.arguments) {
+    try {
+      return JSON.parse(toolCall.function.arguments);
+    } catch {
+      // fall through to content-parse fallback
+    }
+  }
+  if (typeof msg?.content === "string" && msg.content.trim()) {
+    const jsonStr = extractJsonObject(msg.content.trim());
+    if (jsonStr) {
+      try {
+        return JSON.parse(jsonStr);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
 }
 
 function encodeBase64(bytes: Uint8Array): string {
