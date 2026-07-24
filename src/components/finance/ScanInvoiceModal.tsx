@@ -136,6 +136,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     setAnalysis(null);
     setScanPath(null);
     setCameraMode(null);
+    setScanStage("idle");
+    setScanProgress(0);
+    setScanError(null);
+    setScanAttempts(0);
+    setFromCache(false);
+    setFileHash(null);
     setSupplierName("");
     setSupplierVat("");
     setBankName("");
