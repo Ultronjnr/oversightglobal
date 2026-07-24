@@ -16,6 +16,8 @@ interface RequestBody {
   reimbursement_id?: string | null;
   pr_id?: string | null;
   force?: boolean;
+  file_hash?: string | null;
+  probe_only?: boolean;
 }
 
 const EXTRACTION_SCHEMA = `{
@@ -54,6 +56,8 @@ function systemPromptFor(docType: DocType): string {
     "",
     "RULES:",
     "- ALWAYS extract EVERY line item as a separate object. Never skip a line.",
+    "- The document MAY span multiple pages. Read every page and MERGE line items from ALL pages into a single flat line_items array. Never restart numbering or drop rows on later pages.",
+    "- Totals (subtotal, vat_amount, total_amount) refer to the WHOLE document — take them from the final summary page.",
     "- For each line item, ALWAYS output:",
     "  * description (string, clean item name)",
     "  * quantity (number, default 1 if missing)",
