@@ -18,60 +18,6 @@ interface RequestBody {
   force?: boolean;
 }
 
-const EXTRACTION_TOOL = {
-  type: "function",
-  function: {
-    name: "extract_document_data",
-    description:
-      "Extract structured financial data from an uploaded invoice, receipt or proof of payment.",
-    parameters: {
-      type: "object",
-      properties: {
-        supplier_name: { type: "string", description: "Vendor / supplier / merchant name" },
-        supplier_vat_number: { type: "string", description: "Tax / VAT registration number if present" },
-        document_number: { type: "string", description: "Invoice or receipt number" },
-        document_date: { type: "string", description: "Date in YYYY-MM-DD" },
-        due_date: { type: "string", description: "Payment due date YYYY-MM-DD if present" },
-        currency: { type: "string", description: "ISO currency code, default ZAR" },
-        subtotal: { type: "number" },
-        vat_amount: { type: "number" },
-        vat_rate: { type: "number", description: "Percentage, e.g. 15" },
-        total_amount: { type: "number" },
-        payment_method: { type: "string" },
-        payment_reference: { type: "string" },
-        bank_name: { type: "string", description: "Supplier/beneficiary bank name for payment (e.g. FNB, Standard Bank, ABSA, Nedbank, Capitec)" },
-        bank_account_number: { type: "string", description: "Supplier/beneficiary bank account number for payment" },
-        bank_branch_code: { type: "string", description: "Bank branch / universal branch code" },
-        bank_account_type: { type: "string", description: "Account type, e.g. Current/Cheque, Savings, Transmission" },
-        line_items: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              description: { type: "string" },
-              quantity: { type: "number" },
-              unit_price: { type: "number" },
-              amount: { type: "number" },
-              total_price: { type: "number" },
-              vat_amount: { type: "number" },
-              needs_review: { type: "boolean" },
-            },
-            required: ["description", "quantity", "unit_price", "total_price"],
-            additionalProperties: false,
-          },
-        },
-        confidence: {
-          type: "number",
-          description: "0..1 confidence in extraction quality",
-        },
-        notes: { type: "string", description: "Anything unusual or unclear" },
-      },
-      required: ["total_amount", "confidence"],
-      additionalProperties: false,
-    },
-  },
-};
-
 const EXTRACTION_SCHEMA = `{
   "supplier_name": "string",
   "supplier_vat_number": "string",

@@ -44,6 +44,11 @@ const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
 const MAX_SIZE = 15 * 1024 * 1024;
 const SUPPORTED_SCAN_TYPES = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 
+function isSupportedScanFile(file: File): boolean {
+  if (SUPPORTED_SCAN_TYPES.has(file.type)) return true;
+  return /\.(pdf|jpe?g|png|webp)$/i.test(file.name);
+}
+
 type CameraMode = "capture" | "scan" | null;
 
 interface LineItemRow {
@@ -149,7 +154,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
   const onFile = async (f: File | null) => {
     if (!f) return;
-    if (!SUPPORTED_SCAN_TYPES.has(f.type)) {
+    if (!isSupportedScanFile(f)) {
       toast.error("Unsupported scan type. Upload a PDF, JPG, PNG or WebP invoice.");
       return;
     }
