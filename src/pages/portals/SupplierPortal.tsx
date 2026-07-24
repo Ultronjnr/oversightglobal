@@ -31,6 +31,7 @@ import { getSupplierInvoices, type Invoice } from "@/services/invoice.service";
 import { SubmitQuoteModal } from "@/components/supplier/SubmitQuoteModal";
 import { QuoteRequestDetailsModal } from "@/components/supplier/QuoteRequestDetailsModal";
 import { UploadInvoiceModal } from "@/components/supplier/UploadInvoiceModal";
+import { CounterBackModal } from "@/components/supplier/CounterBackModal";
 import { useNotificationCounts } from "@/hooks/use-notification-counts";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -62,6 +63,10 @@ export default function SupplierPortal() {
   // Invoice upload modal
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedQuoteForInvoice, setSelectedQuoteForInvoice] = useState<SupplierQuote | null>(null);
+
+  // Counter-back modal
+  const [counterBackOpen, setCounterBackOpen] = useState(false);
+  const [counterBackQuote, setCounterBackQuoteState] = useState<SupplierQuote | null>(null);
 
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
@@ -95,6 +100,12 @@ export default function SupplierPortal() {
             toast.info('Your quote was not selected for this request.', {
               duration: 5000,
             });
+            loadData();
+          } else if (newRecord.status === 'COUNTER_OFFERED') {
+            toast.warning('💬 Finance sent you a counter-offer. Review it in Negotiations.', {
+              duration: 8000,
+            });
+            setActiveTab('negotiations');
             loadData();
           }
         }
