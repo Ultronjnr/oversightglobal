@@ -630,7 +630,14 @@ export default function FinancePortal() {
                             return (
                               <TableRow key={pr.id} className="hover:bg-muted/20">
                                 <TableCell className="font-mono text-sm font-medium">
-                                  {pr.transaction_id}
+                                  <div className="flex items-center gap-2">
+                                    <span>{pr.transaction_id}</span>
+                                    {(pr as any).pr_locked && (
+                                      <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground border-muted-foreground/30">
+                                        <Lock className="h-3 w-3" /> Locked
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   <div>
