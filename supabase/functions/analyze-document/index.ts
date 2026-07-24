@@ -18,59 +18,34 @@ interface RequestBody {
   force?: boolean;
 }
 
-const EXTRACTION_TOOL = {
-  type: "function",
-  function: {
-    name: "extract_document_data",
-    description:
-      "Extract structured financial data from an uploaded invoice, receipt or proof of payment.",
-    parameters: {
-      type: "object",
-      properties: {
-        supplier_name: { type: "string", description: "Vendor / supplier / merchant name" },
-        supplier_vat_number: { type: "string", description: "Tax / VAT registration number if present" },
-        document_number: { type: "string", description: "Invoice or receipt number" },
-        document_date: { type: "string", description: "Date in YYYY-MM-DD" },
-        due_date: { type: "string", description: "Payment due date YYYY-MM-DD if present" },
-        currency: { type: "string", description: "ISO currency code, default ZAR" },
-        subtotal: { type: "number" },
-        vat_amount: { type: "number" },
-        vat_rate: { type: "number", description: "Percentage, e.g. 15" },
-        total_amount: { type: "number" },
-        payment_method: { type: "string" },
-        payment_reference: { type: "string" },
-        bank_name: { type: "string", description: "Supplier/beneficiary bank name for payment (e.g. FNB, Standard Bank, ABSA, Nedbank, Capitec)" },
-        bank_account_number: { type: "string", description: "Supplier/beneficiary bank account number for payment" },
-        bank_branch_code: { type: "string", description: "Bank branch / universal branch code" },
-        bank_account_type: { type: "string", description: "Account type, e.g. Current/Cheque, Savings, Transmission" },
-        line_items: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              description: { type: "string" },
-              quantity: { type: "number" },
-              unit_price: { type: "number" },
-              amount: { type: "number" },
-              total_price: { type: "number" },
-              vat_amount: { type: "number" },
-              needs_review: { type: "boolean" },
-            },
-            required: ["description", "quantity", "unit_price", "total_price"],
-            additionalProperties: false,
-          },
-        },
-        confidence: {
-          type: "number",
-          description: "0..1 confidence in extraction quality",
-        },
-        notes: { type: "string", description: "Anything unusual or unclear" },
-      },
-      required: ["total_amount", "confidence"],
-      additionalProperties: false,
-    },
-  },
-};
+const EXTRACTION_SCHEMA = `{
+  "supplier_name": "string",
+  "supplier_vat_number": "string",
+  "document_number": "string",
+  "document_date": "YYYY-MM-DD",
+  "due_date": "YYYY-MM-DD",
+  "currency": "ZAR",
+  "subtotal": 0,
+  "vat_amount": 0,
+  "vat_rate": 15,
+  "total_amount": 0,
+  "payment_method": "string",
+  "payment_reference": "string",
+  "bank_name": "string",
+  "bank_account_number": "digits only",
+  "bank_branch_code": "digits only",
+  "bank_account_type": "Current/Cheque|Savings|Transmission",
+  "line_items": [{
+    "description": "string",
+    "quantity": 1,
+    "unit_price": 0,
+    "total_price": 0,
+    "vat_amount": 0,
+    "needs_review": false
+  }],
+  "confidence": 0.85,
+  "notes": "string"
+}`;
 
 function systemPromptFor(docType: DocType): string {
   const base = [
@@ -122,10 +97,14 @@ Deno.serve(async (req) => {
       return json({ error: "Authorization required" }, 401);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      return json({ error: "Backend environment not configured" }, 500);
+    }
 
     if (!LOVABLE_API_KEY) {
       return json({ error: "LOVABLE_API_KEY not configured" }, 500);
@@ -215,7 +194,7 @@ Deno.serve(async (req) => {
         .download(storage_path);
       if (dlErr || !fileBlob) throw new Error(`Storage download failed: ${dlErr?.message}`);
 
-      const contentType = fileBlob.type || guessMime(storage_path);
+      const contentType = normalizeMime(fileBlob.type, storage_path);
       const supported = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "application/pdf"];
       if (!supported.includes(contentType)) {
         throw new Error(`Unsupported file type for OCR: ${contentType}`);
@@ -224,67 +203,53 @@ Deno.serve(async (req) => {
       const buf = new Uint8Array(await fileBlob.arrayBuffer());
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
+      const fileName = storage_path.split("/").pop() || "invoice";
+      const documentBlock = contentType === "application/pdf"
+        ? { type: "file", file: { filename: fileName, file_data: dataUrl } }
+        : { type: "image_url", image_url: { url: dataUrl } };
 
-      // Gemini 2.5 Flash: most reliable vision + tool-call model on the
-      // Lovable gateway for structured OCR. Newer Flash variants have
-      // been returning empty tool_calls on some invoice/PDF inputs.
-      const model = "google/gemini-2.5-flash";
-      const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+      const messages = [
+        {
+          role: "system",
+          content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
         },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPromptFor(document_type) },
+        {
+          role: "user",
+          content: [
             {
-              role: "user",
-              content: [
-                {
-                  type: "text",
-                  text: "Extract the structured fields from this document. Use the extract_document_data tool. If a field is unreadable, omit it. Confidence is your overall trust score from 0 to 1.",
-                },
-                { type: "image_url", image_url: { url: dataUrl } },
-              ],
+              type: "text",
+              text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
             },
+            documentBlock,
           ],
-          tools: [EXTRACTION_TOOL],
-          tool_choice: { type: "function", function: { name: "extract_document_data" } },
-          // Multi-item invoices can exceed 1.5k output tokens and truncate
-          // the tool-call JSON, producing empty structured data.
-          max_completion_tokens: 4000,
-        }),
-      });
+        },
+      ];
 
-      if (!aiResp.ok) {
-        const t = await aiResp.text();
-        if (aiResp.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
-        if (aiResp.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
-        throw new Error(`AI gateway error ${aiResp.status}: ${t.slice(0, 300)}`);
+      // Fast path: Flash is normally quickest. If it returns no parseable JSON,
+      // retry once with Pro for difficult/low-quality photos instead of failing.
+      let model = "google/gemini-2.5-flash";
+      let aiJson = await callAi(LOVABLE_API_KEY, {
+        model,
+        messages,
+        response_format: { type: "json_object" },
+        temperature: 0,
+        max_completion_tokens: 3000,
+      });
+      let extracted = parseExtraction(aiJson);
+
+      if (!extracted) {
+        console.warn("Fast OCR returned no structured data; retrying with robust model");
+        model = "google/gemini-2.5-pro";
+        aiJson = await callAi(LOVABLE_API_KEY, {
+          model,
+          messages,
+          temperature: 0,
+          max_completion_tokens: 3500,
+        });
+        extracted = parseExtraction(aiJson);
       }
-      const aiJson = await aiResp.json();
-      const msg = aiJson?.choices?.[0]?.message;
-      const toolCall = msg?.tool_calls?.[0];
-      let extracted: Record<string, unknown> | null = null;
-      if (toolCall?.function?.arguments) {
-        try {
-          extracted = JSON.parse(toolCall.function.arguments);
-        } catch {
-          // fall through to content-parse fallback
-        }
-      }
-      // Fallback: some models emit JSON in message.content instead of tool_calls
-      if (!extracted && typeof msg?.content === "string" && msg.content.trim()) {
-        const raw = msg.content.trim();
-        const jsonStr = raw.startsWith("{")
-          ? raw
-          : raw.match(/\{[\s\S]*\}/)?.[0];
-        if (jsonStr) {
-          try { extracted = JSON.parse(jsonStr); } catch { /* ignore */ }
-        }
-      }
+
+      if (extracted) coerceExtracted(extracted);
       if (!extracted) {
         const finish = aiJson?.choices?.[0]?.finish_reason;
         throw new Error(
@@ -338,6 +303,54 @@ function guessMime(path: string): string {
   if (ext === "gif") return "image/gif";
   if (["jpg", "jpeg"].includes(ext)) return "image/jpeg";
   return "application/octet-stream";
+}
+
+function normalizeMime(blobType: string | undefined, path: string): string {
+  const guessed = guessMime(path);
+  if (!blobType || blobType === "application/octet-stream") return guessed;
+  if (blobType === "image/jpg") return "image/jpeg";
+  return blobType;
+}
+
+async function callAi(apiKey: string, payload: Record<string, unknown>) {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
+    if (response.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
+    throw new Error(`AI gateway error ${response.status}: ${text.slice(0, 500)}`);
+  }
+  return response.json();
+}
+
+function parseExtraction(aiJson: unknown): Record<string, unknown> | null {
+  const msg = (aiJson as any)?.choices?.[0]?.message;
+  const toolCall = msg?.tool_calls?.[0];
+  if (toolCall?.function?.arguments) {
+    try {
+      return JSON.parse(toolCall.function.arguments);
+    } catch {
+      // fall through to content-parse fallback
+    }
+  }
+  if (typeof msg?.content === "string" && msg.content.trim()) {
+    const jsonStr = extractJsonObject(msg.content.trim());
+    if (jsonStr) {
+      try {
+        return JSON.parse(jsonStr);
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
 }
 
 function encodeBase64(bytes: Uint8Array): string {
@@ -396,6 +409,65 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
     item.total_price = total;
     item.amount = total;
     item.needs_review = needsReview;
+  }
+}
+
+function extractJsonObject(raw: string): string | null {
+  const cleaned = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
+
+  let depth = 0;
+  let start = -1;
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0 && start >= 0) return cleaned.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function coerceExtracted(extracted: Record<string, unknown>) {
+  for (const key of ["subtotal", "vat_amount", "vat_rate", "total_amount", "confidence"]) {
+    const n = toNum(extracted[key]);
+    if (n != null) extracted[key] = n;
+  }
+  if (!extracted.currency) extracted.currency = "ZAR";
+  const confidence = toNum(extracted.confidence);
+  if (confidence == null || confidence <= 0) extracted.confidence = 0.7;
+
+  const total = toNum(extracted.total_amount);
+  const lineItems = extracted.line_items;
+  if (total != null && (!Array.isArray(lineItems) || lineItems.length === 0)) {
+    extracted.line_items = [{
+      description: String(extracted.document_number ? `Invoice ${extracted.document_number}` : "Invoice total"),
+      quantity: 1,
+      unit_price: total,
+      total_price: total,
+      needs_review: true,
+    }];
   }
 }
 
