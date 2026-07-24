@@ -31,6 +31,7 @@ import {
 } from "@/services/transaction.service";
 import { getDocumentSignedUrl, getFileType } from "@/services/document.service";
 import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.service";
+import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 import { TransactionTimelineDialog } from "./TransactionTimelineDialog";
 
@@ -108,8 +109,31 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       getOrgReimbursementsByBucket("AWAITING_PAYMENT", { limit: 200, offset: 0 }),
       getTransactionsByStatus(["FINANCE_APPROVED", "SUPPLIER_INVOICE", "AWAITING_PAYMENT", "PAYMENT_BATCH"]),
     ]);
+    // Exclude FINANCE_APPROVED transactions that are going through the
+    // quote (RFQ) flow — those should only surface in "Approved – Not Paid"
+    // once the supplier invoice is received (status becomes SUPPLIER_INVOICE
+    // or AWAITING_PAYMENT). Direct approvals (no quote requests) appear
+    // immediately with their PR transaction ID.
+    const financeApprovedPrIds = txnRes
+      .filter((t) => t.status === "FINANCE_APPROVED" && t.pr_id)
+      .map((t) => t.pr_id);
+    let excludedPrIds = new Set<string>();
+    if (financeApprovedPrIds.length > 0) {
+      const { data: qrs } = await supabase
+        .from("quote_requests")
+        .select("pr_id, status")
+        .in("pr_id", financeApprovedPrIds);
+      excludedPrIds = new Set(
+        (qrs || [])
+          .filter((q: any) => q.status !== "DECLINED" && q.status !== "CANCELLED")
+          .map((q: any) => q.pr_id),
+      );
+    }
+    const filteredTxns = txnRes.filter(
+      (t) => !(t.status === "FINANCE_APPROVED" && excludedPrIds.has(t.pr_id)),
+    );
     setReimbursements(reimbRes.rows);
-    setTransactions(txnRes);
+    setTransactions(filteredTxns);
     setLoading(false);
   };
 
