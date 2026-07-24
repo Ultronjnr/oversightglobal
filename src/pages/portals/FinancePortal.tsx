@@ -346,9 +346,18 @@ export default function FinancePortal() {
     categoryId: string,
     comments: string,
     supplierId?: string,
+    projectId?: string | null,
+    donorId?: string | null,
   ) => {
     try {
-      const result = await financeApprovePR(prId, comments, categoryId, supplierId);
+      const result = await financeApprovePR(
+        prId,
+        comments,
+        categoryId,
+        supplierId,
+        projectId ?? null,
+        donorId ?? null,
+      );
 
       if (result.success) {
         toast.success("PR approved and categorized successfully");

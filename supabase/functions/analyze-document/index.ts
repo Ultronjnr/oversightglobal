@@ -225,11 +225,12 @@ Deno.serve(async (req) => {
       const base64 = encodeBase64(buf);
       const dataUrl = `data:${contentType};base64,${base64}`;
 
-      // Gemini 3.1 Flash-Lite is Google's cost-efficient extraction model:
-      // markedly lower latency than 2.5-flash for structured OCR while
-      // retaining accuracy — the best fit for high-volume invoice/receipt
-      // scans.
-      const model = "google/gemini-3.1-flash-lite";
+      // Gemini 3.5 Flash: fastest reliable vision+tool-call model for
+      // structured OCR on the Lovable gateway. Flash-Lite was returning
+      // empty tool calls on some invoice/PDF inputs, blocking the scan
+      // flow — 3.5 Flash keeps sub-second-per-page latency while
+      // reliably emitting the extract_document_data tool call.
+      const model = "google/gemini-3.5-flash";
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -253,10 +254,8 @@ Deno.serve(async (req) => {
           ],
           tools: [EXTRACTION_TOOL],
           tool_choice: { type: "function", function: { name: "extract_document_data" } },
-          // OCR extraction is a bounded structured task — keep output tight
-          // to minimise latency and cost. Flash-Lite has no extended
-          // reasoning knob, so we omit reasoning_effort entirely.
-          max_completion_tokens: 2000,
+          // Tight cap: structured OCR needs only ~1k tokens.
+          max_completion_tokens: 1500,
         }),
       });
 
