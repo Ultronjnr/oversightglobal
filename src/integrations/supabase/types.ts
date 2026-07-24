@@ -2005,10 +2005,15 @@ export type Database = {
       quotes: {
         Row: {
           amount: number
+          counter_offer_amount: number | null
+          counter_offer_at: string | null
+          counter_offer_by: string | null
+          counter_offer_notes: string | null
           created_at: string
           delivery_time: string | null
           document_url: string | null
           id: string
+          item_prices: Json | null
           notes: string | null
           organization_id: string
           pr_id: string
@@ -2021,10 +2026,15 @@ export type Database = {
         }
         Insert: {
           amount: number
+          counter_offer_amount?: number | null
+          counter_offer_at?: string | null
+          counter_offer_by?: string | null
+          counter_offer_notes?: string | null
           created_at?: string
           delivery_time?: string | null
           document_url?: string | null
           id?: string
+          item_prices?: Json | null
           notes?: string | null
           organization_id: string
           pr_id: string
@@ -2037,10 +2047,15 @@ export type Database = {
         }
         Update: {
           amount?: number
+          counter_offer_amount?: number | null
+          counter_offer_at?: string | null
+          counter_offer_by?: string | null
+          counter_offer_notes?: string | null
           created_at?: string
           delivery_time?: string | null
           document_url?: string | null
           id?: string
+          item_prices?: Json | null
           notes?: string | null
           organization_id?: string
           pr_id?: string
