@@ -64,9 +64,9 @@ export default function SupplierPortal() {
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedQuoteForInvoice, setSelectedQuoteForInvoice] = useState<SupplierQuote | null>(null);
 
-  // Counter-back modal
+  // Counter-back (negotiation) modal
   const [counterBackOpen, setCounterBackOpen] = useState(false);
-  const [counterBackQuote, setCounterBackQuoteState] = useState<SupplierQuote | null>(null);
+  const [negotiationQuote, setNegotiationQuote] = useState<SupplierQuote | null>(null);
 
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
@@ -277,6 +277,7 @@ export default function SupplierPortal() {
     requests: ["quote_request_received"],
     quotes: ["quote_accepted"],
     invoices: ["full_payment", "invoice_rejected"],
+    negotiations: ["quote_counter_offer"],
   };
 
   const handleSupplierTabChange = async (value: string) => {
@@ -398,6 +399,10 @@ export default function SupplierPortal() {
             <TabsTrigger value="requests" className="relative">
               Quote Requests
               <NotifBadge n={newRequestNotif} />
+            </TabsTrigger>
+            <TabsTrigger value="negotiations" className="relative">
+              Negotiations
+              <NotifBadge n={quotes.filter((q) => q.status === "COUNTER_OFFERED").length} />
             </TabsTrigger>
             <TabsTrigger value="quotes" className="relative">
               My Quotes
