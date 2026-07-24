@@ -308,6 +308,58 @@ export async function submitQuote(params: {
 }
 
 /**
+ * Respond to a Finance counter-offer.
+ * accept=true accepts the counter amount (moves quote back to SUBMITTED with the new price).
+ * accept=false rejects it (marks quote as REJECTED).
+ */
+export async function respondToCounterOffer(
+  quoteId: string,
+  accept: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const { data: quote, error: fetchError } = await supabase
+      .from("quotes")
+      .select("id, status, counter_offer_amount")
+      .eq("id", quoteId)
+      .single();
+
+    if (fetchError || !quote) {
+      return { success: false, error: "Quote not found" };
+    }
+    if (quote.status !== "COUNTER_OFFERED") {
+      return { success: false, error: "This quote has no pending counter-offer" };
+    }
+
+    if (accept) {
+      if (!quote.counter_offer_amount) {
+        return { success: false, error: "Counter-offer amount missing" };
+      }
+      const { error } = await supabase
+        .from("quotes")
+        .update({
+          amount: quote.counter_offer_amount,
+          status: "SUBMITTED",
+        })
+        .eq("id", quoteId);
+      if (error) return { success: false, error: error.message };
+    } else {
+      const { error } = await supabase
+        .from("quotes")
+        .update({ status: "REJECTED" })
+        .eq("id", quoteId);
+      if (error) return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Get supplier statistics
  */
 export async function getSupplierStats(): Promise<{
