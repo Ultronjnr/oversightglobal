@@ -6,15 +6,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import {Loader2, FileText, Check, X, Clock, Calendar, Truck, Wallet, Download, ExternalLink, Building2} from "lucide-react";
+import { Loader2, FileText, Check, X, Clock, Calendar, Truck, Wallet, Download, ExternalLink, Building2, Handshake, Package } from "lucide-react";
 import {
   getQuotes,
   acceptQuote,
   rejectQuote,
+  sendCounterOffer,
   type Quote,
 } from "@/services/finance.service";
 import { getQuoteDocumentUrl } from "@/services/quote-document.service";
@@ -37,6 +43,12 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
     url: string;
     supplierName: string;
   }>({ isOpen: false, url: "", supplierName: "" });
+  const [counterModal, setCounterModal] = useState<{
+    isOpen: boolean;
+    quote: Quote | null;
+    amount: string;
+    notes: string;
+  }>({ isOpen: false, quote: null, amount: "", notes: "" });
 
   useEffect(() => {
     fetchQuotes();
@@ -97,6 +109,38 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
     }
   };
 
+  const openCounterOffer = (quote: Quote) => {
+    setCounterModal({
+      isOpen: true,
+      quote,
+      amount: String(quote.amount || ""),
+      notes: "",
+    });
+  };
+
+  const submitCounterOffer = async () => {
+    if (!counterModal.quote) return;
+    const amt = parseFloat(counterModal.amount);
+    if (!(amt > 0)) {
+      toast.error("Enter a valid counter-offer amount");
+      return;
+    }
+    setActionLoading(counterModal.quote.id);
+    try {
+      const res = await sendCounterOffer(counterModal.quote.id, amt, counterModal.notes || undefined);
+      if (res.success) {
+        toast.success("Counter-offer sent to supplier");
+        setCounterModal({ isOpen: false, quote: null, amount: "", notes: "" });
+        fetchQuotes();
+        onQuoteAction?.();
+      } else {
+        toast.error(res.error || "Failed to send counter-offer");
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleViewDocument = async (quote: Quote) => {
     if (!quote.document_url) return;
 
@@ -119,6 +163,13 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
           <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
             <Clock className="h-3 w-3 mr-1" />
             Pending Review
+          </Badge>
+        );
+      case "COUNTER_OFFERED":
+        return (
+          <Badge className="bg-warning/20 text-warning border-warning/30">
+            <Handshake className="h-3 w-3 mr-1" />
+            Counter-Offer Sent
           </Badge>
         );
       case "ACCEPTED":
@@ -234,7 +285,40 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
                         <p className="text-2xl font-bold text-primary">
                           {formatCurrency(quote.amount)}
                         </p>
+                        {quote.status === "COUNTER_OFFERED" && quote.counter_offer_amount != null && (
+                          <div className="mt-2 pt-2 border-t border-border/60 text-xs">
+                            <p className="text-muted-foreground">Your counter-offer</p>
+                            <p className="font-semibold text-warning">
+                              {formatCurrency(quote.counter_offer_amount)}
+                            </p>
+                            {quote.counter_offer_notes && (
+                              <p className="italic text-muted-foreground mt-1">
+                                "{quote.counter_offer_notes}"
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
+
+                      {/* Items breakdown */}
+                      {(quote.item_prices && quote.item_prices.length > 0) || (quote.pr_items && quote.pr_items.length > 0) ? (
+                        <div className="bg-muted/30 rounded-md p-3 mb-4 space-y-1">
+                          <p className="text-xs font-medium flex items-center gap-1 mb-2">
+                            <Package className="h-3 w-3" />
+                            {quote.item_prices && quote.item_prices.length > 0 ? "Supplier line items" : "Requested items"}
+                          </p>
+                          {(quote.item_prices && quote.item_prices.length > 0 ? quote.item_prices : quote.pr_items || []).map((it, idx) => (
+                            <div key={idx} className="text-xs flex justify-between gap-2">
+                              <span className="text-muted-foreground truncate">
+                                {it.quantity}× {it.description}
+                              </span>
+                              <span className="font-mono whitespace-nowrap">
+                                {formatCurrency(it.total || 0)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
 
                       {/* Quote Details */}
                       <div className="space-y-3 mb-4">
@@ -293,8 +377,9 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
                       )}
 
                       {/* Actions */}
-                      {quote.status === "SUBMITTED" && (
-                        <div className="flex gap-2">
+                      {(quote.status === "SUBMITTED" || quote.status === "COUNTER_OFFERED") && (
+                        <div className="flex flex-col gap-2">
+                          <div className="flex gap-2">
                           <Button
                             size="sm"
                             className="flex-1 gap-1"
@@ -320,6 +405,19 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
                             <X className="h-4 w-4" />
                             Reject
                           </Button>
+                          </div>
+                          {quote.status === "SUBMITTED" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full gap-1"
+                              onClick={() => openCounterOffer(quote)}
+                              disabled={actionLoading === quote.id}
+                            >
+                              <Handshake className="h-4 w-4" />
+                              Negotiate Price
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -330,6 +428,84 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
           </Card>
         ))}
       </div>
+
+      {/* Counter-offer dialog */}
+      <Dialog
+        open={counterModal.isOpen}
+        onOpenChange={(open) => setCounterModal({ ...counterModal, isOpen: open })}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Handshake className="h-5 w-5 text-primary" />
+              Send Counter-Offer
+            </DialogTitle>
+            <DialogDescription>
+              Propose a revised price to {counterModal.quote?.supplier?.company_name || "the supplier"}.
+              They will be notified and can accept or reject your offer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {counterModal.quote && (
+              <div className="bg-muted/40 rounded-md p-3 text-sm flex justify-between">
+                <span className="text-muted-foreground">Supplier's current price</span>
+                <span className="font-mono font-semibold">
+                  {formatCurrency(counterModal.quote.amount)}
+                </span>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="counter-amount">Your Counter-Offer Amount *</Label>
+              <div className="relative">
+                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="counter-amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={counterModal.amount}
+                  onChange={(e) => setCounterModal({ ...counterModal, amount: e.target.value })}
+                  className="pl-10"
+                  placeholder="Enter revised price"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="counter-notes">Message to supplier (optional)</Label>
+              <Textarea
+                id="counter-notes"
+                value={counterModal.notes}
+                onChange={(e) => setCounterModal({ ...counterModal, notes: e.target.value })}
+                placeholder="Explain your counter-offer or requested changes..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCounterModal({ isOpen: false, quote: null, amount: "", notes: "" })}
+              disabled={actionLoading === counterModal.quote?.id}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitCounterOffer}
+              disabled={actionLoading === counterModal.quote?.id}
+              className="gap-1"
+            >
+              {actionLoading === counterModal.quote?.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Handshake className="h-4 w-4" />
+                  Send Counter-Offer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Document Viewer Modal */}
       <Dialog open={documentModal.isOpen} onOpenChange={(open) => setDocumentModal({ ...documentModal, isOpen: open })}>
