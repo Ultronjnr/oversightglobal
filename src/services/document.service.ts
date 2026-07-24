@@ -19,6 +19,11 @@ export async function getDocumentSignedUrl(
   prId: string
 ): Promise<DocumentUrlResult> {
   try {
+    // Guard: PRs without an attached document should not hit the edge function.
+    if (!documentUrl || !documentUrl.trim()) {
+      return { success: false, error: "No document attached to this requisition" };
+    }
+
     // Get current session for auth header
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
