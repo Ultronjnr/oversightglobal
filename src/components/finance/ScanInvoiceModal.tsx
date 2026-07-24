@@ -355,19 +355,20 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : handleClose())}>
-      <DialogContent className="sm:max-w-[680px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${analysis ? "sm:max-w-[1100px]" : "sm:max-w-[680px]"} max-h-[92vh] overflow-y-auto transition-all`}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ScanLine className="h-5 w-5 text-primary" />
             Supplier Invoice Scan
           </DialogTitle>
           <DialogDescription>
-            Upload a supplier invoice. The system will extract the fields, validate SARS
-            compliance and let you create a transaction.
+            Upload a supplier invoice. AI extracts the fields, highlights auto-filled data
+            with confidence and lets you review before creating the transaction.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className={`${analysis ? "grid grid-cols-1 lg:grid-cols-[minmax(0,42%)_minmax(0,58%)] gap-5" : "space-y-4"}`}>
+          <div className="space-y-4">
           {/* Capture options */}
           {!file ? (
             <div className="grid grid-cols-2 gap-3 pt-1">
