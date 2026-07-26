@@ -31,6 +31,7 @@ const staticEntries: SitemapEntry[] = [
   { path: "/signup/company", changefreq: "monthly", priority: "0.8", sources: ["src/pages/SignupCompany.tsx"] },
   { path: "/join/supplier", changefreq: "monthly", priority: "0.4", sources: ["src/pages/JoinSupplier.tsx"] },
   { path: "/supplier/register", changefreq: "monthly", priority: "0.5", sources: ["src/pages/SupplierRegister.tsx"] },
+  { path: "/portal/supplier/register", changefreq: "monthly", priority: "0.4", sources: ["src/pages/SupplierRegister.tsx"] },
 ];
 
 function newestMtime(sources?: string[]): string | undefined {
