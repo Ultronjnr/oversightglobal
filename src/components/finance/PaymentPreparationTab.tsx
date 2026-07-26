@@ -106,6 +106,9 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [timelineRow, setTimelineRow] = useState<PayRow | null>(null);
+  // PR ids that went through the supplier quote round-trip (quote requested /
+  // quote received). Used to separate "Quoted → Invoiced" from direct approvals.
+  const [quotedPrIds, setQuotedPrIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void fetchAll();
@@ -156,6 +159,20 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       });
     }
 
+    // Origin detection: any quote trail (request or submitted quote) marks the
+    // PR as having gone through the supplier quoting route.
+    const quoted = new Set<string>();
+    if (prIds.length > 0) {
+      const [{ data: qRows }, { data: qrRows }] = await Promise.all([
+        (supabase as any).from("quotes").select("pr_id").in("pr_id", prIds),
+        (supabase as any).from("quote_requests").select("pr_id").in("pr_id", prIds),
+      ]);
+      [...(qRows || []), ...(qrRows || [])].forEach((r: any) => {
+        if (r?.pr_id) quoted.add(r.pr_id);
+      });
+    }
+    setQuotedPrIds(quoted);
+
     const mapped: OrgTransaction[] = queueRows.map((r) => ({
       id: r.transaction_id,
       pr_id: r.pr_id,
@@ -199,6 +216,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       createdAt: r.created_at,
       documentUrl: r.proof_document_url,
       status: r.status,
+      origin: "REIMBURSEMENT" as const,
     }));
     const txnRows: PayRow[] = transactions.map((t) => {
       const remaining = Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0);
@@ -220,12 +238,17 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         category: t.pr?.category?.name || null,
         project: t.pr?.project?.name || null,
         donor: t.pr?.donor?.name || null,
+        origin: deriveTransactionOrigin({
+          transactionRef: t.pr?.transaction_id,
+          hasQuote: quotedPrIds.has(t.pr?.id || t.pr_id),
+          kind: "transaction",
+        }),
       };
     });
     return [...reimbRows, ...txnRows].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [reimbursements, transactions]);
+  }, [reimbursements, transactions, quotedPrIds]);
 
   const selectedRows = useMemo(
     () => rows.filter((r) => selectedIds.has(r.key)),
