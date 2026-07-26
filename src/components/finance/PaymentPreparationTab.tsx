@@ -135,6 +135,19 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       });
     }
 
+    // Supplier invoice documents are the preferred preview once received.
+    const invoiceDocs = new Map<string, string>();
+    if (prIds.length > 0) {
+      const { data: invRows } = await (supabase as any)
+        .from("invoices")
+        .select("pr_id, document_url, created_at")
+        .in("pr_id", prIds)
+        .order("created_at", { ascending: false });
+      (invRows || []).forEach((i: any) => {
+        if (i.document_url && !invoiceDocs.has(i.pr_id)) invoiceDocs.set(i.pr_id, i.document_url);
+      });
+    }
+
     const mapped: OrgTransaction[] = queueRows.map((r) => ({
       id: r.transaction_id,
       pr_id: r.pr_id,
@@ -146,7 +159,8 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       status: r.status,
       approved_at: r.approved_at,
       invoice_id: r.invoice_id,
-      document_url: r.document_url || prDetails.get(r.pr_id)?.document_url || null,
+      document_url:
+        r.document_url || invoiceDocs.get(r.pr_id) || prDetails.get(r.pr_id)?.document_url || null,
       pr: {
         id: r.pr_id,
         transaction_id: r.pr_transaction_ref,
