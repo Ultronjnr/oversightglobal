@@ -739,6 +739,20 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4">
       {/* Left: context / line items */}
       <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-start gap-2 p-3 rounded-md border border-border/40 bg-muted/20">
+          <Badge
+            variant="outline"
+            className={`${ORIGIN_META[row.origin].badgeClass} font-mono text-[11px]`}
+          >
+            {ORIGIN_META[row.origin].code}
+          </Badge>
+          <div className="text-sm">
+            <p className="font-medium">{ORIGIN_META[row.origin].label}</p>
+            <p className="text-xs text-muted-foreground">
+              {ORIGIN_META[row.origin].description}
+            </p>
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-sm font-medium">
           <FileText className="h-4 w-4 text-primary" />
           Line Items
