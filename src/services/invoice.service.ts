@@ -209,7 +209,14 @@ export async function uploadInvoice(
     const fileName = `${uuidv4()}.pdf`;
     const filePath = `${user.id}/${quoteId}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    console.log("[invoice] uploading", {
+      bucket: BUCKET_NAME,
+      path: filePath,
+      sizeBytes: file.size,
+      contentType: file.type,
+    });
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(filePath, file, {
         contentType: "application/pdf",
@@ -217,23 +224,29 @@ export async function uploadInvoice(
       });
 
     if (uploadError) {
-      console.error("[invoice] upload error:", uploadError);
+      console.error("[invoice] upload failed", {
+        bucket: BUCKET_NAME,
+        path: filePath,
+        sizeBytes: file.size,
+        error: uploadError,
+      });
       return { success: false, error: `Upload failed: ${uploadError.message}` };
     }
 
-    // Confirm the object actually landed in storage before inserting the record.
-    const { data: signed, error: verifyError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUrl(filePath, 60);
-
-    if (verifyError || !signed?.signedUrl) {
-      console.error("[invoice] upload verification failed:", verifyError);
-      await supabase.storage.from(BUCKET_NAME).remove([filePath]);
-      return {
-        success: false,
-        error: `Upload failed: file could not be confirmed in storage${verifyError?.message ? ` (${verifyError.message})` : ""}`,
-      };
+    if (!uploadData?.path) {
+      console.error("[invoice] upload returned no path", { bucket: BUCKET_NAME, path: filePath, uploadData });
+      return { success: false, error: "Upload failed: storage returned no file path" };
     }
+
+    // The upload response itself is the confirmation — no follow-up existence
+    // check (signed URL / list) because storage propagation is eventually
+    // consistent and a read policy gap would falsely report "Object not found".
+    const storedPath = uploadData.path;
+    console.log("[invoice] upload succeeded", {
+      bucket: BUCKET_NAME,
+      path: storedPath,
+      sizeBytes: file.size,
+    });
 
     // ── 7. Create invoice record ──────────────────────────────────────────────
     //    Stores linked_quote_id, uploaded_by, and uploaded_at for full traceability.
@@ -247,7 +260,7 @@ export async function uploadInvoice(
         supplier_id: supplier.id,
         organization_id: organizationId,
         transaction_id: acceptedQuote.transaction_id,
-        document_url: filePath,
+        document_url: storedPath,
         status: "UPLOADED",
       })
       .select()
