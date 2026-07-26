@@ -17,6 +17,13 @@ import type { SupplierQuote } from "@/services/supplier.service";
 import { format } from "date-fns";
 import { formatCurrency } from "@/lib/utils";
 
+function formatFileSize(bytes: number): string {
+  if (!bytes) return "0 KB";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
 interface UploadInvoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -64,11 +71,15 @@ export function UploadInvoiceModal({
       );
 
       if (result.success) {
-        toast.success("Invoice uploaded successfully!");
+        toast.success("Invoice Submitted", {
+          description: "Your invoice was uploaded and sent to the Finance team.",
+        });
         onSuccess();
         handleClose();
       } else {
-        toast.error(result.error || "Failed to upload invoice");
+        toast.error("Invoice submission failed", {
+          description: result.error || "Failed to upload invoice",
+        });
       }
     } finally {
       setIsLoading(false);
@@ -152,7 +163,7 @@ export function UploadInvoiceModal({
                   <div className="space-y-1">
                     <p className="font-medium text-primary">{selectedFile.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      {formatFileSize(selectedFile.size)}
                     </p>
                   </div>
                 ) : (

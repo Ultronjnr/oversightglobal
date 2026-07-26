@@ -218,7 +218,21 @@ export async function uploadInvoice(
 
     if (uploadError) {
       console.error("[invoice] upload error:", uploadError);
-      return { success: false, error: "Failed to upload invoice. Please try again." };
+      return { success: false, error: `Upload failed: ${uploadError.message}` };
+    }
+
+    // Confirm the object actually landed in storage before inserting the record.
+    const { data: signed, error: verifyError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .createSignedUrl(filePath, 60);
+
+    if (verifyError || !signed?.signedUrl) {
+      console.error("[invoice] upload verification failed:", verifyError);
+      await supabase.storage.from(BUCKET_NAME).remove([filePath]);
+      return {
+        success: false,
+        error: `Upload failed: file could not be confirmed in storage${verifyError?.message ? ` (${verifyError.message})` : ""}`,
+      };
     }
 
     // ── 7. Create invoice record ──────────────────────────────────────────────
@@ -243,7 +257,10 @@ export async function uploadInvoice(
       console.error("[invoice] insert error:", insertError);
       // Clean up the orphaned file
       await supabase.storage.from(BUCKET_NAME).remove([filePath]);
-      return { success: false, error: "Failed to create invoice record. Please try again." };
+      return {
+        success: false,
+        error: `Database insert failed: ${insertError.message}${insertError.details ? ` — ${insertError.details}` : ""}`,
+      };
     }
 
     // ── 8. Progress the quote status ─────────────────────────────────────────
