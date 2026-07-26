@@ -114,6 +114,28 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     void fetchAll();
   }, []);
 
+  // Live sync: as soon as a payment batch (or its allocations) changes, the
+  // payables queue re-reads from the backend so batched items disappear from
+  // "Approved – Not Paid" immediately and can't be batched twice.
+  useEffect(() => {
+    const channel = supabase
+      .channel("approved-not-paid-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_allocations" },
+        () => void fetchAll(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "payment_batches" },
+        () => void fetchAll(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
   const fetchAll = async () => {
     setLoading(true);
     // Canonical payables queue is provided by the backend RPC
