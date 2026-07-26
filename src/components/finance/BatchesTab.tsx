@@ -145,9 +145,10 @@ export function BatchesTab() {
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
-             id, supplier_name, amount, amount_paid, currency, status,
+             id, supplier_name, amount, amount_paid, currency, status, document_url,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
-             pr:purchase_requisitions ( transaction_id, currency )
+             invoice:invoices ( id, document_url ),
+             pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
          )`,
       )
