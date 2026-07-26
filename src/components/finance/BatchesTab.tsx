@@ -62,6 +62,7 @@ interface BatchAllocation {
   } | null;
   transaction?: {
     id: string;
+    invoice_id?: string | null;
     supplier_name: string | null;
     amount: number | null;
     amount_paid: number | null;
@@ -146,9 +147,8 @@ export function BatchesTab() {
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
-             id, supplier_name, amount, amount_paid, currency, status, document_url,
+              id, invoice_id, supplier_name, amount, amount_paid, currency, status, document_url,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
-             invoice:invoices!transactions_invoice_id_fkey ( id, document_url ),
              pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
          )`,
@@ -161,6 +161,39 @@ export function BatchesTab() {
       return;
     }
     const rows = (data || []) as any as BatchRow[];
+    const transactionInvoiceIds = Array.from(
+      new Set(
+        rows
+          .flatMap((r) => r.allocations)
+          .map((a) => a.transaction?.invoice_id)
+          .filter(Boolean) as string[],
+      ),
+    );
+
+    if (transactionInvoiceIds.length > 0) {
+      const { data: invoiceDocs, error: invoiceDocsError } = await supabase
+        .from("invoices")
+        .select("id, document_url")
+        .in("id", transactionInvoiceIds);
+
+      if (invoiceDocsError) {
+        console.error("Failed to hydrate batch invoice documents", invoiceDocsError);
+      } else {
+        const invoiceDocMap = new Map(
+          (invoiceDocs || []).map((invoice: any) => [invoice.id, invoice.document_url]),
+        );
+        rows.forEach((row) => {
+          row.allocations.forEach((allocation) => {
+            const invoiceId = allocation.transaction?.invoice_id;
+            if (!invoiceId || !allocation.transaction) return;
+            allocation.transaction.invoice = {
+              id: invoiceId,
+              document_url: invoiceDocMap.get(invoiceId) || "",
+            };
+          });
+        });
+      }
+    }
     setBatches(rows);
 
     // Fetch supplier bank details (Finance/Admin restricted) for involved suppliers
