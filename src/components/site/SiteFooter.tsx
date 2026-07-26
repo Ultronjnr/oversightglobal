@@ -92,7 +92,7 @@ export function SiteFooter() {
             </ul>
             <div className="mt-5 flex items-center gap-2">
               {[
-                { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/zweepee/" },
+                { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/https-ovasyt.tech-/" },
                 { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/ovasyt_?utm_source=qr" },
                 { Icon: Twitter, label: "Twitter", href: "https://twitter.com/ovasyt" },
                 { Icon: Facebook, label: "Facebook", href: "https://www.facebook.com/ovasyt" },
