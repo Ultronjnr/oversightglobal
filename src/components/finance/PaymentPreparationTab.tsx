@@ -397,6 +397,22 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       </div>
 
       {/* Combined Table */}
+      {/* Origin legend — explains how each payable reached this queue */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 rounded-lg border border-border/50 bg-muted/10 text-xs">
+        <span className="text-muted-foreground font-medium">Source codes:</span>
+        {(Object.keys(ORIGIN_META) as TransactionOrigin[]).map((o) => (
+          <span key={o} className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className={`${ORIGIN_META[o].badgeClass} font-mono text-[11px]`}
+            >
+              {ORIGIN_META[o].code}
+            </Badge>
+            <span className="text-muted-foreground">{ORIGIN_META[o].description}</span>
+          </span>
+        ))}
+      </div>
+
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
