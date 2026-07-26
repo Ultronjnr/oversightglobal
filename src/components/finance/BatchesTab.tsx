@@ -38,6 +38,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvoiceDocumentUrl } from "@/services/invoice.service";
+import { getDocumentSignedUrl } from "@/services/document.service";
 import {
   exportBatchToExcel,
   exportBatchToPdf,
@@ -66,8 +67,10 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
+    document_url?: string | null;
     supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
-    pr?: { transaction_id: string; currency: string } | null;
+    invoice?: { id: string; document_url: string } | null;
+    pr?: { id: string; transaction_id: string; currency: string; document_url: string | null } | null;
   } | null;
 }
 
@@ -143,9 +146,10 @@ export function BatchesTab() {
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
-             id, supplier_name, amount, amount_paid, currency, status,
+             id, supplier_name, amount, amount_paid, currency, status, document_url,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
-             pr:purchase_requisitions ( transaction_id, currency )
+             invoice:invoices ( id, document_url ),
+             pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
          )`,
       )
@@ -233,6 +237,31 @@ export function BatchesTab() {
     } else {
       toast.error("Failed to load invoice", { description: result.error });
     }
+  };
+
+  /**
+   * Resolve the best previewable document for an allocation:
+   * supplier invoice → transaction document (scanned invoice) → PR attachment.
+   */
+  const handleViewAllocationDoc = async (a: BatchAllocation) => {
+    const invoicePath = a.invoice?.document_url || a.transaction?.invoice?.document_url;
+    if (invoicePath) return handleViewInvoice(invoicePath);
+
+    const txnPath = a.transaction?.document_url;
+    if (txnPath) return handleViewInvoice(txnPath);
+
+    const prPath = a.transaction?.pr?.document_url;
+    const prId = a.transaction?.pr?.id;
+    if (prPath && prId) {
+      const res = await getDocumentSignedUrl(prPath, prId);
+      if (res.success && res.signed_url) {
+        window.open(res.signed_url, "_blank");
+        return;
+      }
+      toast.error("Failed to load document", { description: res.error });
+      return;
+    }
+    toast.error("No document attached to this payable");
   };
 
   const statusBadgeClass = (status: string) => {
@@ -618,22 +647,27 @@ export function BatchesTab() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {a.invoice?.document_url ? (
+                                    {(a.invoice?.document_url ||
+                                      a.transaction?.invoice?.document_url ||
+                                      a.transaction?.document_url ||
+                                      a.transaction?.pr?.document_url) ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleViewInvoice(a.invoice!.document_url);
+                                          void handleViewAllocationDoc(a);
                                         }}
                                         className="gap-1 text-primary hover:text-primary"
                                       >
                                         <FileText className="h-4 w-4" />
-                                        View Invoice
+                                        {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
+                                          ? "View Invoice"
+                                          : "View PR Document"}
                                         <ExternalLink className="h-3 w-3" />
                                       </Button>
                                     ) : (
-                                      <span className="text-xs text-muted-foreground">—</span>
+                                      <span className="text-xs text-muted-foreground">No document</span>
                                     )}
                                   </TableCell>
                                 </TableRow>
