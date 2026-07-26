@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 import type { OcrExtracted } from "@/services/ocr.service";
 import { uploadAttachment } from "@/services/attachment.service";
+import { SCAN_REF_PREFIX } from "@/lib/transaction-origin";
 
 export type SarsValidationCode =
   | "VALID"
