@@ -468,8 +468,24 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       : "Invoice"}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={`${ORIGIN_META[row.origin].badgeClass} font-mono text-[11px]`}
+                    title={ORIGIN_META[row.origin].description}
+                  >
+                    {ORIGIN_META[row.origin].code}
+                  </Badge>
+                  <p className="mt-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                    {ORIGIN_META[row.origin].label}
+                  </p>
+                </TableCell>
+                <TableCell className="font-mono text-sm whitespace-nowrap">
                   {row.transactionId}
+                  <span className="text-muted-foreground">
+                    {" · "}
+                    {ORIGIN_META[row.origin].code}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -536,7 +552,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               </TableRow>
               {isExpanded && (
                 <TableRow className="bg-muted/10 hover:bg-muted/10">
-                  <TableCell colSpan={8} className="p-0">
+                  <TableCell colSpan={9} className="p-0">
                     <ExpandedDetails row={row} />
                   </TableCell>
                 </TableRow>
