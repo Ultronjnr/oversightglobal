@@ -66,8 +66,10 @@ interface BatchAllocation {
     amount_paid: number | null;
     currency: string | null;
     status: string | null;
+    document_url?: string | null;
     supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
-    pr?: { transaction_id: string; currency: string } | null;
+    invoice?: { id: string; document_url: string } | null;
+    pr?: { id: string; transaction_id: string; currency: string; document_url: string | null } | null;
   } | null;
 }
 
