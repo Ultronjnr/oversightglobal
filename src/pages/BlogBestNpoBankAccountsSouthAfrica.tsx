@@ -59,8 +59,8 @@ export default function BlogBestNpoBankAccountsSouthAfrica() {
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
-        title="Best NPO Bank Accounts in South Africa (2026 Comparison) | Ovasyt"
-        description="Compare NPO bank accounts in South Africa — FNB, Nedbank, Standard Bank, Absa and Capitec. Fees, setup, FICA requirements and compliance features for NGOs and PBOs."
+        title="Best NPO Bank Accounts in South Africa (2026)"
+        description="Compare NPO bank accounts in South Africa: FNB, Nedbank, Standard Bank, Absa and Capitec — fees, setup and FICA requirements for NGOs and PBOs."
         path="/blog/best-npo-bank-accounts-south-africa"
         type="article"
       />
