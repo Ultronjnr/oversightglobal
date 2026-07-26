@@ -38,6 +38,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvoiceDocumentUrl } from "@/services/invoice.service";
+import { getDocumentSignedUrl } from "@/services/document.service";
 import {
   exportBatchToExcel,
   exportBatchToPdf,
