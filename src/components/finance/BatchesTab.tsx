@@ -238,6 +238,31 @@ export function BatchesTab() {
     }
   };
 
+  /**
+   * Resolve the best previewable document for an allocation:
+   * supplier invoice → transaction document (scanned invoice) → PR attachment.
+   */
+  const handleViewAllocationDoc = async (a: BatchAllocation) => {
+    const invoicePath = a.invoice?.document_url || a.transaction?.invoice?.document_url;
+    if (invoicePath) return handleViewInvoice(invoicePath);
+
+    const txnPath = a.transaction?.document_url;
+    if (txnPath) return handleViewInvoice(txnPath);
+
+    const prPath = a.transaction?.pr?.document_url;
+    const prId = a.transaction?.pr?.id;
+    if (prPath && prId) {
+      const res = await getDocumentSignedUrl(prPath, prId);
+      if (res.success && res.signed_url) {
+        window.open(res.signed_url, "_blank");
+        return;
+      }
+      toast.error("Failed to load document", { description: res.error });
+      return;
+    }
+    toast.error("No document attached to this payable");
+  };
+
   const statusBadgeClass = (status: string) => {
     switch (status) {
       case "PAID":
