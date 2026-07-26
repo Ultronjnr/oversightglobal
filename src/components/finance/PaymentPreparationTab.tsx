@@ -114,6 +114,40 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       (supabase as any).rpc("get_approved_not_paid_queue"),
     ]);
     const queueRows: any[] = Array.isArray(queueRes?.data) ? queueRes.data : [];
+
+    // The queue RPC returns headline data only. Hydrate line items (and the
+    // PR's own attached document) directly from the purchase requisitions so
+    // the expandable row can show what was actually requested / invoiced.
+    const prIds = Array.from(
+      new Set(queueRows.map((r) => r.pr_id).filter(Boolean)),
+    ) as string[];
+    const prDetails = new Map<string, { items: any[]; document_url: string | null }>();
+    if (prIds.length > 0) {
+      const { data: prRows } = await (supabase as any)
+        .from("purchase_requisitions")
+        .select("id, items, document_url")
+        .in("id", prIds);
+      (prRows || []).forEach((p: any) => {
+        prDetails.set(p.id, {
+          items: Array.isArray(p.items) ? p.items : [],
+          document_url: p.document_url || null,
+        });
+      });
+    }
+
+    // Supplier invoice documents are the preferred preview once received.
+    const invoiceDocs = new Map<string, string>();
+    if (prIds.length > 0) {
+      const { data: invRows } = await (supabase as any)
+        .from("invoices")
+        .select("pr_id, document_url, created_at")
+        .in("pr_id", prIds)
+        .order("created_at", { ascending: false });
+      (invRows || []).forEach((i: any) => {
+        if (i.document_url && !invoiceDocs.has(i.pr_id)) invoiceDocs.set(i.pr_id, i.document_url);
+      });
+    }
+
     const mapped: OrgTransaction[] = queueRows.map((r) => ({
       id: r.transaction_id,
       pr_id: r.pr_id,
@@ -125,17 +159,18 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       status: r.status,
       approved_at: r.approved_at,
       invoice_id: r.invoice_id,
-      document_url: r.document_url,
+      document_url:
+        r.document_url || invoiceDocs.get(r.pr_id) || prDetails.get(r.pr_id)?.document_url || null,
       pr: {
         id: r.pr_id,
         transaction_id: r.pr_transaction_ref,
         requested_by_name: r.requested_by_name,
         requested_by_department: r.requested_by_department,
-        document_url: r.document_url,
+        document_url: prDetails.get(r.pr_id)?.document_url || r.document_url || null,
         category: r.category_name ? { name: r.category_name } : null,
         project: r.project_name ? { name: r.project_name } : null,
         donor: r.donor_name ? { name: r.donor_name } : null,
-        items: [],
+        items: prDetails.get(r.pr_id)?.items || [],
       },
     })) as any;
     setReimbursements(reimbRes.rows);
