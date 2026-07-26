@@ -34,6 +34,11 @@ import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.s
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 import { TransactionTimelineDialog } from "./TransactionTimelineDialog";
+import {
+  ORIGIN_META,
+  deriveTransactionOrigin,
+  type TransactionOrigin,
+} from "@/lib/transaction-origin";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
@@ -54,6 +59,7 @@ type PayRow =
       status: string;
       prId?: string;
       items?: any[];
+      origin: TransactionOrigin;
     }
   | {
       kind: "reimbursement";
@@ -69,6 +75,7 @@ type PayRow =
       status: string;
       prId?: string;
       items?: any[];
+      origin: TransactionOrigin;
     }
   | {
       kind: "transaction";
@@ -88,6 +95,7 @@ type PayRow =
       category?: string | null;
       project?: string | null;
       donor?: string | null;
+      origin: TransactionOrigin;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
@@ -98,6 +106,9 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [timelineRow, setTimelineRow] = useState<PayRow | null>(null);
+  // PR ids that went through the supplier quote round-trip (quote requested /
+  // quote received). Used to separate "Quoted → Invoiced" from direct approvals.
+  const [quotedPrIds, setQuotedPrIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void fetchAll();
@@ -148,6 +159,20 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       });
     }
 
+    // Origin detection: any quote trail (request or submitted quote) marks the
+    // PR as having gone through the supplier quoting route.
+    const quoted = new Set<string>();
+    if (prIds.length > 0) {
+      const [{ data: qRows }, { data: qrRows }] = await Promise.all([
+        (supabase as any).from("quotes").select("pr_id").in("pr_id", prIds),
+        (supabase as any).from("quote_requests").select("pr_id").in("pr_id", prIds),
+      ]);
+      [...(qRows || []), ...(qrRows || [])].forEach((r: any) => {
+        if (r?.pr_id) quoted.add(r.pr_id);
+      });
+    }
+    setQuotedPrIds(quoted);
+
     const mapped: OrgTransaction[] = queueRows.map((r) => ({
       id: r.transaction_id,
       pr_id: r.pr_id,
@@ -191,6 +216,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       createdAt: r.created_at,
       documentUrl: r.proof_document_url,
       status: r.status,
+      origin: "REIMBURSEMENT" as const,
     }));
     const txnRows: PayRow[] = transactions.map((t) => {
       const remaining = Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0);
@@ -212,12 +238,17 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         category: t.pr?.category?.name || null,
         project: t.pr?.project?.name || null,
         donor: t.pr?.donor?.name || null,
+        origin: deriveTransactionOrigin({
+          transactionRef: t.pr?.transaction_id,
+          hasQuote: quotedPrIds.has(t.pr?.id || t.pr_id),
+          kind: "transaction",
+        }),
       };
     });
     return [...reimbRows, ...txnRows].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [reimbursements, transactions]);
+  }, [reimbursements, transactions, quotedPrIds]);
 
   const selectedRows = useMemo(
     () => rows.filter((r) => selectedIds.has(r.key)),
@@ -366,6 +397,22 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
       </div>
 
       {/* Combined Table */}
+      {/* Origin legend — explains how each payable reached this queue */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2 rounded-lg border border-border/50 bg-muted/10 text-xs">
+        <span className="text-muted-foreground font-medium">Source codes:</span>
+        {(Object.keys(ORIGIN_META) as TransactionOrigin[]).map((o) => (
+          <span key={o} className="flex items-center gap-1.5">
+            <Badge
+              variant="outline"
+              className={`${ORIGIN_META[o].badgeClass} font-mono text-[11px]`}
+            >
+              {ORIGIN_META[o].code}
+            </Badge>
+            <span className="text-muted-foreground">{ORIGIN_META[o].description}</span>
+          </span>
+        ))}
+      </div>
+
       <div className="rounded-lg border border-border/50 overflow-hidden">
         <Table>
           <TableHeader>
@@ -373,6 +420,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               <TableHead className="w-8"></TableHead>
               <TableHead className="w-12"></TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Source</TableHead>
               <TableHead>Transaction ID</TableHead>
               <TableHead>Payee</TableHead>
               <TableHead className="text-right">Amount</TableHead>
@@ -436,8 +484,24 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                       : "Invoice"}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-sm">
+                <TableCell>
+                  <Badge
+                    variant="outline"
+                    className={`${ORIGIN_META[row.origin].badgeClass} font-mono text-[11px]`}
+                    title={ORIGIN_META[row.origin].description}
+                  >
+                    {ORIGIN_META[row.origin].code}
+                  </Badge>
+                  <p className="mt-1 text-[11px] text-muted-foreground whitespace-nowrap">
+                    {ORIGIN_META[row.origin].label}
+                  </p>
+                </TableCell>
+                <TableCell className="font-mono text-sm whitespace-nowrap">
                   {row.transactionId}
+                  <span className="text-muted-foreground">
+                    {" · "}
+                    {ORIGIN_META[row.origin].code}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -504,7 +568,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               </TableRow>
               {isExpanded && (
                 <TableRow className="bg-muted/10 hover:bg-muted/10">
-                  <TableCell colSpan={8} className="p-0">
+                  <TableCell colSpan={9} className="p-0">
                     <ExpandedDetails row={row} />
                   </TableCell>
                 </TableRow>
@@ -675,6 +739,20 @@ function ExpandedDetails({ row }: { row: PayRow }) {
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4">
       {/* Left: context / line items */}
       <div className="lg:col-span-3 space-y-3">
+        <div className="flex items-start gap-2 p-3 rounded-md border border-border/40 bg-muted/20">
+          <Badge
+            variant="outline"
+            className={`${ORIGIN_META[row.origin].badgeClass} font-mono text-[11px]`}
+          >
+            {ORIGIN_META[row.origin].code}
+          </Badge>
+          <div className="text-sm">
+            <p className="font-medium">{ORIGIN_META[row.origin].label}</p>
+            <p className="text-xs text-muted-foreground">
+              {ORIGIN_META[row.origin].description}
+            </p>
+          </div>
+        </div>
         <div className="flex items-center gap-2 text-sm font-medium">
           <FileText className="h-4 w-4 text-primary" />
           Line Items
