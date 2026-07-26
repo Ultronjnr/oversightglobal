@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MapPin, Clock, Phone, Linkedin, Twitter, Facebook, ArrowRight } from "lucide-react";
+import { Mail, MapPin, Clock, Phone, Linkedin, Twitter, Facebook, Instagram, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Helmet } from "react-helmet-async";
 
@@ -235,7 +235,8 @@ export default function Contact() {
                 </p>
                 <div className="flex items-center gap-2">
                   {[
-                    { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/ovasyt" },
+                    { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/zweepee/" },
+                    { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/ovasyt_?utm_source=qr" },
                     { Icon: Twitter, label: "Twitter", href: "https://twitter.com/ovasyt" },
                     { Icon: Facebook, label: "Facebook", href: "https://www.facebook.com/ovasyt" },
                   ].map(({ Icon, label, href }) => (
