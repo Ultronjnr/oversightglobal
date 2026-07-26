@@ -647,22 +647,27 @@ export function BatchesTab() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {a.invoice?.document_url ? (
+                                    {(a.invoice?.document_url ||
+                                      a.transaction?.invoice?.document_url ||
+                                      a.transaction?.document_url ||
+                                      a.transaction?.pr?.document_url) ? (
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          handleViewInvoice(a.invoice!.document_url);
+                                          void handleViewAllocationDoc(a);
                                         }}
                                         className="gap-1 text-primary hover:text-primary"
                                       >
                                         <FileText className="h-4 w-4" />
-                                        View Invoice
+                                        {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
+                                          ? "View Invoice"
+                                          : "View PR Document"}
                                         <ExternalLink className="h-3 w-3" />
                                       </Button>
                                     ) : (
-                                      <span className="text-xs text-muted-foreground">—</span>
+                                      <span className="text-xs text-muted-foreground">No document</span>
                                     )}
                                   </TableCell>
                                 </TableRow>
