@@ -429,6 +429,9 @@ export function BatchesTab() {
 
       toast.success("Batch report exported", { description: `Export ID: ${exportId.slice(0, 8)}…` });
       void fetchBatches();
+    } catch (e: any) {
+      console.error("[BatchesTab] Export PDF failed", e);
+      toast.error("Export failed", { description: e?.message || "Could not generate the batch PDF." });
     } finally {
       setExportingId(null);
     }
