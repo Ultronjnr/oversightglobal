@@ -8,7 +8,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
-        title="About Ovasyt | Procurement & Compliance for South African NGOs"
+        title="About Ovasyt | NGO Procurement & Compliance"
         description="Ovasyt is a South African procurement, VAT and Section 18A compliance platform built for NGOs, NPOs and SMEs. Learn about our mission, team, and product."
         path="/about"
       />
