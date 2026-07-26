@@ -52,7 +52,7 @@ export default function Pricing() {
     <div className="min-h-screen bg-background">
       <PageSeo
         title="Ovasyt Pricing | Platform R1 999/mo + Funder-Ready add-ons"
-        description="Ovasyt Platform at R1 999/month for South African NGOs — approvals, invoice scanning, donor tracking, Section 18A receipts. Add bookkeeping, AFS & tax with Funder-Ready add-ons, or request a Tailored quote."
+        description="Ovasyt Platform: R1 999/month for South African NGOs — approvals, invoice scanning, donor tracking and Section 18A receipts, plus Funder-Ready add-ons."
         path="/pricing"
       />
       <SiteNav />
