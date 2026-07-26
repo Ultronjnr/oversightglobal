@@ -260,7 +260,7 @@ export async function uploadInvoice(
         supplier_id: supplier.id,
         organization_id: organizationId,
         transaction_id: acceptedQuote.transaction_id,
-        document_url: filePath,
+        document_url: storedPath,
         status: "UPLOADED",
       })
       .select()
