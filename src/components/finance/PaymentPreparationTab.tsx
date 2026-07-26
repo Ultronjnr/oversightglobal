@@ -404,6 +404,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               <TableHead className="w-8"></TableHead>
               <TableHead className="w-12"></TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Source</TableHead>
               <TableHead>Transaction ID</TableHead>
               <TableHead>Payee</TableHead>
               <TableHead className="text-right">Amount</TableHead>
