@@ -34,6 +34,11 @@ import { listAttachments, getAttachmentSignedUrl } from "@/services/attachment.s
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 import { TransactionTimelineDialog } from "./TransactionTimelineDialog";
+import {
+  ORIGIN_META,
+  deriveTransactionOrigin,
+  type TransactionOrigin,
+} from "@/lib/transaction-origin";
 
 interface PaymentPreparationTabProps {
   onPaymentComplete?: () => void;
@@ -54,6 +59,7 @@ type PayRow =
       status: string;
       prId?: string;
       items?: any[];
+      origin: TransactionOrigin;
     }
   | {
       kind: "reimbursement";
@@ -69,6 +75,7 @@ type PayRow =
       status: string;
       prId?: string;
       items?: any[];
+      origin: TransactionOrigin;
     }
   | {
       kind: "transaction";
@@ -88,6 +95,7 @@ type PayRow =
       category?: string | null;
       project?: string | null;
       donor?: string | null;
+      origin: TransactionOrigin;
     };
 
 export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationTabProps) {
