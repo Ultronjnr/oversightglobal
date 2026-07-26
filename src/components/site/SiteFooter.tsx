@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mail, MapPin, Phone, ShieldCheck, Linkedin, Twitter, Facebook, ArrowRight } from "lucide-react";
+import { Mail, MapPin, Phone, ShieldCheck, Linkedin, Twitter, Facebook, Instagram, ArrowRight } from "lucide-react";
 import logoImage from "@/assets/ovasyt-logo.png";
 
 const PRODUCT = [
@@ -58,7 +58,7 @@ export function SiteFooter() {
           {/* Brand */}
           <div className="lg:col-span-2 max-w-sm">
             <Link to="/" className="inline-flex items-center">
-              <img src={logoImage} alt="Ovasyt" className="h-12 w-auto object-contain" />
+              <img src={logoImage} alt="Ovasyt" className="h-20 w-auto object-contain" />
             </Link>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Audit-ready procurement, VAT and Section&nbsp;18A compliance for
@@ -92,7 +92,8 @@ export function SiteFooter() {
             </ul>
             <div className="mt-5 flex items-center gap-2">
               {[
-                { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/ovasyt" },
+                { Icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/company/zweepee/" },
+                { Icon: Instagram, label: "Instagram", href: "https://www.instagram.com/ovasyt_?utm_source=qr" },
                 { Icon: Twitter, label: "Twitter", href: "https://twitter.com/ovasyt" },
                 { Icon: Facebook, label: "Facebook", href: "https://www.facebook.com/ovasyt" },
               ].map(({ Icon, label, href }) => (
