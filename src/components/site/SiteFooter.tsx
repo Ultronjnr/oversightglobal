@@ -14,7 +14,7 @@ const COMPANY = [
   { label: "About us", to: "/about" },
   { label: "Insights", to: "/insights" },
   { label: "Contact us", to: "/contact" },
-  { label: "Book a demo", to: "/contact" },
+  { label: "Book a demo", to: "/book-demo" },
 ];
 
 const RESOURCES = [
@@ -46,7 +46,7 @@ export function SiteFooter() {
             </h3>
           </div>
           <Link
-            to="/contact"
+            to="/book-demo"
             className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.03] transition-all"
           >
             Book a demo
