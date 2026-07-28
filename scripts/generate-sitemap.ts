@@ -23,6 +23,7 @@ const staticEntries: SitemapEntry[] = [
   { path: "/pricing", changefreq: "weekly", priority: "0.9", sources: ["src/pages/Pricing.tsx"] },
   { path: "/about", changefreq: "monthly", priority: "0.7", sources: ["src/pages/About.tsx"] },
   { path: "/contact", changefreq: "monthly", priority: "0.7", sources: ["src/pages/Contact.tsx"] },
+  { path: "/book-demo", changefreq: "monthly", priority: "0.9", sources: ["src/pages/BookDemo.tsx"] },
   { path: "/insights", changefreq: "weekly", priority: "0.8", sources: ["src/pages/Insights.tsx"] },
   { path: "/blog/section-18a-donations-in-kind", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogSection18ADonationsInKind.tsx"] },
   { path: "/blog/how-to-register-pbo-section-18a", changefreq: "monthly", priority: "0.7", sources: ["src/pages/BlogRegisterPboSection18A.tsx"] },

@@ -81,7 +81,7 @@ export default function About() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
-                to="/contact"
+                to="/book-demo"
                 className="inline-flex items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Book a demo

@@ -35,6 +35,7 @@ import BlogBestNpoBankAccountsSouthAfrica from "./pages/BlogBestNpoBankAccountsS
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Insights from "./pages/Insights";
+import BookDemo from "./pages/BookDemo";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/insights" element={<Insights />} />
+            <Route path="/book-demo" element={<BookDemo />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
             <Route
