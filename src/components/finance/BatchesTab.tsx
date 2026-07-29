@@ -818,9 +818,27 @@ export function BatchesTab() {
                 onChange={(e) => setConfirmDate(e.target.value)}
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Upload className="h-3 w-3" /> Proof of payment (optional)
+              </label>
+              <Input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={(e) => setPopFile(e.target.files?.[0] || null)}
+              />
+              {popFile && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {popFile.name} · {(popFile.size / (1024 * 1024)).toFixed(2)} MB
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Each line in this batch gets its own unique payment reference on confirmation.
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmBatch(null)} disabled={submitting}>
+            <Button variant="outline" onClick={() => { setConfirmBatch(null); setPopFile(null); }} disabled={submitting}>
               Cancel
             </Button>
             <Button onClick={handleConfirmBatch} disabled={submitting} className="gap-2">
