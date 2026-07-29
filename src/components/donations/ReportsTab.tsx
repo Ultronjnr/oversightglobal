@@ -301,7 +301,7 @@ function DonorBreakdown({
                 <TableCell>{a.project}</TableCell>
                 <TableCell>{a.expense_category}</TableCell>
                 <TableCell>{a.description}</TableCell>
-                <TableCell>{a.allocation_type === "SPENT" ? "Spent" : "Reserved"}</TableCell>
+                <TableCell>Spent</TableCell>
                 <TableCell className="text-right">{format(a.amount)}</TableCell>
               </TableRow>
             ))}
