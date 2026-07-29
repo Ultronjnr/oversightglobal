@@ -1548,6 +1548,9 @@ export type Database = {
           organization_id: string
           paid_at: string | null
           payment_reference: string | null
+          pop_file_path: string | null
+          pop_uploaded_at: string | null
+          pop_uploaded_by: string | null
           provider: string | null
           provider_status: Database["public"]["Enums"]["netcash_status"] | null
           status: string
@@ -1568,6 +1571,9 @@ export type Database = {
           organization_id: string
           paid_at?: string | null
           payment_reference?: string | null
+          pop_file_path?: string | null
+          pop_uploaded_at?: string | null
+          pop_uploaded_by?: string | null
           provider?: string | null
           provider_status?: Database["public"]["Enums"]["netcash_status"] | null
           status?: string
@@ -1588,6 +1594,9 @@ export type Database = {
           organization_id?: string
           paid_at?: string | null
           payment_reference?: string | null
+          pop_file_path?: string | null
+          pop_uploaded_at?: string | null
+          pop_uploaded_by?: string | null
           provider?: string | null
           provider_status?: Database["public"]["Enums"]["netcash_status"] | null
           status?: string
@@ -3285,14 +3294,24 @@ export type Database = {
         }
         Returns: Json
       }
-      confirm_batch_paid: {
-        Args: {
-          _batch_id: string
-          _payment_date?: string
-          _payment_reference?: string
-        }
-        Returns: Json
-      }
+      confirm_batch_paid:
+        | {
+            Args: {
+              _batch_id: string
+              _payment_date?: string
+              _payment_reference?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _batch_id: string
+              _payment_date?: string
+              _payment_reference?: string
+              _pop_path?: string
+            }
+            Returns: Json
+          }
       create_payment_batch: {
         Args: { _allocations: Json; _notes?: string }
         Returns: Json
