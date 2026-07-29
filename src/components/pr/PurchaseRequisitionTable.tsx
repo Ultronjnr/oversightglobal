@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { DocumentViewerModal } from "./DocumentViewerModal";
 import { PRChatButton } from "./PRChatButton";
 import { PRChatSlidePanel } from "./PRChatSlidePanel";
+import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import { formatCurrency } from "@/lib/utils";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
@@ -233,6 +234,17 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                             <span className="text-muted-foreground text-xs">Finance Status</span>
                             <p className="font-medium mt-1">{pr.finance_status}</p>
                           </div>
+                        </div>
+
+                        {/* Receipts & supporting documents */}
+                        <div className="bg-white rounded-lg border border-border/30 p-4">
+                          <AttachmentsPanel
+                            filter={{ pr_id: pr.id }}
+                            targets={{ pr_id: pr.id }}
+                            title="Receipts & Supporting Documents"
+                            allowedKinds={["RECEIPT", "INVOICE", "SUPPORTING"]}
+                            canDelete
+                          />
                         </div>
 
                         {/* Document */}

@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/select";
 import { PRItemRow } from "./PRItemRow";
 import { CostCenterDropdown } from "./CostCenterDropdown";
+import { ProjectDonorSelect, type ProjectDonorValue } from "./ProjectDonorSelect";
+import { DuplicatePRDialog } from "./DuplicatePRDialog";
+import { findDuplicatePRs, type DuplicateCandidate } from "@/services/pr-duplicate.service";
 import { createPurchaseRequisition } from "@/services/pr.service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +53,12 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [requiresReimbursement, setRequiresReimbursement] = useState(false);
+  const [projectDonor, setProjectDonor] = useState<ProjectDonorValue>({
+    projectId: null,
+    donorId: null,
+  });
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [pendingSubmit, setPendingSubmit] = useState<FormData | null>(null);
   const [pendingReimbursementPR, setPendingReimbursementPR] = useState<{
     id: string;
     transaction_id: string;
@@ -177,7 +186,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
     }
   };
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: FormData, skipDuplicateCheck = false) => {
     // Validate items with clear error messages
     const invalidItems = items.filter(
       (item, index) => {
@@ -214,6 +223,20 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
 
     setIsSubmitting(true);
     try {
+      // Duplicate detection — warn before creating a near-identical PR.
+      if (!skipDuplicateCheck) {
+        const found = await findDuplicatePRs({
+          items: validItems,
+          totalAmount: calculateTotal(),
+        });
+        if (found.length > 0) {
+          setDuplicates(found);
+          setPendingSubmit(data);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Upload document if exists
       let documentUrl: string | undefined;
       if (uploadedFile) {
@@ -229,6 +252,8 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         payment_due_date: data.payment_due_date || undefined,
         document_url: documentUrl,
         requires_reimbursement: requiresReimbursement,
+        project_id: projectDonor.projectId,
+        donor_id: projectDonor.donorId,
       });
 
       if (!result.success) {
@@ -242,6 +267,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
       reset();
       setItems([{ id: uuidv4(), description: "", quantity: 1, unit_price: 0, total: 0 }]);
       setUploadedFile(null);
+      setProjectDonor({ projectId: null, donorId: null });
 
       if (requiresReimbursement && result.data) {
         setPendingReimbursementPR({
@@ -262,7 +288,7 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="space-y-6">
       {/* Header Fields */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <CostCenterDropdown
@@ -315,6 +341,9 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
           />
         </div>
       </div>
+
+      {/* Project / Donor tagging (from Donation Management) */}
+      <ProjectDonorSelect value={projectDonor} onChange={setProjectDonor} />
 
       {/* VAT Toggle */}
       <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
@@ -450,6 +479,24 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
           }}
         />
       )}
+
+      <DuplicatePRDialog
+        open={duplicates.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDuplicates([]);
+            setPendingSubmit(null);
+          }
+        }}
+        candidates={duplicates}
+        confirmLabel="Submit anyway"
+        onConfirm={() => {
+          const data = pendingSubmit;
+          setDuplicates([]);
+          setPendingSubmit(null);
+          if (data) onSubmit(data, true);
+        }}
+      />
     </form>
   );
 }

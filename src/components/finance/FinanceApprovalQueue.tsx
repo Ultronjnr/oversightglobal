@@ -31,6 +31,8 @@ import { QuoteRequestModal } from "./QuoteRequestModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
+import { DuplicatePRDialog } from "@/components/pr/DuplicatePRDialog";
+import { findDuplicatePRs, type DuplicateCandidate } from "@/services/pr-duplicate.service";
 
 export function FinanceApprovalQueue() {
   const { currency: orgCurrency } = useCurrency();
@@ -42,6 +44,26 @@ export function FinanceApprovalQueue() {
   const [splitModalPR, setSplitModalPR] = useState<PurchaseRequisition | null>(null);
   const [quoteModalPR, setQuoteModalPR] = useState<PurchaseRequisition | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [dupCandidates, setDupCandidates] = useState<DuplicateCandidate[]>([]);
+  const [dupPendingPR, setDupPendingPR] = useState<PurchaseRequisition | null>(null);
+  const [dupChecking, setDupChecking] = useState<string | null>(null);
+
+  /** Warn about near-identical requisitions before opening the approve modal. */
+  const startApprove = async (pr: PurchaseRequisition) => {
+    setDupChecking(pr.id);
+    const found = await findDuplicatePRs({
+      items: pr.items || [],
+      totalAmount: Number(pr.total_amount) || 0,
+      excludePrId: pr.id,
+    });
+    setDupChecking(null);
+    if (found.length > 0) {
+      setDupCandidates(found);
+      setDupPendingPR(pr);
+      return;
+    }
+    setApproveModalPR(pr);
+  };
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -244,9 +266,14 @@ export function FinanceApprovalQueue() {
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => setApproveModalPR(pr)}
+                                onClick={() => startApprove(pr)}
+                                disabled={dupChecking === pr.id}
                               >
-                                <Check className="h-4 w-4 mr-1" />
+                                {dupChecking === pr.id ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4 mr-1" />
+                                )}
                                 Approve
                               </Button>
                               <Button
@@ -443,6 +470,25 @@ export function FinanceApprovalQueue() {
         documentUrl={documentModal.url}
         prId={documentModal.prId}
         transactionId={documentModal.transactionId}
+      />
+
+      {/* Duplicate verification before approval */}
+      <DuplicatePRDialog
+        open={dupCandidates.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDupCandidates([]);
+            setDupPendingPR(null);
+          }
+        }}
+        candidates={dupCandidates}
+        confirmLabel="Approve anyway"
+        onConfirm={() => {
+          const pr = dupPendingPR;
+          setDupCandidates([]);
+          setDupPendingPR(null);
+          if (pr) setApproveModalPR(pr);
+        }}
       />
     </>
   );
