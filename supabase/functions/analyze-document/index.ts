@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createAiProvider,
+  DEFAULT_GEMINI_MODEL,
+  scanInvoice,
+} from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +38,12 @@ const EXTRACTION_SCHEMA = `{
   "total_amount": 0,
   "payment_method": "string",
   "payment_reference": "string",
+  "purchase_order_number": "string",
+  "payment_terms": "string",
+  "reference_number": "string",
+  "expense_category": "string (only if clearly stated)",
+  "project": "string (only if clearly stated)",
+  "donor": "string (only if clearly stated)",
   "bank_name": "string",
   "bank_account_number": "digits only",
   "bank_branch_code": "digits only",
@@ -104,14 +115,14 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       return json({ error: "Backend environment not configured" }, 500);
     }
 
-    if (!LOVABLE_API_KEY) {
-      return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+    if (!GEMINI_API_KEY) {
+      return json({ error: "GEMINI_API_KEY not configured" }, 500);
     }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -255,60 +266,19 @@ Deno.serve(async (req) => {
         }
       }
       const base64 = encodeBase64(buf);
-      const dataUrl = `data:${contentType};base64,${base64}`;
-      const fileName = storage_path.split("/").pop() || "invoice";
-      const documentBlock = contentType === "application/pdf"
-        ? { type: "file", file: { filename: fileName, file_data: dataUrl } }
-        : { type: "image_url", image_url: { url: dataUrl } };
 
-      const messages = [
-        {
-          role: "system",
-          content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
-            },
-            documentBlock,
-          ],
-        },
-      ];
-
-      // Fast path: Flash is normally quickest. If it returns no parseable JSON,
-      // retry once with Pro for difficult/low-quality photos instead of failing.
-      let model = "google/gemini-2.5-flash";
-      let aiJson = await callAi(LOVABLE_API_KEY, {
-        model,
-        messages,
-        response_format: { type: "json_object" },
-        temperature: 0,
-        max_completion_tokens: 3000,
-      });
-      let extracted = parseExtraction(aiJson);
-
-      if (!extracted) {
-        console.warn("Fast OCR returned no structured data; retrying with robust model");
-        model = "google/gemini-2.5-pro";
-        aiJson = await callAi(LOVABLE_API_KEY, {
-          model,
-          messages,
-          temperature: 0,
-          max_completion_tokens: 3500,
-        });
-        extracted = parseExtraction(aiJson);
-      }
-
-      if (extracted) coerceExtracted(extracted);
-      if (!extracted) {
-        const finish = aiJson?.choices?.[0]?.finish_reason;
-        throw new Error(
-          `AI returned no structured data${finish ? ` (finish_reason=${finish})` : ""}`,
-        );
-      }
+      // Direct Google Gemini call (own API key) via the shared, provider-agnostic AI service.
+      const provider = createAiProvider(DEFAULT_GEMINI_MODEL);
+      const result = await scanInvoice(
+        provider,
+        { mimeType: contentType, data: base64 },
+        systemPromptFor(document_type),
+        EXTRACTION_SCHEMA,
+      );
+      const model = result.model;
+      const extracted = result.data as Record<string, unknown> | null;
+      if (!extracted) throw new Error("AI returned no structured data");
+      coerceExtracted(extracted);
       normalizeLineItems(extracted);
       const confidence = typeof extracted.confidence === "number" ? extracted.confidence : null;
 
@@ -364,47 +334,6 @@ function normalizeMime(blobType: string | undefined, path: string): string {
   if (!blobType || blobType === "application/octet-stream") return guessed;
   if (blobType === "image/jpg") return "image/jpeg";
   return blobType;
-}
-
-async function callAi(apiKey: string, payload: Record<string, unknown>) {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    if (response.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
-    if (response.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
-    throw new Error(`AI gateway error ${response.status}: ${text.slice(0, 500)}`);
-  }
-  return response.json();
-}
-
-function parseExtraction(aiJson: unknown): Record<string, unknown> | null {
-  const msg = (aiJson as any)?.choices?.[0]?.message;
-  const toolCall = msg?.tool_calls?.[0];
-  if (toolCall?.function?.arguments) {
-    try {
-      return JSON.parse(toolCall.function.arguments);
-    } catch {
-      // fall through to content-parse fallback
-    }
-  }
-  if (typeof msg?.content === "string" && msg.content.trim()) {
-    const jsonStr = extractJsonObject(msg.content.trim());
-    if (jsonStr) {
-      try {
-        return JSON.parse(jsonStr);
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
 }
 
 function encodeBase64(bytes: Uint8Array): string {
