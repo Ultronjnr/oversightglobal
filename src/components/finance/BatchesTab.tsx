@@ -676,6 +676,7 @@ export function BatchesTab() {
                             <TableRow className="bg-muted/30">
                               <TableHead>Supplier</TableHead>
                               <TableHead>Transaction</TableHead>
+                              <TableHead>Payment Ref</TableHead>
                               <TableHead className="text-right">Amount Paid</TableHead>
                               <TableHead>Type</TableHead>
                               <TableHead className="text-right">Invoice</TableHead>
@@ -721,6 +722,11 @@ export function BatchesTab() {
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
                                     {txnRef}
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs">
+                                    {a.payment_reference || (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {formatCurrency(
