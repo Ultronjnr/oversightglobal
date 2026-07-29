@@ -73,7 +73,7 @@ export const template = {
   component: ContactEnquiryEmail,
   subject: (data: Record<string, any>) =>
     `[Ovasyt] ${data?.subject ?? 'New enquiry'} — ${data?.name ?? 'Website visitor'}`,
-  to: 'info@ovasyt.tech',
+  to: 'connect@ovasyt.tech',
   displayName: 'Contact form enquiry',
   previewData: {
     name: 'Jane Dube',
