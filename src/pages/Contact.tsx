@@ -16,7 +16,7 @@ const LOCAL_BUSINESS_JSONLD = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   name: "Ovasyt",
-  email: "info@ovasyt.tech",
+  email: "connect@ovasyt.tech",
   telephone: "+27849231405",
   url: "https://ovasyt.tech/",
   address: [
