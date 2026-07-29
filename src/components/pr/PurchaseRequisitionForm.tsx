@@ -342,6 +342,9 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
         </div>
       </div>
 
+      {/* Project / Donor tagging (from Donation Management) */}
+      <ProjectDonorSelect value={projectDonor} onChange={setProjectDonor} />
+
       {/* VAT Toggle */}
       <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
         <Switch
