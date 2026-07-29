@@ -183,7 +183,7 @@ export function scanInvoice(provider: AiProvider, file: AiFilePart, systemPrompt
     prompt:
       "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
     files: [file],
-    maxOutputTokens: 4096,
+    maxOutputTokens: 8192,
   }, "scan-invoice");
 }
 
