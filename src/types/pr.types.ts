@@ -41,6 +41,10 @@ export interface CreatePRInput {
   payment_due_date?: string;
   document_url?: string;
   requires_reimbursement?: boolean;
+  /** Optional Donation Management project this spend belongs to. */
+  project_id?: string | null;
+  /** Optional Donation Management donor funding this spend. */
+  donor_id?: string | null;
 }
 
 export interface PurchaseRequisition {
