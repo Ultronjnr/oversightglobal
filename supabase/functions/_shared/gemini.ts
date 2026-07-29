@@ -141,9 +141,7 @@ export async function extractStructuredData<T = Record<string, unknown>>(
 ): Promise<AiJsonResult<T>> {
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const model = attempt === 1 ? req.model : (req.model ?? DEFAULT_GEMINI_MODEL) === FALLBACK_GEMINI_MODEL
-      ? FALLBACK_GEMINI_MODEL
-      : FALLBACK_GEMINI_MODEL;
+    const model = attempt === 1 ? req.model : FALLBACK_GEMINI_MODEL;
     try {
       const result = await provider.generateJson<T>({ ...req, model });
       console.log(JSON.stringify({
