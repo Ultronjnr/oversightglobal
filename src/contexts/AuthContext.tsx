@@ -155,6 +155,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     toast.success("Signed out successfully");
   };
 
+  // Auto sign-out after 15 minutes of inactivity.
+  useEffect(() => {
+    if (!user) return;
+    const IDLE_MS = 15 * 60 * 1000;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const expire = async () => {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setRole(null);
+      navigate("/login");
+      toast.info("Session expired after 15 minutes of inactivity. Please sign in again.");
+    };
+
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(expire, IDLE_MS);
+    };
+
+    const events: (keyof WindowEventMap)[] = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "visibilitychange",
+    ];
+    events.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    reset();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((e) => window.removeEventListener(e, reset));
+    };
+  }, [user, navigate]);
+
   return (
     <AuthContext.Provider
       value={{
