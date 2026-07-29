@@ -35,7 +35,7 @@ export function FundingPoolsTab() {
   const [saving, setSaving] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [form, setForm] = useState<any>({
-    donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED" as AllocationType,
+    donor_id: "", project_id: "", amount: "", allocation_type: "SPENT" as AllocationType,
     expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "",
   });
 
@@ -60,13 +60,13 @@ export function FundingPoolsTab() {
         project_id: form.project_id,
         amount: Number(form.amount),
         allocation_type: form.allocation_type,
-        expense_category: form.allocation_type === "SPENT" ? (form.expense_category || null) : null,
+        expense_category: form.expense_category || null,
         allocation_date: form.allocation_date,
         description: form.description || null,
       });
       toast.success("Allocation created");
       setOpen(false);
-      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "RESERVED", expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "" });
+      setForm({ donor_id: "", project_id: "", amount: "", allocation_type: "SPENT", expense_category: "", allocation_date: new Date().toISOString().slice(0, 10), description: "" });
       load();
     } catch { toast.error("Failed to create allocation"); }
     finally { setSaving(false); }
@@ -75,13 +75,12 @@ export function FundingPoolsTab() {
   // Aggregate allocation stats per project
   const projectStats = projects.map((pr) => {
     const rows = allocations.filter((a) => a.project_id === pr.id);
-    const reserved = rows.filter((a) => a.allocation_type === "RESERVED").reduce((s, a) => s + Number(a.amount), 0);
-    const spent = rows.filter((a) => a.allocation_type === "SPENT").reduce((s, a) => s + Number(a.amount), 0);
+    const spent = rows.reduce((s, a) => s + Number(a.amount), 0);
     const budget = Number(pr.budget) || 0;
-    const committed = reserved + spent;
+    const committed = spent;
     const remaining = Math.max(budget - committed, 0);
     const pct = budget > 0 ? Math.min((committed / budget) * 100, 100) : 0;
-    return { project: pr, rows, reserved, spent, budget, committed, remaining, pct };
+    return { project: pr, rows, spent, budget, committed, remaining, pct };
   });
   const activeStat = projectStats.find((s) => s.project.id === selectedProjectId);
 
@@ -139,22 +138,10 @@ export function FundingPoolsTab() {
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Amount</Label><Input type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></div>
                 <div>
-                  <Label>Type</Label>
-                  <Select value={form.allocation_type} onValueChange={(v) => setForm({ ...form, allocation_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="RESERVED">Reserved</SelectItem>
-                      <SelectItem value="SPENT">Spent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {form.allocation_type === "SPENT" && (
-                <div>
                   <Label>Expense Category</Label>
                   <Input placeholder="e.g. Transport, Salaries" value={form.expense_category} onChange={(e) => setForm({ ...form, expense_category: e.target.value })} />
                 </div>
-              )}
+              </div>
               <div><Label>Date</Label><Input type="date" value={form.allocation_date} onChange={(e) => setForm({ ...form, allocation_date: e.target.value })} /></div>
               <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
             </div>
@@ -172,14 +159,14 @@ export function FundingPoolsTab() {
           <FolderSearch className="h-10 w-10 text-muted-foreground" />
           <h3 className="font-semibold">Select a project to begin</h3>
           <p className="text-sm text-muted-foreground max-w-md">
-            Fund allocations must belong to a project. Pick one from the dropdown above to see its budget, reserved and spent totals, and to record new allocations.
+            Fund allocations must belong to a project. Pick one from the dropdown above to see its budget, spent and remaining totals, and to record new allocations.
           </p>
         </Card>
       ) : activeStat && (
         <Card className="p-4">
           <Accordion type="single" collapsible defaultValue={activeStat.project.id} className="w-full">
             {(() => {
-              const { project, rows, reserved, spent, budget, committed, remaining, pct } = activeStat;
+              const { project, rows, spent, budget, committed, remaining, pct } = activeStat;
               const over = budget > 0 && committed > budget;
               return (
                 <AccordionItem value={project.id} className="border-none">
@@ -192,7 +179,7 @@ export function FundingPoolsTab() {
                           {project.code && <Badge variant="outline" className="text-xs">{project.code}</Badge>}
                         </div>
                         <div className="hidden sm:flex items-center gap-3 text-xs">
-                          <span className="flex items-center gap-1 text-amber-600"><Wallet className="h-3 w-3" />Reserved {format(reserved)}</span>
+                          <span className="flex items-center gap-1 text-amber-600"><Wallet className="h-3 w-3" />Budget {format(budget)}</span>
                           <span className="flex items-center gap-1 text-rose-600"><TrendingDown className="h-3 w-3" />Spent {format(spent)}</span>
                           <span className={`flex items-center gap-1 font-semibold ${over ? "text-destructive" : "text-emerald-600"}`}>
                             <PiggyBank className="h-3 w-3" />
@@ -204,7 +191,7 @@ export function FundingPoolsTab() {
                         <div className="space-y-1">
                           <Progress value={pct} className={over ? "[&>div]:bg-destructive" : ""} />
                           <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{pct.toFixed(0)}% of budget committed</span>
+                            <span>{pct.toFixed(0)}% of budget spent</span>
                             <span>Budget {format(budget)}</span>
                           </div>
                         </div>
@@ -213,7 +200,7 @@ export function FundingPoolsTab() {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="sm:hidden grid grid-cols-3 gap-2 text-xs mb-3">
-                      <div className="rounded border p-2"><div className="text-muted-foreground">Reserved</div><div className="font-semibold">{format(reserved)}</div></div>
+                      <div className="rounded border p-2"><div className="text-muted-foreground">Budget</div><div className="font-semibold">{format(budget)}</div></div>
                       <div className="rounded border p-2"><div className="text-muted-foreground">Spent</div><div className="font-semibold">{format(spent)}</div></div>
                       <div className="rounded border p-2"><div className="text-muted-foreground">{over ? "Over" : "Left"}</div><div className={`font-semibold ${over ? "text-destructive" : "text-emerald-600"}`}>{format(over ? committed - budget : remaining)}</div></div>
                     </div>

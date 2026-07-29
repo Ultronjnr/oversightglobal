@@ -13,6 +13,7 @@ import {
   X as XIcon,
   FileSpreadsheet,
   FileDown,
+  Upload,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ interface BatchAllocation {
   invoice_id: string | null;
   transaction_id: string | null;
   amount_paid: number;
+  payment_reference?: string | null;
   invoice?: {
     id: string;
     document_url: string;
@@ -84,6 +86,7 @@ interface BatchRow {
   status: string;
   batch_number: string | null;
   payment_reference: string | null;
+  pop_file_path?: string | null;
   confirmed_at: string | null;
   paid_at: string | null;
   created_by: string | null;
@@ -100,6 +103,7 @@ export function BatchesTab() {
   const [confirmBatch, setConfirmBatch] = useState<BatchRow | null>(null);
   const [confirmRef, setConfirmRef] = useState("");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [popFile, setPopFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
@@ -136,10 +140,10 @@ export function BatchesTab() {
     const { data, error } = await supabase
       .from("payment_batches")
       .select(
-        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at, created_by, export_id, exported_at,
+        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, pop_file_path, confirmed_at, paid_at, created_by, export_id, exported_at,
          provider_status,
          allocations:payment_allocations (
-           id, invoice_id, transaction_id, amount_paid,
+           id, invoice_id, transaction_id, amount_paid, payment_reference,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
@@ -452,10 +456,41 @@ export function BatchesTab() {
   const handleConfirmBatch = async () => {
     if (!confirmBatch) return;
     setSubmitting(true);
-    const { data, error } = await supabase.rpc("confirm_batch_paid", {
+
+    // Upload the proof of payment first so the reference is stored with the batch.
+    let popPath: string | null = null;
+    if (popFile) {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", auth?.user?.id || "")
+          .single();
+        const orgId = prof?.organization_id;
+        if (orgId) {
+          const ext = popFile.name.split(".").pop()?.toLowerCase() || "pdf";
+          const path = `${orgId}/${confirmBatch.id}/pop-${Date.now()}.${ext}`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, popFile, { contentType: popFile.type || "application/pdf", upsert: true });
+          if (up.error) throw up.error;
+          popPath = path;
+        }
+      } catch (e: any) {
+        setSubmitting(false);
+        toast.error("Proof of payment upload failed", {
+          description: e?.message || "Please try again.",
+        });
+        return;
+      }
+    }
+
+    const { data, error } = await (supabase as any).rpc("confirm_batch_paid", {
       _batch_id: confirmBatch.id,
       _payment_reference: confirmRef || null,
       _payment_date: confirmDate || null,
+      _pop_path: popPath,
     });
     setSubmitting(false);
     const res: any = data;
@@ -466,7 +501,20 @@ export function BatchesTab() {
     toast.success(`Batch ${confirmBatch.batch_number || ""} confirmed as paid`);
     setConfirmBatch(null);
     setConfirmRef("");
+    setPopFile(null);
     void fetchBatches();
+  };
+
+  /** Open the stored proof of payment for a confirmed batch. */
+  const handleViewPop = async (path: string) => {
+    const { data, error } = await supabase.storage
+      .from("batch-exports")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      toast.error("Could not open proof of payment", { description: error?.message });
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -549,6 +597,19 @@ export function BatchesTab() {
                           {b.paid_at && (
                             <span><span className="font-medium text-foreground">Paid:</span> {format(new Date(b.paid_at), "dd MMM yyyy HH:mm")}</span>
                           )}
+                          {b.pop_file_path && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleViewPop(b.pop_file_path as string);
+                              }}
+                              className="text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <FileText className="h-3 w-3" />
+                              View proof of payment
+                            </button>
+                          )}
                         </div>
                       )}
                       <div className="flex gap-2 mb-3 flex-wrap">
@@ -615,6 +676,7 @@ export function BatchesTab() {
                             <TableRow className="bg-muted/30">
                               <TableHead>Supplier</TableHead>
                               <TableHead>Transaction</TableHead>
+                              <TableHead>Payment Ref</TableHead>
                               <TableHead className="text-right">Amount Paid</TableHead>
                               <TableHead>Type</TableHead>
                               <TableHead className="text-right">Invoice</TableHead>
@@ -660,6 +722,11 @@ export function BatchesTab() {
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
                                     {txnRef}
+                                  </TableCell>
+                                  <TableCell className="font-mono text-xs">
+                                    {a.payment_reference || (
+                                      <span className="text-muted-foreground">—</span>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold">
                                     {formatCurrency(
@@ -751,9 +818,27 @@ export function BatchesTab() {
                 onChange={(e) => setConfirmDate(e.target.value)}
               />
             </div>
+            <div>
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Upload className="h-3 w-3" /> Proof of payment (optional)
+              </label>
+              <Input
+                type="file"
+                accept="application/pdf,image/*"
+                onChange={(e) => setPopFile(e.target.files?.[0] || null)}
+              />
+              {popFile && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {popFile.name} · {(popFile.size / (1024 * 1024)).toFixed(2)} MB
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Each line in this batch gets its own unique payment reference on confirmation.
+              </p>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmBatch(null)} disabled={submitting}>
+            <Button variant="outline" onClick={() => { setConfirmBatch(null); setPopFile(null); }} disabled={submitting}>
               Cancel
             </Button>
             <Button onClick={handleConfirmBatch} disabled={submitting} className="gap-2">
