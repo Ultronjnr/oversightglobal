@@ -260,60 +260,19 @@ Deno.serve(async (req) => {
         }
       }
       const base64 = encodeBase64(buf);
-      const dataUrl = `data:${contentType};base64,${base64}`;
-      const fileName = storage_path.split("/").pop() || "invoice";
-      const documentBlock = contentType === "application/pdf"
-        ? { type: "file", file: { filename: fileName, file_data: dataUrl } }
-        : { type: "image_url", image_url: { url: dataUrl } };
 
-      const messages = [
-        {
-          role: "system",
-          content: `${systemPromptFor(document_type)}\n\nReturn ONLY valid compact JSON. No markdown, no explanation, no tool calls. Use this JSON shape and omit unreadable optional fields: ${EXTRACTION_SCHEMA}`,
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract the invoice fields now. Return one JSON object only. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
-            },
-            documentBlock,
-          ],
-        },
-      ];
-
-      // Fast path: Flash is normally quickest. If it returns no parseable JSON,
-      // retry once with Pro for difficult/low-quality photos instead of failing.
-      let model = "google/gemini-2.5-flash";
-      let aiJson = await callAi(LOVABLE_API_KEY, {
-        model,
-        messages,
-        response_format: { type: "json_object" },
-        temperature: 0,
-        max_completion_tokens: 3000,
-      });
-      let extracted = parseExtraction(aiJson);
-
-      if (!extracted) {
-        console.warn("Fast OCR returned no structured data; retrying with robust model");
-        model = "google/gemini-2.5-pro";
-        aiJson = await callAi(LOVABLE_API_KEY, {
-          model,
-          messages,
-          temperature: 0,
-          max_completion_tokens: 3500,
-        });
-        extracted = parseExtraction(aiJson);
-      }
-
-      if (extracted) coerceExtracted(extracted);
-      if (!extracted) {
-        const finish = aiJson?.choices?.[0]?.finish_reason;
-        throw new Error(
-          `AI returned no structured data${finish ? ` (finish_reason=${finish})` : ""}`,
-        );
-      }
+      // Direct Google Gemini call (own API key) via the shared, provider-agnostic AI service.
+      const provider = createAiProvider(DEFAULT_GEMINI_MODEL);
+      const result = await scanInvoice(
+        provider,
+        { mimeType: contentType, data: base64 },
+        systemPromptFor(document_type),
+        EXTRACTION_SCHEMA,
+      );
+      const model = result.model;
+      const extracted = result.data as Record<string, unknown> | null;
+      if (!extracted) throw new Error("AI returned no structured data");
+      coerceExtracted(extracted);
       normalizeLineItems(extracted);
       const confidence = typeof extracted.confidence === "number" ? extracted.confidence : null;
 
