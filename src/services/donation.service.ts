@@ -357,7 +357,7 @@ export async function createAllocation(
       pool_id: (pool as any)?.id ?? null,
       project_id: input.project_id ?? null,
       amount: input.amount,
-      allocation_type: input.allocation_type ?? "RESERVED",
+      allocation_type: input.allocation_type ?? "SPENT",
       source_type: input.source_type ?? "MANUAL",
       source_id: input.source_id ?? null,
       description: input.description ?? null,
