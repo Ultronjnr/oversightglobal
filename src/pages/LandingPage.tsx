@@ -43,9 +43,9 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     accent: "#ef4444",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
-      { text: "Your business is leaking money. " },
+      { text: "Your NPO is leaking money. " },
       { text: "You just can't see where.", accent: true },
     ],
     image: slideBg1.url,
@@ -67,7 +67,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#f59e0b",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "If SARS asked for proof right now, " },
       { text: "could you find it?", accent: true },
@@ -91,7 +91,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#3b82f6",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "Know exactly where every rand goes. " },
       { text: "Before it goes.", accent: true },
@@ -115,9 +115,9 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#0ea5e9",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
-      { text: "Stop running your business " },
+      { text: "Stop running your NPO " },
       { text: "through WhatsApp.", accent: true },
     ],
     image: slideBg4.url,
@@ -139,7 +139,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#06b6d4",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "Ovasyt usually pays for itself " },
       { text: "in unclaimed VAT alone.", accent: true },
@@ -148,7 +148,7 @@ const SLIDES: Slide[] = [
     problems: [
       { title: "Valid VAT claims, missed", desc: "Often over one missing invoice detail" },
       { title: "Claims never checked before filing", desc: "Nobody catches it until it's too late" },
-      { title: "Money left on the table, quarter after quarter", desc: "That should have come back to the business" },
+      { title: "Money left on the table, quarter after quarter", desc: "That should have come back to the organisation" },
     ],
     stat: {
       label: "What's sitting unclaimed",
@@ -356,7 +356,7 @@ function HeroCarousel() {
 
 const COST_STATS = [
   { value: "R30k+", title: "Average input VAT lost", desc: "Claims every quarter due to incomplete invoices" },
-  { value: "1 in 4", title: "Invoices made without formal approval", desc: "In businesses still running spend through WhatsApp and email" },
+  { value: "1 in 4", title: "Invoices made without formal approval", desc: "In organisations still running spend through WhatsApp and email" },
   { value: "3 days", title: "Average time finance teams spend", desc: "Reconstructing an audit trail when SARS or a board asks for it" },
 ];
 
@@ -416,7 +416,7 @@ export default function LandingPage() {
             ● The real cost of doing nothing
           </p>
           <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
-            This is what <span className="gradient-text">"we'll sort it out later"</span> costs an SME
+            This is what <span className="gradient-text">"we'll sort it out later"</span> costs an NPO
           </h2>
           <div className="grid gap-6 md:grid-cols-3">
             {COST_STATS.map((s, i) => (
@@ -492,7 +492,7 @@ export default function LandingPage() {
         />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-white/80 mb-3">
-            ● Why businesses choose Ovasyt
+            ● Why NPOs choose Ovasyt
           </p>
           <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-white mb-12">
             Spend control that doesn't slow you down
@@ -530,7 +530,7 @@ export default function LandingPage() {
               Every invoice, <span className="gradient-text">SARS-checked</span> before it's filed
             </h2>
             <p className="text-slate-600 leading-relaxed mb-6 max-w-lg">
-              Most businesses under-claim input VAT simply because invoices are
+              Most organisations under-claim input VAT simply because invoices are
               missing SARS-required detail. Ovasyt reads every invoice, validates
               it against those requirements the moment it lands, and flags what's
               incomplete — so your bookkeeper gets a clean, defensible claim.
