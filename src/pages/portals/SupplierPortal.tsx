@@ -401,7 +401,7 @@ export default function SupplierPortal() {
               <NotifBadge n={newRequestNotif} />
             </TabsTrigger>
             <TabsTrigger value="negotiations" className="relative">
-              Negotiations
+              Counter Offers
               <NotifBadge n={quotes.filter((q) => q.status === "COUNTER_OFFERED").length} />
             </TabsTrigger>
             <TabsTrigger value="quotes" className="relative">
@@ -709,13 +709,13 @@ export default function SupplierPortal() {
             </Card>
           </TabsContent>
 
-          {/* Negotiations Tab */}
+          {/* Counter Offers Tab */}
           <TabsContent value="negotiations">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Handshake className="h-5 w-5 text-warning" />
-                  Negotiations
+                  Counter Offers
                   <Badge variant="secondary" className="ml-2">
                     {quotes.filter((q) => q.status === "COUNTER_OFFERED").length} awaiting your response
                   </Badge>
@@ -727,7 +727,7 @@ export default function SupplierPortal() {
                     <div className="p-4 rounded-full bg-muted mb-4">
                       <Handshake className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="font-medium text-foreground mb-1">No Active Negotiations</h3>
+                    <h3 className="font-medium text-foreground mb-1">No Active Counter Offers</h3>
                     <p className="text-sm text-muted-foreground">
                       When Finance sends a counter-offer on one of your quotes, it will appear here.
                     </p>
