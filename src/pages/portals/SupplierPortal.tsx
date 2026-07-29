@@ -102,7 +102,7 @@ export default function SupplierPortal() {
             });
             loadData();
           } else if (newRecord.status === 'COUNTER_OFFERED') {
-            toast.warning('💬 Finance sent you a counter-offer. Review it in Negotiations.', {
+            toast.warning('💬 Finance sent you a counter-offer. Review it in Counter Offers.', {
               duration: 8000,
             });
             setActiveTab('negotiations');
