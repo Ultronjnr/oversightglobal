@@ -266,9 +266,14 @@ export function FinanceApprovalQueue() {
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => setApproveModalPR(pr)}
+                                onClick={() => startApprove(pr)}
+                                disabled={dupChecking === pr.id}
                               >
-                                <Check className="h-4 w-4 mr-1" />
+                                {dupChecking === pr.id ? (
+                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4 mr-1" />
+                                )}
                                 Approve
                               </Button>
                               <Button
