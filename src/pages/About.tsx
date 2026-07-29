@@ -9,7 +9,7 @@ export default function About() {
     <div className="min-h-screen bg-background">
       <PageSeo
         title="About Ovasyt | NGO Procurement & Compliance"
-        description="Ovasyt is a South African procurement, VAT and Section 18A compliance platform built for NGOs, NPOs and SMEs. Learn about our mission, team, and product."
+        description="Ovasyt is a South African procurement, VAT and Section 18A compliance platform built for NGOs and NPOs. Learn about our mission, team, and product."
         path="/about"
       />
       <SiteNav />
@@ -23,7 +23,7 @@ export default function About() {
           </h1>
           <p className="text-lg text-slate-600 leading-relaxed max-w-3xl">
             Ovasyt is a procurement, VAT and Section 18A compliance platform
-            built for NGOs, NPOs and SMEs operating under SARS rules. We
+            built for NGOs and NPOs operating under SARS rules. We
             replace spreadsheets and email chains with a single audit-ready
             workflow so finance teams can approve faster, reclaim more VAT,
             and prove every rand of donor spend.
@@ -48,7 +48,7 @@ export default function About() {
               icon: Users,
               title: "Who we serve",
               body:
-                "Public-benefit organisations, faith-based NPOs, community-development trusts, and SMEs handling donor or grant funding in South Africa.",
+                "Public-benefit organisations, faith-based NPOs, community-development trusts, and NGOs handling donor or grant funding in South Africa.",
             },
             {
               icon: Sparkles,
@@ -77,7 +77,7 @@ export default function About() {
             </h2>
             <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
               Book a walkthrough or explore pricing built for South African
-              non-profits and SMEs.
+              non-profits and NGOs.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link
