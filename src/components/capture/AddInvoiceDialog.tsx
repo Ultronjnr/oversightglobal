@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import {Camera, Upload, ScanLine, FileText, ReceiptText as Receipt} from "lucide-react";
+import { Camera, ScanLine, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,10 +12,10 @@ import { SubmitStandaloneReimbursementModal } from "@/components/pr/SubmitStanda
 import { toast } from "sonner";
 
 const ACCEPTED_IMAGE = "image/jpeg,image/png,image/webp,image/heic";
-const ACCEPTED_INVOICE = "application/pdf,image/jpeg,image/png,image/webp";
+const ACCEPTED_INVOICE = "application/pdf";
 const MAX_MB = 15;
 
-type Mode = "capture" | "scan" | null;
+type Mode = "capture" | null;
 
 interface AddInvoiceDialogProps {
   open: boolean;
@@ -31,7 +31,6 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
   const [cameraMode, setCameraMode] = useState<Mode>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [reimbursementOpen, setReimbursementOpen] = useState(false);
-  const imageInputRef = useRef<HTMLInputElement>(null);
   const invoiceInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (file: File | null, accept: string) => {
@@ -66,7 +65,7 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
               Capture a document
             </DialogTitle>
             <DialogDescription>
-              Snap a receipt, add an invoice or upload a file. We'll create a
+              Take a picture of the document or upload a PDF. We'll create a
               reimbursement and process it automatically.
             </DialogDescription>
           </DialogHeader>
@@ -74,7 +73,7 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <ActionTile
               icon={<Camera className="h-6 w-6" />}
-              label="Take Picture"
+              label="Take a Picture"
               hint="Use device camera"
               onClick={() => {
                 onOpenChange(false);
@@ -82,39 +81,13 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
               }}
             />
             <ActionTile
-              icon={<Upload className="h-6 w-6" />}
-              label="Upload Image"
-              hint="From your gallery"
-              onClick={() => imageInputRef.current?.click()}
-            />
-            <ActionTile
-              icon={<Receipt className="h-6 w-6" />}
-              label="Add Receipt"
-              hint="Auto edge detection"
-              onClick={() => {
-                onOpenChange(false);
-                setCameraMode("scan");
-              }}
-            />
-            <ActionTile
               icon={<FileText className="h-6 w-6" />}
-              label="Upload Invoice"
-              hint="PDF or image"
+              label="Upload PDF"
+              hint="Invoice or receipt PDF"
               onClick={() => invoiceInputRef.current?.click()}
             />
           </div>
 
-          <input
-            ref={imageInputRef}
-            type="file"
-            accept={ACCEPTED_IMAGE}
-            capture="environment"
-            hidden
-            onChange={(e) => {
-              handleFile(e.target.files?.[0] ?? null, ACCEPTED_IMAGE);
-              e.target.value = "";
-            }}
-          />
           <input
             ref={invoiceInputRef}
             type="file"
@@ -133,7 +106,7 @@ export function AddInvoiceDialog({ open, onOpenChange }: AddInvoiceDialogProps) 
         open={cameraMode !== null}
         onOpenChange={(o) => !o && setCameraMode(null)}
         onCapture={handleCapture}
-        fileNamePrefix={cameraMode === "scan" ? "receipt-scan" : "capture"}
+        fileNamePrefix="capture"
       />
 
       {/* Reimbursement modal with file pre-attached */}
