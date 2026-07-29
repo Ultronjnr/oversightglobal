@@ -557,26 +557,14 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
             <div className="grid grid-cols-2 gap-3 pt-1">
               <ActionTile
                 icon={<Camera className="h-6 w-6" />}
-                label="Take Picture"
+                label="Take a Picture"
                 hint="Use device camera"
                 onClick={() => setCameraMode("capture")}
               />
               <ActionTile
-                icon={<Upload className="h-6 w-6" />}
-                label="Upload Image"
-                hint="From your gallery"
-                onClick={() => imageInputRef.current?.click()}
-              />
-              <ActionTile
-                icon={<Receipt className="h-6 w-6" />}
-                label="Add Receipt"
-                hint="Auto edge detection"
-                onClick={() => setCameraMode("scan")}
-              />
-              <ActionTile
                 icon={<FileText className="h-6 w-6" />}
-                label="Upload Invoice"
-                hint="PDF or image"
+                label="Upload PDF"
+                hint="Invoice or receipt PDF"
                 onClick={() => invoiceInputRef.current?.click()}
               />
             </div>

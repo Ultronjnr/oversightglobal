@@ -18,7 +18,9 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 import { Button } from "@/components/ui/button";
 
-export const BOOKING_URL = "https://calendar.app.google/PX1sR3pkgicknRA4A";
+import { BOOKING_URL } from "@/lib/booking";
+
+export { BOOKING_URL };
 
 const FEATURES = [
   {
@@ -128,18 +130,18 @@ export default function BookDemo() {
               ● Book a demo
             </p>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05] max-w-3xl">
-              Book Your Personal{" "}
+              Book Your Live{" "}
               <span className="bg-gradient-to-r from-[hsl(200_90%_62%)] to-primary bg-clip-text text-transparent">
                 Ovasyt Demo
               </span>
             </h1>
             <p className="mt-6 text-lg sm:text-xl text-white/70 max-w-2xl leading-relaxed">
-              See how Ovasyt helps South African businesses recover missed VAT,
+              See how Ovasyt helps South African NPOs recover missed VAT,
               automate procurement, and gain complete financial visibility.
             </p>
             <p className="mt-4 text-white/60 max-w-2xl">
               <span className="font-semibold text-white">No sales pressure.</span>{" "}
-              Just a live walkthrough tailored to your business.
+              Just a live walkthrough tailored to your organisation.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
@@ -311,11 +313,11 @@ export default function BookDemo() {
               </Link>{" "}
               <span className="mx-1 text-white/30">·</span>
               <a
-                href="mailto:support@ovasyt.tech"
+                href="mailto:connect@ovasyt.tech"
                 className="inline-flex items-center gap-1.5 font-semibold text-white hover:text-[hsl(200_90%_65%)] transition-colors"
               >
                 <Mail className="h-3.5 w-3.5" />
-                support@ovasyt.tech
+                connect@ovasyt.tech
               </a>
             </p>
           </div>

@@ -1,41 +1,47 @@
-## Scope
+## Goal
 
-Five focused changes across the Finance portal. All are UI/service-layer; no schema changes required (Phase 1 already added project_id/donor_id + allocation RPC).
+Deliver the full Ovasyt task list in four reviewable phases, so each phase can be tested before the next lands.
 
-### 1. Move "Cost Center" into Finance Overview top tab row
-- Finance portal already renders `CostCenterHistoryContent` inside a tab, but it sits at the far right of a wrapping second row. Reorder the `TabsList` so **Cost Center** appears in the primary (top) row, matching the Admin portal's tab layout in the reference screenshot.
-- Also rename the tab label from "Cost Center" to "Cost Center / Department" for consistency with the standalone route.
+---
 
-### 2. Fix Batches tab
-- Investigate current failures in `BatchesTab.tsx` / `BatchPaymentModal.tsx`: verify list load, refresh triggers, and the batch-create → batch-submit path against `payment_batches` RLS.
-- Ensure the tab respects `refreshTrigger` and rebinds after batch creation. Surface real error messages via toast.
+## Phase 1 — Quick wins (wording, settings, small UI)
 
-### 3. Project / Donor selectors on Categorize Purchase Requisition
-- Add two searchable Combobox fields to `CategorySelectionModal.tsx`:
-  - **Project (optional)** — "— No project —" default; list `donation_projects` for org; inline "Create new project" action (name + optional budget, uses existing donation service).
-  - **Donor (optional)** — "— No donor —" default; list `organization_donors`; inline "Create new donor" (name + email).
-- Persist the selection through `financeApprovePR` → set `project_id` / `donor_id` on the PR + downstream transaction, and (when project selected) call `allocate_project_funds` RPC to reserve budget at approval time. Block approval with a clear error if the budget check fails.
+- Replace all support/contact addresses with `connect@ovasyt.tech` (Contact page, Book Demo, footer, contact edge function + email template).
+- NPO-first wording: "Your business" -> "Your NPO", "South African businesses" -> "South African NPOs", remove the "Personal" plan/section, mark SMME-only features "Coming Soon".
+- Supplier wording: "Negotiation"/"Negotiations" -> "Counter Offer" in the supplier portal.
+- Demo session timeout -> 15 minutes.
+- "Book a demo" buttons on marketing pages link straight to the Google Calendar URL.
+- Notifications: scrollable dropdown (full 50 items) + click opens a detail side panel with a "Go to transaction" action.
+- Invoice upload: remove the redundant "upload image" control and the receipt auto-detection block; keep "Take a picture" and "Upload PDF" only.
 
-### 4. Scan AI Invoice — allow the scan to run
-- Debug the modal end-to-end (upload → `analyze-document` invocation → PR creation). Recent OCR model change to `google/gemini-3.1-flash-lite` may be returning empty extractions on some files; confirm and fall back to `google/gemini-3.6-flash` when the lite model returns an empty payload.
-- Fix upload / storage errors by ensuring the modal writes to the correct bucket (`invoice-documents`) with the user-scoped path and passes both `bucket` + `storage_path` to the edge function.
-- Preserve the existing Project/Donor pickers and budget guard.
+## Phase 2 — Forms, permissions, attachments
 
-### 5. Fast OCR + inline review mode
-- **Speed**: keep the lite model as primary, cap `max_output_tokens`, drop unnecessary reasoning fields, and stream the response back to the modal so fields render as soon as they arrive.
-- **Review UI**: after OCR completes, show a two-pane review step inside `ScanInvoiceModal`:
-  - Left: the uploaded document preview (image thumb or PDF iframe) with translucent highlight boxes over recognised regions when the model returns bounding hints (fallback: label chips above the preview when no coordinates).
-  - Right: editable form for `supplier_name`, `supplier_vat_number`, `document_number`, `document_date`, `subtotal`, `vat_amount`, `total_amount`, line items, banking details. Each field shows a confidence pill (High / Medium / Low) coloured from `confidence`.
-  - "Confirm & Save" commits via existing `createTransactionFromInvoice`; "Rescan" re-runs `analyze-document` with `force: true`.
+- New Purchase Requisition form: add Project and Donor selectors sourced from the Donation Management panel (`donation_projects`, `organization_donors`), saved to `purchase_requisitions.project_id` / `donor_id`.
+- Hide/disable the Expense Category field for employee-created entries; Finance sets it at categorisation time. AI scan may still suggest a category, shown read-only to employees.
+- Employee portal attachments: attach receipts / proof of payment to their own open PRs and transactions using the existing `attachments` table + `AttachmentUploadModal`, with RLS scoped to the uploader's org and own records.
+- Duplicate detection: on PR submit and on Finance approval, look for same-org PRs with matching supplier/amount/items in the last 30 days and show a "possible duplicate — verify" confirm dialog before proceeding.
 
-## Technical Notes
+## Phase 3 — Payments logic
 
-- Types: no migration needed for review mode — reuse existing `OcrExtracted`. Bounding-box overlay is best-effort based on whatever the model returns; when absent, fall back to per-field confidence chips only.
-- Reordering the Finance tabs will change tab counts widths; verify wrapping on 1119px viewport (current preview width).
-- `financeApprovePR` currently accepts `(prId, comments, categoryId, supplierId)`. Extend it to accept `projectId?` and `donorId?` and call `allocate_project_funds` server-side when a project is chosen.
+- Batch payments: POP upload per batch on confirmation, stored in the batch-exports bucket, plus a generated unique per-transaction reference within each batch (e.g. `BATCH-0007-03`), persisted on `payment_allocations.payment_reference`.
+- Reimbursements: require a POP on claim. On approval, mark the original transaction Paid (employee already paid) and push the reimbursement claim into Approved – Not Paid for batch payout back to the employee.
+- SQI transactions: verify and fix the transition so marking Awaiting Payment lands the transaction in the Approved – Not Paid queue (adjust `get_approved_not_paid_queue`).
+- Budget vs Spent: drop "Reserved" from the donations UI and reporting; track only Budget vs Spent. Reports show Date, Donor, Type, Expense Category.
 
-## Out of Scope
+## Phase 4 — Navigation and dashboard shell
 
-- No changes to landing page, donations panel, or other portals.
-- No schema migrations (columns/RPCs from Phase 1 are reused).
-- Not touching the OCR review overlay for reimbursements or PR documents (only the scan-invoice flow).
+- Desktop: move top tabs into a left vertical sidebar (shadcn sidebar, collapsible to icon rail) in `DashboardLayout`.
+- Mobile: rework the hamburger into a scrollable grouped drawer so all items fit.
+- Dashboard carousel: sliding analytics cards (VAT issues, expenditure, missing documentation, on-track spend) at the top of each portal dashboard.
+
+---
+
+## Technical notes
+
+- Database work needed: attachment RLS for employees, `payment_allocations` reference column usage, reimbursement status transitions, and the Approved–Not-Paid queue RPC. Each ships as its own migration in the relevant phase.
+- Gemini integration is already migrated to your own `GEMINI_API_KEY` (done last turn), so that item is complete.
+- No visual redesign of the marketing site beyond the wording changes listed.
+
+## Suggested order
+
+Phase 1 first (fast, visible), then Phase 2, then 3, then 4. Tell me if you'd rather start with payments logic.

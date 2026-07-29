@@ -16,7 +16,7 @@ const LOCAL_BUSINESS_JSONLD = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
   name: "Ovasyt",
-  email: "info@ovasyt.tech",
+  email: "connect@ovasyt.tech",
   telephone: "+27849231405",
   url: "https://ovasyt.tech/",
   address: [
@@ -106,10 +106,10 @@ export default function Contact() {
             ? await (error as any).context.text()
             : error.message;
         console.error("submit-contact failed:", detail);
-        throw new Error("We couldn't send your message. Please try again or email info@ovasyt.tech.");
+        throw new Error("We couldn't send your message. Please try again or email connect@ovasyt.tech.");
       }
       if (!res?.ok) {
-        throw new Error("We couldn't send your message. Please try again or email info@ovasyt.tech.");
+        throw new Error("We couldn't send your message. Please try again or email connect@ovasyt.tech.");
       }
       toast.success("Message sent! We'll reply within one business day.");
       form.reset();
@@ -179,8 +179,8 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="font-semibold text-slate-900">Email</p>
-                    <a href="mailto:info@ovasyt.tech" className="text-primary hover:underline">
-                      info@ovasyt.tech
+                    <a href="mailto:connect@ovasyt.tech" className="text-primary hover:underline">
+                      connect@ovasyt.tech
                     </a>
                   </div>
                 </li>

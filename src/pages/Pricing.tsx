@@ -173,8 +173,8 @@ export default function Pricing() {
                 +27 84 923 1405
               </a>{" "}
               ·{" "}
-              <a href="mailto:info@ovasyt.tech" className="text-primary hover:underline">
-                info@ovasyt.tech
+              <a href="mailto:connect@ovasyt.tech" className="text-primary hover:underline">
+                connect@ovasyt.tech
               </a>{" "}
               ·{" "}
               <Link to="/contact" className="text-primary hover:underline font-semibold">

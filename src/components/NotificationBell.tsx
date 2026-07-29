@@ -12,6 +12,14 @@ import {
   PopoverTrigger,
 } from "./ui/popover";
 import { ScrollArea } from "./ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface NotificationRow {
@@ -77,6 +85,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [detail, setDetail] = useState<NotificationRow | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.id) return;
@@ -126,14 +135,18 @@ export function NotificationBell() {
 
   const handleClick = (n: NotificationRow) => {
     if (!n.is_read) markOne(n.id);
+    setOpen(false);
+    setDetail(n);
+  };
+
+  const openTarget = (n: NotificationRow) => {
     const target = getNotificationTarget(n);
-    if (target) {
-      setOpen(false);
-      navigate(target);
-    }
+    setDetail(null);
+    if (target) navigate(target);
   };
 
   return (
+    <>
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
@@ -164,7 +177,7 @@ export function NotificationBell() {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="h-[420px]">
           {loading && items.length === 0 ? (
             <div className="py-10 text-center text-xs text-muted-foreground">Loading…</div>
           ) : items.length === 0 ? (
@@ -214,5 +227,34 @@ export function NotificationBell() {
         </ScrollArea>
       </PopoverContent>
     </Popover>
+
+    <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+      <DialogContent className="sm:max-w-md">
+        {detail && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="pr-6 leading-snug">{detail.title}</DialogTitle>
+              <DialogDescription>
+                {formatDistanceToNow(new Date(detail.created_at), { addSuffix: true })}
+                {" · "}
+                <span className="capitalize">{detail.type.replace(/_/g, " ")}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+              {detail.message}
+            </p>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDetail(null)}>
+                Close
+              </Button>
+              {getNotificationTarget(detail) && (
+                <Button onClick={() => openTarget(detail)}>Go to transaction</Button>
+              )}
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Send notification email to info@ovasyt.tech via the internal template pipeline.
+  // Send notification email to connect@ovasyt.tech via the internal template pipeline.
   const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
     method: 'POST',
     headers: {

@@ -18,6 +18,7 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 import { useRevealOnScroll } from "@/hooks/use-reveal-on-scroll";
+import { BOOKING_URL } from "@/lib/booking";
 
 import slideBg1 from "@/assets/slide-leaking-money.jpg.asset.json";
 import slideBg2 from "@/assets/slide-sars-proof.jpg.asset.json";
@@ -43,9 +44,9 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     accent: "#ef4444",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
-      { text: "Your business is leaking money. " },
+      { text: "Your NPO is leaking money. " },
       { text: "You just can't see where.", accent: true },
     ],
     image: slideBg1.url,
@@ -67,7 +68,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#f59e0b",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "If SARS asked for proof right now, " },
       { text: "could you find it?", accent: true },
@@ -91,7 +92,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#3b82f6",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "Know exactly where every rand goes. " },
       { text: "Before it goes.", accent: true },
@@ -115,9 +116,9 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#0ea5e9",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
-      { text: "Stop running your business " },
+      { text: "Stop running your NPO " },
       { text: "through WhatsApp.", accent: true },
     ],
     image: slideBg4.url,
@@ -139,7 +140,7 @@ const SLIDES: Slide[] = [
   },
   {
     accent: "#06b6d4",
-    kicker: "For South African SMEs",
+    kicker: "For South African NPOs",
     headline: [
       { text: "Ovasyt usually pays for itself " },
       { text: "in unclaimed VAT alone.", accent: true },
@@ -148,7 +149,7 @@ const SLIDES: Slide[] = [
     problems: [
       { title: "Valid VAT claims, missed", desc: "Often over one missing invoice detail" },
       { title: "Claims never checked before filing", desc: "Nobody catches it until it's too late" },
-      { title: "Money left on the table, quarter after quarter", desc: "That should have come back to the business" },
+      { title: "Money left on the table, quarter after quarter", desc: "That should have come back to the organisation" },
     ],
     stat: {
       label: "What's sitting unclaimed",
@@ -272,11 +273,11 @@ function HeroCarousel() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/book-demo">
+                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6">
                     Book a demo
                   </Button>
-                </Link>
+                </a>
                 <Link to="/pricing">
                   <Button
                     size="lg"
@@ -356,7 +357,7 @@ function HeroCarousel() {
 
 const COST_STATS = [
   { value: "R30k+", title: "Average input VAT lost", desc: "Claims every quarter due to incomplete invoices" },
-  { value: "1 in 4", title: "Invoices made without formal approval", desc: "In businesses still running spend through WhatsApp and email" },
+  { value: "1 in 4", title: "Invoices made without formal approval", desc: "In organisations still running spend through WhatsApp and email" },
   { value: "3 days", title: "Average time finance teams spend", desc: "Reconstructing an audit trail when SARS or a board asks for it" },
 ];
 
@@ -416,7 +417,7 @@ export default function LandingPage() {
             ● The real cost of doing nothing
           </p>
           <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-slate-900 mb-12">
-            This is what <span className="gradient-text">"we'll sort it out later"</span> costs an SME
+            This is what <span className="gradient-text">"we'll sort it out later"</span> costs an NPO
           </h2>
           <div className="grid gap-6 md:grid-cols-3">
             {COST_STATS.map((s, i) => (
@@ -492,7 +493,7 @@ export default function LandingPage() {
         />
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="reveal text-center text-xs font-mono font-semibold tracking-[0.2em] uppercase text-white/80 mb-3">
-            ● Why businesses choose Ovasyt
+            ● Why NPOs choose Ovasyt
           </p>
           <h2 className="reveal text-center text-3xl sm:text-4xl font-bold text-white mb-12">
             Spend control that doesn't slow you down
@@ -530,7 +531,7 @@ export default function LandingPage() {
               Every invoice, <span className="gradient-text">SARS-checked</span> before it's filed
             </h2>
             <p className="text-slate-600 leading-relaxed mb-6 max-w-lg">
-              Most businesses under-claim input VAT simply because invoices are
+              Most organisations under-claim input VAT simply because invoices are
               missing SARS-required detail. Ovasyt reads every invoice, validates
               it against those requirements the moment it lands, and flags what's
               incomplete — so your bookkeeper gets a clean, defensible claim.
@@ -575,7 +576,7 @@ export default function LandingPage() {
             "We found three months of unclaimed VAT in our first week on Ovasyt.
             <span className="gradient-text"> It paid for the platform before we'd even finished onboarding.</span>"
           </blockquote>
-          <p className="reveal mt-6 text-sm text-slate-500">— Finance lead, manufacturing SME, Gauteng</p>
+          <p className="reveal mt-6 text-sm text-slate-500">— Finance lead, community NPO, Gauteng</p>
         </div>
       </section>
 
@@ -609,11 +610,11 @@ export default function LandingPage() {
               your team's purchases, approvals and invoices.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/book-demo">
+              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
                 <Button size="lg" className="group bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] hover:shadow-lg hover:shadow-primary/50 hover:scale-[1.03] text-primary-foreground font-semibold px-8 transition-all">
                   Book a demo <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
-              </Link>
+              </a>
               <Link to="/pricing">
                 <Button size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 backdrop-blur">
                   See pricing
