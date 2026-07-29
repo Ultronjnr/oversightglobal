@@ -479,6 +479,24 @@ export function PurchaseRequisitionForm({ onSuccess }: PurchaseRequisitionFormPr
           }}
         />
       )}
+
+      <DuplicatePRDialog
+        open={duplicates.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDuplicates([]);
+            setPendingSubmit(null);
+          }
+        }}
+        candidates={duplicates}
+        confirmLabel="Submit anyway"
+        onConfirm={() => {
+          const data = pendingSubmit;
+          setDuplicates([]);
+          setPendingSubmit(null);
+          if (data) onSubmit(data, true);
+        }}
+      />
     </form>
   );
 }
