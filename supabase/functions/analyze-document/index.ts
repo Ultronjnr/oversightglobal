@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  createAiProvider,
+  DEFAULT_GEMINI_MODEL,
+  scanInvoice,
+} from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,14 +109,14 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       return json({ error: "Backend environment not configured" }, 500);
     }
 
-    if (!LOVABLE_API_KEY) {
-      return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+    if (!GEMINI_API_KEY) {
+      return json({ error: "GEMINI_API_KEY not configured" }, 500);
     }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
