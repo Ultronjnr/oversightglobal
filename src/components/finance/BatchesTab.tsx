@@ -140,10 +140,10 @@ export function BatchesTab() {
     const { data, error } = await supabase
       .from("payment_batches")
       .select(
-        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, confirmed_at, paid_at, created_by, export_id, exported_at,
+        `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, pop_file_path, confirmed_at, paid_at, created_by, export_id, exported_at,
          provider_status,
          allocations:payment_allocations (
-           id, invoice_id, transaction_id, amount_paid,
+           id, invoice_id, transaction_id, amount_paid, payment_reference,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
