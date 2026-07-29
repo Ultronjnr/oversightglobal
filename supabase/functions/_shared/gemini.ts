@@ -193,7 +193,7 @@ export function scanReceipt(provider: AiProvider, file: AiFilePart) {
       `You extract data from South African retail receipts / till slips. ${JSON_ONLY} Shape: {"merchant":"string","transaction_date":"YYYY-MM-DD","amount":0,"vat_amount":0,"payment_reference":"string","payment_method":"CARD|CASH|EFT","currency":"ZAR","receipt_number":"string","confidence":0.9}`,
     prompt: "Extract the receipt fields now.",
     files: [file],
-    maxOutputTokens: 1024,
+    maxOutputTokens: 4096,
   }, "scan-receipt");
 }
 
@@ -218,7 +218,7 @@ export function scanProofOfPayment(
       `You extract data from bank proof-of-payment documents and compare it to an expected transaction. ${JSON_ONLY} Shape: {"amount_paid":0,"reference_number":"string","beneficiary":"string","date_paid":"YYYY-MM-DD","bank_name":"string","currency":"ZAR","matches":true,"warnings":["string"]}. Add a warning when the amount differs, the reference differs, the beneficiary/supplier differs, or the document looks like the wrong proof of payment.`,
     prompt: `Extract and compare. Expected transaction: ${JSON.stringify(expected ?? {})}`,
     files: [file],
-    maxOutputTokens: 1024,
+    maxOutputTokens: 4096,
   }, "scan-pop");
 }
 
@@ -238,7 +238,7 @@ export function detectDuplicates(
     system:
       `You detect duplicate finance transactions. Compare supplier, description, amount and invoice number. Never reject — only report. ${JSON_ONLY} Shape: {"possibleDuplicate":false,"confidence":0,"matchedTransactionId":null,"reason":"string"}`,
     prompt: `Candidate: ${JSON.stringify(candidate)}\nExisting: ${JSON.stringify(existing)}`,
-    maxOutputTokens: 512,
+    maxOutputTokens: 4096,
   }, "detect-duplicates");
 }
 
@@ -247,7 +247,7 @@ export function summarizeDocument(provider: AiProvider, file: AiFilePart) {
     system: `Summarize the document for a finance team. ${JSON_ONLY} Shape: {"summary":"string","key_points":["string"]}`,
     prompt: "Summarize this document.",
     files: [file],
-    maxOutputTokens: 700,
+    maxOutputTokens: 4096,
   }, "summarize-document");
 }
 
