@@ -13,6 +13,7 @@ import {
   X as XIcon,
   FileSpreadsheet,
   FileDown,
+  Upload,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ interface BatchAllocation {
   invoice_id: string | null;
   transaction_id: string | null;
   amount_paid: number;
+  payment_reference?: string | null;
   invoice?: {
     id: string;
     document_url: string;
@@ -84,6 +86,7 @@ interface BatchRow {
   status: string;
   batch_number: string | null;
   payment_reference: string | null;
+  pop_file_path?: string | null;
   confirmed_at: string | null;
   paid_at: string | null;
   created_by: string | null;
@@ -100,6 +103,7 @@ export function BatchesTab() {
   const [confirmBatch, setConfirmBatch] = useState<BatchRow | null>(null);
   const [confirmRef, setConfirmRef] = useState("");
   const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [popFile, setPopFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
