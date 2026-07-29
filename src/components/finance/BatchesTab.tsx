@@ -597,6 +597,19 @@ export function BatchesTab() {
                           {b.paid_at && (
                             <span><span className="font-medium text-foreground">Paid:</span> {format(new Date(b.paid_at), "dd MMM yyyy HH:mm")}</span>
                           )}
+                          {b.pop_file_path && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleViewPop(b.pop_file_path as string);
+                              }}
+                              className="text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              <FileText className="h-3 w-3" />
+                              View proof of payment
+                            </button>
+                          )}
                         </div>
                       )}
                       <div className="flex gap-2 mb-3 flex-wrap">
