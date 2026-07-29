@@ -174,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       timer = setTimeout(expire, IDLE_MS);
     };
 
-    const events: (keyof WindowEventMap)[] = [
+    const events: string[] = [
       "mousemove",
       "mousedown",
       "keydown",
