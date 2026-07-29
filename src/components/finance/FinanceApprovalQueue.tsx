@@ -471,6 +471,25 @@ export function FinanceApprovalQueue() {
         prId={documentModal.prId}
         transactionId={documentModal.transactionId}
       />
+
+      {/* Duplicate verification before approval */}
+      <DuplicatePRDialog
+        open={dupCandidates.length > 0}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDupCandidates([]);
+            setDupPendingPR(null);
+          }
+        }}
+        candidates={dupCandidates}
+        confirmLabel="Approve anyway"
+        onConfirm={() => {
+          const pr = dupPendingPR;
+          setDupCandidates([]);
+          setDupPendingPR(null);
+          if (pr) setApproveModalPR(pr);
+        }}
+      />
     </>
   );
 }
