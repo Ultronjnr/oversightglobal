@@ -8,7 +8,10 @@
  * NEVER import this from frontend code. The API key must stay server-side.
  */
 
-export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+/** Fast current Flash model on the Google Generative Language API. */
+export const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+/** Used automatically if the primary model is unavailable / overloaded. */
+export const FALLBACK_GEMINI_MODEL = "gemini-2.0-flash";
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface AiFilePart {
@@ -138,8 +141,11 @@ export async function extractStructuredData<T = Record<string, unknown>>(
 ): Promise<AiJsonResult<T>> {
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const model = attempt === 1 ? req.model : (req.model ?? DEFAULT_GEMINI_MODEL) === FALLBACK_GEMINI_MODEL
+      ? FALLBACK_GEMINI_MODEL
+      : FALLBACK_GEMINI_MODEL;
     try {
-      const result = await provider.generateJson<T>(req);
+      const result = await provider.generateJson<T>({ ...req, model });
       console.log(JSON.stringify({
         scope: label,
         provider: provider.name,
