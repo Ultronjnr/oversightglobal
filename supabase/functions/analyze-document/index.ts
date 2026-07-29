@@ -330,47 +330,6 @@ function normalizeMime(blobType: string | undefined, path: string): string {
   return blobType;
 }
 
-async function callAi(apiKey: string, payload: Record<string, unknown>) {
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const text = await response.text();
-    if (response.status === 429) throw new Error("AI rate limit exceeded, try again shortly");
-    if (response.status === 402) throw new Error("AI credits exhausted — please top up Lovable AI usage");
-    throw new Error(`AI gateway error ${response.status}: ${text.slice(0, 500)}`);
-  }
-  return response.json();
-}
-
-function parseExtraction(aiJson: unknown): Record<string, unknown> | null {
-  const msg = (aiJson as any)?.choices?.[0]?.message;
-  const toolCall = msg?.tool_calls?.[0];
-  if (toolCall?.function?.arguments) {
-    try {
-      return JSON.parse(toolCall.function.arguments);
-    } catch {
-      // fall through to content-parse fallback
-    }
-  }
-  if (typeof msg?.content === "string" && msg.content.trim()) {
-    const jsonStr = extractJsonObject(msg.content.trim());
-    if (jsonStr) {
-      try {
-        return JSON.parse(jsonStr);
-      } catch {
-        return null;
-      }
-    }
-  }
-  return null;
-}
-
 function encodeBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;
