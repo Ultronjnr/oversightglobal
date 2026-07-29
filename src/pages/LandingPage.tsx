@@ -575,7 +575,7 @@ export default function LandingPage() {
             "We found three months of unclaimed VAT in our first week on Ovasyt.
             <span className="gradient-text"> It paid for the platform before we'd even finished onboarding.</span>"
           </blockquote>
-          <p className="reveal mt-6 text-sm text-slate-500">— Finance lead, manufacturing SME, Gauteng</p>
+          <p className="reveal mt-6 text-sm text-slate-500">— Finance lead, community NPO, Gauteng</p>
         </div>
       </section>
 
