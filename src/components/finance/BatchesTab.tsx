@@ -456,10 +456,41 @@ export function BatchesTab() {
   const handleConfirmBatch = async () => {
     if (!confirmBatch) return;
     setSubmitting(true);
-    const { data, error } = await supabase.rpc("confirm_batch_paid", {
+
+    // Upload the proof of payment first so the reference is stored with the batch.
+    let popPath: string | null = null;
+    if (popFile) {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", auth?.user?.id || "")
+          .single();
+        const orgId = prof?.organization_id;
+        if (orgId) {
+          const ext = popFile.name.split(".").pop()?.toLowerCase() || "pdf";
+          const path = `${orgId}/${confirmBatch.id}/pop-${Date.now()}.${ext}`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, popFile, { contentType: popFile.type || "application/pdf", upsert: true });
+          if (up.error) throw up.error;
+          popPath = path;
+        }
+      } catch (e: any) {
+        setSubmitting(false);
+        toast.error("Proof of payment upload failed", {
+          description: e?.message || "Please try again.",
+        });
+        return;
+      }
+    }
+
+    const { data, error } = await (supabase as any).rpc("confirm_batch_paid", {
       _batch_id: confirmBatch.id,
       _payment_reference: confirmRef || null,
       _payment_date: confirmDate || null,
+      _pop_path: popPath,
     });
     setSubmitting(false);
     const res: any = data;
@@ -470,7 +501,20 @@ export function BatchesTab() {
     toast.success(`Batch ${confirmBatch.batch_number || ""} confirmed as paid`);
     setConfirmBatch(null);
     setConfirmRef("");
+    setPopFile(null);
     void fetchBatches();
+  };
+
+  /** Open the stored proof of payment for a confirmed batch. */
+  const handleViewPop = async (path: string) => {
+    const { data, error } = await supabase.storage
+      .from("batch-exports")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      toast.error("Could not open proof of payment", { description: error?.message });
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
