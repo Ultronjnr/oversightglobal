@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone, ShieldCheck, Linkedin, Twitter, Facebook, Instagram, ArrowRight } from "lucide-react";
 import logoImage from "@/assets/ovasyt-logo.png";
+import { BOOKING_URL } from "@/lib/booking";
 
 const PRODUCT = [
   { label: "Procurement workflow", to: "/insights" },
@@ -45,13 +46,15 @@ export function SiteFooter() {
               Ready to see Ovasyt in action?
             </h3>
           </div>
-          <Link
-            to="/book-demo"
+          <a
+            href={BOOKING_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-[hsl(200_90%_52%)] px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.03] transition-all"
           >
             Book a demo
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+          </a>
         </div>
 
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
@@ -62,14 +65,14 @@ export function SiteFooter() {
             </Link>
             <p className="mt-3 text-sm text-slate-600 leading-relaxed">
               Audit-ready procurement, VAT and Section&nbsp;18A compliance for
-              South African NGOs, NPOs and SMEs — every rand approved, evidenced
+              South African NGOs and NPOs — every rand approved, evidenced
               and reclaimable.
             </p>
             <ul className="mt-5 space-y-2 text-sm text-slate-600">
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
-                <a href="mailto:info@ovasyt.tech" className="hover:text-primary transition-colors">
-                  info@ovasyt.tech
+                <a href="mailto:connect@ovasyt.tech" className="hover:text-primary transition-colors">
+                  connect@ovasyt.tech
                 </a>
               </li>
               <li className="flex items-center gap-2">
@@ -138,7 +141,7 @@ export function SiteFooter() {
           <span>© {new Date().getFullYear()} Ovasyt (Pty) Ltd. All rights reserved.</span>
           <span className="inline-flex items-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-            Built for South African SMEs · POPIA aligned · SARS-ready
+            Built for South African NPOs · POPIA aligned · SARS-ready
           </span>
         </div>
       </div>
