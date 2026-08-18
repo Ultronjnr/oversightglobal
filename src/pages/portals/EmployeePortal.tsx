@@ -68,7 +68,7 @@ export default function EmployeePortal() {
   };
 
   return (
-    <DashboardLayout title="Employee Dashboard" navItems={navItems}>
+    <DashboardLayout title="Employee Dashboard" navItems={navItems} showInsights>
       <div className="space-y-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">

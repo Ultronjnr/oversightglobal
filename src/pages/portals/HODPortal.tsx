@@ -222,7 +222,7 @@ export default function HODPortal() {
   };
 
   return (
-    <DashboardLayout title="HOD Dashboard" navItems={navItems}>
+    <DashboardLayout title="HOD Dashboard" navItems={navItems} showInsights>
       <div className="space-y-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
