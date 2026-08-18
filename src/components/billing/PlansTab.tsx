@@ -13,7 +13,7 @@ import { openYocoPopup, YOCO_PUBLIC_KEY } from "@/lib/yoco";
 import { toast } from "sonner";
 import { Check, Star, Loader2 } from "lucide-react";
 
-export function PlansTab() {
+export function PlansTab({ onCheckout }: { onCheckout?: () => void } = {}) {
   const { format } = useCurrency();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [sub, setSub] = useState<OrganizationSubscription | null>(null);
@@ -38,24 +38,28 @@ export function PlansTab() {
 
   const choose = async (plan: SubscriptionPlan) => {
     if (plan.is_custom) {
-      window.location.href = "mailto:sales@ovasyt.tech?subject=Enterprise Plan Enquiry";
+      window.location.href = "/contact";
       return;
     }
     setBusy(plan.id);
     try {
       const amountCents = Math.round(price(plan) * 100);
+      // Always record the selection first so checkout knows what is being bought.
+      await selectPlan(plan.id, cycle);
       if (YOCO_PUBLIC_KEY) {
+        // Immediate checkout — card is captured and charged right away.
         const result = await openYocoPopup(amountCents, plan.currency);
         await saveCard(result.id, cycle, plan.id);
         toast.success(`Subscribed to ${plan.name}`);
       } else {
-        // No card capture configured yet — record plan selection only
-        await selectPlan(plan.id, cycle);
-        toast.success(`${plan.name} selected. Add a payment card to activate billing.`);
+        // Card capture not live yet — take the user straight to the payment step.
+        toast.success(`${plan.name} selected — add your card to activate billing.`);
+        onCheckout?.();
       }
       await load();
     } catch (e: any) {
       toast.error(e.message || "Could not update plan");
+      onCheckout?.();
     } finally {
       setBusy(null);
     }
@@ -101,7 +105,7 @@ export function PlansTab() {
       {loading ? (
         <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
           {plans.map((p) => {
             const isCurrent = sub?.plan_id === p.id;
             return (
