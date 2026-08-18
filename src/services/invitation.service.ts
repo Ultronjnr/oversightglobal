@@ -289,6 +289,8 @@ export async function acceptInvitation(
 ): Promise<{
   success: boolean;
   role?: string;
+  /** True when the acceptance left the user signed in (no email step needed). */
+  signedIn?: boolean;
   error?: string;
 }> {
   try {
@@ -300,7 +302,10 @@ export async function acceptInvitation(
 
     const invitation = validation.data;
 
-    // Create the auth user
+    // Create the auth user. If the person already has an Ovasyt account,
+    // Supabase either errors ("already registered") or returns an obfuscated
+    // user with no identities — in both cases we sign them in instead so the
+    // invitation can still be accepted against their existing account.
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -309,11 +314,32 @@ export async function acceptInvitation(
       },
     });
 
-    if (authError) {
+    const looksExisting =
+      !!authError && /already registered|already exists|user already/i.test(authError.message || "");
+    const obfuscatedExisting =
+      !authError && !!authData?.user && (authData.user.identities?.length ?? 0) === 0;
+
+    let userId = authData?.user?.id ?? null;
+    let signedIn = !!authData?.session;
+
+    if (looksExisting || obfuscatedExisting) {
+      const { data: signInData, error: signInError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (signInError || !signInData.user) {
+        return {
+          success: false,
+          error:
+            "An Ovasyt account already exists for this email. Enter that account's existing password to accept the invitation, or reset your password from the login page first.",
+        };
+      }
+      userId = signInData.user.id;
+      signedIn = true;
+    } else if (authError) {
       return { success: false, error: getSafeErrorMessage(authError) };
     }
 
-    if (!authData.user) {
+    if (!userId) {
       return { success: false, error: "Failed to create user" };
     }
 
@@ -324,7 +350,7 @@ export async function acceptInvitation(
       {
         _token: token,
         _email: email,
-        _user_id: authData.user.id,
+        _user_id: userId,
         _name: name,
         _surname: surname || null,
       }
@@ -339,7 +365,7 @@ export async function acceptInvitation(
       return { success: false, error: res?.error || "Failed to complete signup" };
     }
 
-    return { success: true, role: invitation.role };
+    return { success: true, role: res.role || invitation.role, signedIn };
   } catch (error: any) {
     return { success: false, error: getSafeErrorMessage(error) };
   }
