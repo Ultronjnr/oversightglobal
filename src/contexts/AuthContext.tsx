@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logError } from "@/lib/error-handler";
+import { fetchPrimaryRole } from "@/lib/role-routing";
 
 type AppRole = "EMPLOYEE" | "HOD" | "FINANCE" | "ADMIN" | "SUPPLIER";
 type SubscriptionTier = "FREEMIUM" | "STANDARD" | "ADMIN";
@@ -67,20 +68,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      // Fetch role
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
-
-      if (roleError && roleError.code !== "PGRST116") {
-        logError("fetchRole", roleError);
-        return;
-      }
-
-      if (roleData) {
-        setRole(roleData.role as AppRole);
+      // Fetch role (tolerates legacy accounts holding more than one role)
+      const primaryRole = await fetchPrimaryRole(userId);
+      if (primaryRole) {
+        setRole(primaryRole as AppRole);
       }
     } catch (error) {
       logError("fetchProfile", error);
