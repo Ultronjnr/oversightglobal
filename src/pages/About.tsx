@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 import { Link } from "react-router-dom";
 import { ShieldCheck, Sparkles, Users, Target } from "lucide-react";
+import { BOOKING_URL } from "@/lib/booking";
 
 export default function About() {
   return (
