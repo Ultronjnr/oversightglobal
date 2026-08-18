@@ -109,7 +109,7 @@ export default function BookDemo() {
     <div className="min-h-screen bg-background">
       <PageSeo
         title="Book a Demo | Ovasyt Procurement & VAT Platform"
-        description="Book a free 30-minute Ovasyt demo. See VAT recovery, procurement automation, AI invoice processing and SARS-ready compliance built for South African organisations."
+        description="Book a free 15-minute Ovasyt demo. See VAT recovery, procurement automation, AI invoice processing and SARS-ready compliance built for South African organisations."
         path="/book-demo"
       />
       <SiteNav />
@@ -159,7 +159,7 @@ export default function BookDemo() {
 
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-white/55">
               <span className="inline-flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-[hsl(200_90%_65%)]" /> 30 minutes
+                <Clock className="h-4 w-4 text-[hsl(200_90%_65%)]" /> 15 minutes
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Video className="h-4 w-4 text-[hsl(200_90%_65%)]" /> Google Meet
@@ -201,7 +201,7 @@ export default function BookDemo() {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-mono uppercase tracking-[0.18em] text-primary">
-                <Clock className="h-3.5 w-3.5" /> 30 minutes
+                <Clock className="h-3.5 w-3.5" /> 15 minutes
               </span>
               <h2 className="mt-5 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
                 What happens during the demo
