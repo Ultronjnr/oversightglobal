@@ -19,6 +19,7 @@ import { validateInvitation, acceptInvitation } from "@/services/invitation.serv
 import { validateSupplierInvitation, acceptSupplierInvitation } from "@/services/supplier-invitation.service";
 import { AlertCircle, CheckCircle2, Clock, Shield, User, Lock, UserCircle, Truck, Building2 } from "lucide-react";
 import { PageSeo } from "@/components/site/PageSeo";
+import { portalPathForRole } from "@/lib/role-routing";
 
 type InvitationStatus = "loading" | "valid" | "expired" | "invalid" | "used" | "accepting";
 
