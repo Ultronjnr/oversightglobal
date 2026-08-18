@@ -56,8 +56,8 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background">
       <PageSeo
-        title="Ovasyt Pricing | Platform R1 999/mo + Funder-Ready add-ons"
-        description="Ovasyt Platform: R1 999/month for South African NGOs — approvals, invoice scanning, donor tracking and Section 18A receipts, plus Funder-Ready add-ons."
+        title="Ovasyt Pricing | Platform Pro R1 900/mo or Tailored"
+        description="Ovasyt Platform Pro: R1 900/month for South African NPOs — approvals, invoice scanning, donor tracking and Section 18A receipts. 14-day free trial, no card required."
         path="/pricing"
       />
       <SiteNav />
@@ -80,18 +80,18 @@ export default function Pricing() {
               One platform. Add what you need, when you need it.
             </h1>
             <p className="text-center text-slate-600 max-w-2xl mx-auto mb-14">
-              Start on Platform for R1 999/month. Activate compliance add-ons
-              from inside your account as your organisation grows.
+              Two plans. Start Platform Pro free for 14 days at R1 900/month, or
+              get a Tailored quote if your NPO needs more.
             </p>
 
-            <div className="grid gap-6 lg:grid-cols-3 items-stretch">
-              {/* Platform */}
+            <div className="grid gap-6 lg:grid-cols-2 max-w-4xl mx-auto items-stretch">
+              {/* Platform Pro */}
               <div className="relative rounded-2xl bg-white border-2 border-primary p-7 shadow-[0_20px_60px_-30px_hsl(225_73%_57%/0.5)] flex flex-col">
                 <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-                  Platform
+                  Platform Pro
                 </p>
                 <div className="mb-4">
-                  <span className="text-4xl font-extrabold text-slate-900 font-mono">R1 999</span>
+                  <span className="text-4xl font-extrabold text-slate-900 font-mono">R1 900</span>
                   <span className="text-sm text-slate-500 font-mono">/month</span>
                 </div>
                 <p className="text-sm text-slate-500 mb-6 leading-relaxed">
@@ -113,43 +113,16 @@ export default function Pricing() {
                 </Link>
               </div>
 
-              {/* Add-ons */}
-              <div className="relative rounded-2xl bg-white border border-slate-200 p-7 shadow-sm flex flex-col">
-                <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-slate-500 mb-3">
-                  Add-ons
-                </p>
-                <p className="text-sm italic text-slate-500 mb-6">
-                  Activated from the Billing section of your account
-                </p>
-                <ul className="space-y-4 mb-6 flex-1">
-                  {ADDONS.map((addon, i) => (
-                    <li key={addon.name}>
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="font-semibold text-slate-900">{addon.name}</span>
-                        <span className="text-sm font-mono text-primary whitespace-nowrap">
-                          {addon.price}
-                        </span>
-                      </div>
-                      {i === 2 && <div className="mt-4 border-t border-slate-100" />}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs italic text-slate-500 leading-relaxed">
-                  Compliance add-ons show minimum pricing — confirmed after a
-                  short scoping call (volume, entity type, historical months).
-                </p>
-              </div>
-
-              {/* Custom */}
+              {/* Tailored */}
               <div className="relative rounded-2xl bg-slate-900 border border-slate-800 p-7 shadow-lg flex flex-col text-white">
                 <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-primary mb-3">
-                  Custom
+                  Tailored
                 </p>
                 <div className="mb-4">
                   <span className="text-4xl font-extrabold text-white">Quoted</span>
                 </div>
                 <ul className="space-y-3 mb-7 flex-1">
-                  {CUSTOM_FEATURES.map((f) => (
+                  {TAILORED_FEATURES.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm text-slate-200">
                       <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                       {f}
@@ -167,10 +140,30 @@ export default function Pricing() {
               </div>
             </div>
 
+            {/* Optional add-ons */}
+            <div className="mt-12 max-w-4xl mx-auto rounded-2xl bg-white border border-slate-200 p-7 shadow-sm">
+              <p className="text-xs font-mono font-semibold tracking-[0.2em] uppercase text-slate-500 mb-1">
+                Optional add-ons
+              </p>
+              <p className="text-sm italic text-slate-500 mb-6">
+                Activated from the Billing section of your account — not a separate plan
+              </p>
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {ADDONS.map((addon) => (
+                  <li key={addon.name} className="flex items-baseline justify-between gap-3 border-b border-slate-100 pb-3">
+                    <span className="font-semibold text-slate-900">{addon.name}</span>
+                    <span className="text-sm font-mono text-primary whitespace-nowrap">{addon.price}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 text-xs italic text-slate-500 leading-relaxed">
+                Compliance add-ons show minimum pricing — confirmed after a short
+                scoping call (volume, entity type, historical months).
+              </p>
+            </div>
+
             <p className="mt-10 text-center text-sm text-slate-600">
-              Most NPOs choose: Platform + full compliance stack — typically
-              from <span className="font-semibold text-slate-900">R7 999/month</span> · All prices incl. VAT where applicable · monthly debit
-              order · no lock-in
+              All prices incl. VAT where applicable · monthly debit order · no lock-in
             </p>
             <p className="mt-3 text-center text-sm">
               <span className="font-semibold text-slate-900">Book a demo or start your trial:</span>{" "}
