@@ -41,7 +41,7 @@ export default function AdminPortal() {
   };
 
   return (
-    <DashboardLayout title="Admin Dashboard" navItems={adminNavItems}>
+    <DashboardLayout title="Admin Dashboard" navItems={adminNavItems} showInsights>
       <div className="space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">

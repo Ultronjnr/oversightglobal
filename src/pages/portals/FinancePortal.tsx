@@ -402,7 +402,7 @@ export default function FinancePortal() {
   };
 
   return (
-    <DashboardLayout title="Finance Dashboard" navItems={navItems}>
+    <DashboardLayout title="Finance Dashboard" navItems={navItems} showInsights>
       <div className="space-y-5 sm:space-y-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
