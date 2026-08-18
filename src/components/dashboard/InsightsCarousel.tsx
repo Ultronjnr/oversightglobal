@@ -61,39 +61,40 @@ export function InsightsCarousel() {
     };
   }, [profile?.organization_id]);
 
-  const cards = [
+  type CardColor = "default" | "success" | "warning" | "destructive" | "primary";
+  const cards: { label: string; value: string; color: CardColor; icon: JSX.Element; footer: string }[] = [
     {
       label: "VAT issues to review",
       value: data ? String(data.vatIssues) : "0",
-      color: (data?.vatIssues ? "destructive" : "success") as const,
+      color: data?.vatIssues ? "destructive" : "success",
       icon: <AlertTriangle className="h-4 w-4" />,
       footer: "Transactions with a VAT rate but no VAT captured",
     },
     {
       label: "Expenditure (90 days)",
       value: formatCurrency(data?.expenditure || 0),
-      color: "primary" as const,
+      color: "primary",
       icon: <TrendingUp className="h-4 w-4" />,
       footer: "Total approved transaction value",
     },
     {
       label: "Missing documentation",
       value: data ? String(data.missingDocs) : "0",
-      color: (data?.missingDocs ? "warning" : "success") as const,
+      color: data?.missingDocs ? "warning" : "success",
       icon: <FileWarning className="h-4 w-4" />,
       footer: "Transactions without an invoice or receipt attached",
     },
     {
       label: "On-track spend",
       value: `${data?.onTrackPct || 0}%`,
-      color: "success" as const,
+      color: "success",
       icon: <Target className="h-4 w-4" />,
       footer: "Share of approved spend already settled",
     },
     {
       label: "Outstanding to pay",
       value: formatCurrency(data?.outstanding || 0),
-      color: "warning" as const,
+      color: "warning",
       icon: <Wallet className="h-4 w-4" />,
       footer: "Approved value not yet paid out",
     },
