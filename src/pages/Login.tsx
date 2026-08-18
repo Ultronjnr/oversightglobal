@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchPrimaryRole, portalPathForRole } from "@/lib/role-routing";
 import { PageSeo } from "@/components/site/PageSeo";
 
 const loginSchema = z.object({
@@ -30,13 +31,7 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-const rolePortalMap: Record<string, string> = {
-  EMPLOYEE: "/employee/portal",
-  HOD: "/hod/portal",
-  FINANCE: "/finance/portal",
-  ADMIN: "/admin/portal",
-  SUPPLIER: "/supplier/portal",
-};
+
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
@@ -118,14 +113,10 @@ export default function Login() {
 
     const registrationResult = await completeRegistrationIfPending(user);
 
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const primaryRole = await fetchPrimaryRole(user.id);
 
-    if (roleData?.role) {
-      navigate(rolePortalMap[roleData.role] || "/dashboard", { replace: true });
+    if (primaryRole) {
+      navigate(portalPathForRole(primaryRole), { replace: true });
       return;
     }
 
