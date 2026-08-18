@@ -3,6 +3,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 import { Link } from "react-router-dom";
 import { ShieldCheck, Sparkles, Users, Target } from "lucide-react";
+import { BOOKING_URL } from "@/lib/booking";
 
 export default function About() {
   return (
@@ -80,12 +81,14 @@ export default function About() {
               non-profits and NGOs.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                to="/book-demo"
+              <a
+                href={BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
                 Book a demo
-              </Link>
+              </a>
               <Link
                 to="/pricing"
                 className="inline-flex items-center rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"

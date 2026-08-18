@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalScanFAB } from "./capture/GlobalScanFAB";
+import { TrialBanner } from "./billing/TrialBanner";
 import {
   Sheet,
   SheetContent,
@@ -247,6 +248,8 @@ export function DashboardLayout({ children, title, navItems = [] }: DashboardLay
       </header>
 
       {/* Main Content */}
+      <TrialBanner />
+
       <main className="container mx-auto px-4 sm:px-6 py-5 sm:py-8">
         {/* Title */}
         <div className="mb-5 sm:mb-8">

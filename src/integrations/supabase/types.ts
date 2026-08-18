@@ -1336,6 +1336,7 @@ export type Database = {
           organization_id: string
           plan_id: string | null
           status: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1350,6 +1351,7 @@ export type Database = {
           organization_id: string
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1364,6 +1366,7 @@ export type Database = {
           organization_id?: string
           plan_id?: string | null
           status?: Database["public"]["Enums"]["subscription_status"]
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3394,6 +3397,7 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      get_subscription_state: { Args: never; Returns: Json }
       get_supplier_visible_organization: {
         Args: { _org_id: string }
         Returns: {

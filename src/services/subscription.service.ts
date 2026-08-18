@@ -36,6 +36,21 @@ export interface OrganizationSubscription {
   cancelled_at: string | null;
 }
 
+export interface SubscriptionState {
+  status: SubscriptionStatus | null;
+  plan_id: string | null;
+  trial_ends_at: string | null;
+  trial_days_left: number | null;
+  locked: boolean;
+}
+
+/** Single source of truth for trial / lock state (backend-evaluated). */
+export async function getSubscriptionState(): Promise<SubscriptionState> {
+  const { data, error } = await supabase.rpc("get_subscription_state" as any);
+  if (error) throw error;
+  return (data ?? { status: null, plan_id: null, trial_ends_at: null, trial_days_left: null, locked: false }) as SubscriptionState;
+}
+
 export interface PaymentMethod {
   id: string;
   organization_id: string;
