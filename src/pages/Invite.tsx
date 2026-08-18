@@ -247,6 +247,14 @@ export default function Invite() {
         return;
       }
 
+      // Already signed in (existing account, or email confirmation disabled)
+      // — take them straight to the portal for their invited role.
+      if (result.signedIn) {
+        toast.success("Invitation accepted. Welcome to your team.");
+        navigate(portalPathForRole(result.role), { replace: true });
+        return;
+      }
+
       toast.success(
         "Account created! Please check your email to confirm your address, then log in."
       );
