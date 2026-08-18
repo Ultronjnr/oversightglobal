@@ -21,7 +21,7 @@ export default function Billing() {
               <TabsTrigger value="history">Billing History</TabsTrigger>
             </TabsList>
           </div>
-          <TabsContent value="plans"><PlansTab /></TabsContent>
+          <TabsContent value="plans"><PlansTab onCheckout={() => setTab("card")} /></TabsContent>
           <TabsContent value="card"><PaymentMethodTab /></TabsContent>
           <TabsContent value="history"><BillingHistoryTab /></TabsContent>
         </Tabs>
