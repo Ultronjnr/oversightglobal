@@ -7,8 +7,13 @@ import { PageSeo } from "@/components/site/PageSeo";
 
 const PLATFORM_FEATURES = [
   "Everything on the features page",
-  "5 users · 150 scans · 30 donors",
-  "50 suppliers · 18A · 10 GB",
+  "5 users (Admin, Finance Manager, HOD, Team Member)",
+  "Full approval chain: Request → Approve → Invoice → Paid",
+  "Invoice scanning (150/month) + SARS tax invoice validation",
+  "Project & donor fund tracking · 30 donor profiles",
+  "Supplier portal · invite up to 50 suppliers",
+  "Section 18A receipt generation (50/year)",
+  "10 GB storage · standard audit trail",
 ];
 
 const ADDONS = [
@@ -20,7 +25,7 @@ const ADDONS = [
   { name: "Unlimited 18A receipts", price: "R49/mo" },
 ];
 
-const CUSTOM_FEATURES = [
+const TAILORED_FEATURES = [
   "NPO networks & federations",
   "Multi-entity organisations",
   "Special funder requirements",
@@ -29,7 +34,7 @@ const CUSTOM_FEATURES = [
 ];
 
 const FAQ = [
-  { q: "Is there a free trial?", a: "Yes — Platform starts with a 14-day free trial, no card required. Run real purchases through the system and generate your first donor report before committing." },
+  { q: "Is there a free trial?", a: "Yes — Platform Pro starts with a 14-day free trial, no card required. Run real purchases through the system and generate your first donor report before committing. After 14 days you add a card to keep your account active." },
   { q: "How do add-ons work?", a: "Activate any add-on from the Billing section of your account. Compliance add-ons show minimum pricing — confirmed after a short scoping call (volume, entity type, historical months)." },
   { q: "What counts as a scan?", a: "Every invoice or receipt Ovasyt reads, checks against SARS tax invoice requirements and captures counts as one scan — regardless of length or supplier." },
   { q: "Why only one Finance Manager and one Admin?", a: "By design. One ultimate approver and one account owner means clean segregation of duties and a single point of accountability. Add HODs and Team Members at R39/user/mo." },
