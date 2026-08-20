@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   listPlans, getSubscription, selectPlan, cancelSubscription, saveCard,
+  createCheckout,
   type SubscriptionPlan, type OrganizationSubscription, type BillingCycle,
 } from "@/services/subscription.service";
-import { openYocoPopup, YOCO_PUBLIC_KEY } from "@/lib/yoco";
 import { toast } from "sonner";
 import { Check, Star, Loader2 } from "lucide-react";
 
@@ -43,21 +43,15 @@ export function PlansTab({ onCheckout }: { onCheckout?: () => void } = {}) {
     }
     setBusy(plan.id);
     try {
-      const amountCents = Math.round(price(plan) * 100);
-      // Always record the selection first so checkout knows what is being bought.
+      // Record the selection, then send the user straight to Yoco's secure
+      // hosted checkout for immediate payment.
       await selectPlan(plan.id, cycle);
-      if (YOCO_PUBLIC_KEY) {
-        // Immediate checkout — card is captured and charged right away.
-        const result = await openYocoPopup(amountCents, plan.currency);
-        await saveCard(result.id, cycle, plan.id);
-        toast.success(`Subscribed to ${plan.name}`);
-      } else {
-        // Card capture not live yet — take the user straight to the payment step.
-        toast.success(`${plan.name} selected — add your card to activate billing.`);
-        onCheckout?.();
-      }
-      await load();
+      toast.loading("Opening secure checkout…", { id: "checkout" });
+      const url = await createCheckout(plan.id, cycle);
+      toast.dismiss("checkout");
+      window.location.href = url;
     } catch (e: any) {
+      toast.dismiss("checkout");
       toast.error(e.message || "Could not update plan");
       onCheckout?.();
     } finally {
@@ -145,11 +139,9 @@ export function PlansTab({ onCheckout }: { onCheckout?: () => void } = {}) {
           })}
         </div>
       )}
-      {!YOCO_PUBLIC_KEY && (
-        <p className="text-xs text-muted-foreground text-center">
-          Card capture is not active yet. Choosing a plan records your selection; add your Yoco key to enable live billing.
-        </p>
-      )}
+      <p className="text-xs text-muted-foreground text-center">
+        Payments are processed securely by Yoco. You'll be redirected to complete checkout.
+      </p>
     </div>
   );
 }
