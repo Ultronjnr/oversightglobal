@@ -30,9 +30,9 @@ export async function getAuthContext(req: Request) {
     { global: { headers: { Authorization: authHeader } } },
   );
   const token = authHeader.replace("Bearer ", "");
-  const { data, error } = await anon.auth.getClaims(token);
-  if (error || !data?.claims) return { userId: null, orgId: null };
-  const userId = data.claims.sub as string;
+  const { data, error } = await anon.auth.getUser(token);
+  if (error || !data?.user) return { userId: null, orgId: null };
+  const userId = data.user.id;
   const admin = adminClient();
   const { data: profile } = await admin
     .from("profiles").select("organization_id").eq("id", userId).maybeSingle();
