@@ -180,3 +180,12 @@ export async function createCheckout(planId: string, cycle: BillingCycle): Promi
   if (!url) throw new Error("Yoco did not return a checkout URL");
   return url as string;
 }
+
+/** Confirm a checkout after the user returns from Yoco. */
+export async function verifyCheckout(invoiceId: string): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("yoco-verify-checkout", {
+    body: { invoiceId },
+  });
+  if (error) throw error;
+  return ((data as any)?.status ?? "UNKNOWN") as string;
+}
