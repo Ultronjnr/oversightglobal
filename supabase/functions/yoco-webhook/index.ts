@@ -47,18 +47,41 @@ Deno.serve(async (req) => {
     const fresh = await recordEvent(admin, "YOCO", externalId, event.type ?? "unknown", verified, event);
     if (!fresh) return json({ success: true, duplicate: true });
 
-    // Handle payment success/failure events referencing a charge/invoice
-    const chargeId = event?.payload?.id ?? event?.data?.id;
-    if (chargeId) {
-      const { data: inv } = await admin
+    // Handle payment success/failure. Hosted-checkout events carry our
+    // metadata (invoiceId); legacy charge events only carry the charge id.
+    const payload = event?.payload ?? event?.data ?? {};
+    const chargeId = payload?.id ?? null;
+    const metaInvoiceId = payload?.metadata?.invoiceId ?? null;
+
+    let inv: any = null;
+    if (metaInvoiceId) {
+      const { data } = await admin
+        .from("subscription_invoices").select("*").eq("id", metaInvoiceId).maybeSingle();
+      inv = data;
+    }
+    if (!inv && chargeId) {
+      const { data } = await admin
         .from("subscription_invoices").select("*").eq("yoco_charge_id", chargeId).maybeSingle();
-      if (inv) {
-        const type = String(event.type ?? "");
-        if (type.includes("succeeded")) {
-          await admin.from("subscription_invoices").update({ status: "PAID", paid_at: new Date().toISOString() }).eq("id", (inv as any).id);
-        } else if (type.includes("failed")) {
-          await admin.from("subscription_invoices").update({ status: "FAILED" }).eq("id", (inv as any).id);
-        }
+      inv = data;
+    }
+
+    if (inv) {
+      const type = String(event.type ?? "");
+      if (type.includes("succeeded")) {
+        await admin.from("subscription_invoices").update({
+          status: "PAID", paid_at: new Date().toISOString(), yoco_charge_id: chargeId ?? inv.yoco_charge_id,
+        }).eq("id", inv.id);
+        // Activate the subscription for the paid period
+        await admin.from("organization_subscriptions").update({
+          status: "ACTIVE",
+          current_period_start: inv.period_start,
+          current_period_end: inv.period_end,
+          next_billing_date: inv.period_end,
+        }).eq("organization_id", inv.organization_id);
+      } else if (type.includes("failed")) {
+        await admin.from("subscription_invoices").update({ status: "FAILED" }).eq("id", inv.id);
+        await admin.from("organization_subscriptions")
+          .update({ status: "PAST_DUE" }).eq("organization_id", inv.organization_id);
       }
     }
 

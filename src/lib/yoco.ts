@@ -4,7 +4,8 @@
  * merchant account is set up. Until then the popup is disabled gracefully.
  */
 export const YOCO_PUBLIC_KEY =
-  (import.meta.env.VITE_YOCO_PUBLIC_KEY as string | undefined) || "";
+  (import.meta.env.VITE_YOCO_PUBLIC_KEY as string | undefined) ||
+  "pk_test_e9ff15e78omrWeM145f4";
 
 const SDK_URL = "https://js.yoco.com/sdk/v1/yoco-sdk-web.js";
 

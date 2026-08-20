@@ -168,3 +168,15 @@ export async function saveCard(token: string, cycle: BillingCycle, planId: strin
   if (error) throw error;
   return data;
 }
+
+/** Create a Yoco hosted checkout and return the URL to redirect the user to. */
+export async function createCheckout(planId: string, cycle: BillingCycle): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("yoco-create-checkout", {
+    body: { planId, cycle, returnUrl: window.location.origin },
+  });
+  if (error) throw new Error((data as any)?.error || error.message);
+  if ((data as any)?.error) throw new Error((data as any).error);
+  const url = (data as any)?.redirectUrl;
+  if (!url) throw new Error("Yoco did not return a checkout URL");
+  return url as string;
+}
