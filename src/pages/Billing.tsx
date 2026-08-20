@@ -8,6 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPortalNavItems } from "@/lib/admin-nav";
+import { verifyCheckout } from "@/services/subscription.service";
 
 export default function Billing() {
   const [tab, setTab] = useState("plans");
@@ -16,10 +17,21 @@ export default function Billing() {
 
   useEffect(() => {
     const status = params.get("checkout");
+    const invoiceId = params.get("invoice");
     if (!status) return;
     if (status === "success") {
-      toast.success("Payment received — your subscription is being activated.");
       setTab("history");
+      if (invoiceId) {
+        verifyCheckout(invoiceId)
+          .then((s) =>
+            s === "PAID"
+              ? toast.success("Payment received — your subscription is active.")
+              : toast.info("Payment is processing — we'll activate your plan as soon as it clears."),
+          )
+          .catch(() => toast.success("Payment received — your subscription is being activated."));
+      } else {
+        toast.success("Payment received — your subscription is being activated.");
+      }
     } else if (status === "cancelled") {
       toast.info("Checkout cancelled — no payment was taken.");
     } else if (status === "failed") {
