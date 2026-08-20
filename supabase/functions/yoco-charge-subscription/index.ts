@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
 
     const { organizationId, invoiceId } = await req.json();
     const admin = adminClient();
-    const secretKey = Deno.env.get("YOCO_SECRET_KEY");
+    // The Yoco secret key is stored under YOCO_SECRET_KEY; STRIPE_TEST_API_KEY
+    // is a legacy slot that currently holds the Yoco test secret key.
+    const secretKey = Deno.env.get("YOCO_SECRET_KEY") ?? Deno.env.get("STRIPE_TEST_API_KEY");
 
     // Load subscription + plan + default card
     const { data: sub } = await admin
