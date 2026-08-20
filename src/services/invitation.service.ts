@@ -87,7 +87,10 @@ export async function createInvitation(
       email: params.email.toLowerCase(),
       role: params.role,
       department: params.department || null,
-      token_hash: token, // hashed to SHA-256 by BEFORE INSERT trigger
+      // Hash client-side: the DB trigger only hashes values that are NOT already
+      // 64 chars long, and a raw 32-byte hex token is exactly 64 chars — so it
+      // used to be stored unhashed and validation could never match it.
+      token_hash: await sha256Hex(token),
       status: "pending",
       expires_at: expiresAt.toISOString(),
       organization_id: profile.organization_id,
