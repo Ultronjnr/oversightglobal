@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
-  listPlans, getSubscription, selectPlan, cancelSubscription, saveCard,
+  listPlans, getSubscription, selectPlan, cancelSubscription,
   createCheckout,
   type SubscriptionPlan, type OrganizationSubscription, type BillingCycle,
 } from "@/services/subscription.service";

@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  getPaymentMethod, getSubscription, saveCard, removePaymentMethod,
+  getPaymentMethod, getSubscription, createCheckout, removePaymentMethod,
   type PaymentMethod, type OrganizationSubscription,
 } from "@/services/subscription.service";
-import { openYocoPopup, YOCO_PUBLIC_KEY } from "@/lib/yoco";
 import { toast } from "sonner";
 import { CreditCard, Loader2, Trash2, ShieldCheck } from "lucide-react";
 
@@ -25,19 +24,18 @@ export function PaymentMethodTab() {
   useEffect(() => { load(); }, []);
 
   const addCard = async () => {
-    if (!YOCO_PUBLIC_KEY) {
-      toast.error("Yoco is not configured yet. Add your Yoco public key to capture cards.");
+    if (!sub?.plan_id) {
+      toast.error("Choose a plan first — cards are captured during checkout.");
       return;
     }
     setBusy(true);
     try {
-      const result = await openYocoPopup(100, "ZAR"); // R1 verification-style tokenization
-      await saveCard(result.id, sub?.billing_cycle ?? "MONTHLY", sub?.plan_id ?? null);
-      toast.success("Card saved securely");
-      load();
+      const url = await createCheckout(sub.plan_id, sub.billing_cycle ?? "MONTHLY");
+      window.location.href = url;
     } catch (e: any) {
-      toast.error(e.message || "Failed to save card");
-    } finally { setBusy(false); }
+      toast.error(e.message || "Failed to open checkout");
+      setBusy(false);
+    }
   };
 
   const remove = async () => {
@@ -78,7 +76,7 @@ export function PaymentMethodTab() {
           <p className="text-sm text-muted-foreground">No card on file. Add one to enable automatic monthly billing.</p>
         )}
         <Button className="mt-4 w-full" onClick={addCard} disabled={busy}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : card ? "Replace Card" : "Add Card"}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : card ? "Replace Card" : "Add Card via Checkout"}
         </Button>
       </Card>
       <p className="text-xs text-muted-foreground">
