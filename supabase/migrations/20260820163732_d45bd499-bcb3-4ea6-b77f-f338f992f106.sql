@@ -1,0 +1,1 @@
+UPDATE public.subscription_invoices SET status = 'VOID' WHERE id = '52bdffbd-791e-430f-886a-bcb485d52cfc' AND status = 'OPEN';
