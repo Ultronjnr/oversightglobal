@@ -46,7 +46,7 @@ import {
   batchStatusLabel,
   type BatchExportData,
 } from "@/services/batch-export.service";
-import { NetcashBatchActions } from "@/components/finance/NetcashBatchActions";
+
 
 interface BatchAllocation {
   id: string;
@@ -100,15 +100,18 @@ export function BatchesTab() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [confirmBatch, setConfirmBatch] = useState<BatchRow | null>(null);
-  const [confirmRef, setConfirmRef] = useState("");
-  const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [popFile, setPopFile] = useState<File | null>(null);
+  // Batch processing wizard: Finance steps through every payment in the batch,
+  // capturing a mandatory reference and an optional proof of payment per line.
+  const [processBatch, setProcessBatch] = useState<BatchRow | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [lineInputs, setLineInputs] = useState<
+    Record<string, { reference: string; date: string; pop: File | null }>
+  >({});
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
   const [bankDetails, setBankDetails] = useState<
-    Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
+    Record<string, { bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
   >({});
   const [currentUser, setCurrentUser] = useState<string>("");
   const [exportingId, setExportingId] = useState<string | null>(null);
@@ -212,11 +215,12 @@ export function BatchesTab() {
     if (supplierIds.length > 0) {
       const { data: bank } = await supabase
         .from("supplier_bank_details")
-        .select("supplier_id, bank_account_number, bank_branch_code, bank_account_type")
+        .select("supplier_id, bank_name, bank_account_number, bank_branch_code, bank_account_type")
         .in("supplier_id", supplierIds);
-      const bankMap: Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
+      const bankMap: Record<string, { bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
       (bank || []).forEach((b: any) => {
         bankMap[b.supplier_id] = {
+          bank_name: b.bank_name,
           bank_account_number: b.bank_account_number,
           bank_branch_code: b.bank_branch_code,
           bank_account_type: b.bank_account_type,
