@@ -32,7 +32,7 @@ export interface BatchExportAllocation {
   total_amount: number;
   type: "Full" | "Partial";
   currency?: string;
-  // Netcash-style creditor fields
+  // Creditor payment fields
   invoice_ref?: string | null;
   supplier_account?: string | null;
   branch_code?: string | null;
@@ -60,7 +60,7 @@ export interface BatchExportData {
   organization_name?: string | null;
   export_id?: string | null;
   system_user?: string | null;
-  netcash_status?: string | null;
+  export_status?: string | null;
 }
 
 function triggerDownload(blob: Blob, filename: string) {
@@ -155,7 +155,7 @@ const INK: [number, number, number] = [30, 41, 59];
 const MUTED: [number, number, number] = [100, 116, 139];
 
 /**
- * Netcash-style creditor payment batch report.
+ * Creditor payment batch report.
  * Returns the generated PDF as a Blob (also triggers a download by default).
  */
 export async function exportBatchToPdf(
@@ -196,7 +196,7 @@ export async function exportBatchToPdf(
   doc.setFontSize(9);
   doc.setTextColor(...MUTED);
   doc.text(batch.organization_name || "OVASYT", pageW - margin, y + 30, { align: "right" });
-  doc.text("Creditor Batch • Netcash Format", pageW - margin, y + 42, { align: "right" });
+  doc.text("Creditor Payment Batch", pageW - margin, y + 42, { align: "right" });
 
   y += 58;
   doc.setDrawColor(...BRAND);
@@ -333,7 +333,7 @@ export async function exportBatchToPdf(
     ["Export ID", batch.export_id || "—"],
     ["Generated Timestamp", format(generatedAt, "dd MMM yyyy HH:mm:ss")],
     ["System User", batch.system_user || batch.created_by_name || "—"],
-    ["Netcash Export Status", batch.netcash_status || "Ready for Netcash Import"],
+    ["Export Status", batch.export_status || "Ready for bank import"],
   ];
   autoTable(doc, {
     startY: y,
