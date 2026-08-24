@@ -4,6 +4,7 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSubscriptionState, type SubscriptionState } from "@/services/subscription.service";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * Blocks portal content once the trial has lapsed or billing is past due.
