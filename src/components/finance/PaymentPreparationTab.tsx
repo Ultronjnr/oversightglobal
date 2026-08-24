@@ -322,6 +322,37 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     return rows.filter((r) => r.kind === "transaction" && r.project === projectFilter);
   }, [rows, projectFilter]);
 
+  // Group the queue by approval/upload date so finance can settle day by day.
+  const groupedRows = useMemo(() => {
+    const map = new Map<string, PayRow[]>();
+    visibleRows.forEach((r) => {
+      const d = r.createdAt ? new Date(r.createdAt) : null;
+      const key =
+        d && !Number.isNaN(d.getTime()) ? format(d, "yyyy-MM-dd") : "unknown";
+      const list = map.get(key);
+      list ? list.push(r) : map.set(key, [r]);
+    });
+    return Array.from(map.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([key, groupRows]) => ({
+        key,
+        label:
+          key === "unknown"
+            ? "No date"
+            : format(new Date(`${key}T00:00:00`), "dd MMMM yyyy"),
+        rows: groupRows,
+        total: groupRows.reduce((sum, r) => sum + Number(r.amount || 0), 0),
+      }));
+  }, [visibleRows]);
+
+  const toggleGroup = (groupRows: PayRow[]) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = groupRows.every((r) => next.has(r.key));
+      groupRows.forEach((r) => (allSelected ? next.delete(r.key) : next.add(r.key)));
+      return next;
+    });
+
   const handleToggleSelect = (key: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
