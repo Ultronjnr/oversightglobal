@@ -14,6 +14,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { listDonors, listProjects, type Donor, type DonationProject } from "@/services/donation.service";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 export interface ProjectDonorValue {
   projectId: string | null;
@@ -29,14 +31,19 @@ interface Props {
 const NONE = "__none__";
 
 /**
- * Optional Project / Donor tagging for a purchase requisition.
- * Options are sourced from the Donation Management panel so PR spend can be
- * traced back to the right funded project and donor.
+ * Project / Donor funding source for a purchase requisition.
+ *
+ * Only Finance and Admin may set this: tagging a project reserves money against
+ * that project's 18A budget. Employees and HODs never see the pickers — if a
+ * funding source has already been set by Finance they see it as a read-only label.
  */
 export function ProjectDonorSelect({ value, onChange, disabled }: Props) {
+  const { role } = useAuth();
+  const canEdit = role === "FINANCE" || role === "ADMIN";
   const [projects, setProjects] = useState<DonationProject[]>([]);
   const [donors, setDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     let active = true;
@@ -70,8 +77,29 @@ export function ProjectDonorSelect({ value, onChange, disabled }: Props) {
     [donors, value.donorId],
   );
 
+  // Employees / HODs: never editable. Hidden entirely unless Finance already
+  // tagged a funding source, in which case it is shown read-only.
+  if (!canEdit) {
+    if (!value.projectId && !value.donorId) return null;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ReadOnlyField
+          label="Project"
+          icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
+          text={projectLabel}
+        />
+        <ReadOnlyField
+          label="Donor"
+          icon={<HeartHandshake className="h-4 w-4 text-muted-foreground" />}
+          text={donorLabel}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <ComboField
         label="Project (optional)"
         icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
@@ -192,6 +220,28 @@ function ComboField({
           </Command>
         </PopoverContent>
       </Popover>
+    </div>
+  );
+}
+
+function ReadOnlyField({
+  label,
+  icon,
+  text,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <span className="text-sm font-medium flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
+      <div className="h-10 flex items-center rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground">
+        {text}
+      </div>
     </div>
   );
 }

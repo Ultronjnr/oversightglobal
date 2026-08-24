@@ -22,6 +22,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ProjectBudgetPreview } from "@/components/finance/ProjectBudgetPreview";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +72,7 @@ interface CategorySelectionModalProps {
     supplierId: string,
     projectId: string | null,
     donorId: string | null,
+
   ) => Promise<void>;
 }
 
@@ -84,6 +87,8 @@ export function CategorySelectionModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [comments, setComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [overBudget, setOverBudget] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   
   // New category form state
@@ -318,6 +323,13 @@ export function CategorySelectionModal({
       toast.error("Please provide approval comments");
       return;
     }
+
+    if (overBudget) {
+      toast.error("This requisition exceeds the remaining budget on the selected project");
+      return;
+    }
+
+
 
     setIsSubmitting(true);
     try {
@@ -1029,10 +1041,14 @@ export function CategorySelectionModal({
                       </CommandList>
                     </Command>
                     {selectedProject && (
-                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-xs text-primary">
-                        Funds will be reserved from <span className="font-semibold">{selectedProject.name}</span> when Finance approves.
-                      </div>
+                      <ProjectBudgetPreview
+                        projectId={projectId || null}
+                        projectName={selectedProject.name}
+                        amount={Number(pr?.total_amount ?? 0)}
+                        onOverBudgetChange={setOverBudget}
+                      />
                     )}
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -1170,7 +1186,9 @@ export function CategorySelectionModal({
               !selectedSupplierId ||
               !comments.trim() ||
               showNewCategoryForm ||
-              showNewSupplierForm
+              showNewSupplierForm ||
+              overBudget
+
             }
           >
             {isSubmitting ? (
