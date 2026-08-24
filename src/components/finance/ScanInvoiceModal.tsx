@@ -909,14 +909,20 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="si-vata" className="text-xs">VAT Amount ({currency})</Label>
+                  <Label htmlFor="si-vata" className="text-xs">
+                    VAT Amount ({currency})
+                  </Label>
                   <Input
                     id="si-vata"
                     type="number"
                     step="0.01"
                     value={vatAmount}
-                    onChange={(e) => setVatAmount(e.target.value)}
+                    readOnly
+                    className="bg-muted/50 cursor-not-allowed"
                   />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Derived from the invoice by Scan AI — VAT is never captured by hand.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="si-total" className="text-xs">

@@ -143,6 +143,8 @@ export function VatDashboardTab() {
         Supplier: r.supplier_name,
         "Supplier VAT No.": r.vat_number || "",
         Status: r.status,
+        "VAT Treatment": VAT_STATUS_LABEL[r.vat_status],
+        "VAT Flags": (r.vat_flags || []).map((f) => VAT_FLAG_LABEL[f] || f).join("; "),
         Recoverable: isRecoverable(r.status) ? "Yes" : isOutstanding(r.status) ? "Outstanding" : "No",
         Date: format(new Date(r.invoiced_at || r.created_at), "yyyy-MM-dd"),
         "VAT Rate %": r.vat_rate,
@@ -153,7 +155,7 @@ export function VatDashboardTab() {
       }));
       const ws = XLSX.utils.json_to_sheet(exportRows);
       ws["!cols"] = [
-        { wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 18 }, { wch: 12 },
+        { wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 18 }, { wch: 24 }, { wch: 40 }, { wch: 12 },
         { wch: 12 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 8 },
       ];
       const wb = XLSX.utils.book_new();
