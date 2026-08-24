@@ -46,7 +46,7 @@ import {
   batchStatusLabel,
   type BatchExportData,
 } from "@/services/batch-export.service";
-import { NetcashBatchActions } from "@/components/finance/NetcashBatchActions";
+
 
 interface BatchAllocation {
   id: string;
@@ -54,6 +54,8 @@ interface BatchAllocation {
   transaction_id: string | null;
   amount_paid: number;
   payment_reference?: string | null;
+  pop_file_path?: string | null;
+  payment_date?: string | null;
   invoice?: {
     id: string;
     document_url: string;
@@ -100,15 +102,18 @@ export function BatchesTab() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [confirmBatch, setConfirmBatch] = useState<BatchRow | null>(null);
-  const [confirmRef, setConfirmRef] = useState("");
-  const [confirmDate, setConfirmDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
-  const [popFile, setPopFile] = useState<File | null>(null);
+  // Batch processing wizard: Finance steps through every payment in the batch,
+  // capturing a mandatory reference and an optional proof of payment per line.
+  const [processBatch, setProcessBatch] = useState<BatchRow | null>(null);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [lineInputs, setLineInputs] = useState<
+    Record<string, { reference: string; date: string; pop: File | null }>
+  >({});
   const [submitting, setSubmitting] = useState(false);
   const [orgName, setOrgName] = useState<string>("OVASYT");
   const [creators, setCreators] = useState<Record<string, string>>({});
   const [bankDetails, setBankDetails] = useState<
-    Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
+    Record<string, { bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
   >({});
   const [currentUser, setCurrentUser] = useState<string>("");
   const [exportingId, setExportingId] = useState<string | null>(null);
@@ -143,7 +148,7 @@ export function BatchesTab() {
         `id, created_at, total_amount, currency, notes, status, batch_number, payment_reference, pop_file_path, confirmed_at, paid_at, created_by, export_id, exported_at,
          provider_status,
          allocations:payment_allocations (
-           id, invoice_id, transaction_id, amount_paid, payment_reference,
+           id, invoice_id, transaction_id, amount_paid, payment_reference, pop_file_path, payment_date,
            invoice:invoices (
              id, document_url, status,
              quote:quotes ( amount ),
@@ -212,11 +217,12 @@ export function BatchesTab() {
     if (supplierIds.length > 0) {
       const { data: bank } = await supabase
         .from("supplier_bank_details")
-        .select("supplier_id, bank_account_number, bank_branch_code, bank_account_type")
+        .select("supplier_id, bank_name, bank_account_number, bank_branch_code, bank_account_type")
         .in("supplier_id", supplierIds);
-      const bankMap: Record<string, { bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
+      const bankMap: Record<string, { bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }> = {};
       (bank || []).forEach((b: any) => {
         bankMap[b.supplier_id] = {
+          bank_name: b.bank_name,
           bank_account_number: b.bank_account_number,
           bank_branch_code: b.bank_branch_code,
           bank_account_type: b.bank_account_type,
@@ -453,55 +459,143 @@ export function BatchesTab() {
     void fetchBatches();
   };
 
-  const handleConfirmBatch = async () => {
-    if (!confirmBatch) return;
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  /** Supplier + banking details for a single payment line. */
+  const allocationPayee = (a: BatchAllocation) => {
+    const sup = a.invoice?.supplier || a.transaction?.supplier;
+    const name =
+      sup?.company_name || a.transaction?.supplier_name || "—";
+    const bank = sup?.id ? bankDetails[sup.id] : undefined;
+    return {
+      name,
+      email: sup?.contact_email || null,
+      bank_name: bank?.bank_name || null,
+      account: bank?.bank_account_number || null,
+      branch: bank?.bank_branch_code || null,
+      account_type: bank?.bank_account_type || null,
+      txnRef:
+        a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—",
+      currency:
+        a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency,
+    };
+  };
+
+  /** Open the step-by-step processing wizard with sensible defaults per line. */
+  const openProcessWizard = (b: BatchRow) => {
+    const defaults: Record<string, { reference: string; date: string; pop: File | null }> = {};
+    b.allocations.forEach((a, i) => {
+      defaults[a.id] = {
+        reference:
+          a.payment_reference ||
+          `${b.batch_number || b.id.slice(0, 8).toUpperCase()}-${String(i + 1).padStart(2, "0")}`,
+        date: today(),
+        pop: null,
+      };
+    });
+    setLineInputs(defaults);
+    setStepIndex(0);
+    setProcessBatch(b);
+  };
+
+  const closeProcessWizard = () => {
+    setProcessBatch(null);
+    setLineInputs({});
+    setStepIndex(0);
+  };
+
+  const setLineField = (
+    allocId: string,
+    patch: Partial<{ reference: string; date: string; pop: File | null }>,
+  ) =>
+    setLineInputs((prev) => ({
+      ...prev,
+      [allocId]: { ...prev[allocId], ...patch },
+    }));
+
+  /**
+   * Process the batch: upload each line's proof of payment (optional), then
+   * settle the batch with a mandatory reference per payment.
+   */
+  const handleProcessBatch = async () => {
+    if (!processBatch) return;
+    const missing = processBatch.allocations.find(
+      (a) => !lineInputs[a.id]?.reference?.trim(),
+    );
+    if (missing) {
+      toast.error("Every payment needs a reference", {
+        description: "Go back and complete the missing payment reference.",
+      });
+      return;
+    }
     setSubmitting(true);
 
-    // Upload the proof of payment first so the reference is stored with the batch.
-    let popPath: string | null = null;
-    if (popFile) {
-      try {
-        const { data: auth } = await supabase.auth.getUser();
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("organization_id")
-          .eq("id", auth?.user?.id || "")
-          .single();
-        const orgId = prof?.organization_id;
-        if (orgId) {
-          const ext = popFile.name.split(".").pop()?.toLowerCase() || "pdf";
-          const path = `${orgId}/${confirmBatch.id}/pop-${Date.now()}.${ext}`;
-          const up = await supabase.storage
-            .from("batch-exports")
-            .upload(path, popFile, { contentType: popFile.type || "application/pdf", upsert: true });
-          if (up.error) throw up.error;
-          popPath = path;
-        }
-      } catch (e: any) {
-        setSubmitting(false);
-        toast.error("Proof of payment upload failed", {
-          description: e?.message || "Please try again.",
-        });
-        return;
-      }
+    let orgId: string | undefined;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", auth?.user?.id || "")
+        .single();
+      orgId = prof?.organization_id || undefined;
+    } catch {
+      /* handled below */
     }
 
-    const { data, error } = await (supabase as any).rpc("confirm_batch_paid", {
-      _batch_id: confirmBatch.id,
-      _payment_reference: confirmRef || null,
-      _payment_date: confirmDate || null,
-      _pop_path: popPath,
+    const lines: Array<{
+      allocation_id: string;
+      payment_reference: string;
+      payment_date: string;
+      pop_file_path?: string;
+    }> = [];
+
+    for (const a of processBatch.allocations) {
+      const input = lineInputs[a.id];
+      let popPath: string | undefined;
+      if (input.pop && orgId) {
+        try {
+          const ext = input.pop.name.split(".").pop()?.toLowerCase() || "pdf";
+          const path = `${orgId}/${processBatch.id}/pop-${a.id}-${Date.now()}.${ext}`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, input.pop, {
+              contentType: input.pop.type || "application/pdf",
+              upsert: true,
+            });
+          if (up.error) throw up.error;
+          popPath = path;
+        } catch (e: any) {
+          setSubmitting(false);
+          toast.error("Proof of payment upload failed", {
+            description: e?.message || "Please try again.",
+          });
+          return;
+        }
+      }
+      lines.push({
+        allocation_id: a.id,
+        payment_reference: input.reference.trim(),
+        payment_date: input.date || today(),
+        ...(popPath ? { pop_file_path: popPath } : {}),
+      });
+    }
+
+    const { data, error } = await (supabase as any).rpc("process_batch_payment", {
+      _batch_id: processBatch.id,
+      _lines: lines,
+      _payment_date: today(),
     });
     setSubmitting(false);
     const res: any = data;
     if (error || !res?.success) {
-      toast.error("Failed to confirm batch", { description: error?.message || res?.error });
+      toast.error("Failed to process batch", { description: error?.message || res?.error });
       return;
     }
-    toast.success(`Batch ${confirmBatch.batch_number || ""} confirmed as paid`);
-    setConfirmBatch(null);
-    setConfirmRef("");
-    setPopFile(null);
+    toast.success(`Batch ${processBatch.batch_number || ""} processed`, {
+      description: `${lines.length} payment(s) marked as paid.`,
+    });
+    closeProcessWizard();
     void fetchBatches();
   };
 
@@ -617,11 +711,11 @@ export function BatchesTab() {
                           <>
                           <Button
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); setConfirmBatch(b); }}
+                            onClick={(e) => { e.stopPropagation(); openProcessWizard(b); }}
                             className="gap-1"
                           >
                             <CheckCircle2 className="h-4 w-4" />
-                            Confirm Paid
+                            Process Batch
                           </Button>
                           <Button
                             size="sm"
@@ -663,23 +757,16 @@ export function BatchesTab() {
                           </Badge>
                         )}
                       </div>
-                      <div className="mb-3">
-                        <NetcashBatchActions
-                          batchId={b.id}
-                          batchStatus={status}
-                          providerStatus={b.provider_status}
-                        />
-                      </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/30">
-                              <TableHead>Supplier</TableHead>
+                              <TableHead>Supplier &amp; banking</TableHead>
                               <TableHead>Transaction</TableHead>
                               <TableHead>Payment Ref</TableHead>
                               <TableHead className="text-right">Amount Paid</TableHead>
                               <TableHead>Type</TableHead>
-                              <TableHead className="text-right">Invoice</TableHead>
+                              <TableHead className="text-right">Documents</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -708,8 +795,8 @@ export function BatchesTab() {
                               return (
                                 <TableRow key={a.id}>
                                   <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex items-start gap-2">
+                                      <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
                                       <div>
                                         <p className="font-medium text-sm">
                                           {supplierName}
@@ -717,6 +804,23 @@ export function BatchesTab() {
                                         <p className="text-xs text-muted-foreground">
                                           {supplierEmail}
                                         </p>
+                                        {(() => {
+                                          const p = allocationPayee(a);
+                                          if (!p.account && !p.bank_name) {
+                                            return (
+                                              <p className="text-xs text-warning mt-1">
+                                                No banking details on file
+                                              </p>
+                                            );
+                                          }
+                                          return (
+                                            <p className="text-xs text-muted-foreground font-mono mt-1">
+                                              {[p.bank_name, p.account, p.branch && `Branch ${p.branch}`, p.account_type]
+                                                .filter(Boolean)
+                                                .join(" · ")}
+                                            </p>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </TableCell>
@@ -750,28 +854,44 @@ export function BatchesTab() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {(a.invoice?.document_url ||
-                                      a.transaction?.invoice?.document_url ||
-                                      a.transaction?.document_url ||
-                                      a.transaction?.pr?.document_url) ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          void handleViewAllocationDoc(a);
-                                        }}
-                                        className="gap-1 text-primary hover:text-primary"
-                                      >
-                                        <FileText className="h-4 w-4" />
-                                        {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
-                                          ? "View Invoice"
-                                          : "View PR Document"}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </Button>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">No document</span>
-                                    )}
+                                    <div className="flex flex-col items-end">
+                                      {(a.invoice?.document_url ||
+                                        a.transaction?.invoice?.document_url ||
+                                        a.transaction?.document_url ||
+                                        a.transaction?.pr?.document_url) ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleViewAllocationDoc(a);
+                                          }}
+                                          className="gap-1 text-primary hover:text-primary"
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
+                                            ? "View Invoice"
+                                            : "View PR Document"}
+                                          <ExternalLink className="h-3 w-3" />
+                                        </Button>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">No document</span>
+                                      )}
+                                      {a.pop_file_path && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleViewPop(a.pop_file_path as string);
+                                          }}
+                                          className="gap-1 text-primary hover:text-primary"
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          View proof of payment
+                                        </Button>
+                                      )}
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               );
@@ -787,65 +907,185 @@ export function BatchesTab() {
           })}
         </TableBody>
       </Table>
-      <Dialog open={!!confirmBatch} onOpenChange={(o) => !o && setConfirmBatch(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              Confirm Batch Paid
-            </DialogTitle>
-            <DialogDescription>
-              Confirming will mark all invoices in batch{" "}
-              <span className="font-mono font-semibold">{confirmBatch?.batch_number}</span>{" "}
-              as paid or partially paid. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div>
-              <label className="text-xs text-muted-foreground">Payment reference</label>
-              <Input
-                value={confirmRef}
-                onChange={(e) => setConfirmRef(e.target.value)}
-                placeholder="Bank ref / EFT number"
-                maxLength={120}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Payment date</label>
-              <Input
-                type="date"
-                value={confirmDate}
-                onChange={(e) => setConfirmDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Upload className="h-3 w-3" /> Proof of payment (optional)
-              </label>
-              <Input
-                type="file"
-                accept="application/pdf,image/*"
-                onChange={(e) => setPopFile(e.target.files?.[0] || null)}
-              />
-              {popFile && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {popFile.name} · {(popFile.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              )}
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Each line in this batch gets its own unique payment reference on confirmation.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setConfirmBatch(null); setPopFile(null); }} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmBatch} disabled={submitting} className="gap-2">
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Confirm Paid
-            </Button>
-          </DialogFooter>
+      {/* Step-by-step batch processing wizard: one payment at a time */}
+      <Dialog open={!!processBatch} onOpenChange={(o) => !o && closeProcessWizard()}>
+        <DialogContent className="sm:max-w-lg">
+          {processBatch && (() => {
+            const allocs = processBatch.allocations;
+            const isSummary = stepIndex >= allocs.length;
+            const alloc = allocs[stepIndex];
+            const payee = alloc ? allocationPayee(alloc) : null;
+            const input = alloc ? lineInputs[alloc.id] : undefined;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    {isSummary
+                      ? "Review & process batch"
+                      : `Payment ${stepIndex + 1} of ${allocs.length}`}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Batch{" "}
+                    <span className="font-mono font-semibold">
+                      {processBatch.batch_number}
+                    </span>
+                    {isSummary
+                      ? " — confirm the details below to mark every payment as paid."
+                      : " — capture the payment reference, date and proof for this supplier."}
+                  </DialogDescription>
+                </DialogHeader>
+
+                {!isSummary && alloc && payee && (
+                  <div className="space-y-3 py-1">
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                      <p className="font-medium text-sm">{payee.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {payee.txnRef}
+                      </p>
+                      <p className="text-sm font-semibold">
+                        {formatCurrency(Number(alloc.amount_paid), payee.currency)}
+                      </p>
+                      <div className="pt-2 mt-1 border-t border-border/50 text-xs space-y-0.5">
+                        <p className="font-medium text-foreground">Banking details</p>
+                        {payee.account || payee.bank_name ? (
+                          <>
+                            <p className="text-muted-foreground">Bank: {payee.bank_name || "—"}</p>
+                            <p className="text-muted-foreground font-mono">
+                              Account: {payee.account || "—"}
+                            </p>
+                            <p className="text-muted-foreground font-mono">
+                              Branch: {payee.branch || "—"}
+                            </p>
+                            <p className="text-muted-foreground">
+                              Type: {payee.account_type || "—"}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-warning">
+                            No banking details captured for this supplier.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground">
+                        Payment reference <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        value={input?.reference || ""}
+                        onChange={(e) =>
+                          setLineField(alloc.id, { reference: e.target.value })
+                        }
+                        placeholder="Bank ref / EFT number"
+                        maxLength={120}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Payment date</label>
+                      <Input
+                        type="date"
+                        value={input?.date || today()}
+                        onChange={(e) => setLineField(alloc.id, { date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Upload className="h-3 w-3" /> Proof of payment (optional)
+                      </label>
+                      <Input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        onChange={(e) =>
+                          setLineField(alloc.id, { pop: e.target.files?.[0] || null })
+                        }
+                      />
+                      {input?.pop && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {input.pop.name} ·{" "}
+                          {(input.pop.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {isSummary && (
+                  <div className="space-y-2 py-1 max-h-72 overflow-y-auto">
+                    {allocs.map((a, i) => {
+                      const p = allocationPayee(a);
+                      const li = lineInputs[a.id];
+                      return (
+                        <div
+                          key={a.id}
+                          className="rounded-lg border border-border/60 p-3 text-sm flex items-start justify-between gap-3"
+                        >
+                          <div>
+                            <p className="font-medium">{p.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {li?.reference || "— no reference —"} · {li?.date}
+                            </p>
+                            {li?.pop && (
+                              <p className="text-xs text-muted-foreground">
+                                POP: {li.pop.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(Number(a.amount_paid), p.currency)}
+                            </p>
+                            <button
+                              type="button"
+                              className="text-xs text-primary hover:underline"
+                              onClick={() => setStepIndex(i)}
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      stepIndex === 0 ? closeProcessWizard() : setStepIndex(stepIndex - 1)
+                    }
+                    disabled={submitting}
+                  >
+                    {stepIndex === 0 ? "Cancel" : "Back"}
+                  </Button>
+                  {isSummary ? (
+                    <Button
+                      onClick={handleProcessBatch}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Process Batch
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setStepIndex(stepIndex + 1)}
+                      disabled={!input?.reference?.trim()}
+                      className="gap-2"
+                    >
+                      {stepIndex === allocs.length - 1 ? "Review" : "Next payment"}
+                    </Button>
+                  )}
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
