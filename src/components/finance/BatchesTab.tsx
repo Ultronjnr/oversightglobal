@@ -907,65 +907,185 @@ export function BatchesTab() {
           })}
         </TableBody>
       </Table>
-      <Dialog open={!!confirmBatch} onOpenChange={(o) => !o && setConfirmBatch(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" />
-              Confirm Batch Paid
-            </DialogTitle>
-            <DialogDescription>
-              Confirming will mark all invoices in batch{" "}
-              <span className="font-mono font-semibold">{confirmBatch?.batch_number}</span>{" "}
-              as paid or partially paid. This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div>
-              <label className="text-xs text-muted-foreground">Payment reference</label>
-              <Input
-                value={confirmRef}
-                onChange={(e) => setConfirmRef(e.target.value)}
-                placeholder="Bank ref / EFT number"
-                maxLength={120}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Payment date</label>
-              <Input
-                type="date"
-                value={confirmDate}
-                onChange={(e) => setConfirmDate(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Upload className="h-3 w-3" /> Proof of payment (optional)
-              </label>
-              <Input
-                type="file"
-                accept="application/pdf,image/*"
-                onChange={(e) => setPopFile(e.target.files?.[0] || null)}
-              />
-              {popFile && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {popFile.name} · {(popFile.size / (1024 * 1024)).toFixed(2)} MB
-                </p>
-              )}
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Each line in this batch gets its own unique payment reference on confirmation.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setConfirmBatch(null); setPopFile(null); }} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmBatch} disabled={submitting} className="gap-2">
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              Confirm Paid
-            </Button>
-          </DialogFooter>
+      {/* Step-by-step batch processing wizard: one payment at a time */}
+      <Dialog open={!!processBatch} onOpenChange={(o) => !o && closeProcessWizard()}>
+        <DialogContent className="sm:max-w-lg">
+          {processBatch && (() => {
+            const allocs = processBatch.allocations;
+            const isSummary = stepIndex >= allocs.length;
+            const alloc = allocs[stepIndex];
+            const payee = alloc ? allocationPayee(alloc) : null;
+            const input = alloc ? lineInputs[alloc.id] : undefined;
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    {isSummary
+                      ? "Review & process batch"
+                      : `Payment ${stepIndex + 1} of ${allocs.length}`}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Batch{" "}
+                    <span className="font-mono font-semibold">
+                      {processBatch.batch_number}
+                    </span>
+                    {isSummary
+                      ? " — confirm the details below to mark every payment as paid."
+                      : " — capture the payment reference, date and proof for this supplier."}
+                  </DialogDescription>
+                </DialogHeader>
+
+                {!isSummary && alloc && payee && (
+                  <div className="space-y-3 py-1">
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+                      <p className="font-medium text-sm">{payee.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {payee.txnRef}
+                      </p>
+                      <p className="text-sm font-semibold">
+                        {formatCurrency(Number(alloc.amount_paid), payee.currency)}
+                      </p>
+                      <div className="pt-2 mt-1 border-t border-border/50 text-xs space-y-0.5">
+                        <p className="font-medium text-foreground">Banking details</p>
+                        {payee.account || payee.bank_name ? (
+                          <>
+                            <p className="text-muted-foreground">Bank: {payee.bank_name || "—"}</p>
+                            <p className="text-muted-foreground font-mono">
+                              Account: {payee.account || "—"}
+                            </p>
+                            <p className="text-muted-foreground font-mono">
+                              Branch: {payee.branch || "—"}
+                            </p>
+                            <p className="text-muted-foreground">
+                              Type: {payee.account_type || "—"}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-warning">
+                            No banking details captured for this supplier.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-muted-foreground">
+                        Payment reference <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        value={input?.reference || ""}
+                        onChange={(e) =>
+                          setLineField(alloc.id, { reference: e.target.value })
+                        }
+                        placeholder="Bank ref / EFT number"
+                        maxLength={120}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Payment date</label>
+                      <Input
+                        type="date"
+                        value={input?.date || today()}
+                        onChange={(e) => setLineField(alloc.id, { date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Upload className="h-3 w-3" /> Proof of payment (optional)
+                      </label>
+                      <Input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        onChange={(e) =>
+                          setLineField(alloc.id, { pop: e.target.files?.[0] || null })
+                        }
+                      />
+                      {input?.pop && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {input.pop.name} ·{" "}
+                          {(input.pop.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {isSummary && (
+                  <div className="space-y-2 py-1 max-h-72 overflow-y-auto">
+                    {allocs.map((a, i) => {
+                      const p = allocationPayee(a);
+                      const li = lineInputs[a.id];
+                      return (
+                        <div
+                          key={a.id}
+                          className="rounded-lg border border-border/60 p-3 text-sm flex items-start justify-between gap-3"
+                        >
+                          <div>
+                            <p className="font-medium">{p.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {li?.reference || "— no reference —"} · {li?.date}
+                            </p>
+                            {li?.pop && (
+                              <p className="text-xs text-muted-foreground">
+                                POP: {li.pop.name}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(Number(a.amount_paid), p.currency)}
+                            </p>
+                            <button
+                              type="button"
+                              className="text-xs text-primary hover:underline"
+                              onClick={() => setStepIndex(i)}
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      stepIndex === 0 ? closeProcessWizard() : setStepIndex(stepIndex - 1)
+                    }
+                    disabled={submitting}
+                  >
+                    {stepIndex === 0 ? "Cancel" : "Back"}
+                  </Button>
+                  {isSummary ? (
+                    <Button
+                      onClick={handleProcessBatch}
+                      disabled={submitting}
+                      className="gap-2"
+                    >
+                      {submitting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="h-4 w-4" />
+                      )}
+                      Process Batch
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setStepIndex(stepIndex + 1)}
+                      disabled={!input?.reference?.trim()}
+                      className="gap-2"
+                    >
+                      {stepIndex === allocs.length - 1 ? "Review" : "Next payment"}
+                    </Button>
+                  )}
+                </DialogFooter>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
