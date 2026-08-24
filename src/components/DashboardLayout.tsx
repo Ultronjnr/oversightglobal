@@ -43,6 +43,7 @@ interface NavItem {
   href: string;
   icon?: ReactNode;
   active?: boolean;
+  group?: string;
 }
 
 interface DashboardLayoutProps {
