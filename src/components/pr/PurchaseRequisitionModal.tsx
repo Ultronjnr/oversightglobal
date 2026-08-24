@@ -28,6 +28,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
+import { ProjectDonorSelect, type ProjectDonorValue } from "@/components/pr/ProjectDonorSelect";
+import { ProjectBudgetPreview } from "@/components/finance/ProjectBudgetPreview";
+
 
 const formSchema = z.object({
   department: z.string().min(1, "Department is required"),
@@ -83,6 +86,19 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const [isUploading, setIsUploading] = useState(false);
   const [suppliers, setSuppliers] = useState<ApprovedSupplier[]>([]);
   const [suggestOpen, setSuggestOpen] = useState(false);
+  const [projectDonor, setProjectDonor] = useState<ProjectDonorValue>({
+    projectId: null,
+    donorId: null,
+  });
+  const [overBudget, setOverBudget] = useState(false);
+
+  // Grand total (incl. VAT) used for the project budget reservation preview.
+  const fundingTotal = items.reduce((sum, item) => {
+    const sub = item.quantity * getNumericPrice(item.unit_price);
+    const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
+    return sum + sub + sub * vatRate;
+  }, 0);
+
 
   const {
     register,
