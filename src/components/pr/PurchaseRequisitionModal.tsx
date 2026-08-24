@@ -661,7 +661,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   {/* Supplier Fields */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Preferred Supplier</Label>
+                      <Label className="text-sm font-medium text-foreground">Preferred Supplier (optional)</Label>
                       <Select
                         value={selectedSupplier || ""}
                         onValueChange={(value) => {
@@ -677,7 +677,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                             placeholder={
                               suppliers.length === 0
                                 ? "No approved suppliers yet"
-                                : "Select a supplier"
+                                : "Leave blank to source quotes later"
                             }
                           />
                         </SelectTrigger>
