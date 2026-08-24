@@ -70,6 +70,7 @@ export default function SupplierPortal() {
 
   const navItems = [
     { label: "Dashboard", href: "/supplier/portal", icon: <Truck className="h-4 w-4" /> },
+    { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
   useEffect(() => {
