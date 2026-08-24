@@ -709,11 +709,11 @@ export function BatchesTab() {
                           <>
                           <Button
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); setConfirmBatch(b); }}
+                            onClick={(e) => { e.stopPropagation(); openProcessWizard(b); }}
                             className="gap-1"
                           >
                             <CheckCircle2 className="h-4 w-4" />
-                            Confirm Paid
+                            Process Batch
                           </Button>
                           <Button
                             size="sm"
@@ -755,23 +755,16 @@ export function BatchesTab() {
                           </Badge>
                         )}
                       </div>
-                      <div className="mb-3">
-                        <NetcashBatchActions
-                          batchId={b.id}
-                          batchStatus={status}
-                          providerStatus={b.provider_status}
-                        />
-                      </div>
                       <div className="rounded-lg border border-border/50 overflow-hidden bg-background">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-muted/30">
-                              <TableHead>Supplier</TableHead>
+                              <TableHead>Supplier &amp; banking</TableHead>
                               <TableHead>Transaction</TableHead>
                               <TableHead>Payment Ref</TableHead>
                               <TableHead className="text-right">Amount Paid</TableHead>
                               <TableHead>Type</TableHead>
-                              <TableHead className="text-right">Invoice</TableHead>
+                              <TableHead className="text-right">Documents</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
