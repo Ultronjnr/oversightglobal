@@ -13,6 +13,8 @@ import { useAuth } from "@/contexts/AuthContext";
 export function SubscriptionLockGate({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SubscriptionState | null>(null);
   const { pathname } = useLocation();
+  const { role } = useAuth();
+  const isAdmin = role === "ADMIN";
 
   useEffect(() => {
     getSubscriptionState().then(setState).catch(() => setState(null));
