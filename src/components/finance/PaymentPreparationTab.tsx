@@ -526,7 +526,27 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             </TableRow>
           </TableHeader>
           <TableBody>
-            {visibleRows.map((row) => {
+            {groupedRows.map((group) => (
+            <Fragment key={group.key}>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableCell colSpan={10} className="py-2">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={group.rows.every((r) => selectedIds.has(r.key))}
+                    onCheckedChange={() => toggleGroup(group.rows)}
+                    aria-label={`Select all approved on ${group.label}`}
+                  />
+                  <span className="text-sm font-semibold">{group.label}</span>
+                  <Badge variant="secondary" className="font-mono text-[11px]">
+                    {group.rows.length} item{group.rows.length === 1 ? "" : "s"}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Total {formatCurrency(group.total)}
+                  </span>
+                </div>
+              </TableCell>
+            </TableRow>
+            {group.rows.map((row) => {
               const isExpanded = expandedKey === row.key;
               return (
               <Fragment key={row.key}>
