@@ -19,9 +19,11 @@ interface Insights {
  * Scoped to the signed-in user's organisation (RLS enforces this too).
  */
 export function InsightsCarousel() {
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
+  const orgWide = role === "FINANCE" || role === "ADMIN";
   const [data, setData] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     let cancelled = false;
