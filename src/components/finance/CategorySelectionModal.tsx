@@ -175,6 +175,13 @@ export function CategorySelectionModal({
     }
   }, [open]);
 
+  // Clearing the project unmounts the budget preview, which can no longer
+  // report back — drop any stale over-budget block so approval isn't stuck.
+  useEffect(() => {
+    if (!projectId) setOverBudget(false);
+  }, [projectId]);
+
+
   const fetchCategories = async () => {
     setLoading(true);
     const result = await getCategories();
