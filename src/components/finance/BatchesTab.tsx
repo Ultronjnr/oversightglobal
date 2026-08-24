@@ -121,7 +121,7 @@ export function BatchesTab() {
   useEffect(() => {
     void fetchBatches();
     // Live refresh: reload when batches or their allocations change (create,
-    // confirm, cancel, or netcash status transitions).
+    // confirm, cancel, or status transitions).
     const channel = supabase
       .channel("batches-tab-live")
       .on(
@@ -336,7 +336,7 @@ export function BatchesTab() {
     organization_name: orgName,
     export_id: b.export_id,
     system_user: currentUser || (b.created_by && creators[b.created_by]) || "—",
-    netcash_status: b.export_id ? "Exported — Ready for Netcash Import" : "Ready for Netcash Import",
+    export_status: b.export_id ? "Exported — ready for bank import" : "Ready for bank import",
     allocations: b.allocations.map((a) => {
       const supplierName =
         a.invoice?.supplier?.company_name ||
