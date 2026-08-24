@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Inbox,
   MessageSquare,
+  Handshake,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -45,6 +46,7 @@ import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionMod
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
+import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -82,6 +84,7 @@ export default function HODPortal() {
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
+  const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -575,6 +578,16 @@ export default function HODPortal() {
         }}
         onConfirm={handleSplit}
       />
+
+      {/* Supplier sourcing (multi-quote) modal */}
+      {sourcingPR && (
+        <SourcingQuotesModal
+          open={!!sourcingPR}
+          pr={sourcingPR}
+          onClose={() => setSourcingPR(null)}
+          onChanged={fetchPRs}
+        />
+      )}
 
       {/* Document Viewer Modal */}
       <DocumentViewerModal
