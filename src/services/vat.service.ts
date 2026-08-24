@@ -18,17 +18,47 @@ export interface VatTransaction {
   exclusive_amount: number;
   inclusive_amount: number;
   vat_manual: boolean;
+  vat_status: VatStatusValue;
+  vat_flags: VatFlagCode[];
+  vat_note: string | null;
+  vat_assessment_required: boolean;
+  has_document: boolean;
   created_at: string;
   invoiced_at: string | null;
   paid_at: string | null;
 }
 
-export interface VatUpdate {
-  vat_rate?: number;
-  vat_amount?: number;
-  exclusive_amount?: number;
-  inclusive_amount?: number;
-}
+/** VAT status is derived by the system from the attached invoice — never chosen by hand. */
+export type VatStatusValue =
+  | "UNASSESSED"
+  | "STANDARD"
+  | "ZERO_RATED"
+  | "EXEMPT"
+  | "NOT_REGISTERED";
+
+export type VatFlagCode =
+  | "VAT_CHARGED_WITHOUT_REGISTRATION"
+  | "INCORRECT_VAT_RATE"
+  | "TOTALS_MISMATCH"
+  | "MISSING_VAT_AMOUNT"
+  | "NO_INVOICE";
+
+export const VAT_STATUS_LABEL: Record<VatStatusValue, string> = {
+  UNASSESSED: "Not assessed",
+  STANDARD: "Standard-rated (15%)",
+  ZERO_RATED: "Zero-rated (0%)",
+  EXEMPT: "Exempt",
+  NOT_REGISTERED: "Supplier not VAT registered",
+};
+
+export const VAT_FLAG_LABEL: Record<VatFlagCode, string> = {
+  VAT_CHARGED_WITHOUT_REGISTRATION:
+    "VAT charged but the supplier has no VAT number — input VAT is not claimable",
+  INCORRECT_VAT_RATE: "VAT rate is not the SARS standard 15% or 0%",
+  TOTALS_MISMATCH: "Net + VAT does not equal the invoice total",
+  MISSING_VAT_AMOUNT: "Invoice attached but no VAT amount was extracted",
+  NO_INVOICE: "No invoice attached yet — VAT cannot be assessed",
+};
 
 const num = (v: unknown, d = 0) => {
   const n = Number(v);
@@ -56,7 +86,7 @@ export async function listVatTransactions(): Promise<{
     const { data, error } = await supabase
       .from("transactions" as any)
       .select(
-        "id, pr_id, supplier_id, supplier_name, vat_number, status, currency, vat_rate, vat_amount, exclusive_amount, inclusive_amount, vat_manual, created_at, invoiced_at, paid_at, supplier:suppliers(vat_number, company_name)"
+        "id, pr_id, supplier_id, supplier_name, vat_number, status, currency, vat_rate, vat_amount, exclusive_amount, inclusive_amount, vat_manual, vat_status, vat_flags, vat_note, vat_assessment_required, document_url, invoice_id, scan_document_path, created_at, invoiced_at, paid_at, supplier:suppliers(vat_number, company_name)"
       )
       .order("created_at", { ascending: false });
     if (error) return { success: false, data: [], error: error.message };
@@ -79,6 +109,11 @@ export async function listVatTransactions(): Promise<{
           t.exclusive_amount != null ? num(t.exclusive_amount) : fallback.exclusive_amount,
         inclusive_amount: inclusive,
         vat_manual: !!t.vat_manual,
+        vat_status: (t.vat_status || "UNASSESSED") as VatStatusValue,
+        vat_flags: (t.vat_flags || []) as VatFlagCode[],
+        vat_note: t.vat_note ?? null,
+        vat_assessment_required: !!t.vat_assessment_required,
+        has_document: !!(t.document_url || t.invoice_id || t.scan_document_path),
         created_at: t.created_at,
         invoiced_at: t.invoiced_at,
         paid_at: t.paid_at,
@@ -90,22 +125,129 @@ export async function listVatTransactions(): Promise<{
   }
 }
 
-/** Persist manually-edited VAT figures on a transaction. */
-export async function updateTransactionVat(
-  id: string,
-  update: VatUpdate
-): Promise<{ success: boolean; error?: string }> {
-  const payload: Record<string, unknown> = { vat_manual: true };
-  if (update.vat_rate != null) payload.vat_rate = update.vat_rate;
-  if (update.vat_amount != null) payload.vat_amount = update.vat_amount;
-  if (update.exclusive_amount != null) payload.exclusive_amount = update.exclusive_amount;
-  if (update.inclusive_amount != null) payload.inclusive_amount = update.inclusive_amount;
-  const { error } = await supabase
+export interface VatAssessment {
+  status: VatStatusValue;
+  flags: VatFlagCode[];
+  note: string;
+}
+
+export interface VatAssessmentInput {
+  hasDocument: boolean;
+  vatNumber?: string | null;
+  vatAmount: number;
+  exclusiveAmount: number;
+  inclusiveAmount: number;
+}
+
+/**
+ * Derive the VAT treatment of a transaction from the attached invoice.
+ * There is no manual VAT selection anywhere in the product — this is the single
+ * source of truth and it only runs once a document is attached.
+ */
+export function assessVat(input: VatAssessmentInput): VatAssessment {
+  if (!input.hasDocument) {
+    return {
+      status: "UNASSESSED",
+      flags: ["NO_INVOICE"],
+      note: "VAT is only assessed once an invoice or receipt is attached.",
+    };
+  }
+
+  const registered = !!input.vatNumber?.toString().trim();
+  const vat = Number(input.vatAmount) || 0;
+  const inclusive = Number(input.inclusiveAmount) || 0;
+  const exclusive =
+    Number(input.exclusiveAmount) || Number((inclusive - vat).toFixed(2));
+  const flags: VatFlagCode[] = [];
+
+  if (Math.abs(exclusive + vat - inclusive) > 0.05) flags.push("TOTALS_MISMATCH");
+
+  if (!registered) {
+    if (vat > 0.005) flags.push("VAT_CHARGED_WITHOUT_REGISTRATION");
+    return {
+      status: "NOT_REGISTERED",
+      flags,
+      note: registered
+        ? ""
+        : "No supplier VAT number on the invoice — treated as a non-VAT supply.",
+    };
+  }
+
+  if (vat <= 0.005) {
+    return {
+      status: "ZERO_RATED",
+      flags,
+      note: "Supplier is VAT registered but charged no VAT — zero-rated or exempt supply.",
+    };
+  }
+
+  const rate = exclusive > 0 ? (vat / exclusive) * 100 : 0;
+  if (Math.abs(rate - 15) > 0.6) flags.push("INCORRECT_VAT_RATE");
+
+  return {
+    status: "STANDARD",
+    flags,
+    note: `Standard-rated supply at an effective ${rate.toFixed(2)}%.`,
+  };
+}
+
+/** Assess one transaction and persist the derived status/flags. */
+export async function assessTransactionVat(
+  id: string
+): Promise<{ success: boolean; assessment?: VatAssessment; error?: string }> {
+  const { data, error } = await supabase
     .from("transactions" as any)
-    .update(payload)
-    .eq("id", id);
+    .select(
+      "id, vat_number, vat_amount, exclusive_amount, inclusive_amount, amount, document_url, invoice_id, scan_document_path, supplier:suppliers(vat_number)"
+    )
+    .eq("id", id)
+    .maybeSingle();
   if (error) return { success: false, error: error.message };
-  return { success: true };
+  if (!data) return { success: false, error: "Transaction not found" };
+
+  const t = data as any;
+  const inclusive = num(t.inclusive_amount, num(t.amount));
+  const assessment = assessVat({
+    hasDocument: !!(t.document_url || t.invoice_id || t.scan_document_path),
+    vatNumber: t.vat_number || t.supplier?.vat_number || null,
+    vatAmount: num(t.vat_amount),
+    exclusiveAmount: num(t.exclusive_amount),
+    inclusiveAmount: inclusive,
+  });
+
+  const { error: upErr } = await supabase
+    .from("transactions" as any)
+    .update({
+      vat_status: assessment.status,
+      vat_flags: assessment.flags,
+      vat_note: assessment.note || null,
+      vat_assessed_at: new Date().toISOString(),
+      vat_assessment_required: false,
+    })
+    .eq("id", id);
+  if (upErr) return { success: false, error: upErr.message };
+  return { success: true, assessment };
+}
+
+/** Assess every transaction the database has flagged as needing a fresh assessment. */
+export async function assessPendingVat(): Promise<{
+  success: boolean;
+  assessed: number;
+  error?: string;
+}> {
+  const { data, error } = await supabase
+    .from("transactions" as any)
+    .select("id")
+    .eq("vat_assessment_required", true)
+    .limit(200);
+  if (error) return { success: false, assessed: 0, error: error.message };
+
+  let assessed = 0;
+  for (const row of (data || []) as { id: string }[]) {
+    const res = await assessTransactionVat(row.id);
+    if (res.success) assessed += 1;
+  }
+  return { success: true, assessed };
 }
 
 export const isRecoverable = (status: string) => RECOVERABLE_STATUSES.includes(status);
