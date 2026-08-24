@@ -11,8 +11,15 @@ Deno.serve(async (req) => {
     if (!paymentId) return json({ error: "Missing paymentId" }, 400);
 
     const admin = adminClient();
+
+    // Authorize: finance or admin only (mirrors netcash-submit-batch)
+    const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userId);
+    const allowed = (roles ?? []).some((r: any) => r.role === "FINANCE" || r.role === "ADMIN");
+    if (!allowed) return json({ error: "Not permitted" }, 403);
+
     const { data: payment } = await admin.from("netcash_payments").select("*").eq("id", paymentId).eq("organization_id", orgId).maybeSingle();
     if (!payment) return json({ error: "Payment not found" }, 404);
+
 
     await admin.from("netcash_payments").update({
       status: "RETRYING", retry_count: ((payment as any).retry_count ?? 0) + 1, last_error: null,
