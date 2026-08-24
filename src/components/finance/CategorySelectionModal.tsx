@@ -131,6 +131,8 @@ export function CategorySelectionModal({
   const [newDonorEmail, setNewDonorEmail] = useState("");
   const [creatingDonor, setCreatingDonor] = useState(false);
   const [showCreateDonor, setShowCreateDonor] = useState(false);
+  // Finance must make an explicit funding decision before approving.
+  const [noFundingAck, setNoFundingAck] = useState(false);
 
   useEffect(() => {
     if (open) {
