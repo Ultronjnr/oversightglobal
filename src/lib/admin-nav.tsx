@@ -1,11 +1,13 @@
 import { ReactNode } from "react";
-import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard} from "lucide-react";
+import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers} from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
   label: string;
   href: string;
   icon?: ReactNode;
+  /** Optional sidebar group heading (e.g. "Payments"). */
+  group?: string;
 }
 
 /**
@@ -53,6 +55,32 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
 
   if (role === "FINANCE") {
     items.push({ label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> });
+    items.push(
+      {
+        label: "Approved – Not Paid",
+        href: "/finance/portal?tab=payments",
+        icon: <Wallet className="h-4 w-4" />,
+        group: "Payments",
+      },
+      {
+        label: "Partially Paid",
+        href: "/finance/portal?tab=partially_paid",
+        icon: <Wallet className="h-4 w-4" />,
+        group: "Payments",
+      },
+      {
+        label: "Fully Paid",
+        href: "/finance/portal?tab=fully_paid",
+        icon: <CheckCheck className="h-4 w-4" />,
+        group: "Payments",
+      },
+      {
+        label: "Payment Batches",
+        href: "/finance/portal?tab=batches",
+        icon: <Layers className="h-4 w-4" />,
+        group: "Payments",
+      },
+    );
   }
 
   return items;
