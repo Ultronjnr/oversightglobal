@@ -1423,6 +1423,9 @@ export type Database = {
           organization_id: string
           payment_date: string | null
           payment_reference: string | null
+          pop_file_path: string | null
+          pop_uploaded_at: string | null
+          pop_uploaded_by: string | null
           reimbursement_id: string | null
           transaction_id: string | null
         }
@@ -1436,6 +1439,9 @@ export type Database = {
           organization_id: string
           payment_date?: string | null
           payment_reference?: string | null
+          pop_file_path?: string | null
+          pop_uploaded_at?: string | null
+          pop_uploaded_by?: string | null
           reimbursement_id?: string | null
           transaction_id?: string | null
         }
@@ -1449,6 +1455,9 @@ export type Database = {
           organization_id?: string
           payment_date?: string | null
           payment_reference?: string | null
+          pop_file_path?: string | null
+          pop_uploaded_at?: string | null
+          pop_uploaded_by?: string | null
           reimbursement_id?: string | null
           transaction_id?: string | null
         }
@@ -3491,6 +3500,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      process_batch_payment: {
+        Args: { _batch_id: string; _lines: Json; _payment_date?: string }
+        Returns: Json
       }
       quote_request_current_org: { Args: { _id: string }; Returns: string }
       quote_request_current_supplier: { Args: { _id: string }; Returns: string }
