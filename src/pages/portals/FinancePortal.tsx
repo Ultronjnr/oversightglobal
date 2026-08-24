@@ -165,6 +165,7 @@ export default function FinancePortal() {
   };
 
   const handleTabChange = (value: string) => {
+    setSearchParams(value === "approvals" ? {} : { tab: value }, { replace: true });
     const types = tabNotifTypes[value];
     if (types) void markNotifTypesRead(types);
   };
