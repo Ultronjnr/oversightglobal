@@ -223,3 +223,25 @@ function ComboField({
     </div>
   );
 }
+
+function ReadOnlyField({
+  label,
+  icon,
+  text,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <span className="text-sm font-medium flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
+      <div className="h-10 flex items-center rounded-md border border-border bg-muted/40 px-3 text-sm text-muted-foreground">
+        {text}
+      </div>
+    </div>
+  );
+}
