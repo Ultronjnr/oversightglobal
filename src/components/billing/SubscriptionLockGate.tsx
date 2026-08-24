@@ -35,13 +35,25 @@ export function SubscriptionLockGate({ children }: { children: ReactNode }) {
         {pastDue ? "Billing needs attention" : "Your free trial has ended"}
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        {pastDue
-          ? "Your last payment failed, so access is paused. Update your payment details to unlock your workspace again."
-          : "Access is paused until a plan is activated. Choose a plan to continue using Ovasyt."}
+        {isAdmin
+          ? pastDue
+            ? "Your last payment failed, so access is paused. Update your payment details to unlock your workspace again."
+            : "Access is paused until a plan is activated. Choose a plan to continue using Ovasyt."
+          : pastDue
+            ? "Your organisation's last payment failed, so access is paused. Only an administrator can update the billing details."
+            : "Your organisation's access is paused until a plan is activated. Only an administrator can choose a plan."}
       </p>
-      <Button asChild className="mt-6">
-        <Link to="/billing">{pastDue ? "Update billing" : "Choose a plan"}</Link>
-      </Button>
+      {isAdmin ? (
+        <Button asChild className="mt-6">
+          <Link to="/billing">{pastDue ? "Update billing" : "Choose a plan"}</Link>
+        </Button>
+      ) : (
+        <Button asChild variant="outline" className="mt-6">
+          <a href="mailto:info@ovasyt.tech?subject=Ovasyt%20access%20paused">
+            Contact support
+          </a>
+        </Button>
+      )}
     </Card>
   );
 }
