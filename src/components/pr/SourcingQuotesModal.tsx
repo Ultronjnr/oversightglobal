@@ -285,7 +285,7 @@ export function SourcingQuotesModal({
                       </div>
 
                       <div className="text-lg font-semibold text-primary">
-                        {formatCurrency(q.amount, pr.currency)}
+                        {formatCurrency(q.amount)}
                       </div>
 
                       <div className="flex items-center gap-2">
