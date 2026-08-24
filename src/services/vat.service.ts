@@ -243,7 +243,7 @@ export async function assessPendingVat(): Promise<{
   if (error) return { success: false, assessed: 0, error: error.message };
 
   let assessed = 0;
-  for (const row of (data || []) as { id: string }[]) {
+  for (const row of ((data || []) as unknown as { id: string }[])) {
     const res = await assessTransactionVat(row.id);
     if (res.success) assessed += 1;
   }
