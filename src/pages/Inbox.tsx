@@ -110,7 +110,7 @@ export default function Inbox() {
       <PageSeo
         title="Messages | Ovasyt"
         description="All your requisition conversations in one inbox."
-        noindex
+        path="/inbox"
       />
 
       <div className="space-y-4">
