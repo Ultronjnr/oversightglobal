@@ -325,12 +325,15 @@ export function DashboardLayout({
             <div className="h-1 w-12 sm:w-16 bg-primary rounded-full mt-2 sm:mt-3" />
           </div>
 
-          {showInsights && <InsightsCarousel />}
+          <SubscriptionLockGate>
+            {showInsights && <InsightsCarousel />}
 
-          {/* Content */}
-          <div className="animate-fade-in">
-            {children}
-          </div>
+            {/* Content */}
+            <div className="animate-fade-in">
+              {children}
+            </div>
+          </SubscriptionLockGate>
+
         </main>
 
         {/* Global floating receipt/invoice capture */}
