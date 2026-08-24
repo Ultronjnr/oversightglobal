@@ -53,13 +53,23 @@ interface DashboardLayoutProps {
   showInsights?: boolean;
 }
 
-/** Split nav into an overview group and the rest, for the grouped drawer/sidebar. */
+/** Split nav into named groups (defaults: Overview + Workspace). */
 function groupNav(navItems: NavItem[]) {
   if (navItems.length === 0) return [] as { label: string; items: NavItem[] }[];
-  return [
-    { label: "Overview", items: navItems.slice(0, 1) },
-    ...(navItems.length > 1 ? [{ label: "Workspace", items: navItems.slice(1) }] : []),
+  const ungrouped = navItems.filter((i) => !i.group);
+  const groups: { label: string; items: NavItem[] }[] = [
+    { label: "Overview", items: ungrouped.slice(0, 1) },
+    ...(ungrouped.length > 1 ? [{ label: "Workspace", items: ungrouped.slice(1) }] : []),
   ];
+  navItems
+    .filter((i) => i.group)
+    .forEach((item) => {
+      const existing = groups.find((g) => g.label === item.group);
+      existing
+        ? existing.items.push(item)
+        : groups.push({ label: item.group as string, items: [item] });
+    });
+  return groups;
 }
 
 export function DashboardLayout({
