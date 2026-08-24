@@ -7,6 +7,13 @@ import {Clock} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Table,
@@ -103,6 +110,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   const [transactions, setTransactions] = useState<OrgTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [projectFilter, setProjectFilter] = useState<string>("ALL");
   const [showBatchModal, setShowBatchModal] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [timelineRow, setTimelineRow] = useState<PayRow | null>(null);
@@ -294,6 +302,26 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
     currency: r.currency,
   }));
 
+  // Funding-source filter for the payables queue.
+  const projectOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          rows
+            .map((r) => (r.kind === "transaction" ? r.project : null))
+            .filter((p): p is string => !!p),
+        ),
+      ).sort(),
+    [rows],
+  );
+
+  const visibleRows = useMemo(() => {
+    if (projectFilter === "ALL") return rows;
+    if (projectFilter === "__none")
+      return rows.filter((r) => !(r.kind === "transaction" && r.project));
+    return rows.filter((r) => r.kind === "transaction" && r.project === projectFilter);
+  }, [rows, projectFilter]);
+
   const handleToggleSelect = (key: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -303,8 +331,8 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.size === rows.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(rows.map((r) => r.key)));
+    if (selectedIds.size === visibleRows.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(visibleRows.map((r) => r.key)));
   };
 
   const handleViewDocument = async (row: PayRow) => {
@@ -382,13 +410,28 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
             onClick={handleSelectAll}
             className="gap-2"
           >
-            {selectedIds.size === rows.length ? (
+            {selectedIds.size === visibleRows.length ? (
               <CheckSquare className="h-4 w-4" />
             ) : (
               <Square className="h-4 w-4" />
             )}
-            {selectedIds.size === rows.length ? "Deselect All" : "Select All"}
+            {selectedIds.size === visibleRows.length ? "Deselect All" : "Select All"}
           </Button>
+
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="h-8 w-[200px] text-xs bg-background">
+              <SelectValue placeholder="All projects" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All projects</SelectItem>
+              <SelectItem value="__none">No project funding</SelectItem>
+              {projectOptions.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-2 text-sm">
@@ -445,13 +488,14 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               <TableHead>Source</TableHead>
               <TableHead>Transaction ID</TableHead>
               <TableHead>Payee</TableHead>
+              <TableHead>Funding</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Uploaded</TableHead>
               <TableHead className="text-right">Document</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row) => {
+            {visibleRows.map((row) => {
               const isExpanded = expandedKey === row.key;
               return (
               <Fragment key={row.key}>
