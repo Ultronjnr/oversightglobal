@@ -1855,6 +1855,7 @@ export type Database = {
           transaction_id: string
           updated_at: string
           urgency: Database["public"]["Enums"]["urgency_level"]
+          winning_quote_id: string | null
         }
         Insert: {
           category_id?: string | null
@@ -1882,6 +1883,7 @@ export type Database = {
           transaction_id: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["urgency_level"]
+          winning_quote_id?: string | null
         }
         Update: {
           category_id?: string | null
@@ -1909,6 +1911,7 @@ export type Database = {
           transaction_id?: string
           updated_at?: string
           urgency?: Database["public"]["Enums"]["urgency_level"]
+          winning_quote_id?: string | null
         }
         Relationships: [
           {
@@ -1951,6 +1954,13 @@ export type Database = {
             columns: ["requested_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_requisitions_winning_quote_id_fkey"
+            columns: ["winning_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
         ]
@@ -2029,6 +2039,7 @@ export type Database = {
       quotes: {
         Row: {
           amount: number
+          captured_by: string | null
           counter_offer_amount: number | null
           counter_offer_at: string | null
           counter_offer_by: string | null
@@ -2041,15 +2052,18 @@ export type Database = {
           notes: string | null
           organization_id: string
           pr_id: string
-          quote_request_id: string
+          quote_request_id: string | null
+          source: string
           status: string
-          supplier_id: string
+          supplier_id: string | null
+          supplier_name: string | null
           transaction_id: string | null
           updated_at: string
           valid_until: string | null
         }
         Insert: {
           amount: number
+          captured_by?: string | null
           counter_offer_amount?: number | null
           counter_offer_at?: string | null
           counter_offer_by?: string | null
@@ -2062,15 +2076,18 @@ export type Database = {
           notes?: string | null
           organization_id: string
           pr_id: string
-          quote_request_id: string
+          quote_request_id?: string | null
+          source?: string
           status?: string
-          supplier_id: string
+          supplier_id?: string | null
+          supplier_name?: string | null
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
         }
         Update: {
           amount?: number
+          captured_by?: string | null
           counter_offer_amount?: number | null
           counter_offer_at?: string | null
           counter_offer_by?: string | null
@@ -2083,9 +2100,11 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           pr_id?: string
-          quote_request_id?: string
+          quote_request_id?: string | null
+          source?: string
           status?: string
-          supplier_id?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null

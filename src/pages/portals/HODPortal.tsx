@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Inbox,
   MessageSquare,
+  Handshake,
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -45,6 +46,7 @@ import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionMod
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
+import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -82,6 +84,7 @@ export default function HODPortal() {
   const [showIncomingModal, setShowIncomingModal] = useState(false);
   const [showPRModal, setShowPRModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
+  const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -428,6 +431,15 @@ export default function HODPortal() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => setSourcingPR(pr)}
+                                title="Supplier quotes"
+                              >
+                                <Handshake className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                 onClick={() => setChatPanel({ open: true, prId: pr.id, transactionId: pr.transaction_id })}
                                 title="Transaction Chat"
@@ -566,6 +578,16 @@ export default function HODPortal() {
         }}
         onConfirm={handleSplit}
       />
+
+      {/* Supplier sourcing (multi-quote) modal */}
+      {sourcingPR && (
+        <SourcingQuotesModal
+          open={!!sourcingPR}
+          pr={sourcingPR}
+          onClose={() => setSourcingPR(null)}
+          onChanged={fetchPRs}
+        />
+      )}
 
       {/* Document Viewer Modal */}
       <DocumentViewerModal

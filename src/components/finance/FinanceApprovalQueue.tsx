@@ -17,7 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import {Loader2, ChevronDown, ChevronUp, Wallet, Check, X, Split, FileText, Send, AlertTriangle, Clock} from "lucide-react";
+import {Loader2, ChevronDown, ChevronUp, Wallet, Check, X, Split, FileText, Send, AlertTriangle, Clock, Handshake} from "lucide-react";
 import {
   getFinancePendingPRs,
   financeApprovePR,
@@ -28,6 +28,7 @@ import { SplitPRModal } from "@/components/pr/SplitPRModal";
 import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { QuoteRequestModal } from "./QuoteRequestModal";
+import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
@@ -43,6 +44,7 @@ export function FinanceApprovalQueue() {
   const [declineModalPR, setDeclineModalPR] = useState<PurchaseRequisition | null>(null);
   const [splitModalPR, setSplitModalPR] = useState<PurchaseRequisition | null>(null);
   const [quoteModalPR, setQuoteModalPR] = useState<PurchaseRequisition | null>(null);
+  const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [dupCandidates, setDupCandidates] = useState<DuplicateCandidate[]>([]);
   const [dupPendingPR, setDupPendingPR] = useState<PurchaseRequisition | null>(null);
@@ -300,6 +302,14 @@ export function FinanceApprovalQueue() {
                                 <Send className="h-4 w-4 mr-1" />
                                 Quote
                               </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setSourcingPR(pr)}
+                              >
+                                <Handshake className="h-4 w-4 mr-1" />
+                                Sourcing
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -460,6 +470,16 @@ export function FinanceApprovalQueue() {
           onClose={() => setQuoteModalPR(null)}
           pr={quoteModalPR}
           onSuccess={fetchPRs}
+        />
+      )}
+
+      {/* Supplier sourcing (multi-quote comparison) */}
+      {sourcingPR && (
+        <SourcingQuotesModal
+          open={!!sourcingPR}
+          pr={sourcingPR}
+          onClose={() => setSourcingPR(null)}
+          onChanged={fetchPRs}
         />
       )}
 
