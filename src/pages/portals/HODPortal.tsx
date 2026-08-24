@@ -428,6 +428,15 @@ export default function HODPortal() {
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                onClick={() => setSourcingPR(pr)}
+                                title="Supplier quotes"
+                              >
+                                <Handshake className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                 onClick={() => setChatPanel({ open: true, prId: pr.id, transactionId: pr.transaction_id })}
                                 title="Transaction Chat"
