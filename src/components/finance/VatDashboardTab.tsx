@@ -3,8 +3,9 @@ import {
   Loader2,
   Percent,
   Download,
-  Pencil,
   RefreshCw,
+  ShieldCheck,
+  AlertTriangle,
   Filter,
   X,
   TrendingUp,
@@ -30,20 +31,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -57,12 +50,23 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   listVatTransactions,
   summariseVat,
-  updateTransactionVat,
-  computeVatFromInclusive,
+  assessPendingVat,
+  assessTransactionVat,
   isRecoverable,
   isOutstanding,
+  VAT_STATUS_LABEL,
+  VAT_FLAG_LABEL,
   type VatTransaction,
+  type VatStatusValue,
 } from "@/services/vat.service";
+
+const statusStyles: Record<VatStatusValue, string> = {
+  UNASSESSED: "bg-muted text-muted-foreground border-muted-foreground/20",
+  STANDARD: "bg-success/10 text-success border-success/30",
+  ZERO_RATED: "bg-primary/10 text-primary border-primary/30",
+  EXEMPT: "bg-primary/10 text-primary border-primary/30",
+  NOT_REGISTERED: "bg-warning/10 text-warning border-warning/30",
+};
 
 export function VatDashboardTab() {
   const { role } = useAuth();
@@ -74,10 +78,7 @@ export function VatDashboardTab() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [editing, setEditing] = useState<VatTransaction | null>(null);
-  const [editRate, setEditRate] = useState("15");
-  const [editInclusive, setEditInclusive] = useState("0");
-  const [saving, setSaving] = useState(false);
+  const [assessing, setAssessing] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -88,7 +89,10 @@ export function VatDashboardTab() {
   };
 
   useEffect(() => {
-    load();
+    (async () => {
+      await assessPendingVat();
+      load();
+    })();
   }, []);
 
   const filtered = useMemo(() => {
@@ -101,32 +105,34 @@ export function VatDashboardTab() {
   }, [rows, startDate, endDate]);
 
   const summary = useMemo(() => summariseVat(filtered), [filtered]);
-
-  const openEdit = (r: VatTransaction) => {
-    setEditing(r);
-    setEditRate(String(r.vat_rate));
-    setEditInclusive(String(r.inclusive_amount));
-  };
-
-  const preview = useMemo(
-    () => computeVatFromInclusive(Number(editInclusive) || 0, Number(editRate) || 0),
-    [editInclusive, editRate]
+  const flaggedCount = useMemo(
+    () => filtered.filter((r) => (r.vat_flags || []).length > 0 && r.has_document).length,
+    [filtered]
   );
 
-  const saveEdit = async () => {
-    if (!editing) return;
-    setSaving(true);
-    const res = await updateTransactionVat(editing.id, {
-      vat_rate: Number(editRate) || 0,
-      ...preview,
-    });
-    setSaving(false);
+  const runAssessment = async () => {
+    setAssessing(true);
+    const res = await assessPendingVat();
+    setAssessing(false);
+    if (!res.success) {
+      toast.error(res.error || "VAT assessment failed");
+      return;
+    }
+    toast.success(
+      res.assessed > 0
+        ? `VAT assessed on ${res.assessed} transaction(s)`
+        : "All transactions are already assessed"
+    );
+    load();
+  };
+
+  const reassess = async (r: VatTransaction) => {
+    const res = await assessTransactionVat(r.id);
     if (res.success) {
-      toast.success("VAT updated");
-      setEditing(null);
+      toast.success(`VAT re-assessed — ${VAT_STATUS_LABEL[res.assessment!.status]}`);
       load();
     } else {
-      toast.error(res.error || "Failed to update VAT");
+      toast.error(res.error || "Failed to assess VAT");
     }
   };
 
@@ -214,7 +220,12 @@ export function VatDashboardTab() {
           icon={<Clock className="h-5 w-5" />}
         />
         <StatCard label="Total Input VAT" value={fmt(summary.totalVat)} valueColor="primary" />
-        <StatCard label="Net (Excl. VAT)" value={fmt(summary.totalExclusive)} valueColor="default" />
+        <StatCard
+          label="Flagged VAT Issues"
+          value={String(flaggedCount)}
+          valueColor={flaggedCount > 0 ? "destructive" : "default"}
+          icon={<AlertTriangle className="h-5 w-5" />}
+        />
       </div>
 
       {/* Filters + export */}
@@ -239,6 +250,20 @@ export function VatDashboardTab() {
           )}
           <Button variant="outline" size="sm" className="gap-2" onClick={load}>
             <RefreshCw className="h-4 w-4" /> Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={runAssessment}
+            disabled={assessing}
+          >
+            {assessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-4 w-4" />
+            )}
+            Run VAT Assessment
           </Button>
           <Button size="sm" className="gap-2" onClick={exportSars} disabled={filtered.length === 0}>
             <Download className="h-4 w-4" /> SARS Export
@@ -303,7 +328,7 @@ export function VatDashboardTab() {
         </Card>
       </div>
 
-      {/* Transactions table with manual VAT edit */}
+      {/* Transactions with system-derived VAT treatment */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Transactions ({filtered.length})</CardTitle>
@@ -318,6 +343,7 @@ export function VatDashboardTab() {
                   <TableHead>Supplier</TableHead>
                   <TableHead>VAT No.</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>VAT Treatment</TableHead>
                   <TableHead className="text-right">Rate</TableHead>
                   <TableHead className="text-right">Excl.</TableHead>
                   <TableHead className="text-right">VAT</TableHead>
@@ -344,15 +370,41 @@ export function VatDashboardTab() {
                         {r.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
-                      {r.vat_rate}%{r.vat_manual && <span title="Manually edited" className="ml-1 text-primary">•</span>}
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge variant="outline" className={statusStyles[r.vat_status]}>
+                          {VAT_STATUS_LABEL[r.vat_status]}
+                        </Badge>
+                        {r.has_document &&
+                          (r.vat_flags || []).map((f) => (
+                            <div
+                              key={f}
+                              className="flex items-start gap-1 text-[11px] text-destructive"
+                            >
+                              <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" />
+                              <span>{VAT_FLAG_LABEL[f] || f}</span>
+                            </div>
+                          ))}
+                        {!r.has_document && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Awaiting invoice
+                          </p>
+                        )}
+                      </div>
                     </TableCell>
+                    <TableCell className="text-right">{r.vat_rate}%</TableCell>
                     <TableCell className="text-right">{fmt(r.exclusive_amount, r.currency)}</TableCell>
                     <TableCell className="text-right font-medium">{fmt(r.vat_amount, r.currency)}</TableCell>
                     <TableCell className="text-right">{fmt(r.inclusive_amount, r.currency)}</TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(r)} title="Edit VAT">
-                        <Pencil className="h-4 w-4" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => reassess(r)}
+                        title="Re-assess VAT from the attached invoice"
+                        disabled={!r.has_document}
+                      >
+                        <ShieldCheck className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -363,37 +415,6 @@ export function VatDashboardTab() {
         </CardContent>
       </Card>
 
-      {/* Manual VAT edit dialog */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Edit VAT — {editing?.supplier_name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">VAT Rate %</Label>
-                <Input type="number" step="0.01" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Inclusive (Gross)</Label>
-                <Input type="number" step="0.01" value={editInclusive} onChange={(e) => setEditInclusive(e.target.value)} />
-              </div>
-            </div>
-            <div className="rounded-md border p-3 text-sm space-y-1 bg-muted/30">
-              <div className="flex justify-between"><span className="text-muted-foreground">Exclusive (Net)</span><span className="font-medium">{fmt(preview.exclusive_amount, editing?.currency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">VAT Amount</span><span className="font-medium">{fmt(preview.vat_amount, editing?.currency)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Inclusive (Gross)</span><span className="font-medium">{fmt(preview.inclusive_amount, editing?.currency)}</span></div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-            <Button onClick={saveEdit} disabled={saving} className="gap-2">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save VAT
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
