@@ -153,6 +153,7 @@ export function CategorySelectionModal({
       setShowNewSupplierForm(false);
       setProjectId("");
       setDonorId("");
+      setNoFundingAck(false);
       setProjectQuery("");
       setDonorQuery("");
       setShowCreateProject(false);
