@@ -10,7 +10,9 @@ import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalScanFAB } from "./capture/GlobalScanFAB";
 import { TrialBanner } from "./billing/TrialBanner";
+import { SubscriptionLockGate } from "./billing/SubscriptionLockGate";
 import { InsightsCarousel } from "./dashboard/InsightsCarousel";
+
 import {
   Sheet,
   SheetContent,
