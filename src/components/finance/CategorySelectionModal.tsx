@@ -1050,7 +1050,7 @@ export function CategorySelectionModal({
                         </CommandGroup>
                       </CommandList>
                     </Command>
-                    {selectedProject ? (
+                    {selectedProject && (
                       <ProjectBudgetPreview
                         projectId={projectId || null}
                         projectName={selectedProject.name}
