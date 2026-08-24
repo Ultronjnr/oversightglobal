@@ -64,43 +64,45 @@ export function InsightsCarousel() {
   }, [profile?.organization_id]);
 
   type CardColor = "default" | "success" | "warning" | "destructive" | "primary";
+  const scope = orgWide ? "organisation" : "your";
   const cards: { label: string; value: string; color: CardColor; icon: JSX.Element; footer: string }[] = [
     {
-      label: "VAT issues to review",
+      label: orgWide ? "VAT issues to review" : "My VAT issues to review",
       value: data ? String(data.vatIssues) : "0",
       color: data?.vatIssues ? "destructive" : "success",
       icon: <AlertTriangle className="h-4 w-4" />,
-      footer: "Transactions with a VAT rate but no VAT captured",
+      footer: `Transactions with a VAT rate but no VAT captured (${scope} records)`,
     },
     {
-      label: "Expenditure (90 days)",
+      label: orgWide ? "Expenditure (90 days)" : "My expenditure (90 days)",
       value: formatCurrency(data?.expenditure || 0),
       color: "primary",
       icon: <TrendingUp className="h-4 w-4" />,
-      footer: "Total approved transaction value",
+      footer: `Total approved transaction value (${scope} records)`,
     },
     {
-      label: "Missing documentation",
+      label: orgWide ? "Missing documentation" : "My missing documentation",
       value: data ? String(data.missingDocs) : "0",
       color: data?.missingDocs ? "warning" : "success",
       icon: <FileWarning className="h-4 w-4" />,
-      footer: "Transactions without an invoice or receipt attached",
+      footer: `Transactions without an invoice or receipt attached (${scope} records)`,
     },
     {
-      label: "On-track spend",
+      label: orgWide ? "On-track spend" : "My on-track spend",
       value: `${data?.onTrackPct || 0}%`,
       color: "success",
       icon: <Target className="h-4 w-4" />,
-      footer: "Share of approved spend already settled",
+      footer: `Share of approved spend already settled (${scope} records)`,
     },
     {
-      label: "Outstanding to pay",
+      label: orgWide ? "Outstanding to pay" : "My outstanding to pay",
       value: formatCurrency(data?.outstanding || 0),
       color: "warning",
       icon: <Wallet className="h-4 w-4" />,
-      footer: "Approved value not yet paid out",
+      footer: `Approved value not yet paid out (${scope} records)`,
     },
   ];
+
 
   return (
     <Carousel opts={{ align: "start", loop: true }} className="mb-5 sm:mb-7">
