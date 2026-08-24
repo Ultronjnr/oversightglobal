@@ -131,6 +131,8 @@ export function CategorySelectionModal({
   const [newDonorEmail, setNewDonorEmail] = useState("");
   const [creatingDonor, setCreatingDonor] = useState(false);
   const [showCreateDonor, setShowCreateDonor] = useState(false);
+  // Finance must make an explicit funding decision before approving.
+  const [noFundingAck, setNoFundingAck] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -151,6 +153,7 @@ export function CategorySelectionModal({
       setShowNewSupplierForm(false);
       setProjectId("");
       setDonorId("");
+      setNoFundingAck(false);
       setProjectQuery("");
       setDonorQuery("");
       setShowCreateProject(false);
@@ -326,6 +329,13 @@ export function CategorySelectionModal({
 
     if (overBudget) {
       toast.error("This requisition exceeds the remaining budget on the selected project");
+      return;
+    }
+
+    if (!projectId && !noFundingAck) {
+      toast.error(
+        "Select a project to fund this requisition, or confirm it has no project funding",
+      );
       return;
     }
 
@@ -1057,6 +1067,21 @@ export function CategorySelectionModal({
                     >
                       <Plus className="h-4 w-4 mr-2" /> Create New Project
                     </Button>
+
+                    {!projectId && (
+                      <label className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={noFundingAck}
+                          onChange={(e) => setNoFundingAck(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 accent-primary"
+                        />
+                        <span>
+                          No project funding — this requisition is paid from general funds and
+                          will not reserve any donor project budget.
+                        </span>
+                      </label>
+                    )}
                   </>
                 )}
 
