@@ -1029,10 +1029,14 @@ export function CategorySelectionModal({
                       </CommandList>
                     </Command>
                     {selectedProject && (
-                      <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 text-xs text-primary">
-                        Funds will be reserved from <span className="font-semibold">{selectedProject.name}</span> when Finance approves.
-                      </div>
+                      <ProjectBudgetPreview
+                        projectId={projectId || null}
+                        projectName={selectedProject.name}
+                        amount={Number(pr?.total_amount ?? 0)}
+                        onOverBudgetChange={setOverBudget}
+                      />
                     )}
+
                     <Button
                       variant="outline"
                       size="sm"
