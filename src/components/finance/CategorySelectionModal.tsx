@@ -1057,8 +1057,6 @@ export function CategorySelectionModal({
                         amount={Number(pr?.total_amount ?? 0)}
                         onOverBudgetChange={setOverBudget}
                       />
-                    ) : (
-                      <ClearOverBudget onClear={setOverBudget} />
                     )}
 
                     <Button
