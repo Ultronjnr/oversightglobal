@@ -1067,6 +1067,21 @@ export function CategorySelectionModal({
                     >
                       <Plus className="h-4 w-4 mr-2" /> Create New Project
                     </Button>
+
+                    {!projectId && (
+                      <label className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={noFundingAck}
+                          onChange={(e) => setNoFundingAck(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 accent-primary"
+                        />
+                        <span>
+                          No project funding — this requisition is paid from general funds and
+                          will not reserve any donor project budget.
+                        </span>
+                      </label>
+                    )}
                   </>
                 )}
 
