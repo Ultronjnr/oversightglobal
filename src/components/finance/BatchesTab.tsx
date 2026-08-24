@@ -793,8 +793,8 @@ export function BatchesTab() {
                               return (
                                 <TableRow key={a.id}>
                                   <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                                    <div className="flex items-start gap-2">
+                                      <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
                                       <div>
                                         <p className="font-medium text-sm">
                                           {supplierName}
@@ -802,6 +802,23 @@ export function BatchesTab() {
                                         <p className="text-xs text-muted-foreground">
                                           {supplierEmail}
                                         </p>
+                                        {(() => {
+                                          const p = allocationPayee(a);
+                                          if (!p.account && !p.bank_name) {
+                                            return (
+                                              <p className="text-xs text-warning mt-1">
+                                                No banking details on file
+                                              </p>
+                                            );
+                                          }
+                                          return (
+                                            <p className="text-xs text-muted-foreground font-mono mt-1">
+                                              {[p.bank_name, p.account, p.branch && `Branch ${p.branch}`, p.account_type]
+                                                .filter(Boolean)
+                                                .join(" · ")}
+                                            </p>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </TableCell>
@@ -835,28 +852,44 @@ export function BatchesTab() {
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-right">
-                                    {(a.invoice?.document_url ||
-                                      a.transaction?.invoice?.document_url ||
-                                      a.transaction?.document_url ||
-                                      a.transaction?.pr?.document_url) ? (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          void handleViewAllocationDoc(a);
-                                        }}
-                                        className="gap-1 text-primary hover:text-primary"
-                                      >
-                                        <FileText className="h-4 w-4" />
-                                        {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
-                                          ? "View Invoice"
-                                          : "View PR Document"}
-                                        <ExternalLink className="h-3 w-3" />
-                                      </Button>
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">No document</span>
-                                    )}
+                                    <div className="flex flex-col items-end">
+                                      {(a.invoice?.document_url ||
+                                        a.transaction?.invoice?.document_url ||
+                                        a.transaction?.document_url ||
+                                        a.transaction?.pr?.document_url) ? (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleViewAllocationDoc(a);
+                                          }}
+                                          className="gap-1 text-primary hover:text-primary"
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          {a.invoice?.document_url || a.transaction?.invoice?.document_url || a.transaction?.document_url
+                                            ? "View Invoice"
+                                            : "View PR Document"}
+                                          <ExternalLink className="h-3 w-3" />
+                                        </Button>
+                                      ) : (
+                                        <span className="text-xs text-muted-foreground">No document</span>
+                                      )}
+                                      {a.pop_file_path && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void handleViewPop(a.pop_file_path as string);
+                                          }}
+                                          className="gap-1 text-primary hover:text-primary"
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          View proof of payment
+                                        </Button>
+                                      )}
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               );
