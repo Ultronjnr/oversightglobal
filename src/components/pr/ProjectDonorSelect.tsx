@@ -77,8 +77,29 @@ export function ProjectDonorSelect({ value, onChange, disabled }: Props) {
     [donors, value.donorId],
   );
 
+  // Employees / HODs: never editable. Hidden entirely unless Finance already
+  // tagged a funding source, in which case it is shown read-only.
+  if (!canEdit) {
+    if (!value.projectId && !value.donorId) return null;
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ReadOnlyField
+          label="Project"
+          icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
+          text={projectLabel}
+        />
+        <ReadOnlyField
+          label="Donor"
+          icon={<HeartHandshake className="h-4 w-4 text-muted-foreground" />}
+          text={donorLabel}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
       <ComboField
         label="Project (optional)"
         icon={<FolderKanban className="h-4 w-4 text-muted-foreground" />}
