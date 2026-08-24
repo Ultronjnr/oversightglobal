@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers} from "lucide-react";
+import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare} from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
@@ -20,6 +20,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Cost Center / Department History", href: "/cost-center-history", icon: <Building2 className="h-4 w-4" /> },
   { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
   { label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> },
+  { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   { label: "Billing", href: "/billing", icon: <CreditCard className="h-4 w-4" /> },
 ];
 
@@ -51,6 +52,7 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
       : []),
     { label: "Purchase Requisition History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
     { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
+    { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
   if (role === "FINANCE") {
