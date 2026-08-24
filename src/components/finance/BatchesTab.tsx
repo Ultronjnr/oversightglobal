@@ -457,55 +457,143 @@ export function BatchesTab() {
     void fetchBatches();
   };
 
-  const handleConfirmBatch = async () => {
-    if (!confirmBatch) return;
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  /** Supplier + banking details for a single payment line. */
+  const allocationPayee = (a: BatchAllocation) => {
+    const sup = a.invoice?.supplier || a.transaction?.supplier;
+    const name =
+      sup?.company_name || a.transaction?.supplier_name || "—";
+    const bank = sup?.id ? bankDetails[sup.id] : undefined;
+    return {
+      name,
+      email: sup?.contact_email || null,
+      bank_name: bank?.bank_name || null,
+      account: bank?.bank_account_number || null,
+      branch: bank?.bank_branch_code || null,
+      account_type: bank?.bank_account_type || null,
+      txnRef:
+        a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—",
+      currency:
+        a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency,
+    };
+  };
+
+  /** Open the step-by-step processing wizard with sensible defaults per line. */
+  const openProcessWizard = (b: BatchRow) => {
+    const defaults: Record<string, { reference: string; date: string; pop: File | null }> = {};
+    b.allocations.forEach((a, i) => {
+      defaults[a.id] = {
+        reference:
+          a.payment_reference ||
+          `${b.batch_number || b.id.slice(0, 8).toUpperCase()}-${String(i + 1).padStart(2, "0")}`,
+        date: today(),
+        pop: null,
+      };
+    });
+    setLineInputs(defaults);
+    setStepIndex(0);
+    setProcessBatch(b);
+  };
+
+  const closeProcessWizard = () => {
+    setProcessBatch(null);
+    setLineInputs({});
+    setStepIndex(0);
+  };
+
+  const setLineField = (
+    allocId: string,
+    patch: Partial<{ reference: string; date: string; pop: File | null }>,
+  ) =>
+    setLineInputs((prev) => ({
+      ...prev,
+      [allocId]: { ...prev[allocId], ...patch },
+    }));
+
+  /**
+   * Process the batch: upload each line's proof of payment (optional), then
+   * settle the batch with a mandatory reference per payment.
+   */
+  const handleProcessBatch = async () => {
+    if (!processBatch) return;
+    const missing = processBatch.allocations.find(
+      (a) => !lineInputs[a.id]?.reference?.trim(),
+    );
+    if (missing) {
+      toast.error("Every payment needs a reference", {
+        description: "Go back and complete the missing payment reference.",
+      });
+      return;
+    }
     setSubmitting(true);
 
-    // Upload the proof of payment first so the reference is stored with the batch.
-    let popPath: string | null = null;
-    if (popFile) {
-      try {
-        const { data: auth } = await supabase.auth.getUser();
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("organization_id")
-          .eq("id", auth?.user?.id || "")
-          .single();
-        const orgId = prof?.organization_id;
-        if (orgId) {
-          const ext = popFile.name.split(".").pop()?.toLowerCase() || "pdf";
-          const path = `${orgId}/${confirmBatch.id}/pop-${Date.now()}.${ext}`;
-          const up = await supabase.storage
-            .from("batch-exports")
-            .upload(path, popFile, { contentType: popFile.type || "application/pdf", upsert: true });
-          if (up.error) throw up.error;
-          popPath = path;
-        }
-      } catch (e: any) {
-        setSubmitting(false);
-        toast.error("Proof of payment upload failed", {
-          description: e?.message || "Please try again.",
-        });
-        return;
-      }
+    let orgId: string | undefined;
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("organization_id")
+        .eq("id", auth?.user?.id || "")
+        .single();
+      orgId = prof?.organization_id || undefined;
+    } catch {
+      /* handled below */
     }
 
-    const { data, error } = await (supabase as any).rpc("confirm_batch_paid", {
-      _batch_id: confirmBatch.id,
-      _payment_reference: confirmRef || null,
-      _payment_date: confirmDate || null,
-      _pop_path: popPath,
+    const lines: Array<{
+      allocation_id: string;
+      payment_reference: string;
+      payment_date: string;
+      pop_file_path?: string;
+    }> = [];
+
+    for (const a of processBatch.allocations) {
+      const input = lineInputs[a.id];
+      let popPath: string | undefined;
+      if (input.pop && orgId) {
+        try {
+          const ext = input.pop.name.split(".").pop()?.toLowerCase() || "pdf";
+          const path = `${orgId}/${processBatch.id}/pop-${a.id}-${Date.now()}.${ext}`;
+          const up = await supabase.storage
+            .from("batch-exports")
+            .upload(path, input.pop, {
+              contentType: input.pop.type || "application/pdf",
+              upsert: true,
+            });
+          if (up.error) throw up.error;
+          popPath = path;
+        } catch (e: any) {
+          setSubmitting(false);
+          toast.error("Proof of payment upload failed", {
+            description: e?.message || "Please try again.",
+          });
+          return;
+        }
+      }
+      lines.push({
+        allocation_id: a.id,
+        payment_reference: input.reference.trim(),
+        payment_date: input.date || today(),
+        ...(popPath ? { pop_file_path: popPath } : {}),
+      });
+    }
+
+    const { data, error } = await (supabase as any).rpc("process_batch_payment", {
+      _batch_id: processBatch.id,
+      _lines: lines,
+      _payment_date: today(),
     });
     setSubmitting(false);
     const res: any = data;
     if (error || !res?.success) {
-      toast.error("Failed to confirm batch", { description: error?.message || res?.error });
+      toast.error("Failed to process batch", { description: error?.message || res?.error });
       return;
     }
-    toast.success(`Batch ${confirmBatch.batch_number || ""} confirmed as paid`);
-    setConfirmBatch(null);
-    setConfirmRef("");
-    setPopFile(null);
+    toast.success(`Batch ${processBatch.batch_number || ""} processed`, {
+      description: `${lines.length} payment(s) marked as paid.`,
+    });
+    closeProcessWizard();
     void fetchBatches();
   };
 
