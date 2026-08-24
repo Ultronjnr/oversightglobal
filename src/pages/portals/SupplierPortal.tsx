@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt, Handshake} from "lucide-react";
+import {Truck, FileText, ClipboardList, Package, CheckCircle, Clock, Wallet, Send, XCircle, AlertCircle, Eye, Upload, ReceiptText as Receipt, Handshake, MessageSquare} from "lucide-react";
 import {
   getSupplierProfile,
   getSupplierQuoteRequests,
