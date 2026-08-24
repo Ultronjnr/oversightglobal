@@ -332,6 +332,13 @@ export function CategorySelectionModal({
       return;
     }
 
+    if (!projectId && !noFundingAck) {
+      toast.error(
+        "Select a project to fund this requisition, or confirm it has no project funding",
+      );
+      return;
+    }
+
 
 
     setIsSubmitting(true);
