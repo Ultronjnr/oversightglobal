@@ -274,6 +274,9 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         due_date: data.due_date || undefined,
         payment_due_date: data.payment_due_date || undefined,
         document_url: documentUrl,
+        project_id: projectDonor.projectId || undefined,
+        donor_id: projectDonor.donorId || undefined,
+
       });
 
       if (!result.success) {
@@ -697,7 +700,21 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     </div>
                   </div>
 
+                  {/* Funding source — links this PR to a donation project / donor */}
+                  <div className="space-y-3">
+                    <ProjectDonorSelect
+                      value={projectDonor}
+                      onChange={setProjectDonor}
+                    />
+                    <ProjectBudgetPreview
+                      projectId={projectDonor.projectId}
+                      amount={fundingTotal}
+                      onOverBudgetChange={setOverBudget}
+                    />
+                  </div>
+
                   {/* Special Instructions */}
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-foreground">Special Instructions</Label>
                     <Textarea
