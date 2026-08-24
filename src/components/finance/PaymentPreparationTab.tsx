@@ -582,6 +582,28 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     </div>
                   </div>
                 </TableCell>
+                <TableCell className="max-w-[180px]">
+                  {row.kind === "transaction" && (row.project || row.donor) ? (
+                    <div className="flex flex-col gap-1">
+                      {row.project && (
+                        <Badge
+                          variant="outline"
+                          className="bg-primary/10 text-primary border-primary/30 truncate max-w-full"
+                          title={`Project: ${row.project}`}
+                        >
+                          {row.project}
+                        </Badge>
+                      )}
+                      {row.donor && (
+                        <span className="text-[11px] text-muted-foreground truncate" title={`Donor: ${row.donor}`}>
+                          {row.donor}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right font-semibold">
                   {formatCurrency(row.amount, row.currency)}
                 </TableCell>
@@ -634,7 +656,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               </TableRow>
               {isExpanded && (
                 <TableRow className="bg-muted/10 hover:bg-muted/10">
-                  <TableCell colSpan={9} className="p-0">
+                  <TableCell colSpan={10} className="p-0">
                     <ExpandedDetails row={row} />
                   </TableCell>
                 </TableRow>
