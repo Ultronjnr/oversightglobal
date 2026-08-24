@@ -70,6 +70,7 @@ interface CategorySelectionModalProps {
     supplierId: string,
     projectId: string | null,
     donorId: string | null,
+
   ) => Promise<void>;
 }
 
@@ -84,6 +85,8 @@ export function CategorySelectionModal({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [comments, setComments] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [overBudget, setOverBudget] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   
   // New category form state
