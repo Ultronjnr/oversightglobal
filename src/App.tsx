@@ -28,6 +28,7 @@ import ExpenseHistory from "./pages/ExpenseHistory";
 import CostCenterHistory from "./pages/CostCenterHistory";
 import Donations from "./pages/Donations";
 import Billing from "./pages/Billing";
+import Inbox from "./pages/Inbox";
 import VerifyReceipt from "./pages/VerifyReceipt";
 import BlogSection18ADonationsInKind from "./pages/BlogSection18ADonationsInKind";
 import BlogRegisterPboSection18A from "./pages/BlogRegisterPboSection18A";
