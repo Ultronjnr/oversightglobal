@@ -117,6 +117,19 @@ const App = () => (
               }
             />
 
+            {/* Messages inbox — every role with requisition conversations */}
+            <Route
+              path="/inbox"
+              element={
+                <ProtectedRoute
+                  allowedRoles={["EMPLOYEE", "HOD", "FINANCE", "ADMIN", "SUPPLIER"]}
+                >
+                  <Inbox />
+                </ProtectedRoute>
+              }
+            />
+
+
             {/* PR History - accessible by EMPLOYEE, HOD, FINANCE, ADMIN */}
             <Route
               path="/pr-history"
