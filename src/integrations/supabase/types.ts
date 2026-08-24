@@ -2997,9 +2997,14 @@ export type Database = {
           supplier_name: string | null
           updated_at: string
           vat_amount: number | null
+          vat_assessed_at: string | null
+          vat_assessment_required: boolean
+          vat_flags: string[]
           vat_manual: boolean
+          vat_note: string | null
           vat_number: string | null
           vat_rate: number
+          vat_status: Database["public"]["Enums"]["vat_status"]
         }
         Insert: {
           amount?: number
@@ -3025,9 +3030,14 @@ export type Database = {
           supplier_name?: string | null
           updated_at?: string
           vat_amount?: number | null
+          vat_assessed_at?: string | null
+          vat_assessment_required?: boolean
+          vat_flags?: string[]
           vat_manual?: boolean
+          vat_note?: string | null
           vat_number?: string | null
           vat_rate?: number
+          vat_status?: Database["public"]["Enums"]["vat_status"]
         }
         Update: {
           amount?: number
@@ -3053,9 +3063,14 @@ export type Database = {
           supplier_name?: string | null
           updated_at?: string
           vat_amount?: number | null
+          vat_assessed_at?: string | null
+          vat_assessment_required?: boolean
+          vat_flags?: string[]
           vat_manual?: boolean
+          vat_note?: string | null
           vat_number?: string | null
           vat_rate?: number
+          vat_status?: Database["public"]["Enums"]["vat_status"]
         }
         Relationships: [
           {
@@ -3681,6 +3696,12 @@ export type Database = {
       urgency_level: "LOW" | "NORMAL" | "HIGH" | "URGENT"
       user_status: "ACTIVE" | "PENDING" | "SUSPENDED"
       vat_cycle: "MONTHLY" | "BI_MONTHLY"
+      vat_status:
+        | "UNASSESSED"
+        | "STANDARD"
+        | "ZERO_RATED"
+        | "EXEMPT"
+        | "NOT_REGISTERED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3886,6 +3907,13 @@ export const Constants = {
       urgency_level: ["LOW", "NORMAL", "HIGH", "URGENT"],
       user_status: ["ACTIVE", "PENDING", "SUSPENDED"],
       vat_cycle: ["MONTHLY", "BI_MONTHLY"],
+      vat_status: [
+        "UNASSESSED",
+        "STANDARD",
+        "ZERO_RATED",
+        "EXEMPT",
+        "NOT_REGISTERED",
+      ],
     },
   },
 } as const
