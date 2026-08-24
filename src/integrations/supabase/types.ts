@@ -3397,6 +3397,10 @@ export type Database = {
           transaction_id: string
         }[]
       }
+      get_project_budget_summary: {
+        Args: { _project_id: string }
+        Returns: Json
+      }
       get_subscription_state: { Args: never; Returns: Json }
       get_supplier_visible_organization: {
         Args: { _org_id: string }
