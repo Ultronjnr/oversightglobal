@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {User, Wallet, BarChart3, Building2, FileText, Inbox, X, RefreshCw, ShoppingCart, Check, Scissors, Send, ChevronDown, ChevronRight, Loader2, AlertTriangle, Clock, CheckCircle2, ReceiptText as Receipt, MessageSquare, CheckCheck, AlertCircle, Undo2, Layers, Lock} from "lucide-react";
@@ -80,6 +80,8 @@ const quoteWorkflowConfig: Record<QuoteWorkflowStatus, { label: string; classNam
 
 export default function FinancePortal() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "approvals";
   const { currency: orgCurrency } = useCurrency();
   const [prs, setPrs] = useState<PurchaseRequisition[]>([]);
   const [prsWithQuoteStatus, setPrsWithQuoteStatus] = useState<PRWithQuoteStatus[]>([]);
@@ -532,7 +534,7 @@ export default function FinancePortal() {
               description="Your dashboard is now clean. Click 'Incoming Purchase Requisitions' to review pending approvals."
             />
           ) : (
-            <Tabs defaultValue="approvals" className="space-y-4" onValueChange={handleTabChange}>
+            <Tabs value={activeTab} className="space-y-4" onValueChange={handleTabChange}>
               <TabsList className="flex md:flex-wrap h-auto w-full justify-start gap-1.5 bg-muted/60 p-1.5 rounded-xl overflow-x-auto no-scrollbar [&>button]:shrink-0">
                 <TabsTrigger value="approvals" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
                   <Wallet className="h-4 w-4" />
