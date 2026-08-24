@@ -14,6 +14,8 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { listDonors, listProjects, type Donor, type DonationProject } from "@/services/donation.service";
+import { useAuth } from "@/contexts/AuthContext";
+
 
 export interface ProjectDonorValue {
   projectId: string | null;
