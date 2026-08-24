@@ -715,6 +715,8 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
               </Fragment>
               );
             })}
+            </Fragment>
+            ))}
           </TableBody>
         </Table>
       </div>
