@@ -245,6 +245,13 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
       return;
     }
 
+    if (overBudget) {
+      toast.error("This requisition exceeds the remaining budget on the selected project");
+      return;
+    }
+
+
+
     setIsSubmitting(true);
     try {
       // Upload document if exists
