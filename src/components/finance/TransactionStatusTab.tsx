@@ -402,19 +402,22 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         .select("id, pr_id, amount, amount_paid, currency, updated_at, supplier_name, pr:purchase_requisitions(transaction_id, requested_by_name)")
         .in("status", ["PAYMENT_BATCH", "PARTIALLY_PAID"])
         .order("updated_at", { ascending: false });
-      const txnRows: TransactionRow[] = ((txns as any[]) || []).map((t) => ({
-        id: t.id,
-        transactionId: t.pr?.transaction_id || t.id.slice(0, 8),
-        party: t.supplier_name || t.pr?.requested_by_name || "Approved Transaction",
-        totalAmount: Number(t.amount || 0),
-        amountPaid: Number(t.amount_paid || 0),
-        remaining: Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0),
-        status: "Partially Paid",
-        date: t.updated_at,
-        currency: t.currency,
-        prId: t.pr_id ?? null,
-        txnId: t.id,
-      }));
+      const txnRows: TransactionRow[] = ((txns as any[]) || [])
+        // Only genuinely part-settled transactions belong here: money paid, balance outstanding.
+        .filter((t) => Number(t.amount_paid || 0) > 0 && Number(t.amount_paid || 0) < Number(t.amount || 0))
+        .map((t) => ({
+          id: t.id,
+          transactionId: t.pr?.transaction_id || t.id.slice(0, 8),
+          party: t.supplier_name || t.pr?.requested_by_name || "Approved Transaction",
+          totalAmount: Number(t.amount || 0),
+          amountPaid: Number(t.amount_paid || 0),
+          remaining: Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0),
+          status: "Partially Paid",
+          date: t.updated_at,
+          currency: t.currency,
+          prId: t.pr_id ?? null,
+          txnId: t.id,
+        }));
       const invoiceTxnIds = new Set(invRows.map((row) => row.txnId).filter(Boolean));
       return [...invRows, ...txnRows.filter((row) => !invoiceTxnIds.has(row.txnId))];
     }
