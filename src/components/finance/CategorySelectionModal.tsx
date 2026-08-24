@@ -324,6 +324,13 @@ export function CategorySelectionModal({
       return;
     }
 
+    if (overBudget) {
+      toast.error("This requisition exceeds the remaining budget on the selected project");
+      return;
+    }
+
+
+
     setIsSubmitting(true);
     try {
       await onConfirm(
@@ -1179,7 +1186,9 @@ export function CategorySelectionModal({
               !selectedSupplierId ||
               !comments.trim() ||
               showNewCategoryForm ||
-              showNewSupplierForm
+              showNewSupplierForm ||
+              overBudget
+
             }
           >
             {isSubmitting ? (
