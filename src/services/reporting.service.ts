@@ -123,7 +123,7 @@ export async function getSupplierStatement(params: {
 
     const { data: supplier, error: supErr } = await supabase
       .from("suppliers")
-      .select("id, company_name, contact_email, contact_phone, vat_number")
+      .select("id, company_name, contact_email, phone, vat_number")
       .eq("id", params.supplierId)
       .maybeSingle();
     if (supErr || !supplier) return { success: false, error: "Supplier not found" };
@@ -227,7 +227,7 @@ export async function getSupplierStatement(params: {
         supplier_id: supplier.id,
         supplier_name: (supplier as any).company_name,
         contact_email: (supplier as any).contact_email ?? null,
-        contact_phone: (supplier as any).contact_phone ?? null,
+        contact_phone: (supplier as any).phone ?? null,
         vat_number: (supplier as any).vat_number ?? null,
         currency: txList[0]?.currency || "ZAR",
         period_start: start ? start.toISOString() : null,
