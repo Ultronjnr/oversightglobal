@@ -597,6 +597,11 @@ export default function FinancePortal() {
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm">Reports</span>
+                </TabsTrigger>
+
               </TabsList>
 
               <TabsContent value="approvals">
