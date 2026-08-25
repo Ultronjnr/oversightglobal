@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { SectionCard } from "@/components/ui/section-card";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Dialog,
@@ -523,8 +524,9 @@ export default function FinancePortal() {
         </div>
 
         {/* Main Content Card */}
-        <SectionCard
+        <WorkspaceShell
           title="Finance Overview"
+          description="Approvals, quotes, invoices, payments and VAT in one workspace."
           icon={<Wallet className="h-5 w-5" />}
         >
           {showCleared ? (
@@ -729,7 +731,7 @@ export default function FinancePortal() {
               </TabsContent>
             </Tabs>
           )}
-        </SectionCard>
+        </WorkspaceShell>
       </div>
 
       {/* Incoming Purchase Requisitions Modal */}

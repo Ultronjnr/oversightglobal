@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { HandCoins } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DonationDashboardTab } from "@/components/donations/DonationDashboardTab";
 import { DonorRegistryTab } from "@/components/donations/DonorRegistryTab";
@@ -17,15 +19,11 @@ export default function Donations() {
   const { role } = useAuth();
   return (
     <DashboardLayout title="Donations / 18A" navItems={getPortalNavItems(role)}>
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        <div className="mb-4">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-            Donation Management
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Donor registry, funding pools and Section 18A receipts.
-          </p>
-        </div>
+      <WorkspaceShell
+        title="Donation Management"
+        description="Donor registry, funding pools and Section 18A receipts."
+        icon={<HandCoins className="h-5 w-5" />}
+      >
         <Tabs value={tab} onValueChange={setTab} className="w-full">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="w-max sm:w-full flex sm:grid sm:grid-cols-8 mb-4">
@@ -48,7 +46,7 @@ export default function Donations() {
           <TabsContent value="receipts"><ReceiptsTab /></TabsContent>
           <TabsContent value="reports"><ReportsTab /></TabsContent>
         </Tabs>
-      </div>
+      </WorkspaceShell>
     </DashboardLayout>
   );
 }

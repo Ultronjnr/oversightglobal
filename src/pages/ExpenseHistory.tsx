@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { SectionCard } from "@/components/ui/section-card";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -242,7 +243,11 @@ export default function ExpenseHistory() {
         </SectionCard>
 
         {/* Transactions Table */}
-        <SectionCard title="All Expenses" icon={<Receipt className="h-5 w-5" />}>
+        <WorkspaceShell
+          title="All Expenses"
+          description="Every approved transaction, filterable and grouped by category."
+          icon={<Receipt className="h-5 w-5" />}
+        >
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -310,7 +315,7 @@ export default function ExpenseHistory() {
               </Table>
             </div>
           )}
-        </SectionCard>
+        </WorkspaceShell>
       </div>
 
       {/* Category Drill-down */}
