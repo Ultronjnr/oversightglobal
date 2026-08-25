@@ -44,6 +44,8 @@ import { BatchesTab } from "@/components/finance/BatchesTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
+import { ReportsTab } from "@/components/finance/ReportsTab";
+
 import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
 import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
@@ -595,6 +597,11 @@ export default function FinancePortal() {
                   <Percent className="h-4 w-4" />
                   <span className="text-sm">VAT Dashboard</span>
                 </TabsTrigger>
+                <TabsTrigger value="reports" className="flex items-center gap-1.5 rounded-lg data-[state=active]:shadow-sm">
+                  <FileText className="h-4 w-4" />
+                  <span className="text-sm">Reports</span>
+                </TabsTrigger>
+
               </TabsList>
 
               <TabsContent value="approvals">
@@ -729,6 +736,10 @@ export default function FinancePortal() {
               <TabsContent value="vat_dashboard">
                 <VatDashboardTab />
               </TabsContent>
+              <TabsContent value="reports">
+                <ReportsTab />
+              </TabsContent>
+
             </Tabs>
           )}
         </WorkspaceShell>
