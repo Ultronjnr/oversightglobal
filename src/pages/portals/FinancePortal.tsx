@@ -729,6 +729,10 @@ export default function FinancePortal() {
               <TabsContent value="vat_dashboard">
                 <VatDashboardTab />
               </TabsContent>
+              <TabsContent value="reports">
+                <ReportsTab />
+              </TabsContent>
+
             </Tabs>
           )}
         </WorkspaceShell>
