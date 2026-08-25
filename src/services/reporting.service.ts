@@ -95,7 +95,7 @@ async function getOrgId(): Promise<string | null> {
   return (data as any)?.organization_id ?? null;
 }
 
-function bucketFor(days: number): AgingBucket {
+export function bucketFor(days: number): AgingBucket {
   if (days <= 0) return "CURRENT";
   if (days <= 30) return "D1_30";
   if (days <= 60) return "D31_60";
@@ -103,7 +103,7 @@ function bucketFor(days: number): AgingBucket {
   return "D90_PLUS";
 }
 
-function daysBetween(from: Date, to: Date): number {
+export function daysBetween(from: Date, to: Date): number {
   return Math.floor((to.getTime() - from.getTime()) / 86_400_000);
 }
 
