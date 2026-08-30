@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { User, ClipboardList, BarChart3, ShoppingCart, X, Plus, FileText, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,9 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
 import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
+import { getPortalNavItems } from "@/lib/admin-nav";
+import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
 import { toast } from "sonner";
@@ -22,11 +24,8 @@ export default function EmployeePortal() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCleared, setShowCleared] = useState(false);
 
-  const navItems = [
-    { label: "My Portal", href: "/employee/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Purchase Requisition History", href: "/pr-history", icon: <ClipboardList className="h-4 w-4" /> },
-    { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
-  ];
+  const navItems = getPortalNavItems("EMPLOYEE");
+  const [searchParams] = useSearchParams();
 
   // Fetch stats
   useEffect(() => {
@@ -67,6 +66,22 @@ export default function EmployeePortal() {
     setRefreshTrigger((prev) => prev + 1);
     toast.success("Dashboard refreshed");
   };
+
+  const tabParam = searchParams.get("tab");
+  if (tabParam === "requisitions" || tabParam === "reimbursements") {
+    const isReimb = tabParam === "reimbursements";
+    return (
+      <DashboardLayout title={isReimb ? "My Reimbursements" : "My Requisitions"} navItems={navItems}>
+        <WorkspaceShell
+          title={isReimb ? "My Reimbursements" : "My Requisitions"}
+          description={isReimb ? "Your reimbursement claims and their payment status." : "Every purchase requisition you have raised."}
+          icon={isReimb ? <Undo2 className="h-5 w-5" /> : <ClipboardIcon className="h-5 w-5" />}
+        >
+          {isReimb ? <MyReimbursementsTab /> : <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />}
+        </WorkspaceShell>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Employee Dashboard" navItems={navItems} showInsights>
@@ -139,18 +154,7 @@ export default function EmployeePortal() {
               description="Your dashboard is now clean. All PRs are saved in Purchase Requisition History."
             />
           ) : (
-            <Tabs defaultValue="prs" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2 max-w-md">
-                <TabsTrigger value="prs">Requisitions</TabsTrigger>
-                <TabsTrigger value="reimbursements">My Reimbursements</TabsTrigger>
-              </TabsList>
-              <TabsContent value="prs" className="mt-0">
-                <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
-              </TabsContent>
-              <TabsContent value="reimbursements" className="mt-0">
-                <MyReimbursementsTab />
-              </TabsContent>
-            </Tabs>
+            <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
           )}
         </SectionCard>
       </div>

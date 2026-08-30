@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -48,7 +48,9 @@ import { PRChatSlidePanel } from "@/components/pr/PRChatSlidePanel";
 import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTable";
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
+import { getPortalNavItems } from "@/lib/admin-nav";
+import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
 import {
   getHODPendingPRs,
   hodApprovePR,
@@ -102,11 +104,8 @@ export default function HODPortal() {
     setDocumentModal({ isOpen: false, url: "", transactionId: "", prId: "" });
   };
 
-  const navItems = [
-    { label: "My Portal", href: "/hod/portal", icon: <User className="h-4 w-4" /> },
-    { label: "Purchase Requisition History", href: "/pr-history", icon: <FileText className="h-4 w-4" /> },
-    { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
-  ];
+  const navItems = getPortalNavItems("HOD");
+  const [searchParams] = useSearchParams();
 
   const fetchPRs = async () => {
     setLoading(true);
@@ -227,6 +226,22 @@ export default function HODPortal() {
     toast.success("Purchase requisition submitted (sent directly to Finance)");
   };
 
+  const tabParam = searchParams.get("tab");
+  if (tabParam === "requisitions" || tabParam === "reimbursements") {
+    const isReimb = tabParam === "reimbursements";
+    return (
+      <DashboardLayout title={isReimb ? "My Reimbursements" : "My Requisitions"} navItems={navItems}>
+        <WorkspaceShell
+          title={isReimb ? "My Reimbursements" : "My Requisitions"}
+          description={isReimb ? "Your reimbursement claims and their payment status." : "Every purchase requisition you have raised."}
+          icon={isReimb ? <Undo2 className="h-5 w-5" /> : <ClipboardIcon className="h-5 w-5" />}
+        >
+          {isReimb ? <MyReimbursementsTab /> : <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />}
+        </WorkspaceShell>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="HOD Dashboard" navItems={navItems} showInsights>
       <div className="space-y-6">
@@ -307,18 +322,7 @@ export default function HODPortal() {
           title="My Purchase Requisitions"
           icon={<FileText className="h-5 w-5" />}
         >
-          <Tabs defaultValue="prs" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="prs">Requisitions</TabsTrigger>
-              <TabsTrigger value="reimbursements">My Reimbursements</TabsTrigger>
-            </TabsList>
-            <TabsContent value="prs" className="mt-0">
-              <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
-            </TabsContent>
-            <TabsContent value="reimbursements" className="mt-0">
-              <MyReimbursementsTab />
-            </TabsContent>
-          </Tabs>
+          <PurchaseRequisitionTable refreshTrigger={refreshTrigger} />
         </SectionCard>
       </div>
 
