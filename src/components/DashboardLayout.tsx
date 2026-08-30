@@ -85,6 +85,9 @@ export function DashboardLayout({
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const groups = groupNav(navItems);
+  const currentPath = location.pathname + location.search;
+  // Sidebar links can carry a ?tab= query, so match on path + search.
+  const isNavActive = (href: string) => currentPath === href || location.pathname === href;
   // Phones get up to four thumb-reachable destinations, the rest live under "More".
   const primaryTabs = navItems.slice(0, navItems.length > 5 ? 4 : 5);
   const hasMore = navItems.length > primaryTabs.length;
@@ -135,7 +138,7 @@ export function DashboardLayout({
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {group.items.map((item) => {
-                      const isActive = location.pathname === item.href;
+                      const isActive = isNavActive(item.href);
                       return (
                         <SidebarMenuItem key={item.href}>
                           <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
@@ -234,7 +237,7 @@ export function DashboardLayout({
                             {group.label}
                           </p>
                           {group.items.map((item) => {
-                            const isActive = location.pathname === item.href;
+                            const isActive = isNavActive(item.href);
                             return (
                               <SheetClose asChild key={item.href}>
                                 <Link
@@ -367,7 +370,7 @@ export function DashboardLayout({
         {/* Mobile bottom navigation */}
         <MobileTabBar
           items={primaryTabs}
-          activePath={location.pathname}
+          activePath={currentPath}
           onMore={() => setDrawerOpen(true)}
           showMore={hasMore}
         />
