@@ -85,6 +85,10 @@ export function DashboardLayout({
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const groups = groupNav(navItems);
+  // Phones get up to four thumb-reachable destinations, the rest live under "More".
+  const primaryTabs = navItems.slice(0, navItems.length > 5 ? 4 : 5);
+  const hasMore = navItems.length > primaryTabs.length;
+
 
   const getInitials = () => {
     if (!profile) return "U";
