@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AmountInput } from "@/components/ui/amount-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -155,11 +156,10 @@ export function SubmitStandaloneReimbursementModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Amount ({currency}) *</Label>
-              <Input
-                type="number"
-                step="0.01"
+              <AmountInput
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
+                placeholder="0.00"
               />
             </div>
             <div className="space-y-1.5">
