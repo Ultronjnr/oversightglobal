@@ -304,12 +304,38 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         return;
       }
 
+      // Attach the captured supplier quotes so Finance can choose a winner.
+      const newPrId = result.data?.id;
+      const readyQuotes = supplierQuotes.filter(
+        (q) => (q.supplierId || q.supplierName.trim()) && Number(q.price) > 0,
+      );
+      if (newPrId && readyQuotes.length > 0) {
+        for (const q of readyQuotes) {
+          let path: string | null = null;
+          if (q.file) {
+            const up = await uploadManualQuoteDocument(q.file, newPrId);
+            if (up.success && up.path) path = up.path;
+          }
+          await addManualQuote({
+            prId: newPrId,
+            supplierId: q.supplierId,
+            supplierName: q.supplierId ? null : q.supplierName.trim(),
+            amount: Number(q.price),
+            notes: q.description || null,
+            documentPath: path,
+          });
+        }
+      }
+
       toast.success(`PR ${result.data?.transaction_id} created successfully!`);
-      
+
       // Reset form
       reset();
       setItems([createEmptyItem()]);
       setUploadedFile(null);
+      setSupplierQuotes([createEmptyQuoteDraft()]);
+
+
       
       onSuccess?.();
     } catch (error: any) {
