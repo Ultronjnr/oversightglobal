@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare, Undo2, Percent, BarChart3, AlertCircle} from "lucide-react";
+import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare, Undo2, Percent, BarChart3, AlertCircle, Users, Mail, Truck, Settings, ClipboardList} from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
@@ -22,7 +22,21 @@ export const adminNavItems: NavItem[] = [
   { label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> },
   { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   { label: "Billing", href: "/billing", icon: <CreditCard className="h-4 w-4" /> },
+
+  // Administration workspaces (rendered as standalone pages)
+  { label: "Company Profile", href: "/admin/portal?tab=company", icon: <Building2 className="h-4 w-4" />, group: "Administration" },
+  { label: "Users & Roles", href: "/admin/portal?tab=users", icon: <Users className="h-4 w-4" />, group: "Administration" },
+  { label: "Cost Centers / Depts", href: "/admin/portal?tab=departments", icon: <Building2 className="h-4 w-4" />, group: "Administration" },
+  { label: "Invitations", href: "/admin/portal?tab=invitations", icon: <Mail className="h-4 w-4" />, group: "Administration" },
+  { label: "Settings", href: "/admin/portal?tab=settings", icon: <Settings className="h-4 w-4" />, group: "Administration" },
+
+  // Operations workspaces
+  { label: "Purchase Requisitions", href: "/admin/portal?tab=prs", icon: <FileText className="h-4 w-4" />, group: "Operations" },
+  { label: "Suppliers", href: "/admin/portal?tab=suppliers", icon: <Truck className="h-4 w-4" />, group: "Operations" },
+  { label: "Reimbursements", href: "/admin/portal?tab=reimbursements", icon: <Undo2 className="h-4 w-4" />, group: "Operations" },
+  { label: "Analytics", href: "/admin/portal?tab=analytics", icon: <BarChart3 className="h-4 w-4" />, group: "Operations" },
 ];
+
 
 /**
  * Role-aware top navigation used across the Employee / HOD / Finance portals
@@ -54,6 +68,24 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
     { label: "Expense History", href: "/expenses", icon: <Receipt className="h-4 w-4" /> },
     { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   ];
+
+  if (role === "HOD" || role === "EMPLOYEE" || !role) {
+    items.push(
+      {
+        label: "My Requisitions",
+        href: `${base}?tab=requisitions`,
+        icon: <ClipboardList className="h-4 w-4" />,
+        group: "My Work",
+      },
+      {
+        label: "My Reimbursements",
+        href: `${base}?tab=reimbursements`,
+        icon: <Undo2 className="h-4 w-4" />,
+        group: "My Work",
+      },
+    );
+  }
+
 
   if (role === "FINANCE") {
     items.push({ label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> });

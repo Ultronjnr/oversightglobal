@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt} from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
@@ -14,6 +14,8 @@ import { SettingsTab } from "@/components/admin/SettingsTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
+import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
+import { ReactNode } from "react";
 
 export default function AdminPortal() {
   const [stats, setStats] = useState({
@@ -23,7 +25,7 @@ export default function AdminPortal() {
     verifiedSuppliers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("company");
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetchStats();
@@ -39,6 +41,31 @@ export default function AdminPortal() {
       setIsLoading(false);
     }
   };
+
+  const tabPages: Record<string, { title: string; description: string; icon: ReactNode; content: ReactNode }> = {
+    company: { title: "Company Profile", description: "Organisation details, branding and registration information.", icon: <Building2 className="h-5 w-5" />, content: <CompanyProfileTab /> },
+    users: { title: "Users & Roles", description: "Manage platform users, roles and access levels.", icon: <Users className="h-5 w-5" />, content: <UsersRolesTab /> },
+    departments: { title: "Cost Centers / Departments", description: "Departments, cost centers and their budgets.", icon: <Building2 className="h-5 w-5" />, content: <DepartmentsTab /> },
+    invitations: { title: "Invitations", description: "Invite new users and track pending invitations.", icon: <Mail className="h-5 w-5" />, content: <InvitationsTab /> },
+    prs: { title: "Purchase Requisitions", description: "Every requisition raised across the organisation.", icon: <FileText className="h-5 w-5" />, content: <AllPRsTab /> },
+    suppliers: { title: "Suppliers", description: "Supplier register, verification and onboarding.", icon: <Truck className="h-5 w-5" />, content: <SuppliersTab /> },
+    reimbursements: { title: "Reimbursements", description: "Staff reimbursement claims across the organisation.", icon: <Receipt className="h-5 w-5" />, content: <ReimbursementsTab role="ADMIN" /> },
+    analytics: { title: "Analytics", description: "Spend, approval and supplier performance insights.", icon: <BarChart3 className="h-5 w-5" />, content: <AnalyticsTab /> },
+    settings: { title: "Settings", description: "Organisation-wide workflow and policy configuration.", icon: <Settings className="h-5 w-5" />, content: <SettingsTab /> },
+  };
+
+  const tabParam = searchParams.get("tab");
+  const currentPage = tabParam ? tabPages[tabParam] : null;
+
+  if (currentPage) {
+    return (
+      <DashboardLayout title={currentPage.title} navItems={adminNavItems}>
+        <WorkspaceShell title={currentPage.title} description={currentPage.description} icon={currentPage.icon}>
+          {currentPage.content}
+        </WorkspaceShell>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Admin Dashboard" navItems={adminNavItems} showInsights>
@@ -99,83 +126,6 @@ export default function AdminPortal() {
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex md:flex-wrap h-auto gap-2 overflow-x-auto no-scrollbar [&>button]:shrink-0 w-full justify-start">
-            <TabsTrigger value="company" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Company Profile
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Users & Roles
-            </TabsTrigger>
-            <TabsTrigger value="departments" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Cost Centers / Depts
-            </TabsTrigger>
-            <TabsTrigger value="invitations" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Invitations
-            </TabsTrigger>
-            <TabsTrigger value="prs" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Purchase Requisitions
-            </TabsTrigger>
-            <TabsTrigger value="suppliers" className="flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              Suppliers
-            </TabsTrigger>
-            <TabsTrigger value="reimbursements" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              Reimbursements
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="company">
-            <CompanyProfileTab />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UsersRolesTab />
-          </TabsContent>
-
-          <TabsContent value="departments">
-            <DepartmentsTab />
-          </TabsContent>
-
-          <TabsContent value="invitations">
-            <InvitationsTab />
-          </TabsContent>
-
-          <TabsContent value="prs">
-            <AllPRsTab />
-          </TabsContent>
-
-          <TabsContent value="suppliers">
-            <SuppliersTab />
-          </TabsContent>
-
-          <TabsContent value="reimbursements">
-            <ReimbursementsTab role="ADMIN" />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <AnalyticsTab />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <SettingsTab />
-          </TabsContent>
-        </Tabs>
       </div>
     </DashboardLayout>
   );
