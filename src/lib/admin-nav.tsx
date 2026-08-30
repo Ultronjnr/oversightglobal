@@ -58,6 +58,16 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
   if (role === "FINANCE") {
     items.push({ label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> });
     items.push(
+      { label: "Approvals", href: "/finance/portal?tab=approvals", icon: <Wallet className="h-4 w-4" />, group: "Finance" },
+      { label: "Suppliers", href: "/finance/portal?tab=suppliers", icon: <Building2 className="h-4 w-4" />, group: "Finance" },
+      { label: "Quotes", href: "/finance/portal?tab=quotes", icon: <FileText className="h-4 w-4" />, group: "Finance" },
+      { label: "Invoices", href: "/finance/portal?tab=invoices", icon: <Receipt className="h-4 w-4" />, group: "Finance" },
+      { label: "Reimbursements", href: "/finance/portal?tab=reimbursements", icon: <Undo2 className="h-4 w-4" />, group: "Finance" },
+      { label: "Input VAT", href: "/finance/portal?tab=input_vat", icon: <Percent className="h-4 w-4" />, group: "Finance" },
+      { label: "VAT Dashboard", href: "/finance/portal?tab=vat_dashboard", icon: <Percent className="h-4 w-4" />, group: "Finance" },
+      { label: "Reports", href: "/finance/portal?tab=reports", icon: <BarChart3 className="h-4 w-4" />, group: "Finance" },
+    );
+    items.push(
       {
         label: "Approved – Not Paid",
         href: "/finance/portal?tab=payments",
@@ -77,6 +87,12 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
         group: "Payments",
       },
       {
+        label: "Overdue (30+)",
+        href: "/finance/portal?tab=overdue",
+        icon: <AlertCircle className="h-4 w-4" />,
+        group: "Payments",
+      },
+      {
         label: "Payment Batches",
         href: "/finance/portal?tab=batches",
         icon: <Layers className="h-4 w-4" />,
@@ -84,6 +100,7 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
       },
     );
   }
+
 
   return items;
 }
