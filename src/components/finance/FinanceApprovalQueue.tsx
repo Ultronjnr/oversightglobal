@@ -111,6 +111,13 @@ export function FinanceApprovalQueue() {
 
   const handleApprove = async (comments: string, supplierId?: string) => {
     if (!approveModalPR) return;
+    // Org rule (Admin > Settings): a supporting document must be attached first.
+    if (orgSettings.require_vat_document && !approveModalPR.document_url) {
+      toast.error(
+        "Your organization requires a supporting invoice or receipt before approval.",
+      );
+      return;
+    }
     setActionLoading(true);
     try {
       const result = await financeApprovePR(
