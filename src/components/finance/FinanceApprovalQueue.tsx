@@ -34,9 +34,11 @@ import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 import { DuplicatePRDialog } from "@/components/pr/DuplicatePRDialog";
 import { findDuplicatePRs, type DuplicateCandidate } from "@/services/pr-duplicate.service";
+import { useOrgSettings } from "@/hooks/use-org-settings";
 
 export function FinanceApprovalQueue() {
   const { currency: orgCurrency } = useCurrency();
+  const { settings: orgSettings } = useOrgSettings();
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
