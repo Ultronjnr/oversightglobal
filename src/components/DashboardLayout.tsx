@@ -12,6 +12,8 @@ import { GlobalScanFAB } from "./capture/GlobalScanFAB";
 import { TrialBanner } from "./billing/TrialBanner";
 import { SubscriptionLockGate } from "./billing/SubscriptionLockGate";
 import { InsightsCarousel } from "./dashboard/InsightsCarousel";
+import { MobileTabBar } from "./MobileTabBar";
+
 
 import {
   Sheet,
@@ -83,6 +85,10 @@ export function DashboardLayout({
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const groups = groupNav(navItems);
+  // Phones get up to four thumb-reachable destinations, the rest live under "More".
+  const primaryTabs = navItems.slice(0, navItems.length > 5 ? 4 : 5);
+  const hasMore = navItems.length > primaryTabs.length;
+
 
   const getInitials = () => {
     if (!profile) return "U";
@@ -327,7 +333,13 @@ export function DashboardLayout({
         {/* Main Content */}
         <TrialBanner />
 
-        <main className="px-4 sm:px-6 py-5 sm:py-8">
+        <main
+          className={cn(
+            "px-4 sm:px-6 py-5 sm:py-8",
+            navItems.length > 0 && "pb-24 md:pb-8"
+          )}
+        >
+
           {/* Title */}
           <div className="mb-5 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -351,6 +363,15 @@ export function DashboardLayout({
 
         {/* Global floating receipt/invoice capture */}
         <GlobalScanFAB />
+
+        {/* Mobile bottom navigation */}
+        <MobileTabBar
+          items={primaryTabs}
+          activePath={location.pathname}
+          onMore={() => setDrawerOpen(true)}
+          showMore={hasMore}
+        />
+
       </SidebarInset>
     </SidebarProvider>
   );
