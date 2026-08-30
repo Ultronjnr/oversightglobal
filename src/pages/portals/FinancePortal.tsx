@@ -407,9 +407,198 @@ export default function FinancePortal() {
     }).format(amount);
   };
 
+  // Each sidebar tab renders its own focused page instead of the old
+  // combined "Finance Overview" workspace.
+  const tabPages: Record<string, { title: string; description: string; icon: JSX.Element; content: JSX.Element }> = {
+    approvals: {
+      title: "Approvals",
+      description: "Requisitions moving through the quote and approval workflow.",
+      icon: <Wallet className="h-5 w-5" />,
+      content: prsWithQuoteStatus.length === 0 ? (
+        <EmptyState
+          icon={<Wallet className="h-16 w-16" />}
+          title="No Quote Workflows"
+          description="Requisitions with quote activity will appear here. Send quote requests from the Incoming Purchase Requisitions modal."
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 p-3 bg-muted/30 rounded-lg text-sm">
+            <span className="text-muted-foreground font-medium">Workflow:</span>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 rounded bg-muted text-muted-foreground text-xs">PR Created</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="px-2 py-1 rounded bg-blue-500/10 text-blue-600 text-xs">Quote Sent</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="px-2 py-1 rounded bg-warning/10 text-warning text-xs">Quote Accepted</span>
+              <ChevronRight className="h-3 w-3 text-muted-foreground" />
+              <span className="px-2 py-1 rounded bg-success/10 text-success text-xs">Completed</span>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border/50 overflow-hidden overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead>Transaction ID</TableHead>
+                  <TableHead>Requester</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Quote Status</TableHead>
+                  <TableHead>Workflow Progress</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {prsWithQuoteStatus.map((pr) => {
+                  const config = quoteWorkflowConfig[pr.quote_workflow_status];
+                  return (
+                    <TableRow key={pr.id} className="hover:bg-muted/20">
+                      <TableCell className="font-mono text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{pr.transaction_id}</span>
+                          {(pr as any).pr_locked && (
+                            <Badge variant="outline" className="gap-1 bg-muted text-muted-foreground border-muted-foreground/30">
+                              <Lock className="h-3 w-3" /> Locked
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{pr.requested_by_name}</p>
+                          <p className="text-xs text-muted-foreground">{pr.requested_by_department || "-"}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(pr.total_amount, pr.currency)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={config.className}>
+                          {config.icon === "check-circle" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                          {config.icon === "send" && <Send className="h-3 w-3 mr-1" />}
+                          {config.icon === "check" && <Check className="h-3 w-3 mr-1" />}
+                          {config.icon === "file" && <FileText className="h-3 w-3 mr-1" />}
+                          {config.icon === "clock" && <Clock className="h-3 w-3 mr-1" />}
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <div className={`h-2 w-2 rounded-full ${pr.quote_workflow_status !== "PENDING_REVIEW" ? "bg-success" : "bg-muted-foreground/30"}`} title="PR Created" />
+                          <div className={`h-1 w-4 ${["QUOTE_SENT", "QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} />
+                          <div className={`h-2 w-2 rounded-full ${["QUOTE_SENT", "QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} title="Quote Sent" />
+                          <div className={`h-1 w-4 ${["QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} />
+                          <div className={`h-2 w-2 rounded-full ${["QUOTE_ACCEPTED", "QUOTE_SUBMITTED", "COMPLETED"].includes(pr.quote_workflow_status) ? "bg-success" : "bg-muted-foreground/30"}`} title="Quote Accepted" />
+                          <div className={`h-1 w-4 ${pr.quote_workflow_status === "COMPLETED" ? "bg-success" : "bg-muted-foreground/30"}`} />
+                          <div className={`h-2 w-2 rounded-full ${pr.quote_workflow_status === "COMPLETED" ? "bg-success" : "bg-muted-foreground/30"}`} title="Completed" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format(new Date(pr.updated_at), "dd MMM yyyy HH:mm")}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ),
+    },
+    suppliers: {
+      title: "Suppliers",
+      description: "Manage supplier records, invitations and contact details.",
+      icon: <Building2 className="h-5 w-5" />,
+      content: <SupplierList />,
+    },
+    quotes: {
+      title: "Quotes",
+      description: "Compare supplier quotes and accept the best offer.",
+      icon: <FileText className="h-5 w-5" />,
+      content: <QuoteComparisonView onQuoteAction={() => setRefreshTrigger((prev) => prev + 1)} />,
+    },
+    invoices: {
+      title: "Invoices",
+      description: "Supplier invoices awaiting review and payment scheduling.",
+      icon: <Receipt className="h-5 w-5" />,
+      content: <InvoicesTable />,
+    },
+    payments: {
+      title: "Approved – Not Paid",
+      description: "Approved transactions ready to be prepared for payment.",
+      icon: <Wallet className="h-5 w-5" />,
+      content: <PaymentPreparationTab onPaymentComplete={() => setRefreshTrigger((prev) => prev + 1)} />,
+    },
+    partially_paid: {
+      title: "Partially Paid",
+      description: "Transactions with an outstanding balance still to settle.",
+      icon: <Wallet className="h-5 w-5" />,
+      content: <TransactionStatusTab filter="PARTIALLY_PAID" />,
+    },
+    fully_paid: {
+      title: "Fully Paid",
+      description: "Settled transactions and their payment history.",
+      icon: <CheckCheck className="h-5 w-5" />,
+      content: <TransactionStatusTab filter="FULLY_PAID" />,
+    },
+    overdue: {
+      title: "Overdue (30+ days)",
+      description: "Invoices unpaid for more than 30 days.",
+      icon: <AlertCircle className="h-5 w-5" />,
+      content: <TransactionStatusTab filter="OVERDUE" />,
+    },
+    reimbursements: {
+      title: "Reimbursements",
+      description: "Staff reimbursement claims awaiting finance action.",
+      icon: <Undo2 className="h-5 w-5" />,
+      content: <ReimbursementsTab />,
+    },
+    batches: {
+      title: "Payment Batches",
+      description: "Batch payment files, proof of payment and settlement status.",
+      icon: <Layers className="h-5 w-5" />,
+      content: <BatchesTab />,
+    },
+    input_vat: {
+      title: "Input VAT",
+      description: "Claimable input VAT and supporting documentation.",
+      icon: <Percent className="h-5 w-5" />,
+      content: <InputVATTab />,
+    },
+    vat_dashboard: {
+      title: "VAT Dashboard",
+      description: "Automatic VAT assessment and flagged issues.",
+      icon: <Percent className="h-5 w-5" />,
+      content: <VatDashboardTab />,
+    },
+    reports: {
+      title: "Reports",
+      description: "Supplier statements, payables aging and exportable reports.",
+      icon: <BarChart3 className="h-5 w-5" />,
+      content: <ReportsTab />,
+    },
+  };
+
+  const tabParam = searchParams.get("tab");
+  const currentPage = tabParam ? tabPages[tabParam] : null;
+
+  if (currentPage) {
+    return (
+      <DashboardLayout title={currentPage.title} navItems={navItems}>
+        <WorkspaceShell
+          title={currentPage.title}
+          description={currentPage.description}
+          icon={currentPage.icon}
+        >
+          {currentPage.content}
+        </WorkspaceShell>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Finance Dashboard" navItems={navItems} showInsights>
       <div className="space-y-5 sm:space-y-6">
+
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard
