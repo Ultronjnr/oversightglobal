@@ -443,19 +443,31 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                   </div>
 
                   {/* Requisition total (based on the lowest quote) */}
-                  <div className="bg-primary/5 border border-primary/20 rounded-lg px-6 py-5">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <span className="font-semibold text-foreground text-base">
-                          Requisition Total ({currency})
-                        </span>
-                        <p className="text-xs text-muted-foreground">
-                          Based on the lowest quote — Finance may approve a different supplier.
-                        </p>
+                  <div className="flex justify-end">
+                    <div className="w-full max-w-sm" aria-label={`Requisition total in ${currency}`}>
+                      <div className="space-y-3 px-1 pb-3">
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
+                          <span className="text-muted-foreground">Subtotal:</span>
+                          <span className="min-w-28 text-right font-semibold text-foreground">
+                            {formatZAR(calculateGrandTotal())}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
+                          <span className="text-muted-foreground">VAT (0%):</span>
+                          <span className="min-w-28 text-right font-semibold text-muted-foreground">
+                            {formatZAR(0)}
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-2xl font-bold text-primary">
-                        {formatZAR(calculateGrandTotal())}
-                      </span>
+                      <div className="grid grid-cols-[1fr_auto] items-center gap-8 border-t border-border/60 px-1 pt-3 text-base font-bold">
+                        <span className="text-foreground">Total (Inc. VAT):</span>
+                        <span className="min-w-28 text-right text-lg text-foreground">
+                          {formatZAR(calculateGrandTotal())}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-right text-xs text-muted-foreground">
+                        Based on the lowest quote; Finance may approve a different supplier.
+                      </p>
                     </div>
                   </div>
 
