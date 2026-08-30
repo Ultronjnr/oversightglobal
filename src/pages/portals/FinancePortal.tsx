@@ -36,6 +36,8 @@ import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionMod
 import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
 import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
+
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
@@ -924,6 +926,20 @@ export default function FinancePortal() {
                                     </p>
                                   </div>
                                 </div>
+
+                                {/* Choose a supplier — quotes captured on the requisition */}
+                                <div className="rounded-lg border border-border/40 bg-background p-4">
+                                  <QuoteChooser
+                                    prId={pr.id}
+                                    onApprove={() => openApproveModal(pr)}
+                                    onDecline={() => openDeclineModal(pr)}
+                                  />
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    After you approve the selection you'll categorise this
+                                    requisition — the classification is locked in once approved.
+                                  </p>
+                                </div>
+
 
                                 {/* Document */}
                                 {pr.document_url && (
