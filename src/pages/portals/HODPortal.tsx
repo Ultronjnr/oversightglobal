@@ -57,6 +57,7 @@ import {
 } from "@/services/approval.service";
 
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
+import { useOrgSettings } from "@/hooks/use-org-settings";
 
 interface ChatState { open: boolean; prId: string; transactionId: string; }
 
@@ -85,6 +86,7 @@ export default function HODPortal() {
   const [showPRModal, setShowPRModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
+  const { canSourceSuppliers } = useOrgSettings();
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -429,15 +431,17 @@ export default function HODPortal() {
                               >
                                 <Scissors className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => setSourcingPR(pr)}
-                                title="Supplier quotes"
-                              >
-                                <Handshake className="h-4 w-4" />
-                              </Button>
+                              {canSourceSuppliers && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => setSourcingPR(pr)}
+                                  title="Supplier quotes"
+                                >
+                                  <Handshake className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"

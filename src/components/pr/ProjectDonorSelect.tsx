@@ -14,7 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { listDonors, listProjects, type Donor, type DonationProject } from "@/services/donation.service";
-import { useAuth } from "@/contexts/AuthContext";
+import { useOrgSettings } from "@/hooks/use-org-settings";
 
 
 export interface ProjectDonorValue {
@@ -38,8 +38,8 @@ const NONE = "__none__";
  * funding source has already been set by Finance they see it as a read-only label.
  */
 export function ProjectDonorSelect({ value, onChange, disabled }: Props) {
-  const { role } = useAuth();
-  const canEdit = role === "FINANCE" || role === "ADMIN";
+  // Who may set the funding source is configurable per organization (Admin > Settings).
+  const { canEditFundingSource: canEdit } = useOrgSettings();
   const [projects, setProjects] = useState<DonationProject[]>([]);
   const [donors, setDonors] = useState<Donor[]>([]);
   const [loading, setLoading] = useState(true);
