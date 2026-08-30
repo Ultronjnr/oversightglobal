@@ -431,15 +431,17 @@ export default function HODPortal() {
                               >
                                 <Scissors className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-                                onClick={() => setSourcingPR(pr)}
-                                title="Supplier quotes"
-                              >
-                                <Handshake className="h-4 w-4" />
-                              </Button>
+                              {canSourceSuppliers && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
+                                  onClick={() => setSourcingPR(pr)}
+                                  title="Supplier quotes"
+                                >
+                                  <Handshake className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
