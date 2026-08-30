@@ -36,6 +36,8 @@ import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionMod
 import { QuoteRequestModal } from "@/components/finance/QuoteRequestModal";
 import { SupplierList } from "@/components/finance/SupplierList";
 import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
+
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab, type TransactionStatusFilter } from "@/components/finance/TransactionStatusTab";
