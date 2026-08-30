@@ -86,6 +86,7 @@ export default function HODPortal() {
   const [showPRModal, setShowPRModal] = useState(false);
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
+  const { canSourceSuppliers } = useOrgSettings();
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
