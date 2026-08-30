@@ -30,6 +30,15 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { ProjectDonorSelect, type ProjectDonorValue } from "@/components/pr/ProjectDonorSelect";
 import { ProjectBudgetPreview } from "@/components/finance/ProjectBudgetPreview";
+import {
+  PRSupplierQuotesInput,
+  createEmptyQuoteDraft,
+  type SupplierQuoteDraft,
+} from "@/components/pr/PRSupplierQuotesInput";
+import {
+  addManualQuote,
+  uploadManualQuoteDocument,
+} from "@/services/pr-sourcing.service";
 
 
 const formSchema = z.object({
@@ -90,7 +99,11 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
     projectId: null,
     donorId: null,
   });
+  const [supplierQuotes, setSupplierQuotes] = useState<SupplierQuoteDraft[]>([
+    createEmptyQuoteDraft(),
+  ]);
   const [overBudget, setOverBudget] = useState(false);
+
 
   // Grand total (incl. VAT) used for the project budget reservation preview.
   const fundingTotal = items.reduce((sum, item) => {
@@ -291,12 +304,38 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         return;
       }
 
+      // Attach the captured supplier quotes so Finance can choose a winner.
+      const newPrId = result.data?.id;
+      const readyQuotes = supplierQuotes.filter(
+        (q) => (q.supplierId || q.supplierName.trim()) && Number(q.price) > 0,
+      );
+      if (newPrId && readyQuotes.length > 0) {
+        for (const q of readyQuotes) {
+          let path: string | null = null;
+          if (q.file) {
+            const up = await uploadManualQuoteDocument(q.file, newPrId);
+            if (up.success && up.path) path = up.path;
+          }
+          await addManualQuote({
+            prId: newPrId,
+            supplierId: q.supplierId,
+            supplierName: q.supplierId ? null : q.supplierName.trim(),
+            amount: Number(q.price),
+            notes: q.description || null,
+            documentPath: path,
+          });
+        }
+      }
+
       toast.success(`PR ${result.data?.transaction_id} created successfully!`);
-      
+
       // Reset form
       reset();
       setItems([createEmptyItem()]);
       setUploadedFile(null);
+      setSupplierQuotes([createEmptyQuoteDraft()]);
+
+
       
       onSuccess?.();
     } catch (error: any) {
@@ -658,54 +697,21 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     );
                   })()}
 
-                  {/* Supplier Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Preferred Supplier (optional)</Label>
-                      <Select
-                        value={selectedSupplier || ""}
-                        onValueChange={(value) => {
-                          setValue("supplier_preference", value);
-                          const match = suppliers.find((s) => s.company_name === value);
-                          if (match?.address) {
-                            setValue("supplier_address", match.address);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-white border-border h-11">
-                          <SelectValue
-                            placeholder={
-                              suppliers.length === 0
-                                ? "No approved suppliers yet"
-                                : "Leave blank to source quotes later"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
-                          {suppliers.map((s) => (
-                            <SelectItem key={s.id} value={s.company_name}>
-                              {s.company_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <button
-                        type="button"
-                        onClick={() => setSuggestOpen(true)}
-                        className="text-xs font-medium text-primary hover:underline"
-                      >
-                        + Suggest New Supplier
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Supplier Address</Label>
-                      <Input
-                        {...register("supplier_address")}
-                        placeholder="e.g., 123 Supplier Street, City, Postal Code"
-                        className="bg-white border-border h-11"
-                      />
-                    </div>
+                  {/* Supplier quotes — captured up front, Finance picks the winner */}
+                  <div className="space-y-3">
+                    <PRSupplierQuotesInput
+                      value={supplierQuotes}
+                      onChange={setSupplierQuotes}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSuggestOpen(true)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      + Suggest New Supplier
+                    </button>
                   </div>
+
 
                   {/* Funding source — links this PR to a donation project / donor */}
                   <div className="space-y-3">

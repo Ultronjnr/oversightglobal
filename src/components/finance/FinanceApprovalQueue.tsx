@@ -29,6 +29,7 @@ import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
@@ -390,8 +391,16 @@ export function FinanceApprovalQueue() {
                                   )}
                                 </div>
 
+                                {/* Choose a supplier (quotes captured on the PR) */}
+                                <QuoteChooser
+                                  prId={pr.id}
+                                  onApprove={() => startApprove(pr)}
+                                  onDecline={() => setDeclineModalPR(pr)}
+                                />
+
                                 {/* History */}
                                 <PRHistoryTimeline history={pr.history as any} />
+
 
                                 {/* Document */}
                                 {pr.document_url && (
