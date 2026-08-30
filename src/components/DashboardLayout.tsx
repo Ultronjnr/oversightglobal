@@ -87,7 +87,8 @@ export function DashboardLayout({
   const groups = groupNav(navItems);
   const currentPath = location.pathname + location.search;
   // Sidebar links can carry a ?tab= query, so match on path + search.
-  const isNavActive = (href: string) => currentPath === href || location.pathname === href;
+  const isNavActive = (href: string) =>
+    href.includes("?") ? currentPath === href : location.pathname === href && !location.search;
   // Phones get up to four thumb-reachable destinations, the rest live under "More".
   const primaryTabs = navItems.slice(0, navItems.length > 5 ? 4 : 5);
   const hasMore = navItems.length > primaryTabs.length;
