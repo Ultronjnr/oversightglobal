@@ -99,7 +99,10 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
     projectId: null,
     donorId: null,
   });
-  const [overBudget, setOverBudget] = useState(false);
+  const [supplierQuotes, setSupplierQuotes] = useState<SupplierQuoteDraft[]>([
+    createEmptyQuoteDraft(),
+  ]);
+
 
   // Grand total (incl. VAT) used for the project budget reservation preview.
   const fundingTotal = items.reduce((sum, item) => {
