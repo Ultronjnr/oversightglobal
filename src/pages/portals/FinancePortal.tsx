@@ -925,6 +925,20 @@ export default function FinancePortal() {
                                   </div>
                                 </div>
 
+                                {/* Choose a supplier — quotes captured on the requisition */}
+                                <div className="rounded-lg border border-border/40 bg-background p-4">
+                                  <QuoteChooser
+                                    prId={pr.id}
+                                    onApprove={() => openApproveModal(pr)}
+                                    onDecline={() => openDeclineModal(pr)}
+                                  />
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    After you approve the selection you'll categorise this
+                                    requisition — the classification is locked in once approved.
+                                  </p>
+                                </div>
+
+
                                 {/* Document */}
                                 {pr.document_url && (
                                   <div>
