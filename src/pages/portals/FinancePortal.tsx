@@ -169,11 +169,13 @@ export default function FinancePortal() {
     batches: ["batch_created"],
   };
 
-  const handleTabChange = (value: string) => {
-    setSearchParams(value === "approvals" ? {} : { tab: value }, { replace: true });
-    const types = tabNotifTypes[value];
+  // Opening a section from the sidebar clears its related notifications.
+  useEffect(() => {
+    const types = tabNotifTypes[searchParams.get("tab") || ""];
     if (types) void markNotifTypesRead(types);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
 
   const fetchData = async () => {
     setLoading(true);
