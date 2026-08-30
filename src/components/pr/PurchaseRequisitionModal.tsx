@@ -658,54 +658,21 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     );
                   })()}
 
-                  {/* Supplier Fields */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Preferred Supplier (optional)</Label>
-                      <Select
-                        value={selectedSupplier || ""}
-                        onValueChange={(value) => {
-                          setValue("supplier_preference", value);
-                          const match = suppliers.find((s) => s.company_name === value);
-                          if (match?.address) {
-                            setValue("supplier_address", match.address);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="bg-white border-border h-11">
-                          <SelectValue
-                            placeholder={
-                              suppliers.length === 0
-                                ? "No approved suppliers yet"
-                                : "Leave blank to source quotes later"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border border-border shadow-lg z-[100]">
-                          {suppliers.map((s) => (
-                            <SelectItem key={s.id} value={s.company_name}>
-                              {s.company_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <button
-                        type="button"
-                        onClick={() => setSuggestOpen(true)}
-                        className="text-xs font-medium text-primary hover:underline"
-                      >
-                        + Suggest New Supplier
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-foreground">Supplier Address</Label>
-                      <Input
-                        {...register("supplier_address")}
-                        placeholder="e.g., 123 Supplier Street, City, Postal Code"
-                        className="bg-white border-border h-11"
-                      />
-                    </div>
+                  {/* Supplier quotes — captured up front, Finance picks the winner */}
+                  <div className="space-y-3">
+                    <PRSupplierQuotesInput
+                      value={supplierQuotes}
+                      onChange={setSupplierQuotes}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSuggestOpen(true)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      + Suggest New Supplier
+                    </button>
                   </div>
+
 
                   {/* Funding source — links this PR to a donation project / donor */}
                   <div className="space-y-3">
