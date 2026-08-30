@@ -57,6 +57,7 @@ import {
 } from "@/services/approval.service";
 
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
+import { useOrgSettings } from "@/hooks/use-org-settings";
 
 interface ChatState { open: boolean; prId: string; transactionId: string; }
 
