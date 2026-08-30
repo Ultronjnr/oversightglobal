@@ -363,6 +363,15 @@ export function DashboardLayout({
 
         {/* Global floating receipt/invoice capture */}
         <GlobalScanFAB />
+
+        {/* Mobile bottom navigation */}
+        <MobileTabBar
+          items={primaryTabs}
+          activePath={location.pathname}
+          onMore={() => setDrawerOpen(true)}
+          showMore={hasMore}
+        />
+
       </SidebarInset>
     </SidebarProvider>
   );
