@@ -102,6 +102,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const [supplierQuotes, setSupplierQuotes] = useState<SupplierQuoteDraft[]>([
     createEmptyQuoteDraft(),
   ]);
+  const [overBudget, setOverBudget] = useState(false);
 
 
   // Grand total (incl. VAT) used for the project budget reservation preview.
