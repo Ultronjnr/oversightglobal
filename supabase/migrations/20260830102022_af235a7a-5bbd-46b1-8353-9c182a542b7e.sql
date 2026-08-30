@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_create_org_settings() FROM anon, authenticated, PUBLIC;
