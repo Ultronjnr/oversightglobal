@@ -333,7 +333,13 @@ export function DashboardLayout({
         {/* Main Content */}
         <TrialBanner />
 
-        <main className="px-4 sm:px-6 py-5 sm:py-8">
+        <main
+          className={cn(
+            "px-4 sm:px-6 py-5 sm:py-8",
+            navItems.length > 0 && "pb-24 md:pb-8"
+          )}
+        >
+
           {/* Title */}
           <div className="mb-5 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
