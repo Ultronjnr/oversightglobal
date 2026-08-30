@@ -30,6 +30,15 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import type { PRItem, UrgencyLevel } from "@/types/pr.types";
 import { ProjectDonorSelect, type ProjectDonorValue } from "@/components/pr/ProjectDonorSelect";
 import { ProjectBudgetPreview } from "@/components/finance/ProjectBudgetPreview";
+import {
+  PRSupplierQuotesInput,
+  createEmptyQuoteDraft,
+  type SupplierQuoteDraft,
+} from "@/components/pr/PRSupplierQuotesInput";
+import {
+  addManualQuote,
+  uploadManualQuoteDocument,
+} from "@/services/pr-sourcing.service";
 
 
 const formSchema = z.object({
