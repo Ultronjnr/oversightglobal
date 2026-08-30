@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2, PiggyBank } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export interface ProjectBudgetSummary {
   budget: number;
@@ -31,6 +31,7 @@ export function ProjectBudgetPreview({
   projectName,
   onOverBudgetChange,
 }: Props) {
+  const { format: formatCurrency } = useCurrency();
   const [summary, setSummary] = useState<ProjectBudgetSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,10 +124,10 @@ export function ProjectBudgetPreview({
       </div>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-        <Row label="Budget" value={summary.budget} />
-        <Row label="Reserved" value={summary.reserved} />
-        <Row label="Spent" value={summary.spent} />
-        <Row label="Remaining" value={summary.remaining} />
+        <Row label="Budget" value={formatCurrency(summary.budget)} />
+        <Row label="Reserved" value={formatCurrency(summary.reserved)} />
+        <Row label="Spent" value={formatCurrency(summary.spent)} />
+        <Row label="Remaining" value={formatCurrency(summary.remaining)} />
       </dl>
 
       <div
@@ -155,11 +156,11 @@ export function ProjectBudgetPreview({
   );
 }
 
-function Row({ label, value }: { label: string; value: number }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <>
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className="text-right font-medium tabular-nums">{formatCurrency(value)}</dd>
+      <dd className="text-right font-medium tabular-nums">{value}</dd>
     </>
   );
 }

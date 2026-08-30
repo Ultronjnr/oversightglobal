@@ -87,7 +87,7 @@ const getNumericPrice = (price: number | ''): number => {
 
 export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypassHODApproval = false }: PurchaseRequisitionModalProps) {
   const { user, profile } = useAuth();
-  const { currency, format: formatZAR } = useCurrency();
+  const { currency, format: formatCurrency } = useCurrency();
   const [transactionId, setTransactionId] = useState("");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -449,20 +449,20 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                         <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
                           <span className="text-muted-foreground">Subtotal:</span>
                           <span className="min-w-28 text-right font-semibold text-foreground">
-                            {formatZAR(calculateGrandTotal())}
+                            {formatCurrency(calculateGrandTotal())}
                           </span>
                         </div>
                         <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
                           <span className="text-muted-foreground">VAT (0%):</span>
                           <span className="min-w-28 text-right font-semibold text-muted-foreground">
-                            {formatZAR(0)}
+                            {formatCurrency(0)}
                           </span>
                         </div>
                       </div>
                       <div className="grid grid-cols-[1fr_auto] items-center gap-8 border-t border-border/60 px-1 pt-3 text-base font-bold">
                         <span className="text-foreground">Total (Inc. VAT):</span>
                         <span className="min-w-28 text-right text-lg text-foreground">
-                          {formatZAR(calculateGrandTotal())}
+                          {formatCurrency(calculateGrandTotal())}
                         </span>
                       </div>
                       <p className="mt-3 text-right text-xs text-muted-foreground">
@@ -543,7 +543,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                       {getUrgencyLabel()} Priority
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {supplierQuotes.length} quote(s) • {formatZAR(calculateGrandTotal())}
+                      {supplierQuotes.length} quote(s) • {formatCurrency(calculateGrandTotal())}
                     </span>
                   </div>
                 </div>
