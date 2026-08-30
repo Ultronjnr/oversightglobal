@@ -12,6 +12,8 @@ import { GlobalScanFAB } from "./capture/GlobalScanFAB";
 import { TrialBanner } from "./billing/TrialBanner";
 import { SubscriptionLockGate } from "./billing/SubscriptionLockGate";
 import { InsightsCarousel } from "./dashboard/InsightsCarousel";
+import { MobileTabBar } from "./MobileTabBar";
+
 
 import {
   Sheet,
