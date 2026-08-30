@@ -29,6 +29,7 @@ import { DocumentViewerModal } from "@/components/pr/DocumentViewerModal";
 import { PRHistoryTimeline } from "@/components/pr/PRHistoryTimeline";
 import { QuoteRequestModal } from "./QuoteRequestModal";
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
 import type { PurchaseRequisition, PRItem } from "@/types/pr.types";
 import { format } from "date-fns";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
