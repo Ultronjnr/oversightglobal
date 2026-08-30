@@ -444,24 +444,24 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
 
                   {/* Requisition total (based on the lowest quote) */}
                   <div className="flex justify-end">
-                    <div className="w-full max-w-sm" aria-label={`Requisition total in ${currency}`}>
+                    <div className="w-full max-w-md" aria-label={`Requisition total in ${currency}`}>
                       <div className="space-y-3 px-1 pb-3">
-                        <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
-                          <span className="text-muted-foreground">Subtotal:</span>
-                          <span className="min-w-28 text-right font-semibold text-foreground">
+                        <div className="flex items-center justify-between gap-6 text-sm">
+                          <span className="text-muted-foreground shrink-0">Subtotal:</span>
+                          <span className="text-right font-semibold text-foreground whitespace-nowrap tabular-nums">
                             {formatCurrency(calculateGrandTotal())}
                           </span>
                         </div>
-                        <div className="grid grid-cols-[1fr_auto] items-center gap-8 text-sm">
-                          <span className="text-muted-foreground">VAT (0%):</span>
-                          <span className="min-w-28 text-right font-semibold text-muted-foreground">
+                        <div className="flex items-center justify-between gap-6 text-sm">
+                          <span className="text-muted-foreground shrink-0">VAT (0%):</span>
+                          <span className="text-right font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
                             {formatCurrency(0)}
                           </span>
                         </div>
                       </div>
-                      <div className="grid grid-cols-[1fr_auto] items-center gap-8 border-t border-border/60 px-1 pt-3 text-base font-bold">
-                        <span className="text-foreground">Total (Inc. VAT):</span>
-                        <span className="min-w-28 text-right text-lg text-foreground">
+                      <div className="flex items-center justify-between gap-6 border-t border-border/60 px-1 pt-3 text-base font-bold">
+                        <span className="text-foreground shrink-0">Total (Inc. VAT):</span>
+                        <span className="text-right text-lg text-foreground whitespace-nowrap tabular-nums">
                           {formatCurrency(calculateGrandTotal())}
                         </span>
                       </div>
