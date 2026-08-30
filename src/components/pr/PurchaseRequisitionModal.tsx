@@ -531,7 +531,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                       {getUrgencyLabel()} Priority
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {items.length} item(s) • {formatZAR(calculateGrandTotal())}
+                      {supplierQuotes.length} quote(s) • {formatZAR(calculateGrandTotal())}
                     </span>
                   </div>
                 </div>
