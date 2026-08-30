@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare} from "lucide-react";
+import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare, Undo2, Percent, BarChart3, AlertCircle} from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
