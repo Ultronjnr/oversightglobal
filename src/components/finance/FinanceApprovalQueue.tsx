@@ -390,8 +390,16 @@ export function FinanceApprovalQueue() {
                                   )}
                                 </div>
 
+                                {/* Choose a supplier (quotes captured on the PR) */}
+                                <QuoteChooser
+                                  prId={pr.id}
+                                  onApprove={() => startApprove(pr)}
+                                  onDecline={() => setDeclineModalPR(pr)}
+                                />
+
                                 {/* History */}
                                 <PRHistoryTimeline history={pr.history as any} />
+
 
                                 {/* Document */}
                                 {pr.document_url && (
