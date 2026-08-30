@@ -69,6 +69,24 @@ export function getPortalNavItems(role?: string | null): NavItem[] {
     { label: "Messages", href: "/inbox", icon: <MessageSquare className="h-4 w-4" /> },
   ];
 
+  if (role === "HOD" || role === "EMPLOYEE" || !role) {
+    items.push(
+      {
+        label: "My Requisitions",
+        href: `${base}?tab=requisitions`,
+        icon: <ClipboardList className="h-4 w-4" />,
+        group: "My Work",
+      },
+      {
+        label: "My Reimbursements",
+        href: `${base}?tab=reimbursements`,
+        icon: <Undo2 className="h-4 w-4" />,
+        group: "My Work",
+      },
+    );
+  }
+
+
   if (role === "FINANCE") {
     items.push({ label: "Donations / 18A", href: "/donations", icon: <HandCoins className="h-4 w-4" /> });
     items.push(
