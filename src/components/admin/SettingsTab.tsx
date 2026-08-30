@@ -1,6 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -9,18 +10,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Bell, Shield, Globe } from "lucide-react";
-import { useState } from "react";
+import { Bell, Shield, Globe, SlidersHorizontal } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { SUPPORTED_CURRENCIES, CURRENCY_LABELS, type CurrencyCode } from "@/lib/utils";
+import { useOrgSettings } from "@/hooks/use-org-settings";
+import {
+  PERMISSION_SCOPE_LABELS,
+  updateOrganizationSettings,
+  type PermissionScope,
+} from "@/services/org-settings.service";
+
+const SCOPES: PermissionScope[] = ["FINANCE_ADMIN", "HOD_UP", "ALL_STAFF"];
 
 export function SettingsTab() {
   const { profile } = useAuth();
   const { currency, refreshCurrency } = useCurrency();
   const [saving, setSaving] = useState(false);
+  const { settings, isLoading: rulesLoading, refresh: refreshRules } = useOrgSettings();
+  const [threshold, setThreshold] = useState("0");
+  const [savingRules, setSavingRules] = useState(false);
+
+  useEffect(() => {
+    setThreshold(String(settings.finance_approval_threshold ?? 0));
+  }, [settings.finance_approval_threshold]);
+
+  const saveRule = async (
+    updates: Parameters<typeof updateOrganizationSettings>[1],
+  ) => {
+    if (!profile?.organization_id) {
+      toast.error("No organization found for your account.");
+      return;
+    }
+    setSavingRules(true);
+    const result = await updateOrganizationSettings(profile.organization_id, updates);
+    setSavingRules(false);
+    if (!result.success) {
+      toast.error(result.error || "Failed to save setting.");
+      return;
+    }
+    await refreshRules();
+    toast.success("Setting saved.");
+  };
 
   const handleCurrencyChange = async (value: string) => {
     if (!profile?.organization_id) {
