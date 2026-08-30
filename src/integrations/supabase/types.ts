@@ -1323,6 +1323,44 @@ export type Database = {
           },
         ]
       }
+      organization_settings: {
+        Row: {
+          created_at: string
+          finance_approval_threshold: number
+          funding_source_editors: string
+          organization_id: string
+          require_vat_document: boolean
+          supplier_sourcing_roles: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          finance_approval_threshold?: number
+          funding_source_editors?: string
+          organization_id: string
+          require_vat_document?: boolean
+          supplier_sourcing_roles?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          finance_approval_threshold?: number
+          funding_source_editors?: string
+          organization_id?: string
+          require_vat_document?: boolean
+          supplier_sourcing_roles?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_subscriptions: {
         Row: {
           billing_cycle: Database["public"]["Enums"]["billing_cycle"]
