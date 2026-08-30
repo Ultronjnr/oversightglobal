@@ -733,9 +733,9 @@ export async function getQuotes(): Promise<{
       .from("quotes")
       .select(`
         *,
-        transaction:transactions (*),
-        supplier:suppliers (*),
-        pr:purchase_requisitions ( items, currency, transaction_id )
+        transaction:transactions!quotes_transaction_id_fkey (*),
+        supplier:suppliers!quotes_supplier_id_fkey (*),
+        pr:purchase_requisitions!quotes_pr_id_fkey ( items, currency, transaction_id )
       `)
       .order("created_at", { ascending: false });
 
