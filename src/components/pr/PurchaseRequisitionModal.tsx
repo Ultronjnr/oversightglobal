@@ -89,7 +89,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const { user, profile } = useAuth();
   const { currency, format: formatZAR } = useCurrency();
   const [transactionId, setTransactionId] = useState("");
-  const [items, setItems] = useState<PRItemExtended[]>([createEmptyItem()]);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -105,12 +105,6 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const [overBudget, setOverBudget] = useState(false);
 
 
-  // Grand total (incl. VAT) used for the project budget reservation preview.
-  const fundingTotal = items.reduce((sum, item) => {
-    const sub = item.quantity * getNumericPrice(item.unit_price);
-    const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
-    return sum + sub + sub * vatRate;
-  }, 0);
 
 
   const {
@@ -159,48 +153,22 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
     }
   }, [open, profile, setValue]);
 
-  // Add new item at TOP for better UX
-  const addItem = () => {
-    setItems((prev) => [createEmptyItem(), ...prev]);
-  };
+  // ---- Supplier quote maths -------------------------------------------------
+  const quoteTotalOf = (q: SupplierQuoteDraft) =>
+    (Number(q.quantity) || 0) * (Number(q.price) || 0);
 
-  const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  const pricedQuotes = supplierQuotes.filter(
+    (q) => (q.supplierId || q.supplierName.trim()) && quoteTotalOf(q) > 0,
+  );
+  const lowestQuote =
+    pricedQuotes.length > 0
+      ? pricedQuotes.reduce((a, b) => (quoteTotalOf(a) <= quoteTotalOf(b) ? a : b))
+      : null;
 
-  const updateItem = (index: number, field: keyof PRItemExtended, value: string | number) => {
-    setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
-        
-        // Handle unit_price specially to allow empty string
-        let updatedValue = value;
-        if (field === "unit_price") {
-          // Allow empty string or valid number
-          updatedValue = value === '' ? '' : (parseFloat(String(value)) || 0);
-        }
-        
-        const updated = { ...item, [field]: updatedValue };
-        
-        // Recalculate total when quantity or unit_price changes
-        if (field === "quantity" || field === "unit_price" || field === "vat_classification") {
-          const numericPrice = getNumericPrice(updated.unit_price);
-          const vatMultiplier = updated.vat_classification === "STANDARD" ? 1.15 : 1;
-          updated.total = updated.quantity * numericPrice * vatMultiplier;
-        }
-        
-        return updated;
-      })
-    );
-  };
+  const calculateGrandTotal = () => (lowestQuote ? quoteTotalOf(lowestQuote) : 0);
 
-  const calculateGrandTotal = () => {
-    return items.reduce((sum, item) => {
-      const numericPrice = getNumericPrice(item.unit_price);
-      const vatMultiplier = item.vat_classification === "STANDARD" ? 1.15 : 1;
-      return sum + (item.quantity * numericPrice * vatMultiplier);
-    }, 0);
-  };
+  // Amount used for the project budget reservation preview.
+  const fundingTotal = calculateGrandTotal();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -248,13 +216,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   };
 
   const onSubmit = async (data: FormData) => {
-    // Validate items
-    const validItems = items.filter(
-      (item) => (item.name.trim() || item.description.trim()) && item.quantity > 0 && getNumericPrice(item.unit_price) > 0
-    );
-
-    if (validItems.length === 0) {
-      toast.error("Please add at least one valid item");
+    if (!lowestQuote) {
+      toast.error("Add at least one supplier quote with a supplier and price");
       return;
     }
 
@@ -274,15 +237,20 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         if (url) documentUrl = url;
       }
 
-      // Map extended items to base PRItem format
-      const prItems: PRItem[] = validItems.map(item => ({
-        id: item.id,
-        description: item.name || item.description,
-        quantity: item.quantity,
-        unit_price: getNumericPrice(item.unit_price),
-        total: item.total,
-        supplier_preference: data.supplier_preference,
-      }));
+      // The requisition line is derived from the lowest quote; every captured
+      // quote is attached below so Finance can pick a different winner.
+      const prItems: PRItem[] = [
+        {
+          id: lowestQuote.id,
+          description:
+            lowestQuote.description ||
+            lowestQuote.supplierName ||
+            "Supplier quote",
+          quantity: Number(lowestQuote.quantity) || 1,
+          unit_price: Number(lowestQuote.price) || 0,
+          total: quoteTotalOf(lowestQuote),
+        },
+      ];
 
       // Use bypass function if HOD is submitting their own PR
       const createFn = bypassHODApproval ? createPurchaseRequisitionBypassHOD : createPurchaseRequisition;
@@ -306,11 +274,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
 
       // Attach the captured supplier quotes so Finance can choose a winner.
       const newPrId = result.data?.id;
-      const readyQuotes = supplierQuotes.filter(
-        (q) => (q.supplierId || q.supplierName.trim()) && Number(q.price) > 0,
-      );
-      if (newPrId && readyQuotes.length > 0) {
-        for (const q of readyQuotes) {
+      if (newPrId && pricedQuotes.length > 0) {
+        for (const q of pricedQuotes) {
           let path: string | null = null;
           if (q.file) {
             const up = await uploadManualQuoteDocument(q.file, newPrId);
@@ -320,8 +285,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
             prId: newPrId,
             supplierId: q.supplierId,
             supplierName: q.supplierId ? null : q.supplierName.trim(),
-            amount: Number(q.price),
-            notes: q.description || null,
+            amount: quoteTotalOf(q),
+            notes: [q.description, q.notes].filter(Boolean).join(" — ") || null,
             documentPath: path,
           });
         }
@@ -331,7 +296,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
 
       // Reset form
       reset();
-      setItems([createEmptyItem()]);
+      
       setUploadedFile(null);
       setSupplierQuotes([createEmptyQuoteDraft()]);
 
@@ -462,242 +427,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     </div>
                   </div>
 
-                  {/* Items Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-foreground">Items Required</h3>
-                        <Badge 
-                          variant="secondary" 
-                          className="bg-primary/10 text-primary border-primary/20 font-semibold px-2.5 py-0.5"
-                        >
-                          {items.length} {items.length === 1 ? 'item' : 'items'}
-                        </Badge>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addItem}
-                        className="bg-muted/50 hover:bg-muted border-border/50 gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add Item
-                      </Button>
-                    </div>
-
-                    <div className="space-y-4">
-                      {items.map((item, index) => (
-                        <div
-                          key={item.id}
-                          className="bg-white border border-border/60 rounded-lg overflow-hidden shadow-sm"
-                        >
-                          {/* Item Card with Blue Left Border */}
-                          <div className="flex">
-                            <div className="w-1.5 bg-primary shrink-0" />
-                            <div className="flex-1 p-5 space-y-5">
-                              {/* Item Header */}
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-semibold text-foreground">Item {items.length - index}</h4>
-                                {items.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => removeItem(index)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-
-                              {/* Item Fields Grid */}
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">
-                                    Item Name <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Input
-                                    value={item.name}
-                                    onChange={(e) => updateItem(index, "name", e.target.value)}
-                                    placeholder="e.g., Laptop"
-                                    className="bg-white border-border h-10"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">
-                                    Description <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Input
-                                    value={item.description}
-                                    onChange={(e) => updateItem(index, "description", e.target.value)}
-                                    placeholder="e.g., Dell Laptop Computer"
-                                    className="bg-white border-border h-10"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">Quantity</Label>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    value={item.quantity}
-                                    onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 1)}
-                                    className="bg-white border-border h-10"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">
-                                    Unit Price ({currency}) <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Input
-                                    type="text"
-                                    inputMode="decimal"
-                                    value={item.unit_price}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      // Allow empty, or valid decimal number
-                                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                                        updateItem(index, "unit_price", val === '' ? '' : val);
-                                      }
-                                    }}
-                                    onBlur={(e) => {
-                                      // Format on blur if there's a value
-                                      const val = e.target.value;
-                                      if (val !== '' && !isNaN(parseFloat(val))) {
-                                        updateItem(index, "unit_price", parseFloat(val));
-                                      }
-                                    }}
-                                    placeholder="e.g. 12500.00"
-                                    className="bg-white border-border h-10"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">VAT Classification</Label>
-                                  <Select
-                                    value={item.vat_classification}
-                                    onValueChange={(value) => updateItem(index, "vat_classification", value)}
-                                  >
-                                    <SelectTrigger className="bg-white border-border h-10">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-white border border-border shadow-lg z-[100]">
-                                      <SelectItem value="STANDARD">Standard Rated (15% VAT)</SelectItem>
-                                      <SelectItem value="ZERO">Zero Rated (0% VAT)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-
-                              {/* Item Total with VAT Breakdown */}
-                              {(() => {
-                                const subtotal = item.quantity * getNumericPrice(item.unit_price);
-                                const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
-                                const vatAmount = subtotal * vatRate;
-                                const totalWithVat = subtotal + vatAmount;
-                                
-                                return (
-                                  <div className="pt-3 border-t border-border/30 space-y-1.5">
-                                    <div className="flex items-center justify-end gap-3">
-                                      <span className="text-sm text-muted-foreground">Subtotal:</span>
-                                      <span className="text-sm font-medium text-foreground w-28 text-right">
-                                        {formatZAR(subtotal)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-end gap-3">
-                                      <span className="text-sm text-muted-foreground">
-                                        VAT ({item.vat_classification === "STANDARD" ? "15%" : "0%"}):
-                                      </span>
-                                      <span className={`text-sm font-medium w-28 text-right ${vatAmount > 0 ? "text-primary" : "text-muted-foreground"}`}>
-                                        {vatAmount > 0 ? `+ ${formatZAR(vatAmount)}` : formatZAR(0)}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center justify-end gap-3 pt-1.5 border-t border-dashed border-border/50">
-                                      <span className="text-sm font-medium text-foreground">Total (Inc. VAT):</span>
-                                      <span className="text-lg font-bold text-foreground w-28 text-right">
-                                        {formatZAR(totalWithVat)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-
-                              {/* Technical Specs & Justification */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">Technical Specifications</Label>
-                                  <Textarea
-                                    value={item.technical_specs}
-                                    onChange={(e) => updateItem(index, "technical_specs", e.target.value)}
-                                    placeholder="Model, specifications, technical requirements..."
-                                    className="bg-white border-border min-h-[90px] resize-none"
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label className="text-sm text-muted-foreground">Business Justification</Label>
-                                  <Textarea
-                                    value={item.business_justification}
-                                    onChange={(e) => updateItem(index, "business_justification", e.target.value)}
-                                    placeholder="Business need, purpose, expected benefits..."
-                                    className="bg-white border-border min-h-[90px] resize-none"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Grand Total Bar with VAT Breakdown */}
-                  {(() => {
-                    const grandSubtotal = items.reduce((sum, item) => {
-                      return sum + (item.quantity * getNumericPrice(item.unit_price));
-                    }, 0);
-                    
-                    const grandVat = items.reduce((sum, item) => {
-                      const subtotal = item.quantity * getNumericPrice(item.unit_price);
-                      const vatRate = item.vat_classification === "STANDARD" ? 0.15 : 0;
-                      return sum + (subtotal * vatRate);
-                    }, 0);
-                    
-                    const grandTotal = grandSubtotal + grandVat;
-                    
-                    return (
-                      <div className="bg-primary/5 border border-primary/20 rounded-lg px-6 py-5">
-                        <div className="space-y-3">
-                          {/* Subtotal Row */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Subtotal (excl. VAT):</span>
-                            <span className="text-base font-medium text-foreground">
-                              {formatZAR(grandSubtotal)}
-                            </span>
-                          </div>
-                          
-                          {/* VAT Row */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Total VAT (15%):</span>
-                            <span className={`text-base font-medium ${grandVat > 0 ? "text-primary" : "text-muted-foreground"}`}>
-                              {grandVat > 0 ? `+ ${formatZAR(grandVat)}` : formatZAR(0)}
-                            </span>
-                          </div>
-                          
-                          {/* Divider */}
-                          <div className="border-t border-primary/30 pt-3">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-foreground text-base">Grand Total ({currency}):</span>
-                              <span className="text-2xl font-bold text-primary">
-                                {formatZAR(grandTotal)}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Supplier quotes — captured up front, Finance picks the winner */}
+                  {/* Supplier quotes — the core of the requisition */}
                   <div className="space-y-3">
                     <PRSupplierQuotesInput
                       value={supplierQuotes}
@@ -710,6 +440,23 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     >
                       + Suggest New Supplier
                     </button>
+                  </div>
+
+                  {/* Requisition total (based on the lowest quote) */}
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg px-6 py-5">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <span className="font-semibold text-foreground text-base">
+                          Requisition Total ({currency})
+                        </span>
+                        <p className="text-xs text-muted-foreground">
+                          Based on the lowest quote — Finance may approve a different supplier.
+                        </p>
+                      </div>
+                      <span className="text-2xl font-bold text-primary">
+                        {formatZAR(calculateGrandTotal())}
+                      </span>
+                    </div>
                   </div>
 
 
