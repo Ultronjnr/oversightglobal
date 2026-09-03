@@ -1780,6 +1780,42 @@ export type Database = {
         }
         Relationships: []
       }
+      permission_audit_log: {
+        Row: {
+          change_type: string
+          changed_by: string
+          created_at: string
+          id: string
+          new_value: string | null
+          old_value: string | null
+          organization_id: string
+          subject: string
+          target_user_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id: string
+          subject: string
+          target_user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          organization_id?: string
+          subject?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       pr_message_attachments: {
         Row: {
           created_at: string
@@ -3202,6 +3238,88 @@ export type Database = {
           },
         ]
       }
+      user_approval_limits: {
+        Row: {
+          approval_type: string
+          created_at: string
+          currency: string
+          id: string
+          max_amount: number | null
+          organization_id: string
+          unlimited: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_type: string
+          created_at?: string
+          currency?: string
+          id?: string
+          max_amount?: number | null
+          organization_id: string
+          unlimited?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_type?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          max_amount?: number | null
+          organization_id?: string
+          unlimited?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_approval_limits_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          organization_id: string
+          permission_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          organization_id: string
+          permission_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          organization_id?: string
+          permission_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -3380,6 +3498,10 @@ export type Database = {
         Args: { _batch_id: string; _export_id: string; _file_path: string }
         Returns: Json
       }
+      can_approve_amount: {
+        Args: { _amount: number; _approval_type: string; _user_id: string }
+        Returns: boolean
+      }
       cancel_batch_draft: { Args: { _batch_id: string }; Returns: Json }
       cancel_supplier_invite: {
         Args: { _invitation_id: string }
@@ -3466,6 +3588,13 @@ export type Database = {
         }
         Returns: Json
       }
+      default_role_permission: {
+        Args: {
+          _permission: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3542,6 +3671,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_permission: {
+        Args: { _permission: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
