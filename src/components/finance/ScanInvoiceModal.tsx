@@ -64,6 +64,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: () => void;
+  /** Optional URL of a sample invoice preloaded for guided first-run setup. */
+  sampleUrl?: string;
 }
 
 const codeLabels: Record<SarsValidationCode, string> = {
@@ -75,7 +77,7 @@ const codeLabels: Record<SarsValidationCode, string> = {
   MISSING_VAT_AMOUNT: "Missing VAT Amount",
 };
 
-export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
+export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: Props) {
   const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -185,6 +187,29 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
     listProjects().then((p) => setProjects(p)).catch(() => setProjects([]));
     listDonors().then((d) => setDonors(d)).catch(() => setDonors([]));
   }, [open]);
+
+  // Guided setup: preload a sample invoice so first-time users can try the flow.
+  useEffect(() => {
+    if (!open || !sampleUrl || file) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(sampleUrl);
+        if (!res.ok) throw new Error("sample unavailable");
+        const blob = await res.blob();
+        if (cancelled) return;
+        await onFile(
+          new File([blob], "sample-invoice.pdf", { type: "application/pdf" }),
+        );
+      } catch {
+        toast.error("Could not load the sample invoice. Upload your own instead.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, sampleUrl]);
 
   const reset = () => {
     setFile(null);
