@@ -41,6 +41,7 @@ import { useOrgSettings } from "@/hooks/use-org-settings";
 export function FinanceApprovalQueue() {
   const { currency: orgCurrency } = useCurrency();
   const { settings: orgSettings } = useOrgSettings();
+  const { can, canApproveAmount, approvalLimit } = usePermissions();
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
