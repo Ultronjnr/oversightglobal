@@ -64,6 +64,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated?: () => void;
+  /** Optional URL of a sample invoice preloaded for guided first-run setup. */
+  sampleUrl?: string;
 }
 
 const codeLabels: Record<SarsValidationCode, string> = {
@@ -75,7 +77,7 @@ const codeLabels: Record<SarsValidationCode, string> = {
   MISSING_VAT_AMOUNT: "Missing VAT Amount",
 };
 
-export function ScanInvoiceModal({ open, onOpenChange, onCreated }: Props) {
+export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: Props) {
   const { currency } = useCurrency();
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
