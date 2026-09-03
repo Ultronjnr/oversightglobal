@@ -106,7 +106,7 @@ export function DashboardLayout({
       case "EMPLOYEE": return "Employee";
       case "HOD": return "Head of Department";
       case "FINANCE": return "Finance Manager";
-      case "ADMIN": return "Administrator";
+      case "ADMIN": return "Super User";
       case "SUPPLIER": return "Supplier";
       default: return "User";
     }
