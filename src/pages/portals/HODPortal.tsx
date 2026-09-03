@@ -91,6 +91,7 @@ export default function HODPortal() {
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
   const { canSourceSuppliers } = useOrgSettings();
+  const { can, canApproveAmount, approvalLimit } = usePermissions();
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
