@@ -36,6 +36,7 @@ describe("org-settings scopeAllows", () => {
 
   it("defaults are restrictive", () => {
     expect(DEFAULT_ORG_SETTINGS.funding_source_editors).toBe("FINANCE_ADMIN");
-    expect(DEFAULT_ORG_SETTINGS.supplier_sourcing_roles).toBe("FINANCE_ADMIN");
+    // HODs must be able to source supplier quotes by default (entry point lives in HOD portal).
+    expect(DEFAULT_ORG_SETTINGS.supplier_sourcing_roles).toBe("HOD_UP");
   });
 });

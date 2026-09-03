@@ -21,7 +21,7 @@ export interface OrganizationSettings {
 export const DEFAULT_ORG_SETTINGS: Omit<OrganizationSettings, "organization_id"> = {
   funding_source_editors: "FINANCE_ADMIN",
   require_vat_document: false,
-  supplier_sourcing_roles: "FINANCE_ADMIN",
+  supplier_sourcing_roles: "HOD_UP",
   finance_approval_threshold: 0,
 };
 
