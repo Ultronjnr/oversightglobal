@@ -17,6 +17,8 @@ export function OviFirstRunCard() {
     () => localStorage.getItem(storageKey) === "1",
   );
   const [scanOpen, setScanOpen] = useState(false);
+  const [useSample, setUseSample] = useState(false);
+  const [captured, setCaptured] = useState(false);
   const [bubbleOpen, setBubbleOpen] = useState(true);
 
   if (dismissed) return null;
@@ -51,15 +53,22 @@ export function OviFirstRunCard() {
               Upload an invoice and watch it become documented, tracked and report-ready.
             </p>
             <div className="flex flex-wrap gap-3 mt-5">
-              <Button onClick={() => setScanOpen(true)}>Upload invoice</Button>
+              <Button
+                onClick={() => {
+                  setUseSample(false);
+                  setScanOpen(true);
+                }}
+              >
+                Upload invoice
+              </Button>
               <Button
                 variant="secondary"
                 className="bg-white/10 text-white hover:bg-white/20 border-0"
-                onClick={() =>
-                  toast.info(
-                    "The sample invoice arrives with the guided capture step — coming in the next layer.",
-                  )
-                }
+                onClick={() => {
+                  setUseSample(true);
+                  setScanOpen(true);
+                  toast.info("Loading a sample invoice — Ovi will scan it for you.");
+                }}
               >
                 Try a sample
               </Button>
@@ -80,9 +89,27 @@ export function OviFirstRunCard() {
               </p>
               <p className="text-xs text-muted-foreground">Your Ovasyt guide</p>
               <p className="text-sm mt-3">
-                Hi{profile?.name ? ` ${profile.name}` : ""}! Let's capture your very first
-                expense. Just tap <strong>Upload invoice</strong> — I'll do the rest. ✨
+                {captured ? (
+                  <>
+                    Beautifully done{profile?.name ? `, ${profile.name}` : ""}! That expense is
+                    now documented, categorised and ready for donor reporting. Next I can show
+                    you projects, donors and Section 18A receipts.
+                  </>
+                ) : (
+                  <>
+                    Hi{profile?.name ? ` ${profile.name}` : ""}! Let's capture your very first
+                    expense. Upload an invoice — or tap <strong>Try a sample</strong> and I'll
+                    walk you through it. ✨
+                  </>
+                )}
               </p>
+              <ol className="mt-3 space-y-1 text-xs text-muted-foreground">
+                <li>1. Upload or scan the invoice</li>
+                <li>2. Ovi extracts supplier, VAT and line items</li>
+                <li>3. Pick or create the expense category</li>
+                <li>4. Link it to a project and donor</li>
+                <li>5. Transaction created &amp; report-ready</li>
+              </ol>
               <div className="flex items-center justify-between mt-4">
                 <button
                   type="button"
@@ -100,7 +127,16 @@ export function OviFirstRunCard() {
         </div>
       )}
 
-      <ScanInvoiceModal open={scanOpen} onOpenChange={setScanOpen} />
+      <ScanInvoiceModal
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        sampleUrl={useSample ? "/samples/sample-invoice.pdf" : undefined}
+        onCreated={() => {
+          setCaptured(true);
+          setBubbleOpen(true);
+          toast.success("Your first expense is captured — welcome to Ovasyt!");
+        }}
+      />
     </>
   );
 }
