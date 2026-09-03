@@ -1323,6 +1323,53 @@ export type Database = {
           },
         ]
       }
+      organization_onboarding: {
+        Row: {
+          cause: string | null
+          completed_at: string | null
+          created_at: string
+          heard_about: string | null
+          id: string
+          organization_id: string
+          pain_point: string | null
+          team_size: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cause?: string | null
+          completed_at?: string | null
+          created_at?: string
+          heard_about?: string | null
+          id?: string
+          organization_id: string
+          pain_point?: string | null
+          team_size?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cause?: string | null
+          completed_at?: string | null
+          created_at?: string
+          heard_about?: string | null
+          id?: string
+          organization_id?: string
+          pain_point?: string | null
+          team_size?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_onboarding_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_settings: {
         Row: {
           created_at: string
