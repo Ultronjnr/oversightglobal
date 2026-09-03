@@ -38,7 +38,15 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
     const res = await getPRSourcingQuotes(prId);
     setQuotes(res.data);
     const accepted = res.data.find((q) => q.status === "ACCEPTED");
-    if (accepted) setSelectedId(accepted.id);
+    if (accepted) {
+      setSelectedId(accepted.id);
+    } else {
+      // Recommend the lowest live quote up front — Finance can change it.
+      const live = res.data.filter((q) => q.status !== "REJECTED");
+      if (live.length > 0) {
+        setSelectedId(live.reduce((a, b) => (a.amount <= b.amount ? a : b)).id);
+      }
+    }
     setLoading(false);
   }, [prId]);
 
@@ -57,6 +65,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
 
   const accepted = quotes.find((q) => q.status === "ACCEPTED") || null;
   const selected = quotes.find((q) => q.id === selectedId) || null;
+
 
   const openDoc = async (q: SourcedQuote) => {
     if (!q.document_url) return;
