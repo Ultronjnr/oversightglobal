@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare, Undo2, Percent, BarChart3, AlertCircle, Users, Mail, Truck, Settings, ClipboardList} from "lucide-react";
+import {LayoutDashboard, Building2, ReceiptText as Receipt, User, FileText, HandCoins, CreditCard, Wallet, CheckCheck, Layers, MessageSquare, Undo2, Percent, BarChart3, AlertCircle, Users, Mail, Truck, Settings, ClipboardList, ShieldCheck} from "lucide-react";
 // Building2 used by adminNavItems below
 
 export interface NavItem {
@@ -28,6 +28,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Users & Roles", href: "/admin/portal?tab=users", icon: <Users className="h-4 w-4" />, group: "Administration" },
   { label: "Cost Centers / Depts", href: "/admin/portal?tab=departments", icon: <Building2 className="h-4 w-4" />, group: "Administration" },
   { label: "Invitations", href: "/admin/portal?tab=invitations", icon: <Mail className="h-4 w-4" />, group: "Administration" },
+  { label: "Users & Permissions", href: "/admin/portal?tab=permissions", icon: <ShieldCheck className="h-4 w-4" />, group: "Administration" },
   { label: "Settings", href: "/admin/portal?tab=settings", icon: <Settings className="h-4 w-4" />, group: "Administration" },
 
   // Operations workspaces
