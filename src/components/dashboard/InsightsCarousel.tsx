@@ -150,7 +150,7 @@ export function InsightsCarousel() {
         { label: "Settled to date", value: formatCurrency(d?.paid || 0) },
         { label: "Transactions", value: String(d?.txnCount ?? 0) },
       ],
-      href: "/expense-history",
+      href: "/expenses",
       hrefLabel: "Open expense history",
     },
     {
@@ -191,7 +191,7 @@ export function InsightsCarousel() {
         { label: "Unsettled transactions", value: String(d?.unpaidCount ?? 0) },
         { label: "Already paid", value: formatCurrency(d?.paid || 0) },
       ],
-      href: orgWide ? "/finance?tab=payments" : undefined,
+      href: orgWide ? "/finance/portal?tab=payments" : undefined,
       hrefLabel: "Open payment queue",
     },
   ];
