@@ -150,7 +150,7 @@ export default function Onboarding() {
       <PageSeo
         title="Set up your Ovasyt workspace"
         description="Answer four quick questions so Ovasyt can tailor your NPO finance workspace."
-        noIndex
+        path="/onboarding"
       />
       <Logo size="md" />
 
