@@ -136,7 +136,7 @@ export function InsightsCarousel() {
         { label: "Awaiting assessment", value: String(d?.vatUnassessed ?? 0) },
         { label: "Transactions reviewed", value: String(d?.txnCount ?? 0) },
       ],
-      href: orgWide ? "/finance?tab=vat_dashboard" : undefined,
+      href: orgWide ? "/finance/portal?tab=vat_dashboard" : undefined,
       hrefLabel: "Open VAT dashboard",
     },
     {
