@@ -44,7 +44,7 @@ const roleLabels: Record<string, string> = {
   EMPLOYEE: "Employee",
   HOD: "Head of Department",
   FINANCE: "Finance",
-  ADMIN: "Administrator",
+  ADMIN: "Super User",
 };
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
