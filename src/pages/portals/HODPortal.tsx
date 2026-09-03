@@ -49,6 +49,7 @@ import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTab
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
 import {
