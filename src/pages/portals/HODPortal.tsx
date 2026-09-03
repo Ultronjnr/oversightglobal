@@ -527,7 +527,16 @@ export default function HODPortal() {
                                   </div>
                                 </div>
 
-                                {/* Document */}
+                                {/* Choose a supplier — quotes captured on the requisition */}
+                                <div className="rounded-lg border border-border/40 bg-background p-4">
+                                  <QuoteChooser
+                                    prId={pr.id}
+                                    onApprove={() => openApproveModal(pr)}
+                                    onDecline={() => openDeclineModal(pr)}
+                                  />
+                                </div>
+
+
                                 {pr.document_url && (
                                   <div>
                                     <button
