@@ -76,6 +76,12 @@ export function getSafeErrorMessage(error: unknown): string {
   const errorCode = getErrorValue(error, 'code');
   const errorMessage = getErrorValue(error, 'message') || '';
 
+  // Authorization messages raised by our own permission checks are already
+  // user-facing and must reach the user verbatim (e.g. approval limits).
+  if (/approval authority|permission to (approve|decline)/i.test(errorMessage)) {
+    return errorMessage;
+  }
+
   // Check for known PostgreSQL error codes
   if (errorCode && USER_ERROR_MESSAGES[errorCode]) {
     return USER_ERROR_MESSAGES[errorCode];
