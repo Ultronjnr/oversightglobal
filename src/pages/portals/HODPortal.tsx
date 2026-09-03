@@ -49,6 +49,7 @@ import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTab
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
+import { QuoteChooser } from "@/components/finance/QuoteChooser";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
 import {
@@ -527,7 +528,16 @@ export default function HODPortal() {
                                   </div>
                                 </div>
 
-                                {/* Document */}
+                                {/* Choose a supplier — quotes captured on the requisition */}
+                                <div className="rounded-lg border border-border/40 bg-background p-4">
+                                  <QuoteChooser
+                                    prId={pr.id}
+                                    onApprove={() => openApproveModal(pr)}
+                                    onDecline={() => openDeclineModal(pr)}
+                                  />
+                                </div>
+
+
                                 {pr.document_url && (
                                   <div>
                                     <button
