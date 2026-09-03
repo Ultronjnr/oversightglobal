@@ -275,13 +275,15 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
       // Attach the captured supplier quotes so Finance can choose a winner.
       const newPrId = result.data?.id;
       if (newPrId && pricedQuotes.length > 0) {
+        let attached = 0;
+        let lastError: string | undefined;
         for (const q of pricedQuotes) {
           let path: string | null = null;
           if (q.file) {
             const up = await uploadManualQuoteDocument(q.file, newPrId);
             if (up.success && up.path) path = up.path;
           }
-          await addManualQuote({
+          const res = await addManualQuote({
             prId: newPrId,
             supplierId: q.supplierId,
             supplierName: q.supplierId ? null : q.supplierName.trim(),
@@ -289,8 +291,16 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
             notes: [q.description, q.notes].filter(Boolean).join(" — ") || null,
             documentPath: path,
           });
+          if (res.success) attached += 1;
+          else lastError = res.error;
+        }
+        if (attached < pricedQuotes.length) {
+          toast.error(
+            `Only ${attached} of ${pricedQuotes.length} supplier quotes could be attached${lastError ? `: ${lastError}` : ""}`,
+          );
         }
       }
+
 
       toast.success(`PR ${result.data?.transaction_id} created successfully!`);
 
