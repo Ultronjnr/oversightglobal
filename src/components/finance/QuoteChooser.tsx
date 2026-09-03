@@ -38,7 +38,15 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
     const res = await getPRSourcingQuotes(prId);
     setQuotes(res.data);
     const accepted = res.data.find((q) => q.status === "ACCEPTED");
-    if (accepted) setSelectedId(accepted.id);
+    if (accepted) {
+      setSelectedId(accepted.id);
+    } else {
+      // Recommend the lowest live quote up front — Finance can change it.
+      const live = res.data.filter((q) => q.status !== "REJECTED");
+      if (live.length > 0) {
+        setSelectedId(live.reduce((a, b) => (a.amount <= b.amount ? a : b)).id);
+      }
+    }
     setLoading(false);
   }, [prId]);
 
@@ -57,6 +65,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
 
   const accepted = quotes.find((q) => q.status === "ACCEPTED") || null;
   const selected = quotes.find((q) => q.id === selectedId) || null;
+
 
   const openDoc = async (q: SourcedQuote) => {
     if (!q.document_url) return;
@@ -101,18 +110,23 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="font-semibold text-foreground">Choose a supplier</h4>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h4 className="text-base font-semibold tracking-tight text-foreground">
+          Choose a supplier
+        </h4>
         <p className="text-xs text-muted-foreground">
-          Select one quote to approve. The lowest price is flagged — but you decide.
+          {accepted
+            ? "A supplier has already been selected for this requisition."
+            : "Every quote received is listed. The lowest is pre-selected — but you decide."}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {quotes.map((q) => {
           const isSelected = selectedId === q.id;
           const rejected = q.status === "REJECTED";
+          const isLowest = q.id === lowestId && !rejected;
           return (
             <button
               key={q.id}
@@ -120,70 +134,95 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
               disabled={rejected || !!accepted}
               onClick={() => setSelectedId(q.id)}
               className={cn(
-                "relative rounded-lg border p-4 text-left transition-colors",
+                "relative flex flex-col rounded-xl border p-4 text-left transition-all",
                 isSelected
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-background hover:bg-muted/50",
+                  ? "border-primary bg-primary/5 shadow-sm ring-2 ring-primary/30"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-muted/40",
                 rejected && "opacity-50",
               )}
             >
-              {q.id === lowestId && !rejected && (
-                <Badge className="absolute -top-2 right-3 text-[10px] uppercase">
+              {isLowest && (
+                <Badge className="absolute -top-2 right-3 h-5 px-2 text-[10px] font-semibold uppercase tracking-wide">
                   Lowest
                 </Badge>
               )}
-              <div className="flex items-center gap-2">
+
+              <div className="flex items-start gap-2">
                 <span
                   className={cn(
-                    "flex h-4 w-4 items-center justify-center rounded-full border",
-                    isSelected ? "border-primary bg-primary" : "border-muted-foreground/40",
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2",
+                    isSelected
+                      ? "border-primary bg-primary"
+                      : "border-muted-foreground/40",
                   )}
                 >
-                  {isSelected && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
+                  {isSelected && (
+                    <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
+                  )}
                 </span>
-                <span className="font-semibold text-foreground">
+                <span className="text-sm font-semibold leading-tight text-foreground">
                   {q.display_supplier}
                 </span>
               </div>
-              {q.notes && (
-                <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
-                  {q.notes}
-                </p>
-              )}
-              <p className="mt-2 text-xl font-bold text-foreground">
+
+              <p className="mt-2 line-clamp-2 min-h-[2rem] text-xs text-muted-foreground">
+                {q.notes || q.delivery_time || "No additional detail supplied"}
+              </p>
+
+              <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-foreground">
                 {formatCurrency(q.amount)}
               </p>
-              {q.document_url && (
-                <span
-                  role="link"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDoc(q);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                {q.document_url ? (
+                  <span
+                    role="link"
+                    tabIndex={0}
+                    onClick={(e) => {
                       e.stopPropagation();
                       openDoc(q);
-                    }
-                  }}
-                  className="mt-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  <Paperclip className="h-3 w-3" /> quote attached
-                </span>
-              )}
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.stopPropagation();
+                        openDoc(q);
+                      }
+                    }}
+                    className="inline-flex cursor-pointer items-center gap-1 font-medium text-primary hover:underline"
+                  >
+                    <Paperclip className="h-3 w-3" /> quote attached
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">no document</span>
+                )}
+                {q.status === "ACCEPTED" && (
+                  <Badge className="bg-emerald-600 text-[10px] hover:bg-emerald-600">
+                    Selected
+                  </Badge>
+                )}
+                {rejected && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    Not selected
+                  </Badge>
+                )}
+              </div>
             </button>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-foreground px-4 py-3">
-        <p className="text-sm text-background">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-foreground px-4 py-3">
+        <p className="text-sm text-background/90">
           {selected ? (
             <>
-              Approving{" "}
-              <span className="font-semibold">{selected.display_supplier}</span> at{" "}
-              <span className="font-semibold">{formatCurrency(selected.amount)}</span>
+              {accepted ? "Approved" : "Approving"}{" "}
+              <span className="font-semibold text-background">
+                {selected.display_supplier}
+              </span>{" "}
+              at{" "}
+              <span className="font-semibold tabular-nums text-background">
+                {formatCurrency(selected.amount)}
+              </span>
               {selected.id === lowestId ? " · lowest quote" : ""}
             </>
           ) : (
@@ -205,3 +244,4 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
     </div>
   );
 }
+
