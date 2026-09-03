@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt} from "lucide-react";
@@ -16,6 +16,9 @@ import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { getOnboarding } from "@/services/onboarding.service";
+import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
 
 export default function AdminPortal() {
   const [stats, setStats] = useState({
@@ -26,10 +29,26 @@ export default function AdminPortal() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { profile } = useAuth();
 
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // Route brand-new organisations through onboarding before the workspace.
+  useEffect(() => {
+    if (!profile?.organization_id) return;
+    let active = true;
+    getOnboarding(profile.organization_id).then((rec) => {
+      if (active && !rec?.completed_at) {
+        navigate("/onboarding", { replace: true });
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [profile?.organization_id, navigate]);
 
   const fetchStats = async () => {
     try {
@@ -68,8 +87,10 @@ export default function AdminPortal() {
   }
 
   return (
-    <DashboardLayout title="Admin Dashboard" navItems={adminNavItems} showInsights>
+    <DashboardLayout title="Super User Dashboard" navItems={adminNavItems} showInsights>
       <div className="space-y-6">
+        <OviFirstRunCard />
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Card className="dashboard-card">
