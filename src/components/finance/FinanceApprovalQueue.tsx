@@ -16,6 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
 import {Loader2, ChevronDown, ChevronUp, Wallet, Check, X, Split, FileText, Send, AlertTriangle, Clock, Handshake} from "lucide-react";
 import {
@@ -40,6 +41,7 @@ import { useOrgSettings } from "@/hooks/use-org-settings";
 export function FinanceApprovalQueue() {
   const { currency: orgCurrency } = useCurrency();
   const { settings: orgSettings } = useOrgSettings();
+  const { can, canApproveAmount, approvalLimit } = usePermissions();
   const [prs, setPRs] = useState<PurchaseRequisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -55,6 +57,22 @@ export function FinanceApprovalQueue() {
 
   /** Warn about near-identical requisitions before opening the approve modal. */
   const startApprove = async (pr: PurchaseRequisition) => {
+    // Permission + approval-limit guard (the database enforces the same rules).
+    if (!can("requisitions.approve")) {
+      toast.error("You do not have permission to approve requisitions.");
+      return;
+    }
+    if (!canApproveAmount("REQUISITION", Number(pr.total_amount) || 0)) {
+      const lim = approvalLimit("REQUISITION");
+      toast.error(
+        `This requisition exceeds your approval authority${
+          lim && !lim.unlimited && lim.max_amount != null
+            ? ` of ${lim.currency} ${lim.max_amount.toLocaleString("en-ZA")}`
+            : ""
+        }. Please escalate it to a supervisor.`,
+      );
+      return;
+    }
     setDupChecking(pr.id);
     const found = await findDuplicatePRs({
       items: pr.items || [],

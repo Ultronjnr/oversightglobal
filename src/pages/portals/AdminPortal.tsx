@@ -11,6 +11,7 @@ import { AllPRsTab } from "@/components/admin/AllPRsTab";
 import { SuppliersTab } from "@/components/admin/SuppliersTab";
 import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { SettingsTab } from "@/components/admin/SettingsTab";
+import { UsersPermissionsTab } from "@/components/admin/UsersPermissionsTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
 import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
@@ -70,6 +71,7 @@ export default function AdminPortal() {
     suppliers: { title: "Suppliers", description: "Supplier register, verification and onboarding.", icon: <Truck className="h-5 w-5" />, content: <SuppliersTab /> },
     reimbursements: { title: "Reimbursements", description: "Staff reimbursement claims across the organisation.", icon: <Receipt className="h-5 w-5" />, content: <ReimbursementsTab role="ADMIN" /> },
     analytics: { title: "Analytics", description: "Spend, approval and supplier performance insights.", icon: <BarChart3 className="h-5 w-5" />, content: <AnalyticsTab /> },
+    permissions: { title: "Users & Permissions", description: "Configure what each person can do and how much they may approve.", icon: <Shield className="h-5 w-5" />, content: <UsersPermissionsTab /> },
     settings: { title: "Settings", description: "Organisation-wide workflow and policy configuration.", icon: <Settings className="h-5 w-5" />, content: <SettingsTab /> },
   };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -90,6 +91,7 @@ export default function HODPortal() {
   const [chatPanel, setChatPanel] = useState<ChatState>({ open: false, prId: "", transactionId: "" });
   const [sourcingPR, setSourcingPR] = useState<PurchaseRequisition | null>(null);
   const { canSourceSuppliers } = useOrgSettings();
+  const { can, canApproveAmount, approvalLimit } = usePermissions();
   const [documentModal, setDocumentModal] = useState<{
     isOpen: boolean;
     url: string;
@@ -142,6 +144,22 @@ export default function HODPortal() {
   };
 
   const openApproveModal = (pr: PurchaseRequisition) => {
+    // Permission + approval-limit guard (mirrored by database enforcement).
+    if (!can("requisitions.approve")) {
+      toast.error("You do not have permission to approve requisitions.");
+      return;
+    }
+    if (!canApproveAmount("REQUISITION", Number(pr.total_amount) || 0)) {
+      const lim = approvalLimit("REQUISITION");
+      toast.error(
+        `This requisition exceeds your approval authority${
+          lim && !lim.unlimited && lim.max_amount != null
+            ? ` of ${lim.currency} ${lim.max_amount.toLocaleString("en-ZA")}`
+            : ""
+        }. Please escalate it to a supervisor.`,
+      );
+      return;
+    }
     setSelectedPR(pr);
     setModalAction("approve");
     setShowFinalizationModal(true);
