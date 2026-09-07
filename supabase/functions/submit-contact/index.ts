@@ -1,12 +1,17 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
+import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
+import { logEmailSend } from '../_shared/email-send-log.ts'
 
 // Public endpoint (verify_jwt = false). Rate-limited implicitly by
-// Supabase gateway; validates all inputs, persists submission, then invokes
-// the internal send-transactional-email function with the service role.
+// Supabase gateway; validates all inputs, persists the submission, then sends
+// the internal notification email through Lovable's managed email API.
 
 const MAX = { name: 120, email: 255, phone: 40, org: 160, subject: 120, message: 4000 }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// Fixed recipient of the enquiry notification (also set on the template).
+const CONTACT_INBOX = 'connect@ovasyt.tech'
+
 
 function clean(v: unknown, max: number): string {
   return String(v ?? '').trim().slice(0, max)
