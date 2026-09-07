@@ -78,7 +78,9 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
     if (!selected) return;
     setSaving(true);
     try {
-      if (!accepted) {
+      // Only Finance/Super User may lock in the winning quote. Other approvers
+      // (e.g. HOD) simply pass their recommendation on to the next stage.
+      if (!accepted && canAcceptQuote) {
         const res = await acceptQuote(selected.id, prId);
         if (!res.success) {
           toast.error(res.error || "Could not select this quote");
@@ -92,6 +94,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
       setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
