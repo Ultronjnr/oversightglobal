@@ -2,13 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Logo } from "@/components/Logo";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageSeo } from "@/components/site/PageSeo";
 import { getOnboarding, saveOnboarding } from "@/services/onboarding.service";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { PartyPopper } from "lucide-react";
+import { Building2, Loader2, PartyPopper } from "lucide-react";
 
 interface Option {
   value: string;
@@ -79,13 +89,57 @@ const STEPS: Step[] = [
   },
 ];
 
+// Formats raw input into the SA registration number mask YYYY/NNNNNN/NN
+const formatRegistrationNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 12);
+  const parts: string[] = [];
+  parts.push(digits.slice(0, 4));
+  if (digits.length > 4) parts.push(digits.slice(4, 10));
+  if (digits.length > 10) parts.push(digits.slice(10, 12));
+  return parts.join("/");
+};
+
+// Keeps only digits, max 10 (Tax numbers)
+const formatTaxDigits = (value: string): string =>
+  value.replace(/\D/g, "").slice(0, 10);
+
+interface CompanyForm {
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  registrationNumber: string;
+  taxNumber: string;
+  companyType: "" | "PTY_LTD" | "PLC" | "NPO";
+}
+
+const EMPTY_COMPANY: CompanyForm = {
+  companyName: "",
+  companyAddress: "",
+  companyPhone: "",
+  registrationNumber: "",
+  taxNumber: "",
+  companyType: "",
+};
+
 export default function Onboarding() {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(true);
+
+  // Company setup (first step for brand-new signups that have no organisation yet)
+  const [orgId, setOrgId] = useState<string | null>(null);
+  const [companyDone, setCompanyDone] = useState(false);
+  const [company, setCompany] = useState<CompanyForm>(EMPTY_COMPANY);
+  const [companySaving, setCompanySaving] = useState(false);
+
+  const effectiveOrgId = orgId || profile?.organization_id || null;
+  // Show the company step whenever the user has no organisation yet. Once the
+  // profile refreshes with the new org id, this flips off automatically.
+  const needsCompany = !companyDone && !effectiveOrgId;
+  const totalSteps = STEPS.length + 1; // company step always counted in the bar
 
   useEffect(() => {
     if (isLoading) return;
@@ -94,6 +148,7 @@ export default function Onboarding() {
       return;
     }
     if (!profile?.organization_id) {
+      // Brand-new signup: start at the company details step.
       setChecking(false);
       return;
     }
@@ -110,19 +165,85 @@ export default function Onboarding() {
           ...(rec.heard_about ? { heard_about: rec.heard_about } : {}),
         });
       }
+      setCompanyDone(true);
       setChecking(false);
     });
   }, [isLoading, user, profile?.organization_id, navigate]);
 
   if (isLoading || checking) return <LoadingScreen />;
 
-  const isDone = step >= STEPS.length;
+  const isDone = !needsCompany && step >= STEPS.length;
   const current = STEPS[Math.min(step, STEPS.length - 1)];
+  const progressIndex = needsCompany ? 0 : step + 1;
+
+  const submitCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    const reg = (user.user_metadata as Record<string, any> | undefined)?.company_registration;
+    const name = reg?.name || "";
+    const surname = reg?.surname || "";
+
+    if (company.companyName.trim().length < 2) {
+      toast.error("Please enter your company name");
+      return;
+    }
+    if (company.companyAddress.trim().length < 5) {
+      toast.error("Please enter your company address");
+      return;
+    }
+    if (!company.companyType) {
+      toast.error("Please select your company type");
+      return;
+    }
+    if (company.registrationNumber.trim().length < 2) {
+      toast.error("Please enter your registration number");
+      return;
+    }
+    if (company.taxNumber.trim().length < 2) {
+      toast.error("Please enter your tax number");
+      return;
+    }
+
+    setCompanySaving(true);
+    const { data, error } = await supabase.rpc("complete_company_registration", {
+      _user_id: user.id,
+      _email: (user.email || "").toLowerCase(),
+      _name: name,
+      _surname: surname,
+      _phone: company.companyPhone.trim(),
+      _organization_id: reg?.organization_id || crypto.randomUUID(),
+      _company_name: company.companyName.trim(),
+      _company_address: company.companyAddress.trim(),
+      _registration_number: company.registrationNumber.trim(),
+      _tax_number: company.taxNumber.trim(),
+      _company_type: company.companyType,
+      _vat_registered: false,
+      _vat_number: null,
+      _vat_cycle: null,
+      _next_vat_submission_date: null,
+    });
+    setCompanySaving(false);
+
+    if (error) {
+      toast.error(error.message || "Company setup could not be completed.");
+      return;
+    }
+
+    const newOrgId =
+      (data as { organization_id?: string } | null)?.organization_id ||
+      reg?.organization_id ||
+      null;
+    if (newOrgId) setOrgId(newOrgId);
+    await refreshProfile();
+    setCompanyDone(true);
+    toast.success("Your organisation is ready!");
+  };
 
   const persist = async (complete: boolean, next: Record<string, string>) => {
-    if (!profile?.organization_id || !user) return;
+    if (!effectiveOrgId || !user) return;
     setSaving(true);
-    const res = await saveOnboarding(profile.organization_id, user.id, next, complete);
+    const res = await saveOnboarding(effectiveOrgId, user.id, next, complete);
     setSaving(false);
     if (!res.success) toast.error(res.error || "Could not save your answers");
   };
@@ -157,18 +278,132 @@ export default function Onboarding() {
       <div className="w-full max-w-xl mt-8 rounded-2xl bg-white shadow-xl shadow-indigo-900/5 border border-slate-200/70 p-6 sm:p-8">
         {/* Progress */}
         <div className="flex items-center gap-2 mb-6" aria-hidden>
-          {STEPS.map((s, i) => (
+          {Array.from({ length: totalSteps }).map((_, i) => (
             <span
-              key={s.key}
+              key={i}
               className={cn(
                 "h-1.5 flex-1 rounded-full transition-colors",
-                i <= Math.min(step, STEPS.length - 1) ? "bg-primary" : "bg-slate-200",
+                i <= Math.min(progressIndex, totalSteps - 1) ? "bg-primary" : "bg-slate-200",
               )}
             />
           ))}
         </div>
 
-        {isDone ? (
+        {needsCompany ? (
+          <>
+            <div className="flex justify-center mb-4">
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
+                <Building2 className="h-7 w-7 text-primary" />
+              </div>
+            </div>
+            <p className="text-[11px] font-semibold tracking-widest uppercase text-primary text-center">
+              Let's set up your organisation
+            </p>
+            <h1 className="text-2xl font-bold mt-2 text-center">Your company details</h1>
+            <p className="text-muted-foreground text-sm mt-1 text-center">
+              These keep your documents and reports audit-ready. VAT settings can be added later in Settings.
+            </p>
+
+            <form onSubmit={submitCompany} className="mt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ob-companyName">Company Name *</Label>
+                <Input
+                  id="ob-companyName"
+                  placeholder="Acme Corporation"
+                  autoComplete="organization"
+                  value={company.companyName}
+                  onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ob-companyAddress">Company Address *</Label>
+                <Input
+                  id="ob-companyAddress"
+                  placeholder="123 Business Street, City"
+                  autoComplete="street-address"
+                  value={company.companyAddress}
+                  onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ob-companyPhone">Company Phone (Optional)</Label>
+                <Input
+                  id="ob-companyPhone"
+                  placeholder="+27 12 345 6789"
+                  autoComplete="tel"
+                  value={company.companyPhone}
+                  onChange={(e) => setCompany({ ...company, companyPhone: e.target.value })}
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="ob-registrationNumber">Registration Number *</Label>
+                  <Input
+                    id="ob-registrationNumber"
+                    inputMode="numeric"
+                    placeholder="2023/123456/07"
+                    maxLength={14}
+                    value={company.registrationNumber}
+                    onChange={(e) =>
+                      setCompany({ ...company, registrationNumber: formatRegistrationNumber(e.target.value) })
+                    }
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ob-taxNumber">Tax Number *</Label>
+                  <Input
+                    id="ob-taxNumber"
+                    inputMode="numeric"
+                    placeholder="9876543210"
+                    maxLength={10}
+                    value={company.taxNumber}
+                    onChange={(e) =>
+                      setCompany({ ...company, taxNumber: formatTaxDigits(e.target.value) })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Company Type *</Label>
+                <Select
+                  value={company.companyType}
+                  onValueChange={(v) => setCompany({ ...company, companyType: v as CompanyForm["companyType"] })}
+                >
+                  <SelectTrigger id="ob-companyType">
+                    <SelectValue placeholder="Select company type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NPO">NPO</SelectItem>
+                    <SelectItem value="PTY_LTD">PTY LTD</SelectItem>
+                    <SelectItem value="PLC">PLC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={companySaving}>
+                {companySaving ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Setting up...
+                  </span>
+                ) : (
+                  "Continue →"
+                )}
+              </Button>
+            </form>
+
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Step 1 of {totalSteps}
+            </p>
+          </>
+        ) : isDone ? (
           <div className="text-center py-8">
             <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <PartyPopper className="h-8 w-8 text-primary" />
@@ -228,7 +463,7 @@ export default function Onboarding() {
                 Skip
               </button>
               <span className="text-xs text-muted-foreground">
-                Step {step + 1} of {STEPS.length}
+                Step {step + 2} of {totalSteps}
               </span>
             </div>
           </>
