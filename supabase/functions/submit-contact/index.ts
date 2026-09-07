@@ -79,16 +79,9 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Send notification email to connect@ovasyt.tech via the internal template pipeline.
-  const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${serviceKey}`,
-      apikey: serviceKey,
-    },
-    body: JSON.stringify({
-      templateName: 'contact-enquiry',
+  // Send notification email to the site inbox via Lovable's managed email API.
+  try {
+    const result = await sendTemplateEmail('contact-enquiry', '', {
       idempotencyKey: `contact-${row.id}`,
       templateData: {
         name,
@@ -99,12 +92,38 @@ Deno.serve(async (req) => {
         message,
         submittedAt: new Date(row.created_at as string).toUTCString(),
       },
-    }),
-  })
+    })
 
-  if (!emailRes.ok) {
-    const errText = await emailRes.text().catch(() => '')
-    console.error('submit-contact: email dispatch failed', emailRes.status, errText)
+    if (!result.sent) {
+      await logEmailSend(supabase, {
+        template_name: 'contact-enquiry',
+        recipient_email: CONTACT_INBOX,
+        status: 'suppressed',
+      })
+      await supabase
+        .from('contact_submissions')
+        .update({ email_status: 'failed', email_error: 'recipient_suppressed' })
+        .eq('id', row.id)
+      return new Response(
+        JSON.stringify({ ok: true, id: row.id, emailQueued: false }),
+        { status: 202, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+
+    await logEmailSend(supabase, {
+      template_name: 'contact-enquiry',
+      recipient_email: CONTACT_INBOX,
+      status: 'sent',
+    })
+  } catch (error) {
+    const errText = error instanceof Error ? error.message : String(error)
+    console.error('submit-contact: email dispatch failed', errText)
+    await logEmailSend(supabase, {
+      template_name: 'contact-enquiry',
+      recipient_email: CONTACT_INBOX,
+      status: 'failed',
+      error_message: errText.slice(0, 1000),
+    })
     await supabase
       .from('contact_submissions')
       .update({ email_status: 'failed', email_error: errText.slice(0, 500) })
@@ -120,6 +139,7 @@ Deno.serve(async (req) => {
     .from('contact_submissions')
     .update({ email_status: 'queued' })
     .eq('id', row.id)
+
 
   return new Response(
     JSON.stringify({ ok: true, id: row.id, emailQueued: true }),
