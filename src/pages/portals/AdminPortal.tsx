@@ -18,7 +18,7 @@ import { adminNavItems } from "@/lib/admin-nav";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getOnboarding } from "@/services/onboarding.service";
+import { shouldRunOnboarding } from "@/services/onboarding.service";
 import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
 
 export default function AdminPortal() {
