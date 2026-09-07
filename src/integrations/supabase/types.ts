@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      approval_events: {
+        Row: {
+          amount: number | null
+          approval_type: string
+          approver_id: string
+          created_at: string
+          entity_id: string | null
+          entity_status: string | null
+          id: string
+          organization_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          approval_type: string
+          approver_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_status?: string | null
+          id?: string
+          organization_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          approval_type?: string
+          approver_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_status?: string | null
+          id?: string
+          organization_id?: string | null
+        }
+        Relationships: []
+      }
       attachments: {
         Row: {
           ai_extracted: Json | null
@@ -1908,6 +1941,7 @@ export type Database = {
           name: string
           organization_id: string | null
           phone: string | null
+          reports_to: string | null
           status: Database["public"]["Enums"]["user_status"]
           surname: string | null
           tier: Database["public"]["Enums"]["subscription_tier"]
@@ -1921,6 +1955,7 @@ export type Database = {
           name: string
           organization_id?: string | null
           phone?: string | null
+          reports_to?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           surname?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -1934,6 +1969,7 @@ export type Database = {
           name?: string
           organization_id?: string | null
           phone?: string | null
+          reports_to?: string | null
           status?: Database["public"]["Enums"]["user_status"]
           surname?: string | null
           tier?: Database["public"]["Enums"]["subscription_tier"]
@@ -1945,6 +1981,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_reports_to_fkey"
+            columns: ["reports_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3243,8 +3286,10 @@ export type Database = {
           approval_type: string
           created_at: string
           currency: string
+          expires_at: string | null
           id: string
           max_amount: number | null
+          max_approvals_per_month: number | null
           organization_id: string
           unlimited: boolean
           updated_at: string
@@ -3254,8 +3299,10 @@ export type Database = {
           approval_type: string
           created_at?: string
           currency?: string
+          expires_at?: string | null
           id?: string
           max_amount?: number | null
+          max_approvals_per_month?: number | null
           organization_id: string
           unlimited?: boolean
           updated_at?: string
@@ -3265,8 +3312,10 @@ export type Database = {
           approval_type?: string
           created_at?: string
           currency?: string
+          expires_at?: string | null
           id?: string
           max_amount?: number | null
+          max_approvals_per_month?: number | null
           organization_id?: string
           unlimited?: boolean
           updated_at?: string
@@ -3282,10 +3331,52 @@ export type Database = {
           },
         ]
       }
+      user_permission_scopes: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          organization_id: string
+          scope_type: string
+          scope_value: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          organization_id: string
+          scope_type: string
+          scope_value: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          organization_id?: string
+          scope_type?: string
+          scope_value?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permission_scopes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           allowed: boolean
           created_at: string
+          expires_at: string | null
           id: string
           organization_id: string
           permission_key: string
@@ -3295,6 +3386,7 @@ export type Database = {
         Insert: {
           allowed?: boolean
           created_at?: string
+          expires_at?: string | null
           id?: string
           organization_id: string
           permission_key: string
@@ -3304,6 +3396,7 @@ export type Database = {
         Update: {
           allowed?: boolean
           created_at?: string
+          expires_at?: string | null
           id?: string
           organization_id?: string
           permission_key?: string
@@ -3812,6 +3905,10 @@ export type Database = {
         Returns: Json
       }
       user_can_join_org: { Args: { _org_id: string }; Returns: boolean }
+      user_scope_allowed: {
+        Args: { _scope_type: string; _scope_value: string; _user_id: string }
+        Returns: boolean
+      }
       validate_invitation: {
         Args: { _email: string; _token: string }
         Returns: {
