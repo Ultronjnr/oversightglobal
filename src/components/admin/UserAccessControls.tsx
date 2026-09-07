@@ -75,7 +75,7 @@ export function UserAccessControls({ user, colleagues, disabled }: Props) {
         supabase.from("donation_projects").select("id, name").order("name"),
         supabase.from("organization_donors").select("id, name").order("name"),
         supabase.from("departments").select("id, name").order("name"),
-        supabase.from("expense_categories").select("id, name").order("name"),
+        supabase.from("categories").select("id, name").order("name"),
       ]);
       if (!active) return;
       setOptions({
