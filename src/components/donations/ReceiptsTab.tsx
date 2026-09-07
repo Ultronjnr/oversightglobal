@@ -174,19 +174,17 @@ export function ReceiptsTab() {
     if (!donor?.email) { toast.error("Donor has no email address"); return; }
     if (!r.pdf_path) { toast.error("PDF not available"); return; }
     try {
-      await supabase.functions.invoke("send-transactional-email", {
+      await supabase.functions.invoke("send-donation-receipt-email", {
         body: {
-          templateName: "donation-receipt",
+          // The edge function re-derives donorName, receiptNumber,
+          // downloadUrl and verifyUrl from the database using this id, so
+          // client-supplied values cannot be used for phishing.
+          receiptId: r.id,
           recipientEmail: donor.email,
           idempotencyKey: `donation-receipt-${r.id}`,
-          templateData: {
-            // The edge function re-derives donorName, receiptNumber,
-            // downloadUrl and verifyUrl from the database using this id, so
-            // client-supplied values cannot be used for phishing.
-            receiptId: r.id,
-          },
         },
       });
+
       await supabase.from("donation_receipts").update({ status: "EMAILED" } as any).eq("id", r.id);
       logAudit("receipt", r.id, "EMAILED", { to: donor.email });
       toast.success("Receipt emailed");

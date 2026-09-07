@@ -64,12 +64,12 @@ Deno.serve(async (req) => {
 
     // Email 3: final reminder within 48h of expiry
     if (hoursToExpiry <= 48 && !inv.expiry_reminder_sent_at) {
-      await supabase.functions.invoke('send-transactional-email', {
+      await supabase.functions.invoke('send-supplier-invitation-email', {
         body: {
-          templateName: 'supplier-invitation',
           recipientEmail: inv.email,
           idempotencyKey: `supplier-expiry-${inv.token}`,
-          templateData: { ...baseData, reminder: 'expiry' },
+          ...baseData,
+          reminder: 'expiry',
         },
       })
       await supabase
@@ -82,14 +82,15 @@ Deno.serve(async (req) => {
 
     // Email 2: reminder ~24h after invite
     if (hoursSinceCreated >= 24 && hoursToExpiry > 48 && !inv.reminder_sent_at) {
-      await supabase.functions.invoke('send-transactional-email', {
+      await supabase.functions.invoke('send-supplier-invitation-email', {
         body: {
-          templateName: 'supplier-invitation',
           recipientEmail: inv.email,
           idempotencyKey: `supplier-reminder-${inv.token}`,
-          templateData: { ...baseData, reminder: 'reminder' },
+          ...baseData,
+          reminder: 'reminder',
         },
       })
+
       await supabase
         .from('supplier_invitations')
         .update({ reminder_sent_at: now.toISOString() })

@@ -44,18 +44,16 @@ async function sendInvitationEmail(args: {
   token: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase.functions.invoke("send-transactional-email", {
+    const { error } = await supabase.functions.invoke("send-supplier-invitation-email", {
       body: {
-        templateName: "supplier-invitation",
         recipientEmail: args.email,
         idempotencyKey: `supplier-invite-${args.token}`,
-        templateData: {
-          contactPerson: args.contactPerson,
-          companyName: args.companyName,
-          registrationUrl: registrationUrl(args.token),
-        },
+        contactPerson: args.contactPerson,
+        companyName: args.companyName,
+        registrationUrl: registrationUrl(args.token),
       },
     });
+
     if (error) return { success: false, error: getSafeErrorMessage(error) };
     return { success: true };
   } catch (err: any) {
