@@ -109,20 +109,18 @@ export async function createInvitation(
     let emailSent = false;
     try {
       const { error: emailError } = await supabase.functions.invoke(
-        "send-transactional-email",
+        "send-invitation-email",
         {
           body: {
-            templateName: "invitation",
             recipientEmail: params.email.toLowerCase(),
             idempotencyKey: `invitation-${token}`,
-            templateData: {
-              inviteLink,
-              role: params.role,
-              department: params.department || null,
-            },
+            inviteLink,
+            role: params.role,
+            department: params.department || null,
           },
         }
       );
+
       emailSent = !emailError;
     } catch {
       emailSent = false;
@@ -192,20 +190,18 @@ export async function resendInvitation(
     )}`;
 
     const { error: emailError } = await supabase.functions.invoke(
-      "send-transactional-email",
+      "send-invitation-email",
       {
         body: {
-          templateName: "invitation",
           recipientEmail: res.email.toLowerCase(),
           idempotencyKey: `invitation-resend-${res.token}-${Date.now()}`,
-          templateData: {
-            inviteLink,
-            role: res.role,
-            department: res.department || null,
-          },
+          inviteLink,
+          role: res.role,
+          department: res.department || null,
         },
       }
     );
+
 
     if (emailError) {
       return { success: false, emailSent: false, error: getSafeErrorMessage(emailError) };
