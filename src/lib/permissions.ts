@@ -204,7 +204,12 @@ export interface ApprovalLimit {
   max_amount: number | null;
   currency: string;
   unlimited: boolean;
+  /** Maximum approvals allowed in the current calendar month (null = no cap). */
+  max_approvals_per_month?: number | null;
+  /** When the limit stops applying (null = permanent). */
+  expires_at?: string | null;
 }
+
 
 /**
  * Can this user approve the amount?
