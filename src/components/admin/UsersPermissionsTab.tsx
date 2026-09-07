@@ -353,18 +353,9 @@ export function UsersPermissionsTab() {
                           disabled={isSuperUser || loadingDetail}
                           value={limitDrafts[t.key] ?? ""}
                           onChange={(e) =>
-                            setMonthDrafts(
-        Object.fromEntries(
-          APPROVAL_TYPES.map((t) => [
-            t.key,
-            l[t.key]?.max_approvals_per_month != null
-              ? String(l[t.key].max_approvals_per_month)
-              : "",
-          ]),
-        ),
-      );
-      setLimitDrafts((p) => ({ ...p, [t.key]: e.target.value }))
+                            setLimitDrafts((p) => ({ ...p, [t.key]: e.target.value }))
                           }
+
                         />
                       </div>
                       <div className="w-40">
