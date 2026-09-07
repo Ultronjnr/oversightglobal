@@ -1,70 +1,24 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Building2, Eye, EyeOff, CalendarIcon, CheckCircle2, Loader2, MailCheck } from "lucide-react";
-import { format } from "date-fns";
+import { UserRound, Eye, EyeOff, CheckCircle2, Loader2, MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { getSafeErrorMessage, logError } from "@/lib/error-handler";
 import { PageSeo } from "@/components/site/PageSeo";
-
-// Formats raw input into the SA registration number mask YYYY/NNNNNN/NN
-const formatRegistrationNumber = (value: string): string => {
-  const digits = value.replace(/\D/g, "").slice(0, 12);
-  const parts: string[] = [];
-  parts.push(digits.slice(0, 4));
-  if (digits.length > 4) parts.push(digits.slice(4, 10));
-  if (digits.length > 10) parts.push(digits.slice(10, 12));
-  return parts.join("/");
-};
-
-// Keeps only digits, max 10 (VAT / Tax numbers)
-const formatTaxDigits = (value: string): string =>
-  value.replace(/\D/g, "").slice(0, 10);
 
 const signupSchema = z
   .object({
     name: z.string().trim().min(2, "Name is required").max(100, "Name is too long"),
     surname: z.string().trim().min(2, "Surname is required").max(100, "Surname is too long"),
     email: z.string().trim().toLowerCase().email("Invalid email address").max(255, "Email is too long"),
-    companyName: z.string().trim().min(2, "Company name is required").max(160, "Company name is too long"),
-    companyAddress: z.string().trim().min(5, "Company address is required").max(500, "Company address is too long"),
-    companyPhone: z.string().trim().max(40, "Phone number is too long").optional(),
-    registrationNumber: z
-      .string()
-      .trim()
-      .min(1, "Registration number is required")
-      .regex(/^\d{4}\/\d{6}\/\d{2}$/, "Registration number format: 2023/123456/07"),
-    taxNumber: z
-      .string()
-      .trim()
-      .min(1, "Tax number is required")
-      .regex(/^\d{10}$/, "Tax number must be exactly 10 digits"),
-    companyType: z.enum(["PTY_LTD", "PLC", "NPO"], {
-      required_error: "Company type is required",
-    }),
-    vatRegistered: z.boolean().default(false),
-    vatNumber: z.string().trim().optional(),
-    vatCycle: z.enum(["MONTHLY", "BI_MONTHLY"]).optional(),
-    nextVatSubmissionDate: z.date().optional(),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -78,20 +32,6 @@ const signupSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"],
-  })
-  .refine(
-    (data) =>
-      !data.vatRegistered ||
-      (!!data.vatNumber && /^\d{10}$/.test(data.vatNumber.trim())),
-    { message: "VAT number must be exactly 10 digits", path: ["vatNumber"] }
-  )
-  .refine((data) => !data.vatRegistered || !!data.vatCycle, {
-    message: "VAT cycle is required",
-    path: ["vatCycle"],
-  })
-  .refine((data) => !data.vatRegistered || !!data.nextVatSubmissionDate, {
-    message: "Next VAT submission date is required",
-    path: ["nextVatSubmissionDate"],
   });
 
 type SignupForm = z.infer<typeof signupSchema>;
@@ -103,41 +43,22 @@ export default function SignupCompany() {
   const [isResending, setIsResending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [dateOpen, setDateOpen] = useState(false);
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
-    setValue,
     watch,
     formState: { errors, isSubmitted },
   } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
-    defaultValues: { vatRegistered: false },
   });
 
   const errCls = (field: keyof SignupForm) =>
     errors[field] ? "border-destructive focus-visible:ring-destructive" : "";
 
   const onInvalid = (formErrors: typeof errors) => {
-    const order: (keyof SignupForm)[] = [
-      "name",
-      "surname",
-      "email",
-      "companyName",
-      "companyAddress",
-      "companyPhone",
-      "registrationNumber",
-      "taxNumber",
-      "companyType",
-      "vatNumber",
-      "vatCycle",
-      "nextVatSubmissionDate",
-      "password",
-      "confirmPassword",
-    ];
+    const order: (keyof SignupForm)[] = ["name", "surname", "email", "password", "confirmPassword"];
     const first = order.find((k) => formErrors[k]);
     if (!first) return;
     const el =
@@ -149,13 +70,6 @@ export default function SignupCompany() {
     }
   };
 
-  const vatRegistered = watch("vatRegistered");
-  const companyType = watch("companyType");
-  const vatCycle = watch("vatCycle");
-  const nextVatDate = watch("nextVatSubmissionDate");
-  const registrationNumber = watch("registrationNumber") || "";
-  const taxNumber = watch("taxNumber") || "";
-  const vatNumber = watch("vatNumber") || "";
   const password = watch("password") || "";
 
   const passwordChecks = [
@@ -174,26 +88,13 @@ export default function SignupCompany() {
       const normalizedEmail = data.email.trim().toLowerCase();
       const organizationId = crypto.randomUUID();
 
-      // Company registration data is stored in the user's auth metadata and
-      // applied on the first verified login (the DB function requires an
-      // authenticated session, which only exists after email verification).
+      // Personal details are stored in the user's auth metadata. Company
+      // details are captured during onboarding after email verification, where
+      // complete_company_registration runs with an authenticated session.
       const company_registration = {
         organization_id: organizationId,
         name: data.name.trim(),
         surname: data.surname.trim(),
-        phone: data.companyPhone?.trim() || "",
-        company_name: data.companyName.trim(),
-        company_address: data.companyAddress.trim(),
-        registration_number: data.registrationNumber.trim(),
-        tax_number: data.taxNumber.trim(),
-        company_type: data.companyType,
-        vat_registered: data.vatRegistered,
-        vat_number: data.vatRegistered ? data.vatNumber?.trim() || null : null,
-        vat_cycle: data.vatRegistered ? data.vatCycle || null : null,
-        next_vat_submission_date:
-          data.vatRegistered && data.nextVatSubmissionDate
-            ? format(data.nextVatSubmissionDate, "yyyy-MM-dd")
-            : null,
       };
 
       const { error: authError } = await supabase.auth.signUp({
@@ -304,20 +205,20 @@ export default function SignupCompany() {
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center p-4 py-12">
       <PageSeo
-        title="Register your NGO on Ovasyt"
-        description="Start your 14-day Ovasyt trial. Register your NGO to run procurement approvals, donor tracking and audit-ready compliance from day one."
+        title="Create your Ovasyt account"
+        description="Start your 14-day Ovasyt trial. Create your account to run procurement approvals, donor tracking and audit-ready compliance from day one."
         path="/signup/company"
       />
-      <div className="auth-card animate-slide-up max-w-lg">
+      <div className="auth-card animate-slide-up max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
             <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
-              <Building2 className="h-8 w-8 text-primary" />
+              <UserRound className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Register Your Company</h1>
+          <h1 className="text-2xl font-bold text-foreground">Create Your Account</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Create your company and become the administrator
+            Verify your email, then we'll set up your organisation together
           </p>
         </div>
 
@@ -346,190 +247,10 @@ export default function SignupCompany() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Company Email *</Label>
+            <Label htmlFor="email">Email Address *</Label>
             <Input id="email" type="email" placeholder="john@company.com" autoComplete="email" className={errCls("email")} {...register("email")} />
             {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
-
-          {/* Company */}
-          <div className="space-y-2">
-            <Label htmlFor="companyName">Company Name *</Label>
-            <Input id="companyName" placeholder="Acme Corporation" autoComplete="organization" className={errCls("companyName")} {...register("companyName")} />
-            {errors.companyName && <p className="text-sm text-destructive">{errors.companyName.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companyAddress">Company Address *</Label>
-            <Input id="companyAddress" placeholder="123 Business Street, City" autoComplete="street-address" className={errCls("companyAddress")} {...register("companyAddress")} />
-            {errors.companyAddress && <p className="text-sm text-destructive">{errors.companyAddress.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="companyPhone">Company Phone (Optional)</Label>
-            <Input id="companyPhone" placeholder="+27 12 345 6789" autoComplete="tel" {...register("companyPhone")} />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="registrationNumber">Registration Number *</Label>
-              <Input
-                id="registrationNumber"
-                inputMode="numeric"
-                placeholder="2023/123456/07"
-                maxLength={14}
-                value={registrationNumber}
-                className={errCls("registrationNumber")}
-                onChange={(e) =>
-                  setValue("registrationNumber", formatRegistrationNumber(e.target.value), {
-                    shouldValidate: true,
-                  })
-                }
-              />
-              {errors.registrationNumber && (
-                <p className="text-sm text-destructive">{errors.registrationNumber.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="taxNumber">Tax Number *</Label>
-              <Input
-                id="taxNumber"
-                inputMode="numeric"
-                placeholder="9876543210"
-                maxLength={10}
-                value={taxNumber}
-                className={errCls("taxNumber")}
-                onChange={(e) =>
-                  setValue("taxNumber", formatTaxDigits(e.target.value), {
-                    shouldValidate: true,
-                  })
-                }
-              />
-              {errors.taxNumber && <p className="text-sm text-destructive">{errors.taxNumber.message}</p>}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Company Type *</Label>
-            <Select
-              value={companyType}
-              onValueChange={(v) => setValue("companyType", v as SignupForm["companyType"], { shouldValidate: true })}
-            >
-              <SelectTrigger id="companyType" className={errCls("companyType")}>
-                <SelectValue placeholder="Select company type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PTY_LTD">PTY LTD</SelectItem>
-                <SelectItem value="PLC">PLC</SelectItem>
-                <SelectItem value="NPO">NPO</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.companyType && <p className="text-sm text-destructive">{errors.companyType.message}</p>}
-          </div>
-
-          {/* VAT */}
-          <div className="flex items-center justify-between rounded-lg border border-border p-3">
-            <div>
-              <Label htmlFor="vatRegistered" className="cursor-pointer">VAT Registered</Label>
-              <p className="text-xs text-muted-foreground mt-1">Toggle if your company is VAT registered</p>
-            </div>
-            <Switch
-              id="vatRegistered"
-              checked={vatRegistered}
-              onCheckedChange={(checked) => setValue("vatRegistered", checked, { shouldValidate: true })}
-            />
-          </div>
-
-          {vatRegistered && (
-            <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-              <div className="space-y-2">
-                <Label htmlFor="vatNumber">VAT Number *</Label>
-                <Input
-                  id="vatNumber"
-                  inputMode="numeric"
-                  placeholder="4123456789"
-                  maxLength={10}
-                  value={vatNumber}
-                  className={errCls("vatNumber")}
-                  onChange={(e) =>
-                    setValue("vatNumber", formatTaxDigits(e.target.value), {
-                      shouldValidate: true,
-                    })
-                  }
-                />
-                {errors.vatNumber && <p className="text-sm text-destructive">{errors.vatNumber.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>VAT Cycle *</Label>
-                <Select
-                  value={vatCycle}
-                  onValueChange={(v) => setValue("vatCycle", v as "MONTHLY" | "BI_MONTHLY", { shouldValidate: true })}
-                >
-                  <SelectTrigger id="vatCycle" className={errCls("vatCycle")}>
-                    <SelectValue placeholder="Select VAT cycle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MONTHLY">Monthly</SelectItem>
-                    <SelectItem value="BI_MONTHLY">Bi-Monthly</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.vatCycle && <p className="text-sm text-destructive">{errors.vatCycle.message}</p>}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Next VAT Submission Date *</Label>
-                {isMobile ? (
-                  <Input
-                    type="date"
-                    value={nextVatDate ? format(nextVatDate, "yyyy-MM-dd") : ""}
-                    onChange={(e) =>
-                      setValue(
-                        "nextVatSubmissionDate",
-                        e.target.value ? new Date(e.target.value) : undefined,
-                        { shouldValidate: true }
-                      )
-                    }
-                  />
-                ) : (
-                  <Popover open={dateOpen} onOpenChange={setDateOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !nextVatDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {nextVatDate ? format(nextVatDate, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0"
-                      align="start"
-                      side="top"
-                      sideOffset={4}
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={nextVatDate}
-                        onSelect={(d) => {
-                          setValue("nextVatSubmissionDate", d, { shouldValidate: true });
-                          setDateOpen(false);
-                        }}
-                        initialFocus
-                        className={cn("p-3 pointer-events-auto")}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                )}
-                {errors.nextVatSubmissionDate && (
-                  <p className="text-sm text-destructive">{errors.nextVatSubmissionDate.message}</p>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Password */}
           <div className="space-y-2">
@@ -591,8 +312,9 @@ export default function SignupCompany() {
 
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
             <p className="text-xs text-muted-foreground">
-              <strong className="text-foreground">Note:</strong> You will be registered as the Super User for this
-              company and taken straight to the Admin portal.
+              <strong className="text-foreground">Note:</strong> You will become the Super User of
+              your organisation. After verifying your email, a short setup captures your company
+              details and tailors your workspace.
             </p>
           </div>
 
@@ -600,15 +322,15 @@ export default function SignupCompany() {
             {isLoading ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Creating Company...
+                Creating Account...
               </span>
             ) : isSuccess ? (
               <span className="inline-flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
-                Success! Opening your workspace...
+                Success!
               </span>
             ) : (
-              "Register Company →"
+              "Create Account →"
             )}
           </Button>
           </fieldset>
