@@ -18,7 +18,7 @@ import { adminNavItems } from "@/lib/admin-nav";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getOnboarding } from "@/services/onboarding.service";
+import { shouldRunOnboarding } from "@/services/onboarding.service";
 import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
 
 export default function AdminPortal() {
@@ -41,8 +41,8 @@ export default function AdminPortal() {
   useEffect(() => {
     if (!profile?.organization_id) return;
     let active = true;
-    getOnboarding(profile.organization_id).then((rec) => {
-      if (active && !rec?.completed_at) {
+    shouldRunOnboarding(profile.organization_id).then((run) => {
+      if (active && run) {
         navigate("/onboarding", { replace: true });
       }
     });

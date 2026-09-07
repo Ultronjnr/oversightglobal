@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getPRSourcingQuotes,
   type SourcedQuote,
@@ -28,6 +29,8 @@ interface Props {
  */
 export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) {
   const { format: formatCurrency } = useCurrency();
+  const { role } = useAuth();
+  const canAcceptQuote = role === "FINANCE" || role === "ADMIN";
   const [quotes, setQuotes] = useState<SourcedQuote[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -78,7 +81,9 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
     if (!selected) return;
     setSaving(true);
     try {
-      if (!accepted) {
+      // Only Finance/Super User may lock in the winning quote. Other approvers
+      // (e.g. HOD) simply pass their recommendation on to the next stage.
+      if (!accepted && canAcceptQuote) {
         const res = await acceptQuote(selected.id, prId);
         if (!res.success) {
           toast.error(res.error || "Could not select this quote");
@@ -92,6 +97,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
       setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
