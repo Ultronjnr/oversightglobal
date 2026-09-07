@@ -41,8 +41,8 @@ export default function AdminPortal() {
   useEffect(() => {
     if (!profile?.organization_id) return;
     let active = true;
-    getOnboarding(profile.organization_id).then((rec) => {
-      if (active && !rec?.completed_at) {
+    shouldRunOnboarding(profile.organization_id).then((run) => {
+      if (active && run) {
         navigate("/onboarding", { replace: true });
       }
     });

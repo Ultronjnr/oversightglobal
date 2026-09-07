@@ -26,6 +26,37 @@ export async function getOnboarding(
   return data as unknown as OnboardingRecord;
 }
 
+/** Date the onboarding wizard shipped — older organisations are never forced into it. */
+const ONBOARDING_LAUNCH = new Date("2026-09-03T00:00:00Z");
+
+/**
+ * Should this organisation be sent through the onboarding wizard?
+ * Only brand-new organisations (created after the wizard shipped) that have not
+ * completed it qualify. Any lookup problem resolves to `false` so existing
+ * customers are never locked out of their workspace.
+ */
+export async function shouldRunOnboarding(
+  organizationId: string,
+): Promise<boolean> {
+  const [{ data: org, error: orgError }, { data: rec, error: recError }] =
+    await Promise.all([
+      supabase
+        .from("organizations")
+        .select("created_at")
+        .eq("id", organizationId)
+        .maybeSingle(),
+      supabase
+        .from("organization_onboarding")
+        .select("completed_at")
+        .eq("organization_id", organizationId)
+        .maybeSingle(),
+    ]);
+
+  if (orgError || recError || !org?.created_at) return false;
+  if (new Date(org.created_at) < ONBOARDING_LAUNCH) return false;
+  return !rec?.completed_at;
+}
+
 /** Persist the onboarding answers, marking completion when requested. */
 export async function saveOnboarding(
   organizationId: string,
