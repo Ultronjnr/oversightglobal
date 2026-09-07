@@ -64,6 +64,13 @@ export default function Login() {
     const reg = user?.user_metadata?.company_registration;
     if (!reg) return { hadPendingRegistration: false, completed: false };
 
+    // Slim signup: company details are captured during onboarding, so the
+    // registration completes there instead of on first login.
+    if (!reg.company_name) {
+      return { hadPendingRegistration: true, completed: false };
+    }
+
+
     // Only complete if the profile has no organization yet.
     const { data: existingProfile } = await supabase
       .from("profiles")
@@ -120,8 +127,9 @@ export default function Login() {
       return;
     }
 
-    if (registrationResult.completed) {
-      navigate("/admin/portal", { replace: true });
+    // New signups finish setting up their organisation during onboarding.
+    if (registrationResult.completed || registrationResult.hadPendingRegistration) {
+      navigate("/onboarding", { replace: true });
       return;
     }
 
