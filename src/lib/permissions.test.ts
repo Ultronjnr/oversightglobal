@@ -6,6 +6,8 @@ import {
   effectivePermission,
   withinApprovalLimit,
   type ApprovalLimit,
+  expiryToIso,
+  isExpired,
 } from "@/lib/permissions";
 
 const limit = (max: number | null, unlimited = false): ApprovalLimit => ({
@@ -87,5 +89,23 @@ describe("approval limits", () => {
 
   it("treats an unconfigured limit as no ceiling", () => {
     expect(withinApprovalLimit("FINANCE", undefined, 10_000)).toBe(true);
+  });
+});
+
+describe("permission expiry helpers", () => {
+  it("returns null for a permanent grant", () => {
+    expect(expiryToIso("PERMANENT")).toBeNull();
+  });
+
+  it("returns a future date for a 3 month grant", () => {
+    const iso = expiryToIso("3M");
+    expect(iso).not.toBeNull();
+    expect(new Date(iso as string).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it("treats past dates as expired and future/empty dates as active", () => {
+    expect(isExpired("2020-01-01T00:00:00.000Z")).toBe(true);
+    expect(isExpired(null)).toBe(false);
+    expect(isExpired(expiryToIso("1M"))).toBe(false);
   });
 });

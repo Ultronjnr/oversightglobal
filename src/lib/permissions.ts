@@ -204,7 +204,12 @@ export interface ApprovalLimit {
   max_amount: number | null;
   currency: string;
   unlimited: boolean;
+  /** Maximum approvals allowed in the current calendar month (null = no cap). */
+  max_approvals_per_month?: number | null;
+  /** When the limit stops applying (null = permanent). */
+  expires_at?: string | null;
 }
+
 
 /**
  * Can this user approve the amount?
@@ -221,4 +226,41 @@ export function withinApprovalLimit(
   if (limit.unlimited) return true;
   if (limit.max_amount === null || limit.max_amount === undefined) return true;
   return (amount || 0) <= limit.max_amount;
+}
+
+/** Restriction dimensions — empty list for a dimension means unrestricted. */
+export const SCOPE_TYPES = [
+  { key: "PROJECT", label: "Projects" },
+  { key: "DONOR", label: "Donor funds" },
+  { key: "DEPARTMENT", label: "Departments" },
+  { key: "EXPENSE_TYPE", label: "Expense types" },
+] as const;
+
+export type ScopeType = (typeof SCOPE_TYPES)[number]["key"];
+
+/** How long a granted permission or limit stays active. */
+export const EXPIRY_PRESETS = [
+  { key: "PERMANENT", label: "Permanent", months: null },
+  { key: "1M", label: "1 month", months: 1 },
+  { key: "2M", label: "2 months", months: 2 },
+  { key: "3M", label: "3 months", months: 3 },
+  { key: "6M", label: "6 months", months: 6 },
+  { key: "12M", label: "12 months", months: 12 },
+] as const;
+
+export type ExpiryPreset = (typeof EXPIRY_PRESETS)[number]["key"];
+
+/** Turn an expiry preset into an ISO timestamp (null = never expires). */
+export function expiryToIso(preset: ExpiryPreset): string | null {
+  const found = EXPIRY_PRESETS.find((p) => p.key === preset);
+  if (!found || found.months === null) return null;
+  const d = new Date();
+  d.setMonth(d.getMonth() + found.months);
+  return d.toISOString();
+}
+
+/** True when an expiry timestamp has already passed. */
+export function isExpired(expiresAt: string | null | undefined): boolean {
+  if (!expiresAt) return false;
+  return new Date(expiresAt).getTime() <= Date.now();
 }

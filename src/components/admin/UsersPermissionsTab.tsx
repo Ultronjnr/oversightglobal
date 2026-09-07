@@ -24,9 +24,21 @@ import {
   ROLE_LABELS,
   defaultRolePermission,
   effectivePermission,
+  EXPIRY_PRESETS,
+  expiryToIso,
   type AppRoleName,
   type ApprovalLimit,
+  type ExpiryPreset,
 } from "@/lib/permissions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserAccessControls } from "@/components/admin/UserAccessControls";
+import { ApprovalTrail } from "@/components/admin/ApprovalTrail";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +63,8 @@ export function UsersPermissionsTab() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [audit, setAudit] = useState<PermissionAuditEntry[]>([]);
+  const [grantExpiry, setGrantExpiry] = useState<ExpiryPreset>("PERMANENT");
+  const [monthDrafts, setMonthDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     getOrganizationUsers().then((res) => {
@@ -76,6 +90,16 @@ export function UsersPermissionsTab() {
       setOverrides(o);
       setLimits(l);
       setAudit(a);
+      setMonthDrafts(
+        Object.fromEntries(
+          APPROVAL_TYPES.map((t) => [
+            t.key,
+            l[t.key]?.max_approvals_per_month != null
+              ? String(l[t.key].max_approvals_per_month)
+              : "",
+          ]),
+        ),
+      );
       setLimitDrafts(
         Object.fromEntries(
           APPROVAL_TYPES.map((t) => [
@@ -108,7 +132,13 @@ export function UsersPermissionsTab() {
     const previous = effectivePermission(selected.role, overrides, key);
     setSaving(key);
     setOverrides((prev) => ({ ...prev, [key]: next }));
-    const res = await setUserPermission(selected.id, key, next, previous);
+    const res = await setUserPermission(
+      selected.id,
+      key,
+      next,
+      previous,
+      next ? expiryToIso(grantExpiry) : null,
+    );
     setSaving(null);
     if (!res.success) {
       setOverrides((prev) => ({ ...prev, [key]: previous }));
@@ -130,7 +160,15 @@ export function UsersPermissionsTab() {
     const res = await setUserApprovalLimit(
       selected.id,
       type,
-      { maxAmount: amount, unlimited, currency },
+      {
+        maxAmount: amount,
+        unlimited,
+        currency,
+        maxApprovalsPerMonth: monthDrafts[type]?.trim()
+          ? Number(monthDrafts[type].replace(/[^\d]/g, ""))
+          : null,
+        expiresAt: expiryToIso(grantExpiry),
+      },
       limits[type],
     );
     setSaving(null);
@@ -145,6 +183,10 @@ export function UsersPermissionsTab() {
         max_amount: unlimited ? null : amount,
         currency,
         unlimited,
+        max_approvals_per_month: monthDrafts[type]?.trim()
+          ? Number(monthDrafts[type].replace(/[^\d]/g, ""))
+          : null,
+        expires_at: expiryToIso(grantExpiry),
       },
     }));
     getPermissionAudit(selected.id).then(setAudit);
@@ -237,6 +279,41 @@ export function UsersPermissionsTab() {
               </div>
             )}
 
+            {!isSuperUser && (
+              <Card className="dashboard-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Access period</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    New permissions, limits and restrictions saved below apply for this
+                    period. When it ends, access returns to the role default automatically.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={grantExpiry}
+                    onValueChange={(v) => setGrantExpiry(v as ExpiryPreset)}
+                  >
+                    <SelectTrigger className="max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPIRY_PRESETS.map((p) => (
+                        <SelectItem key={p.key} value={p.key}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
+
+            <UserAccessControls
+              user={selected}
+              colleagues={users}
+              disabled={isSuperUser}
+            />
+
             {/* Approval limits */}
             <Card className="dashboard-card">
               <CardHeader className="pb-3">
@@ -262,7 +339,11 @@ export function UsersPermissionsTab() {
                             : lim?.unlimited
                               ? "Unlimited"
                               : lim?.max_amount != null
-                                ? `Current: ${format(lim.max_amount)}`
+                                ? `Current: ${format(lim.max_amount)}${
+                                    lim.max_approvals_per_month
+                                      ? ` · max ${lim.max_approvals_per_month}/month`
+                                      : ""
+                                  }`
                                 : "No limit configured"}
                         </p>
                       </div>
@@ -274,6 +355,18 @@ export function UsersPermissionsTab() {
                           value={limitDrafts[t.key] ?? ""}
                           onChange={(e) =>
                             setLimitDrafts((p) => ({ ...p, [t.key]: e.target.value }))
+                          }
+
+                        />
+                      </div>
+                      <div className="w-40">
+                        <Input
+                          inputMode="numeric"
+                          placeholder="Max per month"
+                          disabled={isSuperUser || loadingDetail}
+                          value={monthDrafts[t.key] ?? ""}
+                          onChange={(e) =>
+                            setMonthDrafts((p) => ({ ...p, [t.key]: e.target.value }))
                           }
                         />
                       </div>
@@ -343,6 +436,12 @@ export function UsersPermissionsTab() {
                 </CardContent>
               </Card>
             ))}
+
+            <ApprovalTrail
+              approverId={selected.id}
+              approverName={`${selected.name} ${selected.surname ?? ""}`.trim()}
+              title="Approvals made by this person"
+            />
 
             {/* Audit */}
             <Card className="dashboard-card">
