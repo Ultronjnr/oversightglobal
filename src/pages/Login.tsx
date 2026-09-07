@@ -127,8 +127,9 @@ export default function Login() {
       return;
     }
 
-    if (registrationResult.completed) {
-      navigate("/admin/portal", { replace: true });
+    // New signups finish setting up their organisation during onboarding.
+    if (registrationResult.completed || registrationResult.hadPendingRegistration) {
+      navigate("/onboarding", { replace: true });
       return;
     }
 
