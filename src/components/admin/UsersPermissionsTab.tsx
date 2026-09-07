@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserAccessControls } from "@/components/admin/UserAccessControls";
+import { ApprovalTrail } from "@/components/admin/ApprovalTrail";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
 
@@ -435,6 +436,12 @@ export function UsersPermissionsTab() {
                 </CardContent>
               </Card>
             ))}
+
+            <ApprovalTrail
+              approverId={selected.id}
+              approverName={`${selected.name} ${selected.surname ?? ""}`.trim()}
+              title="Approvals made by this person"
+            />
 
             {/* Audit */}
             <Card className="dashboard-card">
