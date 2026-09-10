@@ -285,7 +285,8 @@ export function DashboardLayout({
               </div>
 
               {/* Right side */}
-              <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                <GlobalScanFAB variant="header" />
                 <NotificationBell />
 
                 <div className="hidden sm:flex items-center gap-3">
@@ -366,8 +367,7 @@ export function DashboardLayout({
 
         </main>
 
-        {/* Global floating receipt/invoice capture */}
-        <GlobalScanFAB />
+        {/* Ovi assistant remains a floating bottom-right action */}
         <OviAssistant />
 
         {/* Mobile bottom navigation */}
