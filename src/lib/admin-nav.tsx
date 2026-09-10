@@ -34,8 +34,8 @@ export const adminNavItems: NavItem[] = [
   { label: "Settings", href: "/admin/portal?tab=settings", icon: <Settings className="h-4 w-4" />, group: "Administration" , permission: "users.edit" },
 
   // Operations workspaces
-  { label: "Capture Expense", href: "/expenses", icon: <Receipt className="h-4 w-4" />, group: "Operations", permission: "expenses.view" },
-  { label: "Transactions", href: "/admin/portal?tab=transactions", icon: <ClipboardList className="h-4 w-4" />, group: "Operations", permission: "transactions.view" },
+  { label: "Transactions", href: "/expenses", icon: <ClipboardList className="h-4 w-4" />, group: "Operations", permission: "transactions.view" },
+
   { label: "Purchase Requisitions", href: "/admin/portal?tab=prs", icon: <FileText className="h-4 w-4" />, group: "Operations" , permission: "requisitions.view" },
   { label: "Analytics", href: "/admin/portal?tab=analytics", icon: <BarChart3 className="h-4 w-4" />, group: "Operations" , permission: "reports.view" },
 
