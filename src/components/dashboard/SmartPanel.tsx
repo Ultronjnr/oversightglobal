@@ -162,7 +162,7 @@ export function SmartPanel() {
         headline: `${d.topSupplier.name} is ${d.topSupplier.share}% of spend`,
         sub: `Your biggest supplier over the last 90 days ${scope}.`,
         tone: "primary",
-        icon: <TrendingUp className="h-5 w-5" />,
+        icon: <TrendingUp className="h-4 w-4" />,
         href: "/analytics",
         ctaLabel: "See breakdown",
       });
@@ -177,7 +177,7 @@ export function SmartPanel() {
         d?.paid || 0,
       )} already settled.`,
       tone: "primary",
-      icon: <TrendingUp className="h-5 w-5" />,
+      icon: <TrendingUp className="h-4 w-4" />,
       href: "/expenses",
       ctaLabel: "Open expense history",
     });
@@ -190,7 +190,7 @@ export function SmartPanel() {
         headline: formatCurrency(d?.outstanding || 0),
         sub: `${d?.unpaidCount ?? 0} approved items are still unsettled.`,
         tone: "warning",
-        icon: <Wallet className="h-5 w-5" />,
+        icon: <Wallet className="h-4 w-4" />,
         href: "/finance/portal?tab=payments",
         ctaLabel: "Open payment queue",
       });
@@ -206,9 +206,9 @@ export function SmartPanel() {
           : "No transactions with a missing VAT amount right now.",
         tone: d?.vatIssues ? "destructive" : "success",
         icon: d?.vatIssues ? (
-          <AlertTriangle className="h-5 w-5" />
+          <AlertTriangle className="h-4 w-4" />
         ) : (
-          <ShieldCheck className="h-5 w-5" />
+          <ShieldCheck className="h-4 w-4" />
         ),
         href: "/finance/portal?tab=vat_dashboard",
         ctaLabel: "Open VAT dashboard",
@@ -223,7 +223,7 @@ export function SmartPanel() {
         headline: `${d?.pendingPRs ?? 0} requisitions awaiting approval`,
         sub: "Approvals move faster when they are cleared the same day.",
         tone: d?.pendingPRs ? "warning" : "success",
-        icon: <ClipboardList className="h-5 w-5" />,
+        icon: <ClipboardList className="h-4 w-4" />,
         href:
           role === "HOD"
             ? "/hod/portal"
@@ -240,7 +240,7 @@ export function SmartPanel() {
         headline: `${d?.pendingPRs ?? 0} of yours are in review`,
         sub: "Track where each requisition sits in the approval chain.",
         tone: d?.pendingPRs ? "warning" : "success",
-        icon: <ClipboardList className="h-5 w-5" />,
+        icon: <ClipboardList className="h-4 w-4" />,
         href: "/employee/portal?tab=requisitions",
         ctaLabel: "View my requisitions",
       });
@@ -258,9 +258,9 @@ export function SmartPanel() {
         : `${d?.txnCount ?? 0} transactions are fully documented.`,
       tone: d?.missingDocs ? "warning" : "success",
       icon: d?.missingDocs ? (
-        <FileWarning className="h-5 w-5" />
+        <FileWarning className="h-4 w-4" />
       ) : (
-        <ShieldCheck className="h-5 w-5" />
+        <ShieldCheck className="h-4 w-4" />
       ),
       href: "/expenses",
       ctaLabel: "Open expense history",
@@ -273,7 +273,7 @@ export function SmartPanel() {
       headline: "Scan an invoice, skip the typing",
       sub: "Ovi reads your invoice, fills the transaction and matches the donor and project for you.",
       tone: "primary",
-      icon: <Sparkles className="h-5 w-5" />,
+      icon: <Sparkles className="h-4 w-4" />,
       href: "/billing",
       ctaLabel: "See what's included",
     });
@@ -311,66 +311,65 @@ export function SmartPanel() {
   return (
     <section
       aria-label="Smart insights"
-      style={{ perspective: "1600px" }}
-      className="group/panel mb-5 sm:mb-7"
+      className="group/panel mb-4 sm:mb-6"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
         className={cn(
-          "relative overflow-hidden rounded-3xl border border-white/60",
-          "bg-white/60 backdrop-blur-2xl",
-          "shadow-[0_1px_0_0_hsl(0_0%_100%/0.9)_inset,0_24px_60px_-24px_hsl(var(--primary)/0.35),0_8px_24px_-12px_hsl(220_40%_20%/0.18)]",
-          "transition-transform duration-500 ease-out will-change-transform",
+          "relative overflow-hidden rounded-2xl border border-white/60",
+          "bg-white/70 backdrop-blur-xl",
+          "shadow-[0_1px_0_0_hsl(0_0%_100%/0.9)_inset,0_16px_40px_-16px_hsl(var(--primary)/0.25),0_6px_16px_-8px_hsl(220_40%_20%/0.14)]",
+          "transition-transform duration-500 ease-out",
           "group-hover/panel:-translate-y-0.5",
         )}
       >
-        {/* Ambient depth orbs */}
+        {/* Subtle ambient orbs */}
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full blur-3xl opacity-60 transition-colors duration-700",
-            slide.kind === "ad" ? "bg-primary/25" : toneOrb[slide.tone],
+            "pointer-events-none absolute -top-16 -left-12 h-44 w-44 rounded-full blur-3xl opacity-50 transition-colors duration-700",
+            slide.kind === "ad" ? "bg-primary/20" : toneOrb[slide.tone],
           )}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-28 -right-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl opacity-50"
+          className="pointer-events-none absolute -bottom-16 -right-12 h-48 w-48 rounded-full bg-primary/15 blur-3xl opacity-40"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/70 via-white/30 to-transparent"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/80 via-white/40 to-transparent"
         />
 
         {/* Identity + compact figures */}
-        <div className="relative p-3 sm:p-4 border-b border-white/50">
-          <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
-            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-xs sm:text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
+        <div className="relative p-3 border-b border-white/50">
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-xs shrink-0 shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-foreground text-sm sm:text-base truncate">
+              <p className="font-semibold text-foreground text-sm truncate">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground">
                 Smart insights, refreshed from your live data
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-2 sm:px-3 py-2 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
+                className="rounded-xl bg-white/80 backdrop-blur-xl border border-white/80 px-2 py-1.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)]"
               >
                 {loading ? (
-                  <div className="h-4 sm:h-5 w-14 sm:w-16 mx-auto rounded bg-muted animate-pulse" />
+                  <div className="h-3.5 w-12 mx-auto rounded bg-muted animate-pulse" />
                 ) : (
-                  <p className="text-xs sm:text-base font-bold text-foreground tabular-nums truncate">
+                  <p className="text-xs sm:text-sm font-bold text-foreground tabular-nums truncate">
                     {s.value}
                   </p>
                 )}
-                <p className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
                   {s.label}
                 </p>
               </div>
@@ -389,7 +388,7 @@ export function SmartPanel() {
                 key={s.key}
                 aria-hidden={i !== index}
                 className={cn(
-                  "w-full shrink-0 p-4 sm:p-5 min-h-[148px] sm:min-h-[168px]",
+                  "w-full shrink-0 p-3 sm:p-4 min-h-[108px] sm:min-h-[116px]",
                   "transition-all duration-700 ease-out",
                   i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
                   s.kind === "ad"
@@ -397,54 +396,54 @@ export function SmartPanel() {
                     : toneBackground[s.tone],
                 )}
               >
-                <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3">
+                <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "grid place-items-center h-8 w-8 sm:h-9 sm:w-9 rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-[0_10px_24px_-14px_hsl(220_40%_20%/0.6)]",
+                        "grid place-items-center h-7 w-7 rounded-xl bg-white/90 backdrop-blur border border-white/80 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)]",
                         toneText[s.tone],
                       )}
                     >
                       {s.icon}
                     </span>
-                    <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       {s.kicker}
                     </span>
                   </div>
                   {s.kind === "ad" && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/70 backdrop-blur border border-white/70 rounded-full px-2.5 py-0.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/80 backdrop-blur border border-white/80 rounded-full px-2 py-0.5">
                       Sponsored
                     </span>
                   )}
                 </div>
 
                 {loading ? (
-                  <div className="space-y-2 sm:space-y-3">
-                    <div className="h-6 sm:h-8 w-2/3 rounded bg-muted animate-pulse" />
-                    <div className="h-3.5 sm:h-4 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="h-5 sm:h-6 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
                   </div>
                 ) : (
                   <>
                     <h2
                       className={cn(
-                        "text-lg sm:text-2xl font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
+                        "text-base sm:text-lg font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
                         s.kind === "ad" ? "text-foreground" : toneText[s.tone],
                       )}
                     >
                       {s.headline}
                     </h2>
-                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground max-w-xl">
+                    <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground max-w-xl line-clamp-2">
                       {s.sub}
                     </p>
                     {s.href && (
                       <Button
                         asChild
                         size="sm"
-                        className="mt-3 sm:mt-4 gap-2 rounded-full shadow-[0_12px_28px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                        className="mt-2.5 h-8 gap-1.5 rounded-full text-xs shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
                       >
                         <Link to={s.href}>
                           {s.ctaLabel}
-                          <ArrowRight className="h-4 w-4" />
+                          <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </Button>
                     )}
@@ -455,7 +454,7 @@ export function SmartPanel() {
           </div>
 
           {/* Controls */}
-          <div className="relative flex items-center justify-between px-4 sm:px-5 pb-4">
+          <div className="relative flex items-center justify-between px-3 sm:px-4 pb-3">
             <div className="flex items-center gap-1.5">
               {slides.map((s, i) => (
                 <button
@@ -466,7 +465,7 @@ export function SmartPanel() {
                   className={cn(
                     "h-1.5 rounded-full transition-all duration-500",
                     i === index
-                      ? "w-8 bg-gradient-to-r from-primary to-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.7)]"
+                      ? "w-6 bg-gradient-to-r from-primary to-primary/50 shadow-[0_0_10px_hsl(var(--primary)/0.6)]"
                       : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60",
                   )}
                 />
@@ -476,20 +475,20 @@ export function SmartPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full bg-white/70 backdrop-blur border border-white/70 hover:bg-white"
+                className="h-7 w-7 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
                 aria-label="Previous insight"
                 onClick={() => go(index - 1)}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full bg-white/70 backdrop-blur border border-white/70 hover:bg-white"
+                className="h-7 w-7 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
                 aria-label="Next insight"
                 onClick={() => go(index + 1)}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
