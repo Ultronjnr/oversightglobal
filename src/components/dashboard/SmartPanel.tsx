@@ -51,11 +51,11 @@ const toneText: Record<Tone, string> = {
   destructive: "text-destructive",
 };
 
-const toneGlow: Record<Tone, string> = {
-  primary: "from-primary/10",
-  success: "from-success/10",
-  warning: "from-warning/10",
-  destructive: "from-destructive/10",
+const toneOrb: Record<Tone, string> = {
+  primary: "bg-primary/25",
+  success: "bg-success/25",
+  warning: "bg-warning/25",
+  destructive: "bg-destructive/25",
 };
 
 /**
@@ -300,143 +300,195 @@ export function SmartPanel() {
   return (
     <section
       aria-label="Smart insights"
-      className="mb-5 sm:mb-7 rounded-2xl border border-border/50 bg-white shadow-sm overflow-hidden"
+      style={{ perspective: "1600px" }}
+      className="group/panel mb-5 sm:mb-7"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Identity + compact figures */}
-      <div className="p-4 sm:p-5 border-b border-border/40">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-full bg-primary/10 text-primary grid place-items-center font-bold text-sm shrink-0">
-            {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="font-semibold text-foreground truncate">
-              {orgName || "Your organisation"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Smart insights, refreshed from your live data
-            </p>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          {strip.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-xl bg-muted/40 border border-border/40 px-3 py-2.5 text-center"
-            >
-              {loading ? (
-                <div className="h-5 w-16 mx-auto rounded bg-muted animate-pulse" />
-              ) : (
-                <p className="text-sm sm:text-lg font-bold text-foreground tabular-nums truncate">
-                  {s.value}
-                </p>
-              )}
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                {s.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Rotating stage */}
-      <div className="relative">
+      <div
+        className={cn(
+          "relative overflow-hidden rounded-3xl border border-white/60",
+          "bg-white/60 backdrop-blur-2xl",
+          "shadow-[0_1px_0_0_hsl(0_0%_100%/0.9)_inset,0_24px_60px_-24px_hsl(var(--primary)/0.35),0_8px_24px_-12px_hsl(220_40%_20%/0.18)]",
+          "transition-transform duration-500 ease-out will-change-transform",
+          "group-hover/panel:-translate-y-0.5",
+        )}
+      >
+        {/* Ambient depth orbs */}
         <div
-          key={slide.key}
+          aria-hidden
           className={cn(
-            "relative animate-fade-in p-5 sm:p-7 min-h-[190px] sm:min-h-[200px] bg-gradient-to-br to-transparent",
-            slide.kind === "ad" ? "from-primary/10" : toneGlow[slide.tone],
+            "pointer-events-none absolute -top-24 -left-16 h-64 w-64 rounded-full blur-3xl opacity-60 transition-colors duration-700",
+            slide.kind === "ad" ? "bg-primary/25" : toneOrb[slide.tone],
           )}
-        >
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "grid place-items-center h-7 w-7 rounded-full bg-white shadow-sm",
-                  toneText[slide.tone],
-                )}
-              >
-                {slide.icon}
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {slide.kicker}
-              </span>
-            </div>
-            {slide.kind === "ad" && (
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border border-border/60 rounded-full px-2 py-0.5">
-                Sponsored
-              </span>
-            )}
-          </div>
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-28 -right-20 h-72 w-72 rounded-full bg-primary/20 blur-3xl opacity-50"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/70 via-white/30 to-transparent"
+        />
 
-          {loading ? (
-            <div className="space-y-3">
-              <div className="h-8 w-2/3 rounded bg-muted animate-pulse" />
-              <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+        {/* Identity + compact figures */}
+        <div className="relative p-4 sm:p-5 border-b border-white/50">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
+              {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
-          ) : (
-            <>
-              <h2
-                className={cn(
-                  "text-xl sm:text-3xl font-bold tracking-tight leading-tight",
-                  slide.kind === "ad" ? "text-foreground" : toneText[slide.tone],
-                )}
-              >
-                {slide.headline}
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground max-w-xl">
-                {slide.sub}
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground truncate">
+                {orgName || "Your organisation"}
               </p>
-              {slide.href && (
-                <Button asChild size="sm" className="mt-4 gap-2">
-                  <Link to={slide.href}>
-                    {slide.ctaLabel}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Controls */}
-        <div className="flex items-center justify-between px-4 sm:px-5 pb-4">
-          <div className="flex items-center gap-1.5">
-            {slides.map((s, i) => (
-              <button
-                key={s.key}
-                type="button"
-                aria-label={`Show slide ${i + 1}`}
-                onClick={() => go(i)}
-                className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i === index
-                    ? "w-6 bg-primary"
-                    : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50",
+              <p className="text-xs text-muted-foreground">
+                Smart insights, refreshed from your live data
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {strip.map((s) => (
+              <div
+                key={s.label}
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-3 py-2.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
+              >
+                {loading ? (
+                  <div className="h-5 w-16 mx-auto rounded bg-muted animate-pulse" />
+                ) : (
+                  <p className="text-sm sm:text-lg font-bold text-foreground tabular-nums truncate">
+                    {s.value}
+                  </p>
                 )}
-              />
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                  {s.label}
+                </p>
+              </div>
             ))}
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              aria-label="Previous insight"
-              onClick={() => go(index - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              aria-label="Next insight"
-              onClick={() => go(index + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+        </div>
+
+        {/* Rotating stage */}
+        <div className="relative overflow-hidden">
+          <div
+            className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ transform: `translateX(-${index * 100}%)` }}
+          >
+            {slides.map((s, i) => (
+              <div
+                key={s.key}
+                aria-hidden={i !== index}
+                className={cn(
+                  "w-full shrink-0 p-5 sm:p-7 min-h-[200px] sm:min-h-[212px]",
+                  "transition-all duration-700 ease-out",
+                  i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
+                )}
+              >
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "grid place-items-center h-9 w-9 rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-[0_10px_24px_-14px_hsl(220_40%_20%/0.6)]",
+                        toneText[s.tone],
+                      )}
+                    >
+                      {s.icon}
+                    </span>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      {s.kicker}
+                    </span>
+                  </div>
+                  {s.kind === "ad" && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/70 backdrop-blur border border-white/70 rounded-full px-2.5 py-0.5">
+                      Sponsored
+                    </span>
+                  )}
+                </div>
+
+                {loading ? (
+                  <div className="space-y-3">
+                    <div className="h-8 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+                  </div>
+                ) : (
+                  <>
+                    <h2
+                      className={cn(
+                        "text-xl sm:text-3xl font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
+                        s.kind === "ad" ? "text-foreground" : toneText[s.tone],
+                      )}
+                    >
+                      {s.headline}
+                    </h2>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-xl">
+                      {s.sub}
+                    </p>
+                    {s.href && (
+                      <Button
+                        asChild
+                        size="sm"
+                        className="mt-4 gap-2 rounded-full shadow-[0_12px_28px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                      >
+                        <Link to={s.href}>
+                          {s.ctaLabel}
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Controls */}
+          <div className="relative flex items-center justify-between px-4 sm:px-5 pb-4">
+            <div className="flex items-center gap-1.5">
+              {slides.map((s, i) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  aria-label={`Show slide ${i + 1}`}
+                  onClick={() => go(i)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-500",
+                    i === index
+                      ? "w-8 bg-gradient-to-r from-primary to-primary/50 shadow-[0_0_12px_hsl(var(--primary)/0.7)]"
+                      : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60",
+                  )}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-white/70 backdrop-blur border border-white/70 hover:bg-white"
+                aria-label="Previous insight"
+                onClick={() => go(index - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-white/70 backdrop-blur border border-white/70 hover:bg-white"
+                aria-label="Next insight"
+                onClick={() => go(index + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Autoplay progress */}
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/40">
+            <div
+              key={`${index}-${paused}`}
+              className={cn(
+                "h-full bg-gradient-to-r from-primary to-primary/40",
+                paused ? "w-0" : "animate-smart-progress",
+              )}
+            />
           </div>
         </div>
       </div>
