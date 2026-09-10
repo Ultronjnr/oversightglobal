@@ -129,6 +129,13 @@ export default function AdminPortal() {
       <div className="space-y-6">
         <OviFirstRunCard />
 
+        {can("finance.view") && (
+          <PaymentStatusTracker
+            onOpenTab={(tab) => navigate(`/admin/portal?tab=${tab}`)}
+          />
+        )}
+
+
         {/* Quick actions — only what this user is allowed to do */}
         <div className="flex flex-wrap gap-2">
           {can("expenses.create") && (
