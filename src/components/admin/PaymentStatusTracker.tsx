@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   /** Called with the workspace tab to open when a bucket is chosen. */
-  onOpenTab: (tab: string) => void;
+  onOpenTab?: (tab: string) => void;
+  /** Information only — no next actions, used where the person cannot pay. */
+  readOnly?: boolean;
 }
 
 const META: Record<
@@ -56,7 +58,7 @@ const ORDER: PaymentBucketKey[] = [
   "OVERDUE",
 ];
 
-export function PaymentStatusTracker({ onOpenTab }: Props) {
+export function PaymentStatusTracker({ onOpenTab, readOnly }: Props) {
   const { format } = useCurrency();
   const [buckets, setBuckets] = useState<PaymentBuckets | null>(null);
 
@@ -75,7 +77,9 @@ export function PaymentStatusTracker({ onOpenTab }: Props) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Payment status</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Where every approved amount currently sits, and what to do next.
+          {readOnly
+            ? "Where every approved amount currently sits."
+            : "Where every approved amount currently sits, and what to do next."}
         </p>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -87,9 +91,11 @@ export function PaymentStatusTracker({ onOpenTab }: Props) {
             <button
               key={key}
               type="button"
-              onClick={() => onOpenTab(meta.tab)}
+              disabled={readOnly}
+              onClick={() => onOpenTab?.(meta.tab)}
               className={cn(
-                "rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-md",
+                "rounded-xl border p-3 text-left transition-all",
+                !readOnly && "hover:-translate-y-0.5 hover:shadow-md",
                 meta.tone,
               )}
             >
@@ -109,9 +115,11 @@ export function PaymentStatusTracker({ onOpenTab }: Props) {
                   </p>
                 </>
               )}
-              <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium">
-                {meta.action} <ArrowRight className="h-3 w-3" />
-              </span>
+              {!readOnly && (
+                <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium">
+                  {meta.action} <ArrowRight className="h-3 w-3" />
+                </span>
+              )}
             </button>
           );
         })}
