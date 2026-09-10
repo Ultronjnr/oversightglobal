@@ -33,10 +33,27 @@ export const adminNavItems: NavItem[] = [
 
   // Operations workspaces
   { label: "Purchase Requisitions", href: "/admin/portal?tab=prs", icon: <FileText className="h-4 w-4" />, group: "Operations" },
-  { label: "Suppliers", href: "/admin/portal?tab=suppliers", icon: <Truck className="h-4 w-4" />, group: "Operations" },
-  { label: "Reimbursements", href: "/admin/portal?tab=reimbursements", icon: <Undo2 className="h-4 w-4" />, group: "Operations" },
   { label: "Analytics", href: "/admin/portal?tab=analytics", icon: <BarChart3 className="h-4 w-4" />, group: "Operations" },
+
+  // Finance workspaces — the Super User can run these directly when the
+  // organisation has no Finance / HOD staff (or is a one-person organisation).
+  { label: "Approvals", href: "/admin/portal?tab=approvals", icon: <Wallet className="h-4 w-4" />, group: "Finance" },
+  { label: "Suppliers", href: "/admin/portal?tab=suppliers", icon: <Truck className="h-4 w-4" />, group: "Finance" },
+  { label: "Quotes", href: "/admin/portal?tab=quotes", icon: <FileText className="h-4 w-4" />, group: "Finance" },
+  { label: "Invoices", href: "/admin/portal?tab=invoices", icon: <Receipt className="h-4 w-4" />, group: "Finance" },
+  { label: "Reimbursements", href: "/admin/portal?tab=reimbursements", icon: <Undo2 className="h-4 w-4" />, group: "Finance" },
+  { label: "Input VAT", href: "/admin/portal?tab=input_vat", icon: <Percent className="h-4 w-4" />, group: "Finance" },
+  { label: "VAT Dashboard", href: "/admin/portal?tab=vat_dashboard", icon: <Percent className="h-4 w-4" />, group: "Finance" },
+  { label: "Reports", href: "/admin/portal?tab=reports", icon: <BarChart3 className="h-4 w-4" />, group: "Finance" },
+
+  // Payment queues
+  { label: "Approved – Not Paid", href: "/admin/portal?tab=payments", icon: <Wallet className="h-4 w-4" />, group: "Payments" },
+  { label: "Partially Paid", href: "/admin/portal?tab=partially_paid", icon: <Wallet className="h-4 w-4" />, group: "Payments" },
+  { label: "Fully Paid", href: "/admin/portal?tab=fully_paid", icon: <CheckCheck className="h-4 w-4" />, group: "Payments" },
+  { label: "Overdue (30+)", href: "/admin/portal?tab=overdue", icon: <AlertCircle className="h-4 w-4" />, group: "Payments" },
+  { label: "Payment Batches", href: "/admin/portal?tab=batches", icon: <Layers className="h-4 w-4" />, group: "Payments" },
 ];
+
 
 
 /**
