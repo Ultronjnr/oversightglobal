@@ -311,13 +311,13 @@ export function SmartPanel() {
   return (
     <section
       aria-label="Smart insights"
-      className="group/panel mb-3 sm:mb-4"
+      className="group/panel mb-4 sm:mb-5"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
         className={cn(
-          "relative overflow-hidden rounded-xl border border-white/60",
+          "relative overflow-hidden rounded-2xl border border-white/60",
           "bg-white/70 backdrop-blur-xl",
           "shadow-[0_1px_0_0_hsl(0_0%_100%/0.9)_inset,0_16px_40px_-16px_hsl(var(--primary)/0.25),0_6px_16px_-8px_hsl(220_40%_20%/0.14)]",
           "transition-transform duration-500 ease-out",
@@ -342,34 +342,34 @@ export function SmartPanel() {
         />
 
         {/* Identity + compact figures */}
-        <div className="relative border-b border-white/50 px-3 py-2 sm:px-3.5">
-          <div className="mb-1.5 flex items-center gap-2">
-            <div className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-gradient-to-br from-primary to-primary/60 text-[9px] font-bold text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
+        <div className="relative border-b border-white/50 px-4 py-3 sm:px-5 sm:py-4">
+          <div className="mb-2 flex items-center gap-2.5">
+            <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/60 text-[10px] font-bold text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold leading-tight text-foreground">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-[8px] leading-tight text-muted-foreground sm:text-[9px]">
+              <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
                 Smart insights, refreshed from your live data
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-3 gap-2">
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-md border border-white/80 bg-white/80 px-1 py-0.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)] backdrop-blur-xl"
+                className="rounded-lg border border-white/80 bg-white/80 px-1.5 py-2 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)] backdrop-blur-xl"
               >
                 {loading ? (
-                  <div className="mx-auto h-3 w-10 animate-pulse rounded bg-muted" />
+                  <div className="mx-auto h-4 w-12 animate-pulse rounded bg-muted" />
                 ) : (
-                  <p className="truncate text-[10px] font-bold leading-tight text-foreground tabular-nums sm:text-[11px]">
+                  <p className="truncate text-[11px] font-bold leading-tight text-foreground tabular-nums sm:text-xs">
                     {s.value}
                   </p>
                 )}
-                <p className="mt-px text-[8px] leading-tight text-muted-foreground">
+                <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground sm:text-[10px]">
                   {s.label}
                 </p>
               </div>
@@ -388,7 +388,7 @@ export function SmartPanel() {
                 key={s.key}
                 aria-hidden={i !== index}
                 className={cn(
-                  "min-h-[76px] w-full shrink-0 px-3 py-2 sm:min-h-[80px] sm:px-3.5",
+                  "min-h-[120px] w-full shrink-0 px-4 py-3 sm:min-h-[132px] sm:px-5 sm:py-4",
                   "transition-all duration-700 ease-out",
                   i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
                   s.kind === "ad"
@@ -396,54 +396,54 @@ export function SmartPanel() {
                     : toneBackground[s.tone],
                 )}
               >
-                <div className="mb-1 flex items-center justify-between gap-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "grid h-5 w-5 place-items-center rounded-md border border-white/80 bg-white/90 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)] backdrop-blur [&>svg]:h-3 [&>svg]:w-3",
+                        "grid h-6 w-6 place-items-center rounded-md border border-white/80 bg-white/90 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)] backdrop-blur [&>svg]:h-3.5 [&>svg]:w-3.5",
                         toneText[s.tone],
                       )}
                     >
                       {s.icon}
                     </span>
-                    <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                       {s.kicker}
                     </span>
                   </div>
                   {s.kind === "ad" && (
-                    <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/80 backdrop-blur border border-white/80 rounded-full px-2 py-0.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/80 backdrop-blur border border-white/80 rounded-full px-2.5 py-0.5">
                       Sponsored
                     </span>
                   )}
                 </div>
 
                 {loading ? (
-                  <div className="space-y-2">
-                    <div className="h-5 sm:h-6 w-2/3 rounded bg-muted animate-pulse" />
-                    <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="space-y-2.5">
+                    <div className="h-6 sm:h-7 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-1/2 rounded bg-muted animate-pulse" />
                   </div>
                 ) : (
                   <>
                     <h2
                       className={cn(
-                        "text-xs font-bold leading-tight tracking-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)] sm:text-sm",
+                        "text-sm font-bold leading-tight tracking-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)] sm:text-base",
                         s.kind === "ad" ? "text-foreground" : toneText[s.tone],
                       )}
                     >
                       {s.headline}
                     </h2>
-                    <p className="mt-px max-w-xl line-clamp-1 text-[9px] text-muted-foreground sm:text-[10px]">
+                    <p className="mt-1 max-w-xl line-clamp-1 text-[10px] text-muted-foreground sm:text-[11px]">
                       {s.sub}
                     </p>
                     {s.href && (
                       <Button
                         asChild
                         size="sm"
-                        className="mt-1.5 h-6 gap-1 rounded-full px-2.5 text-[9px] shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                        className="mt-2.5 h-7 gap-1 rounded-full px-3 text-[10px] shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
                       >
                         <Link to={s.href}>
                           {s.ctaLabel}
-                          <ArrowRight className="h-3 w-3" />
+                          <ArrowRight className="h-3.5 w-3.5" />
                         </Link>
                       </Button>
                     )}
@@ -454,7 +454,7 @@ export function SmartPanel() {
           </div>
 
           {/* Controls */}
-          <div className="relative flex items-center justify-between px-3 pb-1.5 sm:px-3.5">
+          <div className="relative flex items-center justify-between px-4 pb-2 sm:px-5">
             <div className="flex items-center gap-1.5">
               {slides.map((s, i) => (
                 <button
@@ -475,20 +475,20 @@ export function SmartPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
+                className="h-6 w-6 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
                 aria-label="Previous insight"
                 onClick={() => go(index - 1)}
               >
-                <ChevronLeft className="h-3 w-3" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
+                className="h-6 w-6 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
                 aria-label="Next insight"
                 onClick={() => go(index + 1)}
               >
-                <ChevronRight className="h-3 w-3" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
