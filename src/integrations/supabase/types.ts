@@ -3624,6 +3624,7 @@ export type Database = {
         Args: { _batch_id: string; _export_id: string; _file_path: string }
         Returns: Json
       }
+      can_act_as_finance: { Args: { _user_id: string }; Returns: boolean }
       can_approve_amount: {
         Args: { _amount: number; _approval_type: string; _user_id: string }
         Returns: boolean
