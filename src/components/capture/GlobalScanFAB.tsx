@@ -13,8 +13,8 @@ export function GlobalScanFAB() {
   const { role } = useAuth();
   const [open, setOpen] = useState(false);
 
-  // Only show for org users who can act on invoices (Admin excluded).
-  if (!role || !["EMPLOYEE", "HOD", "FINANCE"].includes(role)) {
+  // Show one consistent floating scanner for every internal portal role.
+  if (!role || !["EMPLOYEE", "HOD", "FINANCE", "ADMIN"].includes(role)) {
     return null;
   }
 
