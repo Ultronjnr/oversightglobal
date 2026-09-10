@@ -23,7 +23,11 @@ import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
 import { ReportsTab } from "@/components/finance/ReportsTab";
 import { getAdminStats } from "@/services/admin.service";
-import { adminNavItems } from "@/lib/admin-nav";
+import { adminNavItems, getAdminNavItems } from "@/lib/admin-nav";
+import { usePermissions } from "@/hooks/use-permissions";
+import { PurchaseRequisitionModal } from "@/components/pr/PurchaseRequisitionModal";
+import { AddInvoiceDialog } from "@/components/capture/AddInvoiceDialog";
+import { Button } from "@/components/ui/button";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +48,10 @@ export default function AdminPortal() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const staffing = useOrgStaffing();
+  const { can } = usePermissions();
+  const navItems = getAdminNavItems(can);
+  const [prModalOpen, setPrModalOpen] = useState(false);
+  const [captureOpen, setCaptureOpen] = useState(false);
 
 
   useEffect(() => {
@@ -108,7 +116,7 @@ export default function AdminPortal() {
 
   if (currentPage) {
     return (
-      <DashboardLayout title={currentPage.title} navItems={adminNavItems}>
+      <DashboardLayout title={currentPage.title} navItems={navItems}>
         <WorkspaceShell title={currentPage.title} description={currentPage.description} icon={currentPage.icon}>
           {currentPage.content}
         </WorkspaceShell>
@@ -117,9 +125,45 @@ export default function AdminPortal() {
   }
 
   return (
-    <DashboardLayout title="Super User Dashboard" navItems={adminNavItems} showInsights>
+    <DashboardLayout title="Super User Dashboard" navItems={navItems} showInsights>
       <div className="space-y-6">
         <OviFirstRunCard />
+
+        {/* Quick actions — only what this user is allowed to do */}
+        <div className="flex flex-wrap gap-2">
+          {can("expenses.create") && (
+            <Button variant="outline" onClick={() => setCaptureOpen(true)}>
+              <Receipt className="h-4 w-4 mr-2" /> Capture Expense
+            </Button>
+          )}
+          {can("requisitions.create") && (
+            <Button variant="outline" onClick={() => setPrModalOpen(true)}>
+              <FileText className="h-4 w-4 mr-2" /> New Requisition
+            </Button>
+          )}
+          {can("requisitions.approve") && (
+            <Button variant="outline" onClick={() => navigate("/admin/portal?tab=approvals")}>
+              <Wallet className="h-4 w-4 mr-2" /> Approvals
+            </Button>
+          )}
+          {can("finance.process") && (
+            <Button variant="outline" onClick={() => navigate("/admin/portal?tab=payments")}>
+              <CheckCheck className="h-4 w-4 mr-2" /> Payments
+            </Button>
+          )}
+          {can("transactions.view") && (
+            <Button variant="outline" onClick={() => navigate("/expenses")}>
+              <BarChart3 className="h-4 w-4 mr-2" /> Transactions
+            </Button>
+          )}
+        </div>
+
+        <PurchaseRequisitionModal
+          open={prModalOpen}
+          onOpenChange={setPrModalOpen}
+          onSuccess={() => fetchStats()}
+        />
+        <AddInvoiceDialog open={captureOpen} onOpenChange={setCaptureOpen} />
 
         {!staffing.isLoading && (staffing.isSingleUser || staffing.adminActsAsFinance) && (
           <Card className="dashboard-card border-primary/30">
