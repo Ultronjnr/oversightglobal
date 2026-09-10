@@ -311,7 +311,7 @@ export function SmartPanel() {
   return (
     <section
       aria-label="Smart insights"
-      className="group/panel mb-4 sm:mb-5"
+      className="group/panel mx-auto mb-4 w-full max-w-5xl sm:mb-5"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -342,34 +342,34 @@ export function SmartPanel() {
         />
 
         {/* Identity + compact figures */}
-        <div className="relative border-b border-white/50 px-4 py-3 sm:px-5 sm:py-4">
-          <div className="mb-2 flex items-center gap-2.5">
-            <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/60 text-[10px] font-bold text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
+        <div className="relative border-b border-white/50 px-3 py-2.5 sm:px-4 sm:py-3">
+          <div className="mb-2 flex items-center gap-2">
+            <div className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary to-primary/60 text-[10px] font-bold text-primary-foreground shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+              <p className="truncate text-xs font-semibold leading-tight text-foreground sm:text-sm">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
+              <p className="text-[10px] leading-tight text-muted-foreground">
                 Smart insights, refreshed from your live data
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-lg border border-white/80 bg-white/80 px-1.5 py-2 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)] backdrop-blur-xl"
+                className="rounded-lg border border-white/80 bg-white/80 px-1 py-1.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)] backdrop-blur-xl"
               >
                 {loading ? (
-                  <div className="mx-auto h-4 w-12 animate-pulse rounded bg-muted" />
+                  <div className="mx-auto h-3.5 w-10 animate-pulse rounded bg-muted" />
                 ) : (
-                  <p className="truncate text-[11px] font-bold leading-tight text-foreground tabular-nums sm:text-xs">
+                  <p className="truncate text-[10px] font-bold leading-tight text-foreground tabular-nums sm:text-[11px]">
                     {s.value}
                   </p>
                 )}
-                <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground sm:text-[10px]">
+                <p className="mt-0.5 text-[9px] leading-tight text-muted-foreground">
                   {s.label}
                 </p>
               </div>
@@ -388,7 +388,7 @@ export function SmartPanel() {
                 key={s.key}
                 aria-hidden={i !== index}
                 className={cn(
-                  "min-h-[120px] w-full shrink-0 px-4 py-3 sm:min-h-[132px] sm:px-5 sm:py-4",
+                  "min-h-[108px] w-full shrink-0 px-3 py-2.5 sm:min-h-[118px] sm:px-4 sm:py-3",
                   "transition-all duration-700 ease-out",
                   i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
                   s.kind === "ad"
@@ -396,11 +396,11 @@ export function SmartPanel() {
                     : toneBackground[s.tone],
                 )}
               >
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span
                       className={cn(
-                        "grid h-6 w-6 place-items-center rounded-md border border-white/80 bg-white/90 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)] backdrop-blur [&>svg]:h-3.5 [&>svg]:w-3.5",
+                        "grid h-5 w-5 place-items-center rounded-md border border-white/80 bg-white/90 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)] backdrop-blur [&>svg]:h-3 [&>svg]:w-3",
                         toneText[s.tone],
                       )}
                     >
@@ -411,39 +411,39 @@ export function SmartPanel() {
                     </span>
                   </div>
                   {s.kind === "ad" && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/80 backdrop-blur border border-white/80 rounded-full px-2.5 py-0.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground bg-white/80 backdrop-blur border border-white/80 rounded-full px-2 py-0.5">
                       Sponsored
                     </span>
                   )}
                 </div>
 
                 {loading ? (
-                  <div className="space-y-2.5">
-                    <div className="h-6 sm:h-7 w-2/3 rounded bg-muted animate-pulse" />
-                    <div className="h-3.5 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="space-y-2">
+                    <div className="h-5 sm:h-6 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-3 w-1/2 rounded bg-muted animate-pulse" />
                   </div>
                 ) : (
                   <>
                     <h2
                       className={cn(
-                        "text-sm font-bold leading-tight tracking-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)] sm:text-base",
+                        "text-xs font-bold leading-tight tracking-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)] sm:text-sm",
                         s.kind === "ad" ? "text-foreground" : toneText[s.tone],
                       )}
                     >
                       {s.headline}
                     </h2>
-                    <p className="mt-1 max-w-xl line-clamp-1 text-[10px] text-muted-foreground sm:text-[11px]">
+                    <p className="mt-0.5 max-w-xl line-clamp-1 text-[10px] text-muted-foreground">
                       {s.sub}
                     </p>
                     {s.href && (
                       <Button
                         asChild
                         size="sm"
-                        className="mt-2.5 h-7 gap-1 rounded-full px-3 text-[10px] shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                        className="mt-2 h-6 gap-1 rounded-full px-2.5 text-[10px] shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
                       >
                         <Link to={s.href}>
                           {s.ctaLabel}
-                          <ArrowRight className="h-3.5 w-3.5" />
+                          <ArrowRight className="h-3 w-3" />
                         </Link>
                       </Button>
                     )}
@@ -454,7 +454,7 @@ export function SmartPanel() {
           </div>
 
           {/* Controls */}
-          <div className="relative flex items-center justify-between px-4 pb-2 sm:px-5">
+          <div className="relative flex items-center justify-between px-3 pb-2 sm:px-4">
             <div className="flex items-center gap-1.5">
               {slides.map((s, i) => (
                 <button
@@ -475,20 +475,20 @@ export function SmartPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
+                className="h-5 w-5 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
                 aria-label="Previous insight"
                 onClick={() => go(index - 1)}
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-3 w-3" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
+                className="h-5 w-5 rounded-full border border-white/80 bg-white/80 backdrop-blur hover:bg-white"
                 aria-label="Next insight"
                 onClick={() => go(index + 1)}
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-3 w-3" />
               </Button>
             </div>
           </div>
