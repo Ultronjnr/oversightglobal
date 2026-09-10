@@ -14,7 +14,14 @@ import {
 import { Logo } from "@/components/Logo";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageSeo } from "@/components/site/PageSeo";
-import { getOnboarding, saveOnboarding } from "@/services/onboarding.service";
+import { AddressAutocomplete } from "@/components/onboarding/AddressAutocomplete";
+import {
+  getOnboarding,
+  saveOnboarding,
+  saveOrganisationDetails,
+  type OnboardingAnswers,
+  type OrganisationType,
+} from "@/services/onboarding.service";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -27,8 +34,13 @@ interface Option {
   emoji: string;
 }
 
+type AnswerKey = "pain_point" | "cause" | "funding" | "team_size" | "heard_about";
+type OtherKey = keyof OnboardingAnswers;
+
 interface Step {
-  key: "pain_point" | "cause" | "team_size" | "heard_about";
+  key: AnswerKey;
+  otherKey?: OtherKey;
+  otherPrompt?: string;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -38,6 +50,8 @@ interface Step {
 const STEPS: Step[] = [
   {
     key: "pain_point",
+    otherKey: "pain_point_other",
+    otherPrompt: "Tell us what's giving you the most trouble",
     eyebrow: "So we can help faster",
     title: "What's your biggest headache right now?",
     subtitle: "We'll start you exactly where it hurts most.",
@@ -46,10 +60,13 @@ const STEPS: Step[] = [
       { value: "DONOR_REPORTS", label: "Donor reports are a nightmare", hint: "Tracking how each donor's money was spent takes forever", emoji: "📊" },
       { value: "REIMBURSEMENTS", label: "Reimbursements are messy", hint: "Staff pay out of pocket, no clean way to track & repay", emoji: "💸" },
       { value: "APPROVALS_WHATSAPP", label: "Approvals live in WhatsApp", hint: "Sign-offs scattered across chats and email", emoji: "💬" },
+      { value: "OTHER", label: "Something else", emoji: "➕" },
     ],
   },
   {
     key: "cause",
+    otherKey: "cause_other",
+    otherPrompt: "What does your organisation do?",
     eyebrow: "A bit about your work",
     title: "What does your organisation do?",
     subtitle: "So we can tailor things to your work.",
@@ -59,6 +76,22 @@ const STEPS: Step[] = [
       { value: "HEALTH", label: "Health & wellbeing", emoji: "❤️" },
       { value: "COMMUNITY", label: "Community development", emoji: "🏘️" },
       { value: "ENVIRONMENT", label: "Environment & conservation", emoji: "🌍" },
+      { value: "OTHER", label: "Something else", emoji: "➕" },
+    ],
+  },
+  {
+    key: "funding",
+    otherKey: "funding_other",
+    otherPrompt: "Where does your funding come from?",
+    eyebrow: "How you're funded",
+    title: "Where does most of your funding come from?",
+    subtitle: "This shapes your donor and project reporting.",
+    options: [
+      { value: "GRANTS", label: "Grants & trusts", emoji: "📝" },
+      { value: "CORPORATE", label: "Corporate / CSI donors", emoji: "🏢" },
+      { value: "INTERNATIONAL", label: "International funders", emoji: "🌐" },
+      { value: "PUBLIC", label: "Public donations & fundraising", emoji: "🙌" },
+      { value: "GOVERNMENT", label: "Government funding", emoji: "🏛️" },
       { value: "OTHER", label: "Something else", emoji: "➕" },
     ],
   },
@@ -76,6 +109,8 @@ const STEPS: Step[] = [
   },
   {
     key: "heard_about",
+    otherKey: "heard_about_other",
+    otherPrompt: "How did you hear about us?",
     eyebrow: "Last one",
     title: "How did you hear about Ovasyt?",
     subtitle: "Helps us reach more NPOs like yours.",
@@ -85,6 +120,7 @@ const STEPS: Step[] = [
       { value: "FUNDER", label: "A funder or NPO network", emoji: "🏦" },
       { value: "WORD_OF_MOUTH", label: "Word of mouth", emoji: "💡" },
       { value: "SEARCH", label: "Google / search", emoji: "🔎" },
+      { value: "OTHER", label: "Something else", emoji: "➕" },
     ],
   },
 ];
@@ -103,43 +139,46 @@ const formatRegistrationNumber = (value: string): string => {
 const formatTaxDigits = (value: string): string =>
   value.replace(/\D/g, "").slice(0, 10);
 
-interface CompanyForm {
-  companyName: string;
-  companyAddress: string;
-  companyPhone: string;
+interface OrgForm {
+  orgName: string;
+  orgAddress: string;
+  orgPhone: string;
   registrationNumber: string;
   taxNumber: string;
-  companyType: "" | "PTY_LTD" | "PLC" | "NPO";
+  orgType: "" | OrganisationType;
+  pboRegistered: "" | "YES" | "NO";
+  pboNumber: string;
 }
 
-const EMPTY_COMPANY: CompanyForm = {
-  companyName: "",
-  companyAddress: "",
-  companyPhone: "",
+const EMPTY_ORG: OrgForm = {
+  orgName: "",
+  orgAddress: "",
+  orgPhone: "",
   registrationNumber: "",
   taxNumber: "",
-  companyType: "",
+  orgType: "",
+  pboRegistered: "",
+  pboNumber: "",
 };
 
 export default function Onboarding() {
   const { user, profile, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<OnboardingAnswers>({});
+  const [otherText, setOtherText] = useState("");
   const [saving, setSaving] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  // Company setup (first step for brand-new signups that have no organisation yet)
+  // Organisation setup (first step for brand-new signups with no organisation yet)
   const [orgId, setOrgId] = useState<string | null>(null);
-  const [companyDone, setCompanyDone] = useState(false);
-  const [company, setCompany] = useState<CompanyForm>(EMPTY_COMPANY);
-  const [companySaving, setCompanySaving] = useState(false);
+  const [orgDone, setOrgDone] = useState(false);
+  const [org, setOrg] = useState<OrgForm>(EMPTY_ORG);
+  const [orgSaving, setOrgSaving] = useState(false);
 
   const effectiveOrgId = orgId || profile?.organization_id || null;
-  // Show the company step whenever the user has no organisation yet. Once the
-  // profile refreshes with the new org id, this flips off automatically.
-  const needsCompany = !companyDone && !effectiveOrgId;
-  const totalSteps = STEPS.length + 1; // company step always counted in the bar
+  const needsOrg = !orgDone && !effectiveOrgId;
+  const totalSteps = STEPS.length + 1; // organisation step always counted in the bar
 
   useEffect(() => {
     if (isLoading) return;
@@ -148,7 +187,6 @@ export default function Onboarding() {
       return;
     }
     if (!profile?.organization_id) {
-      // Brand-new signup: start at the company details step.
       setChecking(false);
       return;
     }
@@ -158,25 +196,23 @@ export default function Onboarding() {
         return;
       }
       if (rec) {
-        setAnswers({
-          ...(rec.pain_point ? { pain_point: rec.pain_point } : {}),
-          ...(rec.cause ? { cause: rec.cause } : {}),
-          ...(rec.team_size ? { team_size: rec.team_size } : {}),
-          ...(rec.heard_about ? { heard_about: rec.heard_about } : {}),
-        });
+        const { organization_id: _ignored, completed_at: _done, ...saved } = rec;
+        setAnswers(saved);
       }
-      setCompanyDone(true);
+      setOrgDone(true);
       setChecking(false);
     });
   }, [isLoading, user, profile?.organization_id, navigate]);
 
   if (isLoading || checking) return <LoadingScreen />;
 
-  const isDone = !needsCompany && step >= STEPS.length;
+  const isDone = !needsOrg && step >= STEPS.length;
   const current = STEPS[Math.min(step, STEPS.length - 1)];
-  const progressIndex = needsCompany ? 0 : step + 1;
+  const progressIndex = needsOrg ? 0 : step + 1;
+  const selected = (answers[current.key] as string | undefined) ?? undefined;
+  const showOther = !!current.otherKey && selected === "OTHER";
 
-  const submitCompany = async (e: React.FormEvent) => {
+  const submitOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -184,49 +220,41 @@ export default function Onboarding() {
     const name = reg?.name || "";
     const surname = reg?.surname || "";
 
-    if (company.companyName.trim().length < 2) {
-      toast.error("Please enter your company name");
-      return;
-    }
-    if (company.companyAddress.trim().length < 5) {
-      toast.error("Please enter your company address");
-      return;
-    }
-    if (!company.companyType) {
-      toast.error("Please select your company type");
-      return;
-    }
-    if (company.registrationNumber.trim().length < 2) {
-      toast.error("Please enter your registration number");
-      return;
-    }
-    if (company.taxNumber.trim().length < 2) {
-      toast.error("Please enter your tax number");
-      return;
+    if (org.orgName.trim().length < 2) return toast.error("Please enter your organisation name");
+    if (org.orgAddress.trim().length < 5) return toast.error("Please enter your organisation address");
+    if (org.orgPhone.trim().length < 6) return toast.error("Please enter a phone number");
+    if (!org.orgType) return toast.error("Please select your organisation type");
+    if (org.registrationNumber.trim().length < 2) return toast.error("Please enter your registration number");
+    if (org.taxNumber.trim().length < 2) return toast.error("Please enter your tax number");
+    if (!org.pboRegistered) return toast.error("Please tell us if you're registered for PBO/PVO");
+    if (org.pboRegistered === "YES" && org.pboNumber.trim().length < 2) {
+      return toast.error("Please enter your PBO/PVO number");
     }
 
-    setCompanySaving(true);
+    setOrgSaving(true);
     const { data, error } = await supabase.rpc("complete_company_registration", {
       _user_id: user.id,
       _email: (user.email || "").toLowerCase(),
       _name: name,
       _surname: surname,
-      _phone: company.companyPhone.trim(),
+      _phone: org.orgPhone.trim(),
       _organization_id: reg?.organization_id || crypto.randomUUID(),
-      _company_name: company.companyName.trim(),
-      _company_address: company.companyAddress.trim(),
-      _registration_number: company.registrationNumber.trim(),
-      _tax_number: company.taxNumber.trim(),
-      _company_type: company.companyType,
+      _company_name: org.orgName.trim(),
+      _company_address: org.orgAddress.trim(),
+      _registration_number: org.registrationNumber.trim(),
+      _tax_number: org.taxNumber.trim(),
+      // The legacy enum only knows registered entity types; NGO/NPO are both
+      // non-profit, and the true organisation type is stored on the org record.
+      _company_type: "NPO",
       _vat_registered: false,
       _vat_number: null,
       _vat_cycle: null,
       _next_vat_submission_date: null,
     });
-    setCompanySaving(false);
 
     if (error) {
-      toast.error(error.message || "Company setup could not be completed.");
+      setOrgSaving(false);
+      toast.error(error.message || "Organisation setup could not be completed.");
       return;
     }
 
@@ -234,31 +262,75 @@ export default function Onboarding() {
       (data as { organization_id?: string } | null)?.organization_id ||
       reg?.organization_id ||
       null;
-    if (newOrgId) setOrgId(newOrgId);
+
+    if (newOrgId) {
+      const detail = await saveOrganisationDetails(newOrgId, {
+        phone: org.orgPhone.trim(),
+        organisation_type: org.orgType as OrganisationType,
+        pbo_registered: org.pboRegistered === "YES",
+        pbo_number: org.pboNumber.trim() || null,
+      });
+      if (!detail.success) {
+        toast.error(detail.error || "Some organisation details could not be saved.");
+      }
+      setOrgId(newOrgId);
+    }
+
+    setOrgSaving(false);
     await refreshProfile();
-    setCompanyDone(true);
+    setOrgDone(true);
     toast.success("Your organisation is ready!");
   };
 
-  const persist = async (complete: boolean, next: Record<string, string>) => {
-    if (!effectiveOrgId || !user) return;
+  const persist = async (complete: boolean, next: OnboardingAnswers) => {
+    if (!effectiveOrgId || !user) return true;
     setSaving(true);
     const res = await saveOnboarding(effectiveOrgId, user.id, next, complete);
     setSaving(false);
-    if (!res.success) toast.error(res.error || "Could not save your answers");
+    if (!res.success) {
+      toast.error(res.error || "Could not save your answers");
+      return false;
+    }
+    return true;
+  };
+
+  const advance = async (next: OnboardingAnswers) => {
+    setAnswers(next);
+    const last = step === STEPS.length - 1;
+    const ok = await persist(last, next);
+    if (!ok) return;
+    setOtherText("");
+    setStep(step + 1);
   };
 
   const choose = async (value: string) => {
-    const next = { ...answers, [current.key]: value };
-    setAnswers(next);
-    const last = step === STEPS.length - 1;
-    await persist(last, next);
-    setStep(step + 1);
+    const next: OnboardingAnswers = {
+      ...answers,
+      [current.key]: value,
+      ...(current.otherKey && value !== "OTHER" ? { [current.otherKey]: null } : {}),
+    };
+    if (current.otherKey && value === "OTHER") {
+      // Stay on the step so the person can explain in their own words.
+      setAnswers(next);
+      setOtherText((answers[current.otherKey] as string | null) || "");
+      return;
+    }
+    await advance(next);
+  };
+
+  const submitOther = async () => {
+    if (!current.otherKey) return;
+    if (otherText.trim().length < 2) {
+      toast.error("Please tell us a little more");
+      return;
+    }
+    await advance({ ...answers, [current.key]: "OTHER", [current.otherKey]: otherText.trim() });
   };
 
   const skip = async () => {
     const last = step === STEPS.length - 1;
     if (last) await persist(true, answers);
+    setOtherText("");
     setStep(step + 1);
   };
 
@@ -270,7 +342,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/60 flex flex-col items-center px-4 py-10">
       <PageSeo
         title="Set up your Ovasyt workspace"
-        description="Answer four quick questions so Ovasyt can tailor your NPO finance workspace."
+        description="Tell us about your organisation so Ovasyt can tailor your NPO finance workspace."
         path="/onboarding"
       />
       <Logo size="md" />
@@ -289,7 +361,7 @@ export default function Onboarding() {
           ))}
         </div>
 
-        {needsCompany ? (
+        {needsOrg ? (
           <>
             <div className="flex justify-center mb-4">
               <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
@@ -299,44 +371,44 @@ export default function Onboarding() {
             <p className="text-[11px] font-semibold tracking-widest uppercase text-primary text-center">
               Let's set up your organisation
             </p>
-            <h1 className="text-2xl font-bold mt-2 text-center">Your company details</h1>
+            <h1 className="text-2xl font-bold mt-2 text-center">Your organisation details</h1>
             <p className="text-muted-foreground text-sm mt-1 text-center">
               These keep your documents and reports audit-ready. VAT settings can be added later in Settings.
             </p>
 
-            <form onSubmit={submitCompany} className="mt-6 space-y-4">
+            <form onSubmit={submitOrg} className="mt-6 space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="ob-companyName">Company Name *</Label>
+                <Label htmlFor="ob-orgName">Organisation Name *</Label>
                 <Input
-                  id="ob-companyName"
-                  placeholder="Acme Corporation"
+                  id="ob-orgName"
+                  placeholder="Hope Foundation"
                   autoComplete="organization"
-                  value={company.companyName}
-                  onChange={(e) => setCompany({ ...company, companyName: e.target.value })}
+                  value={org.orgName}
+                  onChange={(e) => setOrg({ ...org, orgName: e.target.value })}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ob-companyAddress">Company Address *</Label>
-                <Input
-                  id="ob-companyAddress"
-                  placeholder="123 Business Street, City"
-                  autoComplete="street-address"
-                  value={company.companyAddress}
-                  onChange={(e) => setCompany({ ...company, companyAddress: e.target.value })}
+                <Label htmlFor="ob-orgAddress">Organisation Address *</Label>
+                <AddressAutocomplete
+                  id="ob-orgAddress"
+                  placeholder="Start typing your address..."
+                  value={org.orgAddress}
+                  onChange={(v) => setOrg({ ...org, orgAddress: v })}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="ob-companyPhone">Company Phone (Optional)</Label>
+                <Label htmlFor="ob-orgPhone">Phone Number *</Label>
                 <Input
-                  id="ob-companyPhone"
+                  id="ob-orgPhone"
                   placeholder="+27 12 345 6789"
                   autoComplete="tel"
-                  value={company.companyPhone}
-                  onChange={(e) => setCompany({ ...company, companyPhone: e.target.value })}
+                  value={org.orgPhone}
+                  onChange={(e) => setOrg({ ...org, orgPhone: e.target.value })}
+                  required
                 />
               </div>
 
@@ -348,9 +420,9 @@ export default function Onboarding() {
                     inputMode="numeric"
                     placeholder="2023/123456/07"
                     maxLength={14}
-                    value={company.registrationNumber}
+                    value={org.registrationNumber}
                     onChange={(e) =>
-                      setCompany({ ...company, registrationNumber: formatRegistrationNumber(e.target.value) })
+                      setOrg({ ...org, registrationNumber: formatRegistrationNumber(e.target.value) })
                     }
                     required
                   />
@@ -362,34 +434,66 @@ export default function Onboarding() {
                     inputMode="numeric"
                     placeholder="9876543210"
                     maxLength={10}
-                    value={company.taxNumber}
-                    onChange={(e) =>
-                      setCompany({ ...company, taxNumber: formatTaxDigits(e.target.value) })
-                    }
+                    value={org.taxNumber}
+                    onChange={(e) => setOrg({ ...org, taxNumber: formatTaxDigits(e.target.value) })}
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Company Type *</Label>
+                <Label>Organisation Type *</Label>
                 <Select
-                  value={company.companyType}
-                  onValueChange={(v) => setCompany({ ...company, companyType: v as CompanyForm["companyType"] })}
+                  value={org.orgType}
+                  onValueChange={(v) => setOrg({ ...org, orgType: v as OrganisationType })}
                 >
-                  <SelectTrigger id="ob-companyType">
-                    <SelectValue placeholder="Select company type" />
+                  <SelectTrigger id="ob-orgType">
+                    <SelectValue placeholder="Select organisation type" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="NGO">NGO</SelectItem>
                     <SelectItem value="NPO">NPO</SelectItem>
-                    <SelectItem value="PTY_LTD">PTY LTD</SelectItem>
-                    <SelectItem value="PLC">PLC</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={companySaving}>
-                {companySaving ? (
+              <div className="space-y-2">
+                <Label>Are you registered for PBO/PVO? *</Label>
+                <Select
+                  value={org.pboRegistered}
+                  onValueChange={(v) =>
+                    setOrg({
+                      ...org,
+                      pboRegistered: v as OrgForm["pboRegistered"],
+                      pboNumber: v === "YES" ? org.pboNumber : "",
+                    })
+                  }
+                >
+                  <SelectTrigger id="ob-pbo">
+                    <SelectValue placeholder="Select an answer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="YES">Yes</SelectItem>
+                    <SelectItem value="NO">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {org.pboRegistered === "YES" && (
+                <div className="space-y-2">
+                  <Label htmlFor="ob-pboNumber">PBO/PVO Exemption Number *</Label>
+                  <Input
+                    id="ob-pboNumber"
+                    placeholder="930012345"
+                    value={org.pboNumber}
+                    onChange={(e) => setOrg({ ...org, pboNumber: e.target.value })}
+                    required
+                  />
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" size="lg" disabled={orgSaving}>
+                {orgSaving ? (
                   <span className="inline-flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" /> Setting up...
                   </span>
@@ -428,7 +532,7 @@ export default function Onboarding() {
 
             <div className="mt-6 space-y-3">
               {current.options.map((opt) => {
-                const selected = answers[current.key] === opt.value;
+                const isSelected = selected === opt.value;
                 return (
                   <button
                     key={opt.value}
@@ -437,7 +541,7 @@ export default function Onboarding() {
                     onClick={() => choose(opt.value)}
                     className={cn(
                       "w-full text-left rounded-xl border p-4 flex items-start gap-3 transition-all hover:border-primary/60 hover:shadow-sm disabled:opacity-60",
-                      selected ? "border-primary bg-primary/5" : "border-slate-200 bg-white",
+                      isSelected ? "border-primary bg-primary/5" : "border-slate-200 bg-white",
                     )}
                   >
                     <span className="text-lg leading-none mt-0.5">{opt.emoji}</span>
@@ -453,6 +557,34 @@ export default function Onboarding() {
                 );
               })}
             </div>
+
+            {showOther && (
+              <div className="mt-4 space-y-2">
+                <Label htmlFor="ob-other">{current.otherPrompt} *</Label>
+                <Input
+                  id="ob-other"
+                  autoFocus
+                  placeholder="Tell us in your own words"
+                  value={otherText}
+                  onChange={(e) => setOtherText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      submitOther();
+                    }
+                  }}
+                />
+                <Button className="w-full" disabled={saving} onClick={submitOther}>
+                  {saving ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                    </span>
+                  ) : (
+                    "Continue →"
+                  )}
+                </Button>
+              </div>
+            )}
 
             <div className="flex items-center justify-between mt-8">
               <button

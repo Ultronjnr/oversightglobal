@@ -1359,36 +1359,51 @@ export type Database = {
       organization_onboarding: {
         Row: {
           cause: string | null
+          cause_other: string | null
           completed_at: string | null
           created_at: string
+          funding: string | null
+          funding_other: string | null
           heard_about: string | null
+          heard_about_other: string | null
           id: string
           organization_id: string
           pain_point: string | null
+          pain_point_other: string | null
           team_size: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           cause?: string | null
+          cause_other?: string | null
           completed_at?: string | null
           created_at?: string
+          funding?: string | null
+          funding_other?: string | null
           heard_about?: string | null
+          heard_about_other?: string | null
           id?: string
           organization_id: string
           pain_point?: string | null
+          pain_point_other?: string | null
           team_size?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           cause?: string | null
+          cause_other?: string | null
           completed_at?: string | null
           created_at?: string
+          funding?: string | null
+          funding_other?: string | null
           heard_about?: string | null
+          heard_about_other?: string | null
           id?: string
           organization_id?: string
           pain_point?: string | null
+          pain_point_other?: string | null
           team_size?: string | null
           updated_at?: string
           user_id?: string
@@ -1505,6 +1520,12 @@ export type Database = {
           currency: string
           id: string
           name: string
+          organisation_type:
+            | Database["public"]["Enums"]["organisation_type"]
+            | null
+          pbo_number: string | null
+          pbo_registered: boolean
+          phone: string | null
           registration_number: string | null
           tax_number: string | null
         }
@@ -1515,6 +1536,12 @@ export type Database = {
           currency?: string
           id?: string
           name: string
+          organisation_type?:
+            | Database["public"]["Enums"]["organisation_type"]
+            | null
+          pbo_number?: string | null
+          pbo_registered?: boolean
+          phone?: string | null
           registration_number?: string | null
           tax_number?: string | null
         }
@@ -1525,6 +1552,12 @@ export type Database = {
           currency?: string
           id?: string
           name?: string
+          organisation_type?:
+            | Database["public"]["Enums"]["organisation_type"]
+            | null
+          pbo_number?: string | null
+          pbo_registered?: boolean
+          phone?: string | null
           registration_number?: string | null
           tax_number?: string | null
         }
@@ -3977,6 +4010,7 @@ export type Database = {
       ocr_document_type: "INVOICE" | "REIMBURSEMENT_PROOF" | "PR_DOCUMENT"
       ocr_status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED"
       org_supplier_status: "PENDING" | "ACCEPTED" | "DECLINED"
+      organisation_type: "NGO" | "NPO"
       pr_status:
         | "PENDING_HOD_APPROVAL"
         | "HOD_APPROVED"
@@ -4190,6 +4224,7 @@ export const Constants = {
       ocr_document_type: ["INVOICE", "REIMBURSEMENT_PROOF", "PR_DOCUMENT"],
       ocr_status: ["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
       org_supplier_status: ["PENDING", "ACCEPTED", "DECLINED"],
+      organisation_type: ["NGO", "NPO"],
       pr_status: [
         "PENDING_HOD_APPROVAL",
         "HOD_APPROVED",
