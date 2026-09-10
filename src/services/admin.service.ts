@@ -20,6 +20,12 @@ export interface Organization {
   company_email: string | null;
   address: string | null;
   created_at: string;
+  phone?: string | null;
+  registration_number?: string | null;
+  tax_number?: string | null;
+  organisation_type?: "NGO" | "NPO" | null;
+  pbo_registered?: boolean | null;
+  pbo_number?: string | null;
 }
 
 export interface Invitation {
@@ -92,7 +98,20 @@ export async function getOrganizationProfile(): Promise<{
  * Update organization profile
  */
 export async function updateOrganizationProfile(
-  updates: Partial<Pick<Organization, "name" | "company_email" | "address">>
+  updates: Partial<
+    Pick<
+      Organization,
+      | "name"
+      | "company_email"
+      | "address"
+      | "phone"
+      | "registration_number"
+      | "tax_number"
+      | "organisation_type"
+      | "pbo_registered"
+      | "pbo_number"
+    >
+  >
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { data: { user } } = await supabase.auth.getUser();
