@@ -268,3 +268,61 @@ export function isExpired(expiresAt: string | null | undefined): boolean {
   if (!expiresAt) return false;
   return new Date(expiresAt).getTime() <= Date.now();
 }
+
+/** Plain-language summary of a role preset, used by the simple permissions view. */
+export interface RoleSummary {
+  headline: string;
+  can: string[];
+  cannot: string[];
+}
+
+export const ROLE_SUMMARIES: Record<AppRoleName, RoleSummary> = {
+  EMPLOYEE: {
+    headline: "Raises and tracks their own requests.",
+    can: [
+      "Create purchase requisitions",
+      "View their own requisitions and expenses",
+      "Capture invoices and supporting documents",
+    ],
+    cannot: [
+      "See organisation-wide financial data",
+      "Open finance analytics",
+      "Approve or process payments",
+    ],
+  },
+  HOD: {
+    headline: "Approves for their area and sees the essential financial picture.",
+    can: [
+      "View and approve requisitions within their limit",
+      "See essential financial information and analytics",
+      "View transactions, invoices and suppliers",
+    ],
+    cannot: [
+      "Process payments or payment batches",
+      "Invite people or change permissions",
+    ],
+  },
+  FINANCE: {
+    headline: "Runs the full financial cycle.",
+    can: [
+      "Financial data, transactions and payments",
+      "Approve requisitions and classify suppliers",
+      "Analytics, VAT and reporting",
+    ],
+    cannot: ["Invite people or change permissions"],
+  },
+  ADMIN: {
+    headline: "Broad organisational control.",
+    can: [
+      "Everything Finance can do",
+      "Organisation settings, users and permissions",
+      "Organisation-wide analytics and oversight",
+    ],
+    cannot: [],
+  },
+  SUPPLIER: {
+    headline: "External supplier access only.",
+    can: ["Submit quotes", "Upload invoices for accepted quotes"],
+    cannot: ["See any internal organisation information"],
+  },
+};
