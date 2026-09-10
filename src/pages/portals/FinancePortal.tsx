@@ -604,12 +604,14 @@ export default function FinancePortal() {
       <div className="space-y-5 sm:space-y-6">
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
           <StatCard
             label="Pending Review"
             value={stats.pending}
             valueColor="warning"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-xl sm:text-2xl xl:text-3xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Pending Quotes"
@@ -617,46 +619,60 @@ export default function FinancePortal() {
             valueColor="primary"
             isLoading={loading}
             badge={quotesNotif}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-xl sm:text-2xl xl:text-3xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Approved Today"
             value={stats.approved}
             valueColor="success"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-xl sm:text-2xl xl:text-3xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Declined Today"
             value={stats.declined}
             valueColor="destructive"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-xl sm:text-2xl xl:text-3xl leading-none whitespace-nowrap"
           />
         </div>
 
         {/* Amount Stats Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           <StatCard
             label="Total Approved Not Paid"
             value={formatCurrency(amountStats.approvedNotPaid)}
             valueColor="destructive"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-lg sm:text-xl 2xl:text-2xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Total Partially Paid"
             value={formatCurrency(amountStats.partiallyPaid)}
             valueColor="warning"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-lg sm:text-xl 2xl:text-2xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Total Outstanding Amount"
             value={formatCurrency(amountStats.outstanding)}
             valueColor="destructive"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-lg sm:text-xl 2xl:text-2xl leading-none whitespace-nowrap"
           />
           <StatCard
             label="Total Paid This Month"
             value={formatCurrency(amountStats.paidThisMonth)}
             valueColor="success"
             isLoading={loading}
+            className="min-h-0 p-3 sm:p-4"
+            valueClassName="text-lg sm:text-xl 2xl:text-2xl leading-none whitespace-nowrap"
           />
         </div>
 

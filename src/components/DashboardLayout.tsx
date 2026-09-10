@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalScanFAB } from "./capture/GlobalScanFAB";
-import { HeaderScanButton } from "./capture/HeaderScanButton";
 import { OviAssistant } from "./ovi/OviAssistant";
 import { TrialBanner } from "./billing/TrialBanner";
 import { SubscriptionLockGate } from "./billing/SubscriptionLockGate";
@@ -287,7 +286,6 @@ export function DashboardLayout({
 
               {/* Right side */}
               <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
-                <HeaderScanButton />
                 <NotificationBell />
 
                 <div className="hidden sm:flex items-center gap-3">

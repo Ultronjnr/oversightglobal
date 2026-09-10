@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MessageCircle,
+  Bot,
   ReceiptText,
   ScanLine,
   FileText,
@@ -322,16 +322,17 @@ export function OviAssistant() {
 
   return (
     <>
-      {/* Floating speech bubble — bottom right, above the Scan Invoice button */}
-      <button
+      {/* Floating AI action — bottom right, aligned above Scan Invoice */}
+      <Button
         type="button"
+        size="icon"
         aria-label="Ask Ovi, the Ovasyt assistant"
         title="Ask Ovi"
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-[calc(8.5rem+env(safe-area-inset-bottom))] md:bottom-24 right-4 sm:right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all animate-fade-in"
+        className="fixed bottom-[calc(8rem+env(safe-area-inset-bottom))] md:bottom-[4.75rem] right-4 sm:right-6 z-40 h-11 w-11 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:bg-primary/90 hover:shadow-primary/50 hover:scale-105 active:scale-95 transition-all animate-fade-in"
       >
-        {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+        {open ? <X className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+      </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
