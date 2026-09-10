@@ -51,11 +51,11 @@ const toneText: Record<Tone, string> = {
   destructive: "text-destructive",
 };
 
-const toneGlow: Record<Tone, string> = {
-  primary: "from-primary/10",
-  success: "from-success/10",
-  warning: "from-warning/10",
-  destructive: "from-destructive/10",
+const toneOrb: Record<Tone, string> = {
+  primary: "bg-primary/25",
+  success: "bg-success/25",
+  warning: "bg-warning/25",
+  destructive: "bg-destructive/25",
 };
 
 /**
