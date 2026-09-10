@@ -102,8 +102,14 @@ export async function createPurchaseRequisition(
     // 4. Calculate total amount
     const totalAmount = calculateTotalAmount(input.items);
 
-    // 5. Determine initial status based on HOD existence
-    const hasHOD = await organizationHasHOD(profile.organization_id);
+    // 5. Determine initial status based on how the organisation is staffed.
+    //    A one-person organisation must never be routed through a fake
+    //    Employee -> HOD -> Finance chain: it goes straight to the single
+    //    authorised person's own approval step.
+    const staffing = await getOrgStaffing(profile.organization_id);
+    const hasHOD = staffing.isSingleUser
+      ? false
+      : staffing.hasHod || (await organizationHasHOD(profile.organization_id));
     const initialStatus: PRStatus = hasHOD
       ? "PENDING_HOD_APPROVAL"
       : "PENDING_FINANCE_APPROVAL";
@@ -117,8 +123,11 @@ export async function createPurchaseRequisition(
       timestamp: new Date().toISOString(),
       details: hasHOD
         ? "Submitted for HOD approval"
-        : "Submitted directly for Finance approval (no HOD in organization)",
+        : staffing.isSingleUser
+          ? "Single-user organisation: ready for your own review and approval"
+          : "Submitted directly for Finance approval (no HOD in organization)",
     };
+
 
     // 7. Insert the PR using raw insert (types may not be updated yet)
     const insertData = {
