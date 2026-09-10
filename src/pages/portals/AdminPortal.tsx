@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt} from "lucide-react";
+import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt, Wallet, CheckCheck, AlertCircle, Layers, Percent, Undo2, UserCheck} from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -13,13 +13,24 @@ import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { SettingsTab } from "@/components/admin/SettingsTab";
 import { UsersPermissionsTab } from "@/components/admin/UsersPermissionsTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
+import { FinanceApprovalQueue } from "@/components/finance/FinanceApprovalQueue";
+import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
+import { InvoicesTable } from "@/components/finance/InvoicesTable";
+import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
+import { TransactionStatusTab } from "@/components/finance/TransactionStatusTab";
+import { BatchesTab } from "@/components/finance/BatchesTab";
+import { InputVATTab } from "@/components/finance/InputVATTab";
+import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
+import { ReportsTab } from "@/components/finance/ReportsTab";
 import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrgStaffing } from "@/hooks/use-org-staffing";
 import { shouldRunOnboarding } from "@/services/onboarding.service";
 import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
+
 
 export default function AdminPortal() {
   const [stats, setStats] = useState({
