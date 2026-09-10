@@ -58,6 +58,17 @@ const toneOrb: Record<Tone, string> = {
   destructive: "bg-destructive/25",
 };
 
+const toneBackground: Record<Tone, string> = {
+  primary:
+    "bg-gradient-to-br from-primary/[0.10] via-primary/[0.04] to-transparent",
+  success:
+    "bg-gradient-to-br from-success/[0.10] via-success/[0.04] to-transparent",
+  warning:
+    "bg-gradient-to-br from-warning/[0.10] via-warning/[0.04] to-transparent",
+  destructive:
+    "bg-gradient-to-br from-destructive/[0.10] via-destructive/[0.04] to-transparent",
+};
+
 /**
  * Smart intelligence panel shown at the top of every portal.
  *
