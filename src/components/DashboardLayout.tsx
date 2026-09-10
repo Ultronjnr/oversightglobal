@@ -367,8 +367,7 @@ export function DashboardLayout({
 
         </main>
 
-        {/* Global floating receipt/invoice capture */}
-        <GlobalScanFAB />
+        {/* Ovi assistant remains a floating bottom-right action */}
         <OviAssistant />
 
         {/* Mobile bottom navigation */}
