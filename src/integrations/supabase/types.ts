@@ -3859,6 +3859,7 @@ export type Database = {
         Returns: boolean
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
+      organization_staffing: { Args: { _org_id: string }; Returns: Json }
       post_pr_system_note: {
         Args: { _note: string; _pr_id: string }
         Returns: {

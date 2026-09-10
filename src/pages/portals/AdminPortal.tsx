@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt} from "lucide-react";
+import {User, Users, Building2, Settings, Shield, FileText, Mail, BarChart3, Truck, ReceiptText as Receipt, Wallet, CheckCheck, AlertCircle, Layers, Percent, Undo2, UserCheck} from "lucide-react";
 import { CompanyProfileTab } from "@/components/admin/CompanyProfileTab";
 import { UsersRolesTab } from "@/components/admin/UsersRolesTab";
 import { DepartmentsTab } from "@/components/admin/DepartmentsTab";
@@ -13,13 +13,24 @@ import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { SettingsTab } from "@/components/admin/SettingsTab";
 import { UsersPermissionsTab } from "@/components/admin/UsersPermissionsTab";
 import { ReimbursementsTab } from "@/components/finance/ReimbursementsTab";
+import { FinanceApprovalQueue } from "@/components/finance/FinanceApprovalQueue";
+import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
+import { InvoicesTable } from "@/components/finance/InvoicesTable";
+import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
+import { TransactionStatusTab } from "@/components/finance/TransactionStatusTab";
+import { BatchesTab } from "@/components/finance/BatchesTab";
+import { InputVATTab } from "@/components/finance/InputVATTab";
+import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
+import { ReportsTab } from "@/components/finance/ReportsTab";
 import { getAdminStats } from "@/services/admin.service";
 import { adminNavItems } from "@/lib/admin-nav";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
 import { ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOrgStaffing } from "@/hooks/use-org-staffing";
 import { shouldRunOnboarding } from "@/services/onboarding.service";
 import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
+
 
 export default function AdminPortal() {
   const [stats, setStats] = useState({
@@ -32,6 +43,8 @@ export default function AdminPortal() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const staffing = useOrgStaffing();
+
 
   useEffect(() => {
     fetchStats();
@@ -73,7 +86,22 @@ export default function AdminPortal() {
     analytics: { title: "Analytics", description: "Spend, approval and supplier performance insights.", icon: <BarChart3 className="h-5 w-5" />, content: <AnalyticsTab /> },
     permissions: { title: "Users & Permissions", description: "Configure what each person can do and how much they may approve.", icon: <Shield className="h-5 w-5" />, content: <UsersPermissionsTab /> },
     settings: { title: "Settings", description: "Organisation-wide workflow and policy configuration.", icon: <Settings className="h-5 w-5" />, content: <SettingsTab /> },
+
+    // Finance workspaces available to the Super User, so a small (or
+    // one-person) organisation can run the whole finance cycle in one portal.
+    approvals: { title: "Approvals", description: "Requisitions awaiting approval — classify, review and approve to record the transaction.", icon: <Wallet className="h-5 w-5" />, content: <FinanceApprovalQueue /> },
+    quotes: { title: "Quotes", description: "Compare supplier quotes and accept the best offer.", icon: <FileText className="h-5 w-5" />, content: <QuoteComparisonView /> },
+    invoices: { title: "Invoices", description: "Supplier invoices awaiting review and payment scheduling.", icon: <Receipt className="h-5 w-5" />, content: <InvoicesTable /> },
+    input_vat: { title: "Input VAT", description: "Claimable input VAT and supporting documentation.", icon: <Percent className="h-5 w-5" />, content: <InputVATTab /> },
+    vat_dashboard: { title: "VAT Dashboard", description: "Automatic VAT assessment and flagged issues.", icon: <Percent className="h-5 w-5" />, content: <VatDashboardTab /> },
+    reports: { title: "Reports", description: "Supplier statements, payables aging and exportable reports.", icon: <BarChart3 className="h-5 w-5" />, content: <ReportsTab /> },
+    payments: { title: "Approved – Not Paid", description: "Approved transactions ready to be prepared for payment.", icon: <Wallet className="h-5 w-5" />, content: <PaymentPreparationTab /> },
+    partially_paid: { title: "Partially Paid", description: "Transactions with an outstanding balance still to settle.", icon: <Wallet className="h-5 w-5" />, content: <TransactionStatusTab filter="PARTIALLY_PAID" /> },
+    fully_paid: { title: "Fully Paid", description: "Settled transactions and their payment history.", icon: <CheckCheck className="h-5 w-5" />, content: <TransactionStatusTab filter="FULLY_PAID" /> },
+    overdue: { title: "Overdue (30+ days)", description: "Invoices unpaid for more than 30 days.", icon: <AlertCircle className="h-5 w-5" />, content: <TransactionStatusTab filter="OVERDUE" /> },
+    batches: { title: "Payment Batches", description: "Batch payment files, proof of payment and settlement status.", icon: <Layers className="h-5 w-5" />, content: <BatchesTab /> },
   };
+
 
   const tabParam = searchParams.get("tab");
   const currentPage = tabParam ? tabPages[tabParam] : null;
@@ -92,6 +120,37 @@ export default function AdminPortal() {
     <DashboardLayout title="Super User Dashboard" navItems={adminNavItems} showInsights>
       <div className="space-y-6">
         <OviFirstRunCard />
+
+        {!staffing.isLoading && (staffing.isSingleUser || staffing.adminActsAsFinance) && (
+          <Card className="dashboard-card border-primary/30">
+            <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <UserCheck className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium">
+                    {staffing.isSingleUser
+                      ? "You are the only person in this organisation"
+                      : "No finance team member yet"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {staffing.isSingleUser
+                      ? "Scan or upload an invoice, classify it, then approve it — the transaction is recorded straight away. No extra approval steps are added."
+                      : "You can run every finance workspace yourself — approvals, quotes, invoices, VAT, reports and payments are in your side menu."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/admin/portal?tab=approvals")}
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Go to Approvals
+              </button>
+            </CardContent>
+          </Card>
+        )}
+
+
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
