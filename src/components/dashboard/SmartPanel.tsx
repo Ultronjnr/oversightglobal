@@ -343,16 +343,16 @@ export function SmartPanel() {
         />
 
         {/* Identity + compact figures */}
-        <div className="relative p-4 sm:p-5 border-b border-white/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
+        <div className="relative p-3 sm:p-4 border-b border-white/50">
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-xs sm:text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-foreground truncate">
+              <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Smart insights, refreshed from your live data
               </p>
             </div>
@@ -361,16 +361,16 @@ export function SmartPanel() {
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-3 py-2.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-2 sm:px-3 py-2 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
               >
                 {loading ? (
-                  <div className="h-5 w-16 mx-auto rounded bg-muted animate-pulse" />
+                  <div className="h-4 sm:h-5 w-14 sm:w-16 mx-auto rounded bg-muted animate-pulse" />
                 ) : (
-                  <p className="text-sm sm:text-lg font-bold text-foreground tabular-nums truncate">
+                  <p className="text-xs sm:text-base font-bold text-foreground tabular-nums truncate">
                     {s.value}
                   </p>
                 )}
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                <p className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5">
                   {s.label}
                 </p>
               </div>
