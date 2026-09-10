@@ -145,6 +145,8 @@ const FINANCE_DENIED = new Set([
   "users.manage_permissions",
 ]);
 
+// Supervisors see the same essential information as Finance (including
+// analytics) but cannot process payments or change other people's access.
 const HOD_ALLOWED = new Set([
   "requisitions.view", "requisitions.create", "requisitions.edit", "requisitions.submit",
   "requisitions.approve", "requisitions.decline",
@@ -152,6 +154,7 @@ const HOD_ALLOWED = new Set([
   "invoices.view", "invoices.upload",
   "suppliers.view", "projects.view", "donors.view",
   "reports.view", "reports.export", "users.view",
+  "finance.view",
 ]);
 
 const EMPLOYEE_ALLOWED = new Set([
