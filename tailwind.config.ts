@@ -87,11 +87,16 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "smart-progress": {
+          from: { width: "0%" },
+          to: { width: "100%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 2s infinite linear",
+        "smart-progress": "smart-progress 7s linear forwards",
       },
       boxShadow: {
         glass: "0 4px 24px -4px hsl(225 73% 57% / 0.1), 0 0 0 1px hsl(220 30% 95% / 0.5)",
