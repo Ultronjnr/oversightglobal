@@ -119,6 +119,37 @@ export default function AdminPortal() {
       <div className="space-y-6">
         <OviFirstRunCard />
 
+        {!staffing.isLoading && (staffing.isSingleUser || staffing.adminActsAsFinance) && (
+          <Card className="dashboard-card border-primary/30">
+            <CardContent className="py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <UserCheck className="h-5 w-5 text-primary mt-0.5" />
+                <div>
+                  <p className="font-medium">
+                    {staffing.isSingleUser
+                      ? "You are the only person in this organisation"
+                      : "No finance team member yet"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {staffing.isSingleUser
+                      ? "Scan or upload an invoice, classify it, then approve it — the transaction is recorded straight away. No extra approval steps are added."
+                      : "You can run every finance workspace yourself — approvals, quotes, invoices, VAT, reports and payments are in your side menu."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate("/admin/portal?tab=approvals")}
+                className="shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Go to Approvals
+              </button>
+            </CardContent>
+          </Card>
+        )}
+
+
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Card className="dashboard-card">
