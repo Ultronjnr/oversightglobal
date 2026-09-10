@@ -342,34 +342,34 @@ export function SmartPanel() {
         />
 
         {/* Identity + compact figures */}
-        <div className="relative p-3 border-b border-white/50">
-          <div className="flex items-center gap-2.5 mb-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-xs shrink-0 shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
+        <div className="relative px-3 py-2.5 border-b border-white/50 sm:px-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-[10px] shrink-0 shadow-[0_6px_16px_-6px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-foreground text-sm truncate">
+              <p className="font-semibold text-foreground text-xs sm:text-sm truncate leading-tight">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[9px] sm:text-[10px] text-muted-foreground leading-tight">
                 Smart insights, refreshed from your live data
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-xl bg-white/80 backdrop-blur-xl border border-white/80 px-2 py-1.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)]"
+                className="rounded-lg bg-white/80 backdrop-blur-xl border border-white/80 px-1.5 py-1 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_8px_18px_-14px_hsl(220_40%_20%/0.45)]"
               >
                 {loading ? (
                   <div className="h-3.5 w-12 mx-auto rounded bg-muted animate-pulse" />
                 ) : (
-                  <p className="text-xs sm:text-sm font-bold text-foreground tabular-nums truncate">
+                  <p className="text-[11px] sm:text-xs font-bold text-foreground tabular-nums truncate leading-tight">
                     {s.value}
                   </p>
                 )}
-                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">
+                <p className="text-[8px] sm:text-[9px] text-muted-foreground mt-0.5 leading-tight">
                   {s.label}
                 </p>
               </div>
@@ -388,7 +388,7 @@ export function SmartPanel() {
                 key={s.key}
                 aria-hidden={i !== index}
                 className={cn(
-                  "w-full shrink-0 p-3 sm:p-4 min-h-[108px] sm:min-h-[116px]",
+                  "w-full shrink-0 px-3 pt-2.5 pb-2 sm:px-4 sm:pt-3 min-h-[96px] sm:min-h-[102px]",
                   "transition-all duration-700 ease-out",
                   i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
                   s.kind === "ad"
@@ -396,11 +396,11 @@ export function SmartPanel() {
                     : toneBackground[s.tone],
                 )}
               >
-                <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="flex items-center justify-between gap-3 mb-1.5">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "grid place-items-center h-7 w-7 rounded-xl bg-white/90 backdrop-blur border border-white/80 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)]",
+                        "grid place-items-center h-6 w-6 rounded-lg bg-white/90 backdrop-blur border border-white/80 shadow-[0_8px_20px_-14px_hsl(220_40%_20%/0.5)] [&>svg]:h-3.5 [&>svg]:w-3.5",
                         toneText[s.tone],
                       )}
                     >
@@ -426,20 +426,20 @@ export function SmartPanel() {
                   <>
                     <h2
                       className={cn(
-                        "text-base sm:text-lg font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
+                        "text-sm sm:text-base font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
                         s.kind === "ad" ? "text-foreground" : toneText[s.tone],
                       )}
                     >
                       {s.headline}
                     </h2>
-                    <p className="mt-1 text-[11px] sm:text-xs text-muted-foreground max-w-xl line-clamp-2">
+                    <p className="mt-0.5 text-[10px] sm:text-[11px] text-muted-foreground max-w-xl line-clamp-1 sm:line-clamp-2">
                       {s.sub}
                     </p>
                     {s.href && (
                       <Button
                         asChild
                         size="sm"
-                        className="mt-2.5 h-8 gap-1.5 rounded-full text-xs shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                        className="mt-2 h-7 gap-1.5 rounded-full px-3 text-[11px] shadow-[0_10px_24px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
                       >
                         <Link to={s.href}>
                           {s.ctaLabel}
@@ -454,7 +454,7 @@ export function SmartPanel() {
           </div>
 
           {/* Controls */}
-          <div className="relative flex items-center justify-between px-3 sm:px-4 pb-3">
+          <div className="relative flex items-center justify-between px-3 sm:px-4 pb-2">
             <div className="flex items-center gap-1.5">
               {slides.map((s, i) => (
                 <button
@@ -475,7 +475,7 @@ export function SmartPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
+                className="h-6 w-6 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
                 aria-label="Previous insight"
                 onClick={() => go(index - 1)}
               >
@@ -484,7 +484,7 @@ export function SmartPanel() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
+                className="h-6 w-6 rounded-full bg-white/80 backdrop-blur border border-white/80 hover:bg-white"
                 aria-label="Next insight"
                 onClick={() => go(index + 1)}
               >
