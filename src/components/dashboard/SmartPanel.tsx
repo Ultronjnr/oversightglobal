@@ -58,6 +58,17 @@ const toneOrb: Record<Tone, string> = {
   destructive: "bg-destructive/25",
 };
 
+const toneBackground: Record<Tone, string> = {
+  primary:
+    "bg-gradient-to-br from-primary/[0.14] via-primary/[0.06] to-transparent",
+  success:
+    "bg-gradient-to-br from-success/[0.14] via-success/[0.06] to-transparent",
+  warning:
+    "bg-gradient-to-br from-warning/[0.14] via-warning/[0.06] to-transparent",
+  destructive:
+    "bg-gradient-to-br from-destructive/[0.14] via-destructive/[0.06] to-transparent",
+};
+
 /**
  * Smart intelligence panel shown at the top of every portal.
  *
@@ -332,16 +343,16 @@ export function SmartPanel() {
         />
 
         {/* Identity + compact figures */}
-        <div className="relative p-4 sm:p-5 border-b border-white/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
+        <div className="relative p-3 sm:p-4 border-b border-white/50">
+          <div className="flex items-center gap-2.5 sm:gap-3 mb-3">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl bg-gradient-to-br from-primary to-primary/60 text-primary-foreground grid place-items-center font-bold text-xs sm:text-sm shrink-0 shadow-[0_8px_20px_-8px_hsl(var(--primary)/0.8)]">
               {(orgName || profile?.name || "O").slice(0, 2).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <p className="font-semibold text-foreground truncate">
+              <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                 {orgName || "Your organisation"}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
                 Smart insights, refreshed from your live data
               </p>
             </div>
@@ -350,16 +361,16 @@ export function SmartPanel() {
             {strip.map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-3 py-2.5 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
+                className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/70 px-2 sm:px-3 py-2 text-center shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_10px_24px_-18px_hsl(220_40%_20%/0.5)] transition-transform duration-300 hover:-translate-y-0.5"
               >
                 {loading ? (
-                  <div className="h-5 w-16 mx-auto rounded bg-muted animate-pulse" />
+                  <div className="h-4 sm:h-5 w-14 sm:w-16 mx-auto rounded bg-muted animate-pulse" />
                 ) : (
-                  <p className="text-sm sm:text-lg font-bold text-foreground tabular-nums truncate">
+                  <p className="text-xs sm:text-base font-bold text-foreground tabular-nums truncate">
                     {s.value}
                   </p>
                 )}
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                <p className="text-[9px] sm:text-[11px] text-muted-foreground mt-0.5">
                   {s.label}
                 </p>
               </div>
@@ -378,22 +389,25 @@ export function SmartPanel() {
                 key={s.key}
                 aria-hidden={i !== index}
                 className={cn(
-                  "w-full shrink-0 p-5 sm:p-7 min-h-[200px] sm:min-h-[212px]",
+                  "w-full shrink-0 p-4 sm:p-5 min-h-[148px] sm:min-h-[168px]",
                   "transition-all duration-700 ease-out",
                   i === index ? "opacity-100 scale-100" : "opacity-40 scale-[0.97]",
+                  s.kind === "ad"
+                    ? "bg-gradient-to-br from-primary/[0.08] via-primary/[0.03] to-transparent"
+                    : toneBackground[s.tone],
                 )}
               >
-                <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center justify-between gap-3 mb-2 sm:mb-3">
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "grid place-items-center h-9 w-9 rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-[0_10px_24px_-14px_hsl(220_40%_20%/0.6)]",
+                        "grid place-items-center h-8 w-8 sm:h-9 sm:w-9 rounded-2xl bg-white/80 backdrop-blur border border-white/70 shadow-[0_10px_24px_-14px_hsl(220_40%_20%/0.6)]",
                         toneText[s.tone],
                       )}
                     >
                       {s.icon}
                     </span>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                       {s.kicker}
                     </span>
                   </div>
@@ -405,28 +419,28 @@ export function SmartPanel() {
                 </div>
 
                 {loading ? (
-                  <div className="space-y-3">
-                    <div className="h-8 w-2/3 rounded bg-muted animate-pulse" />
-                    <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="h-6 sm:h-8 w-2/3 rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 sm:h-4 w-1/2 rounded bg-muted animate-pulse" />
                   </div>
                 ) : (
                   <>
                     <h2
                       className={cn(
-                        "text-xl sm:text-3xl font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
+                        "text-lg sm:text-2xl font-bold tracking-tight leading-tight drop-shadow-[0_1px_0_hsl(0_0%_100%)]",
                         s.kind === "ad" ? "text-foreground" : toneText[s.tone],
                       )}
                     >
                       {s.headline}
                     </h2>
-                    <p className="mt-2 text-sm text-muted-foreground max-w-xl">
+                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-muted-foreground max-w-xl">
                       {s.sub}
                     </p>
                     {s.href && (
                       <Button
                         asChild
                         size="sm"
-                        className="mt-4 gap-2 rounded-full shadow-[0_12px_28px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
+                        className="mt-3 sm:mt-4 gap-2 rounded-full shadow-[0_12px_28px_-12px_hsl(var(--primary)/0.9)] transition-transform hover:-translate-y-0.5"
                       >
                         <Link to={s.href}>
                           {s.ctaLabel}
