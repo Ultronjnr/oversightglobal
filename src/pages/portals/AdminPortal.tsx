@@ -84,7 +84,22 @@ export default function AdminPortal() {
     analytics: { title: "Analytics", description: "Spend, approval and supplier performance insights.", icon: <BarChart3 className="h-5 w-5" />, content: <AnalyticsTab /> },
     permissions: { title: "Users & Permissions", description: "Configure what each person can do and how much they may approve.", icon: <Shield className="h-5 w-5" />, content: <UsersPermissionsTab /> },
     settings: { title: "Settings", description: "Organisation-wide workflow and policy configuration.", icon: <Settings className="h-5 w-5" />, content: <SettingsTab /> },
+
+    // Finance workspaces available to the Super User, so a small (or
+    // one-person) organisation can run the whole finance cycle in one portal.
+    approvals: { title: "Approvals", description: "Requisitions awaiting approval — classify, review and approve to record the transaction.", icon: <Wallet className="h-5 w-5" />, content: <FinanceApprovalQueue /> },
+    quotes: { title: "Quotes", description: "Compare supplier quotes and accept the best offer.", icon: <FileText className="h-5 w-5" />, content: <QuoteComparisonView /> },
+    invoices: { title: "Invoices", description: "Supplier invoices awaiting review and payment scheduling.", icon: <Receipt className="h-5 w-5" />, content: <InvoicesTable /> },
+    input_vat: { title: "Input VAT", description: "Claimable input VAT and supporting documentation.", icon: <Percent className="h-5 w-5" />, content: <InputVATTab /> },
+    vat_dashboard: { title: "VAT Dashboard", description: "Automatic VAT assessment and flagged issues.", icon: <Percent className="h-5 w-5" />, content: <VatDashboardTab /> },
+    reports: { title: "Reports", description: "Supplier statements, payables aging and exportable reports.", icon: <BarChart3 className="h-5 w-5" />, content: <ReportsTab /> },
+    payments: { title: "Approved – Not Paid", description: "Approved transactions ready to be prepared for payment.", icon: <Wallet className="h-5 w-5" />, content: <PaymentPreparationTab /> },
+    partially_paid: { title: "Partially Paid", description: "Transactions with an outstanding balance still to settle.", icon: <Wallet className="h-5 w-5" />, content: <TransactionStatusTab filter="PARTIALLY_PAID" /> },
+    fully_paid: { title: "Fully Paid", description: "Settled transactions and their payment history.", icon: <CheckCheck className="h-5 w-5" />, content: <TransactionStatusTab filter="FULLY_PAID" /> },
+    overdue: { title: "Overdue (30+ days)", description: "Invoices unpaid for more than 30 days.", icon: <AlertCircle className="h-5 w-5" />, content: <TransactionStatusTab filter="OVERDUE" /> },
+    batches: { title: "Payment Batches", description: "Batch payment files, proof of payment and settlement status.", icon: <Layers className="h-5 w-5" />, content: <BatchesTab /> },
   };
+
 
   const tabParam = searchParams.get("tab");
   const currentPage = tabParam ? tabPages[tabParam] : null;
