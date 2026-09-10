@@ -311,7 +311,7 @@ export function SmartPanel() {
   return (
     <section
       aria-label="Smart insights"
-      className="group/panel mx-auto mb-4 w-full max-w-5xl sm:mb-5"
+      className="group/panel mx-auto mb-4 w-full max-w-4xl px-2 sm:mb-5 sm:px-4"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
