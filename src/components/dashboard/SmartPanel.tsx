@@ -27,7 +27,7 @@ interface Snapshot {
   missingDocs: number;
   onTrackPct: number;
   pendingPRs: number;
-  topCategory: { name: string; share: number } | null;
+  topSupplier: { name: string; share: number } | null;
 }
 
 type Tone = "primary" | "success" | "warning" | "destructive";
@@ -83,7 +83,7 @@ export function SmartPanel() {
         supabase
           .from("transactions")
           .select(
-            "amount, amount_paid, category, vat_amount, vat_rate, document_url, scan_document_path, created_at",
+            "amount, amount_paid, supplier_name, vat_amount, vat_rate, document_url, scan_document_path, created_at",
           )
           .gte("created_at", since.toISOString())
           .limit(1000),
@@ -103,12 +103,12 @@ export function SmartPanel() {
       const expenditure = rows.reduce((s, t) => s + Number(t.amount || 0), 0);
       const paid = rows.reduce((s, t) => s + Number(t.amount_paid || 0), 0);
 
-      const byCategory = new Map<string, number>();
+      const bySupplier = new Map<string, number>();
       rows.forEach((t) => {
-        const key = (t.category as string) || "Uncategorised";
-        byCategory.set(key, (byCategory.get(key) || 0) + Number(t.amount || 0));
+        const key = (t.supplier_name as string) || "Unnamed supplier";
+        bySupplier.set(key, (bySupplier.get(key) || 0) + Number(t.amount || 0));
       });
-      const top = [...byCategory.entries()].sort((a, b) => b[1] - a[1])[0];
+      const top = [...bySupplier.entries()].sort((a, b) => b[1] - a[1])[0];
 
       setOrgName(((org as { name?: string } | null)?.name as string) || "");
       setData({
@@ -127,7 +127,7 @@ export function SmartPanel() {
         pendingPRs: (prs || []).filter((p) =>
           String(p.status).startsWith("PENDING"),
         ).length,
-        topCategory:
+        topSupplier:
           top && expenditure > 0
             ? { name: top[0], share: Math.round((top[1] / expenditure) * 100) }
             : null,
@@ -143,13 +143,13 @@ export function SmartPanel() {
     const scope = orgWide ? "across the organisation" : "on your records";
     const list: Slide[] = [];
 
-    if (d?.topCategory) {
+    if (d?.topSupplier) {
       list.push({
-        key: "top-category",
+        key: "top-supplier",
         kind: "insight",
         kicker: "From your data",
-        headline: `${d.topCategory.name} is ${d.topCategory.share}% of spend`,
-        sub: `Your biggest category over the last 90 days ${scope}.`,
+        headline: `${d.topSupplier.name} is ${d.topSupplier.share}% of spend`,
+        sub: `Your biggest supplier over the last 90 days ${scope}.`,
         tone: "primary",
         icon: <TrendingUp className="h-5 w-5" />,
         href: "/analytics",
