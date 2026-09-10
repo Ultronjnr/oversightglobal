@@ -1,10 +1,17 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type OrganisationType = "NGO" | "NPO";
+
 export interface OnboardingAnswers {
   pain_point?: string | null;
+  pain_point_other?: string | null;
   cause?: string | null;
+  cause_other?: string | null;
   team_size?: string | null;
   heard_about?: string | null;
+  heard_about_other?: string | null;
+  funding?: string | null;
+  funding_other?: string | null;
 }
 
 export interface OnboardingRecord extends OnboardingAnswers {
@@ -12,13 +19,16 @@ export interface OnboardingRecord extends OnboardingAnswers {
   completed_at?: string | null;
 }
 
+const ANSWER_COLUMNS =
+  "organization_id, pain_point, pain_point_other, cause, cause_other, team_size, heard_about, heard_about_other, funding, funding_other, completed_at";
+
 /** Fetch the onboarding record for an organisation (null when never started). */
 export async function getOnboarding(
   organizationId: string,
 ): Promise<OnboardingRecord | null> {
   const { data, error } = await supabase
     .from("organization_onboarding")
-    .select("organization_id, pain_point, cause, team_size, heard_about, completed_at")
+    .select(ANSWER_COLUMNS)
     .eq("organization_id", organizationId)
     .maybeSingle();
 
@@ -73,10 +83,53 @@ export async function saveOnboarding(
         ...answers,
         updated_at: new Date().toISOString(),
         ...(complete ? { completed_at: new Date().toISOString() } : {}),
-      },
+      } as never,
       { onConflict: "organization_id" },
     );
 
   if (error) return { success: false, error: error.message };
   return { success: true };
+}
+
+export interface OrganisationDetails {
+  phone?: string | null;
+  organisation_type?: OrganisationType | null;
+  pbo_registered?: boolean;
+  pbo_number?: string | null;
+}
+
+/**
+ * Store the extra organisation profile fields captured during onboarding on the
+ * existing organisation record (never creates a new one).
+ */
+export async function saveOrganisationDetails(
+  organizationId: string,
+  details: OrganisationDetails,
+): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from("organizations")
+    .update({
+      phone: details.phone ?? null,
+      organisation_type: details.organisation_type ?? null,
+      pbo_registered: details.pbo_registered ?? false,
+      pbo_number: details.pbo_registered ? details.pbo_number ?? null : null,
+    } as never)
+    .eq("id", organizationId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+/** Read back the organisation profile captured during onboarding. */
+export async function getOrganisationDetails(
+  organizationId: string,
+): Promise<(OrganisationDetails & { name: string; address: string | null }) | null> {
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("name, address, phone, organisation_type, pbo_registered, pbo_number")
+    .eq("id", organizationId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as unknown as OrganisationDetails & { name: string; address: string | null };
 }
