@@ -1,6 +1,8 @@
 project_id = "udnxnhvzowsjawpvfjuq"
 
 [functions]
+  [functions.ovi-assistant]
+    verify_jwt = true
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.preview-transactional-email]
