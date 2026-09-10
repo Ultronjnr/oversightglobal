@@ -43,6 +43,8 @@ export default function AdminPortal() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const staffing = useOrgStaffing();
+
 
   useEffect(() => {
     fetchStats();
