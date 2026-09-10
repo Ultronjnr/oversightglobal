@@ -10,6 +10,7 @@ interface StatCardProps {
   icon?: ReactNode;
   footer?: ReactNode;
   badge?: number;
+  valueClassName?: string;
 }
 
 export function StatCard({ 
@@ -21,6 +22,7 @@ export function StatCard({
   icon,
   footer,
   badge,
+  valueClassName,
 }: StatCardProps) {
   const colorClasses = {
     default: "text-foreground",
@@ -48,7 +50,8 @@ export function StatCard({
           ) : (
             <p className={cn(
               "text-xl sm:text-3xl lg:text-4xl font-bold tracking-tight break-words",
-              colorClasses[valueColor]
+              colorClasses[valueColor],
+              valueClassName,
             )}>
               {value}
             </p>
