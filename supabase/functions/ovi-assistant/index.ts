@@ -5,7 +5,7 @@
  * route the frontend can navigate the user to. Real AI only (Gemini); if the
  * model or key is unavailable we return a graceful fallback, never fake answers.
  */
-import { createAiProvider, generateJsonWithFallback } from "../_shared/gemini.ts";
+import { createAiProvider, extractStructuredData } from "../_shared/gemini.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       .join("\n");
 
     const provider = createAiProvider();
-    const result = await generateJsonWithFallback<{
+    const result = await extractStructuredData<{
       answer?: string;
       route?: string | null;
       routeLabel?: string | null;
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
       prompt: `The signed-in user's role is ${role ?? "unknown"}.\n\nConversation:\n${transcript}\n\nAnswer the last user message.`,
       temperature: 0.3,
       maxOutputTokens: 800,
-    });
+    }, "ovi-assistant");
 
     const data = result.data;
     if (!data?.answer) {
