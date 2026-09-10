@@ -13,7 +13,7 @@ import { HeaderScanButton } from "./capture/HeaderScanButton";
 import { OviAssistant } from "./ovi/OviAssistant";
 import { TrialBanner } from "./billing/TrialBanner";
 import { SubscriptionLockGate } from "./billing/SubscriptionLockGate";
-import { InsightsCarousel } from "./dashboard/InsightsCarousel";
+import { SmartPanel } from "./dashboard/SmartPanel";
 import { MobileTabBar } from "./MobileTabBar";
 
 
@@ -358,7 +358,7 @@ export function DashboardLayout({
           </div>
 
           <SubscriptionLockGate>
-            {showInsights && <InsightsCarousel />}
+            {showInsights && <SmartPanel />}
 
             {/* Content */}
             <div className="animate-fade-in">
