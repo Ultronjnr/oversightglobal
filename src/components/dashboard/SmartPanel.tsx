@@ -60,13 +60,13 @@ const toneOrb: Record<Tone, string> = {
 
 const toneBackground: Record<Tone, string> = {
   primary:
-    "bg-gradient-to-br from-primary/[0.10] via-primary/[0.04] to-transparent",
+    "bg-gradient-to-br from-primary/[0.14] via-primary/[0.06] to-transparent",
   success:
-    "bg-gradient-to-br from-success/[0.10] via-success/[0.04] to-transparent",
+    "bg-gradient-to-br from-success/[0.14] via-success/[0.06] to-transparent",
   warning:
-    "bg-gradient-to-br from-warning/[0.10] via-warning/[0.04] to-transparent",
+    "bg-gradient-to-br from-warning/[0.14] via-warning/[0.06] to-transparent",
   destructive:
-    "bg-gradient-to-br from-destructive/[0.10] via-destructive/[0.04] to-transparent",
+    "bg-gradient-to-br from-destructive/[0.14] via-destructive/[0.06] to-transparent",
 };
 
 /**
