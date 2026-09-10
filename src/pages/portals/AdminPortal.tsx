@@ -34,7 +34,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOrgStaffing } from "@/hooks/use-org-staffing";
 import { shouldRunOnboarding } from "@/services/onboarding.service";
 import { OviFirstRunCard } from "@/components/onboarding/OviFirstRunCard";
-import { PaymentStatusTracker } from "@/components/admin/PaymentStatusTracker";
 
 
 export default function AdminPortal() {
@@ -129,13 +128,6 @@ export default function AdminPortal() {
     <DashboardLayout title="Super User Dashboard" navItems={navItems} showInsights>
       <div className="space-y-6">
         <OviFirstRunCard />
-
-        {can("finance.view") && (
-          <PaymentStatusTracker
-            onOpenTab={(tab) => navigate(`/admin/portal?tab=${tab}`)}
-          />
-        )}
-
 
         {/* Quick actions — only what this user is allowed to do */}
         <div className="flex flex-wrap gap-2">

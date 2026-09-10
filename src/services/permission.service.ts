@@ -362,26 +362,3 @@ export async function getMonthlyApprovalCount(
     .gte("created_at", start.toISOString());
   return count ?? 0;
 }
-
-/** Remove every customisation for a user so the role preset applies again. */
-export async function resetUserToPreset(
-  userId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const organizationId = await currentOrgId();
-  const { error } = await supabase
-    .from("user_permissions")
-    .delete()
-    .eq("user_id", userId);
-  if (error) return { success: false, error: error.message };
-  if (organizationId) {
-    await logPermissionChange({
-      organizationId,
-      targetUserId: userId,
-      changeType: "PERMISSION",
-      subject: "reset_to_preset",
-      oldValue: "custom",
-      newValue: "role preset",
-    });
-  }
-  return { success: true };
-}

@@ -7,17 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import {
-  ShieldCheck,
-  Lock,
-  Search,
-  History,
-  Check,
-  X as XIcon,
-  SlidersHorizontal,
-  ArrowLeft,
-  RotateCcw,
-} from "lucide-react";
+import { ShieldCheck, Lock, Search, History } from "lucide-react";
 import { getOrganizationUsers } from "@/services/admin.service";
 import {
   getUserApprovalLimits,
@@ -25,7 +15,6 @@ import {
   setUserApprovalLimit,
   setUserPermission,
   getPermissionAudit,
-  resetUserToPreset,
   type PermissionAuditEntry,
   type PermissionOverrides,
 } from "@/services/permission.service";
@@ -33,7 +22,6 @@ import {
   APPROVAL_TYPES,
   PERMISSION_GROUPS,
   ROLE_LABELS,
-  ROLE_SUMMARIES,
   defaultRolePermission,
   effectivePermission,
   EXPIRY_PRESETS,
@@ -63,9 +51,6 @@ interface OrgUser {
   role: AppRoleName;
 }
 
-const initials = (u: OrgUser) =>
-  `${u.name?.[0] ?? ""}${u.surname?.[0] ?? ""}`.toUpperCase() || "?";
-
 export function UsersPermissionsTab() {
   const { format, currency } = useCurrency();
   const [users, setUsers] = useState<OrgUser[]>([]);
@@ -80,7 +65,6 @@ export function UsersPermissionsTab() {
   const [audit, setAudit] = useState<PermissionAuditEntry[]>([]);
   const [grantExpiry, setGrantExpiry] = useState<ExpiryPreset>("PERMANENT");
   const [monthDrafts, setMonthDrafts] = useState<Record<string, string>>({});
-  const [advanced, setAdvanced] = useState(false);
 
   useEffect(() => {
     getOrganizationUsers().then((res) => {
@@ -93,18 +77,15 @@ export function UsersPermissionsTab() {
     });
   }, []);
 
-  const loadDetail = (userId: string) =>
-    Promise.all([
-      getUserPermissionOverrides(userId),
-      getUserApprovalLimits(userId),
-      getPermissionAudit(userId),
-    ]);
-
   useEffect(() => {
     if (!selected) return;
     let active = true;
     setLoadingDetail(true);
-    loadDetail(selected.id).then(([o, l, a]) => {
+    Promise.all([
+      getUserPermissionOverrides(selected.id),
+      getUserApprovalLimits(selected.id),
+      getPermissionAudit(selected.id),
+    ]).then(([o, l, a]) => {
       if (!active) return;
       setOverrides(o);
       setLimits(l);
@@ -145,7 +126,6 @@ export function UsersPermissionsTab() {
   }, [users, search]);
 
   const isSuperUser = selected?.role === "ADMIN";
-  const isCustomised = Object.keys(overrides).length > 0;
 
   const togglePermission = async (key: string, next: boolean) => {
     if (!selected || isSuperUser) return;
@@ -165,23 +145,7 @@ export function UsersPermissionsTab() {
       toast.error(res.error || "Could not save permission");
       return;
     }
-    toast.success(next ? "Access granted" : "Access removed");
-  };
-
-  const handleReset = async () => {
-    if (!selected || isSuperUser) return;
-    setSaving("reset");
-    const res = await resetUserToPreset(selected.id);
-    setSaving(null);
-    if (!res.success) {
-      toast.error(res.error || "Could not reset permissions");
-      return;
-    }
-    const [o, l, a] = await loadDetail(selected.id);
-    setOverrides(o);
-    setLimits(l);
-    setAudit(a);
-    toast.success(`Reset to the ${ROLE_LABELS[selected.role]} preset`);
+    toast.success(`${next ? "Granted" : "Revoked"} — ${key}`);
   };
 
   const saveLimit = async (type: string, unlimited: boolean) => {
@@ -233,8 +197,6 @@ export function UsersPermissionsTab() {
     return <Skeleton className="h-72 w-full" />;
   }
 
-  const summary = selected ? ROLE_SUMMARIES[selected.role] : null;
-
   return (
     <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
       {/* User list */}
@@ -256,15 +218,10 @@ export function UsersPermissionsTab() {
             <button
               key={u.id}
               type="button"
-              onClick={() => {
-                setSelected(u);
-                setAdvanced(false);
-              }}
+              onClick={() => setSelected(u)}
               className={cn(
                 "w-full text-left rounded-lg px-3 py-2 transition-colors",
-                selected?.id === u.id
-                  ? "bg-primary/10 border border-primary/30"
-                  : "hover:bg-muted",
+                selected?.id === u.id ? "bg-primary/10 border border-primary/30" : "hover:bg-muted",
               )}
             >
               <p className="text-sm font-medium truncate">
@@ -283,47 +240,31 @@ export function UsersPermissionsTab() {
       </Card>
 
       {/* Detail */}
-      <div className="space-y-5">
-        {!selected || !summary ? (
+      <div className="space-y-6">
+        {!selected ? (
           <Card className="dashboard-card">
             <CardContent className="py-12 text-center text-muted-foreground">
-              Select a person to see and change what they can do.
+              Select a user to configure their permissions.
             </CardContent>
           </Card>
         ) : (
           <>
-            {/* Person header */}
-            <Card className="dashboard-card overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/90 to-primary px-5 py-4 text-primary-foreground">
-                <h3 className="text-lg font-semibold">
-                  {advanced ? "Advanced permissions" : "Access overview"}
-                </h3>
-                <p className="text-sm opacity-90">
-                  {advanced
-                    ? "Fine-tune exactly what this person can do. Overrides the role preset."
-                    : "What this person can and cannot do today."}
-                </p>
-              </div>
-              <CardContent className="pt-4 flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 shrink-0 rounded-full bg-primary/10 text-primary grid place-items-center text-sm font-semibold">
-                    {initials(selected)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate">
-                      {selected.name} {selected.surname}
+            <Card className="dashboard-card">
+              <CardContent className="pt-6 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-semibold">
+                    {selected.name} {selected.surname}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{selected.email}</p>
+                  {selected.department && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Department: {selected.department}
                     </p>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {ROLE_LABELS[selected.role]}
-                      {selected.department ? ` · ${selected.department}` : ""}
-                    </p>
-                  </div>
+                  )}
                 </div>
-                <Badge variant="secondary" className="gap-1">
+                <Badge className="gap-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  {isCustomised && !isSuperUser
-                    ? "Customised access"
-                    : `Based on: ${ROLE_LABELS[selected.role]} preset`}
+                  {ROLE_LABELS[selected.role] ?? selected.role}
                 </Badge>
               </CardContent>
             </Card>
@@ -338,314 +279,196 @@ export function UsersPermissionsTab() {
               </div>
             )}
 
-            {!advanced ? (
-              /* ---------------- Simple view ---------------- */
-              <>
-                <Card className="dashboard-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{summary.headline}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-success mb-2">
-                        Can
-                      </p>
-                      <ul className="space-y-1.5">
-                        {summary.can.map((c) => (
-                          <li key={c} className="flex items-start gap-2 text-sm">
-                            <Check className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                            {c}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                        Cannot
-                      </p>
-                      {summary.cannot.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No restrictions apply.
-                        </p>
-                      ) : (
-                        <ul className="space-y-1.5">
-                          {summary.cannot.map((c) => (
-                            <li
-                              key={c}
-                              className="flex items-start gap-2 text-sm text-muted-foreground"
-                            >
-                              <XIcon className="h-4 w-4 mt-0.5 shrink-0" />
-                              {c}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="dashboard-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Approval authority</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-3">
-                    {APPROVAL_TYPES.map((t) => {
-                      const lim = limits[t.key];
-                      return (
-                        <div key={t.key} className="rounded-lg border bg-muted/30 p-3">
-                          <p className="text-xs text-muted-foreground">{t.label}</p>
-                          <p className="text-sm font-semibold mt-1">
-                            {isSuperUser
-                              ? "Unrestricted"
-                              : lim?.unlimited
-                                ? "Unlimited"
-                                : lim?.max_amount != null
-                                  ? `up to ${format(lim.max_amount)}`
-                                  : "No limit set"}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => setAdvanced(true)} disabled={isSuperUser}>
-                    <SlidersHorizontal className="h-4 w-4 mr-2" /> Advanced permissions
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={isSuperUser || !isCustomised || saving === "reset"}
-                    onClick={handleReset}
+            {!isSuperUser && (
+              <Card className="dashboard-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Access period</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    New permissions, limits and restrictions saved below apply for this
+                    period. When it ends, access returns to the role default automatically.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <Select
+                    value={grantExpiry}
+                    onValueChange={(v) => setGrantExpiry(v as ExpiryPreset)}
                   >
-                    <RotateCcw className="h-4 w-4 mr-2" /> Reset to preset
-                  </Button>
-                </div>
-              </>
-            ) : (
-              /* ---------------- Advanced view ---------------- */
-              <>
+                    <SelectTrigger className="max-w-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPIRY_PRESETS.map((p) => (
+                        <SelectItem key={p.key} value={p.key}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
+
+            <UserAccessControls
+              user={selected}
+              colleagues={users}
+              disabled={isSuperUser}
+            />
+
+            {/* Approval limits */}
+            <Card className="dashboard-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Approval limits</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Toggles below start from the <strong>{ROLE_LABELS[selected.role]}</strong>{" "}
-                  preset. Change anything you like — this person&apos;s access becomes fully
-                  custom.
+                  The highest amount this person may approve. Enforced in the database —
+                  approvals above the limit are rejected.
                 </p>
-
-                <Card className="dashboard-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Access period</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      New permissions and limits saved below apply for this period. When it
-                      ends, access returns to the role preset automatically.
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <Select
-                      value={grantExpiry}
-                      onValueChange={(v) => setGrantExpiry(v as ExpiryPreset)}
-                      disabled={isSuperUser}
-                    >
-                      <SelectTrigger className="max-w-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {EXPIRY_PRESETS.map((p) => (
-                          <SelectItem key={p.key} value={p.key}>
-                            {p.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </CardContent>
-                </Card>
-
-                {/* Permission groups */}
-                {PERMISSION_GROUPS.map((group) => {
-                  const on = group.permissions.filter((p) =>
-                    isSuperUser ? true : effectivePermission(selected.role, overrides, p.key),
-                  ).length;
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {APPROVAL_TYPES.map((t) => {
+                  const lim = limits[t.key];
                   return (
-                    <Card key={group.id} className="dashboard-card">
-                      <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-base">{group.label}</CardTitle>
-                        <span className="text-xs text-muted-foreground">
-                          {group.note ?? `${on} of ${group.permissions.length} on`}
-                        </span>
-                      </CardHeader>
-                      <CardContent className="divide-y pt-0">
-                        {group.permissions.map((perm) => {
-                          const value = isSuperUser
-                            ? true
-                            : effectivePermission(selected.role, overrides, perm.key);
-                          const isDefault = !(perm.key in overrides);
-                          return (
-                            <div
-                              key={perm.key}
-                              className="flex items-center justify-between py-3 gap-4"
-                            >
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium">{perm.label}</p>
-                                <p
-                                  className={cn(
-                                    "text-xs",
-                                    perm.sensitive
-                                      ? "text-destructive"
-                                      : "text-muted-foreground",
-                                  )}
-                                >
-                                  {perm.sensitive
-                                    ? `${perm.hint ?? ""} — grant with care`
-                                    : (perm.hint ??
-                                      (isDefault
-                                        ? `Role default (${defaultRolePermission(selected.role, perm.key) ? "allowed" : "blocked"})`
-                                        : "Customised for this person"))}
-                                </p>
-                              </div>
-                              <Switch
-                                checked={value}
-                                disabled={
-                                  isSuperUser || saving === perm.key || loadingDetail
-                                }
-                                onCheckedChange={(next) => togglePermission(perm.key, next)}
-                              />
-                            </div>
-                          );
-                        })}
+                    <div
+                      key={t.key}
+                      className="flex flex-wrap items-end gap-3 border-b last:border-0 pb-4 last:pb-0"
+                    >
+                      <div className="min-w-[180px]">
+                        <Label className="text-sm">{t.label}</Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {isSuperUser
+                            ? "Unrestricted"
+                            : lim?.unlimited
+                              ? "Unlimited"
+                              : lim?.max_amount != null
+                                ? `Current: ${format(lim.max_amount)}${
+                                    lim.max_approvals_per_month
+                                      ? ` · max ${lim.max_approvals_per_month}/month`
+                                      : ""
+                                  }`
+                                : "No limit configured"}
+                        </p>
+                      </div>
+                      <div className="w-40">
+                        <Input
+                          inputMode="decimal"
+                          placeholder="Max amount"
+                          disabled={isSuperUser || loadingDetail}
+                          value={limitDrafts[t.key] ?? ""}
+                          onChange={(e) =>
+                            setLimitDrafts((p) => ({ ...p, [t.key]: e.target.value }))
+                          }
 
-                        {/* Approval limits sit inside the Approvals group */}
-                        {group.id === "approvals" && (
-                          <div className="pt-4 space-y-4">
-                            {APPROVAL_TYPES.map((t) => {
-                              const lim = limits[t.key];
-                              return (
-                                <div
-                                  key={t.key}
-                                  className="rounded-lg bg-muted/30 p-3 space-y-2"
-                                >
-                                  <div className="flex items-center justify-between gap-2">
-                                    <Label className="text-sm">{t.label} limit</Label>
-                                    <Badge variant="outline" className="text-[11px]">
-                                      {isSuperUser
-                                        ? "Unrestricted"
-                                        : lim?.unlimited
-                                          ? "Unlimited"
-                                          : lim?.max_amount != null
-                                            ? `up to ${format(lim.max_amount)}`
-                                            : "No limit set"}
-                                    </Badge>
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <Input
-                                      className="w-36"
-                                      inputMode="decimal"
-                                      placeholder="Max amount"
-                                      disabled={isSuperUser || loadingDetail}
-                                      value={limitDrafts[t.key] ?? ""}
-                                      onChange={(e) =>
-                                        setLimitDrafts((p) => ({
-                                          ...p,
-                                          [t.key]: e.target.value,
-                                        }))
-                                      }
-                                    />
-                                    <Input
-                                      className="w-36"
-                                      inputMode="numeric"
-                                      placeholder="Max per month"
-                                      disabled={isSuperUser || loadingDetail}
-                                      value={monthDrafts[t.key] ?? ""}
-                                      onChange={(e) =>
-                                        setMonthDrafts((p) => ({
-                                          ...p,
-                                          [t.key]: e.target.value,
-                                        }))
-                                      }
-                                    />
-                                    <Button
-                                      size="sm"
-                                      disabled={isSuperUser || saving === t.key}
-                                      onClick={() => saveLimit(t.key, false)}
-                                    >
-                                      Save limit
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      disabled={isSuperUser || saving === t.key}
-                                      onClick={() => saveLimit(t.key, true)}
-                                    >
-                                      Unlimited
-                                    </Button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                        />
+                      </div>
+                      <div className="w-40">
+                        <Input
+                          inputMode="numeric"
+                          placeholder="Max per month"
+                          disabled={isSuperUser || loadingDetail}
+                          value={monthDrafts[t.key] ?? ""}
+                          onChange={(e) =>
+                            setMonthDrafts((p) => ({ ...p, [t.key]: e.target.value }))
+                          }
+                        />
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={isSuperUser || saving === t.key}
+                        onClick={() => saveLimit(t.key, false)}
+                      >
+                        Save limit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={isSuperUser || saving === t.key}
+                        onClick={() => saveLimit(t.key, true)}
+                      >
+                        Unlimited
+                      </Button>
+                    </div>
                   );
                 })}
+              </CardContent>
+            </Card>
 
-                <UserAccessControls
-                  user={selected}
-                  colleagues={users}
-                  disabled={isSuperUser}
-                />
+            {/* Permission groups */}
+            {PERMISSION_GROUPS.map((group) => (
+              <Card key={group.id} className="dashboard-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{group.label}</CardTitle>
+                </CardHeader>
+                <CardContent className="divide-y">
+                  {group.permissions.map((perm) => {
+                    const value = isSuperUser
+                      ? true
+                      : effectivePermission(selected.role, overrides, perm.key);
+                    const isDefault = !(perm.key in overrides);
+                    return (
+                      <div
+                        key={perm.key}
+                        className="flex items-center justify-between py-2.5 gap-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium flex items-center gap-2">
+                            {perm.label}
+                            {perm.approval && (
+                              <Badge variant="outline" className="text-[10px]">
+                                Approval
+                              </Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {isSuperUser
+                              ? "Always allowed for Super Users"
+                              : isDefault
+                                ? `Role default (${defaultRolePermission(selected.role, perm.key) ? "allowed" : "blocked"})`
+                                : "Customised for this user"}
+                          </p>
+                        </div>
+                        <Switch
+                          checked={value}
+                          disabled={isSuperUser || saving === perm.key || loadingDetail}
+                          onCheckedChange={(next) => togglePermission(perm.key, next)}
+                        />
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            ))}
 
-                <ApprovalTrail
-                  approverId={selected.id}
-                  approverName={`${selected.name} ${selected.surname ?? ""}`.trim()}
-                  title="Approvals made by this person"
-                />
+            <ApprovalTrail
+              approverId={selected.id}
+              approverName={`${selected.name} ${selected.surname ?? ""}`.trim()}
+              title="Approvals made by this person"
+            />
 
-                {/* Audit */}
-                <Card className="dashboard-card">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <History className="h-4 w-4" /> Recent permission changes
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {audit.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        No changes recorded yet.
-                      </p>
-                    ) : (
-                      <ul className="space-y-2 text-sm">
-                        {audit.map((a) => (
-                          <li
-                            key={a.id}
-                            className="flex flex-wrap gap-2 justify-between border-b pb-2 last:border-0"
-                          >
-                            <span>
-                              <strong>{a.subject}</strong>: {a.old_value ?? "—"} →{" "}
-                              {a.new_value ?? "—"}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(a.created_at).toLocaleString("en-ZA")}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="ghost" onClick={() => setAdvanced(false)}>
-                    <ArrowLeft className="h-4 w-4 mr-2" /> Back to simple view
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={isSuperUser || !isCustomised || saving === "reset"}
-                    onClick={handleReset}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" /> Reset to preset
-                  </Button>
-                </div>
-              </>
-            )}
+            {/* Audit */}
+            <Card className="dashboard-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <History className="h-4 w-4" /> Recent permission changes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {audit.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No changes recorded yet.</p>
+                ) : (
+                  <ul className="space-y-2 text-sm">
+                    {audit.map((a) => (
+                      <li key={a.id} className="flex flex-wrap gap-2 justify-between border-b pb-2 last:border-0">
+                        <span>
+                          <strong>{a.subject}</strong>: {a.old_value ?? "—"} → {a.new_value ?? "—"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(a.created_at).toLocaleString("en-ZA")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

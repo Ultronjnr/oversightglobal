@@ -50,7 +50,6 @@ import { PurchaseRequisitionTable } from "@/components/pr/PurchaseRequisitionTab
 import { SourcingQuotesModal } from "@/components/pr/SourcingQuotesModal";
 import { MyReimbursementsTab } from "@/components/pr/MyReimbursementsTab";
 import { WorkspaceShell } from "@/components/dashboard/WorkspaceShell";
-import { PaymentStatusTracker } from "@/components/admin/PaymentStatusTracker";
 import { QuoteChooser } from "@/components/finance/QuoteChooser";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
@@ -286,8 +285,6 @@ export default function HODPortal() {
             isLoading={loading}
           />
         </div>
-
-        {can("finance.view") && <PaymentStatusTracker readOnly />}
 
         {/* Action Buttons Row */}
         <div className="flex flex-wrap items-center gap-3">
