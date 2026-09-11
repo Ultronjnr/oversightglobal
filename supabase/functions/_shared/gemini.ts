@@ -156,8 +156,13 @@ export async function extractStructuredData<T = Record<string, unknown>>(
   label = "ai",
 ): Promise<AiJsonResult<T>> {
   let lastErr: unknown = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const model = attempt === 1 ? req.model : FALLBACK_GEMINI_MODEL;
+  const primary = req.model ?? DEFAULT_GEMINI_MODEL;
+  // Primary first; on transient overload retry it once, then drop to the
+  // lighter fallback model so the user always gets a result quickly.
+  const plan = [primary, primary, FALLBACK_GEMINI_MODEL];
+  for (let attempt = 1; attempt <= plan.length; attempt++) {
+    const model = plan[attempt - 1];
+    if (attempt > 1) await new Promise((r) => setTimeout(r, 800));
     try {
       const result = await provider.generateJson<T>({ ...req, model });
       console.log(JSON.stringify({
