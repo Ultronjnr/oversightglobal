@@ -79,7 +79,7 @@ export function CostCenterHistoryContent() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <StatCard label="Total Spent" value={formatCurrency(totals.totalSpent)} valueColor="primary" isLoading={loading} />
         <StatCard label="This Month" value={formatCurrency(totals.thisMonth)} valueColor="success" isLoading={loading} />
         <StatCard label="VAT Recoverable" value={formatCurrency(totals.totalVat)} valueColor="warning" isLoading={loading} />
