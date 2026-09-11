@@ -51,7 +51,10 @@ Deno.serve(async (req) => {
         ? body.sessionToken
         : undefined;
 
+    // Gateway routes "places/..." to places.googleapis.com; direct calls use
+    // the API's real "/v1/..." paths.
     const baseUrl = useDirect ? "https://places.googleapis.com" : GATEWAY_URL;
+    const placesPath = (p: string) => (useDirect ? p.replace(/^places\//, "") : p);
     const placesHeaders = (fieldMask: string): Record<string, string> => {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -71,7 +74,7 @@ Deno.serve(async (req) => {
       if (input.length < 3) return json({ suggestions: [] });
       if (input.length > 200) return json({ error: "Query too long" }, 400);
 
-      const res = await fetch(`${baseUrl}/places/v1/places:autocomplete`, {
+      const res = await fetch(`${baseUrl}/${placesPath("places/v1/places:autocomplete")}`, {
         method: "POST",
         headers: placesHeaders(
           "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
@@ -104,7 +107,7 @@ Deno.serve(async (req) => {
       const placeId = String(body?.placeId ?? "").trim();
       if (!placeId || placeId.length > 300) return json({ error: "Invalid place" }, 400);
 
-      const url = new URL(`${baseUrl}/places/v1/places/${encodeURIComponent(placeId)}`);
+      const url = new URL(`${baseUrl}/${placesPath(`places/v1/places/${encodeURIComponent(placeId)}`)}`);
       if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
 
       const res = await fetch(url.toString(), {
