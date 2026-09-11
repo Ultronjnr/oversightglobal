@@ -73,7 +73,7 @@ export function DonationDashboardTab() {
           <Download className="h-4 w-4 mr-1" />{exporting ? "Exporting…" : "Export PDF"}
         </Button>
       </div>
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
         <StatCard label="Total Donated" value={data ? format(data.totalDonated) : "-"} isLoading={loading} icon={<HandCoins />} valueColor="success" />
         <StatCard label="Allocated" value={data ? format(data.allocatedFunding) : "-"} isLoading={loading} icon={<PieChart />} />
         <StatCard label="Spent" value={data ? format(data.spentFunding) : "-"} isLoading={loading} icon={<TrendingDown />} valueColor="warning" />
