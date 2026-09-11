@@ -60,7 +60,7 @@ export function StatCard({
           {footer && <div className="pt-1">{footer}</div>}
         </div>
         {icon && (
-          <div className="text-muted-foreground/50 flex-shrink-0 hidden sm:block">
+          <div className="text-muted-foreground/50 flex-shrink-0 hidden sm:block [&_svg]:h-4 [&_svg]:w-4">
             {icon}
           </div>
         )}
