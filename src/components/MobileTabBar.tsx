@@ -7,6 +7,7 @@ export interface MobileTabItem {
   label: string;
   href: string;
   icon?: ReactNode;
+  badgeCount?: number;
 }
 
 interface MobileTabBarProps {
@@ -43,8 +44,13 @@ export function MobileTabBar({ items, activePath, onMore, showMore = true }: Mob
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className={cn("flex h-6 w-6 items-center justify-center", isActive && "scale-110 transition-transform")}>
+                <span className={cn("relative flex h-6 w-6 items-center justify-center", isActive && "scale-110 transition-transform")}>
                   {item.icon}
+                  {!!item.badgeCount && item.badgeCount > 0 && (
+                    <span className="absolute -right-2 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                      {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                    </span>
+                  )}
                 </span>
                 <span className="truncate max-w-full leading-none">{item.label}</span>
               </Link>

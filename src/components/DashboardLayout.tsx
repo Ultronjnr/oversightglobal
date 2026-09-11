@@ -34,12 +34,14 @@ import {
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
 } from "./ui/sidebar";
+import { useNavigationBadgeCounts } from "@/hooks/use-navigation-badge-counts";
 
 interface NavItem {
   label: string;
@@ -47,6 +49,7 @@ interface NavItem {
   icon?: ReactNode;
   active?: boolean;
   group?: string;
+  badgeCount?: number;
 }
 
 interface DashboardLayoutProps {
@@ -83,16 +86,21 @@ export function DashboardLayout({
   showInsights = false,
 }: DashboardLayoutProps) {
   const { profile, role, signOut } = useAuth();
+  const liveNavCounts = useNavigationBadgeCounts();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const groups = groupNav(navItems);
+  const countedNavItems = navItems.map((item) => ({
+    ...item,
+    badgeCount: liveNavCounts[item.label] ?? item.badgeCount,
+  }));
+  const groups = groupNav(countedNavItems);
   const currentPath = location.pathname + location.search;
   // Sidebar links can carry a ?tab= query, so match on path + search.
   const isNavActive = (href: string) =>
     href.includes("?") ? currentPath === href : location.pathname === href && !location.search;
   // Phones get up to four thumb-reachable destinations, the rest live under "More".
-  const primaryTabs = navItems.slice(0, navItems.length > 5 ? 4 : 5);
-  const hasMore = navItems.length > primaryTabs.length;
+  const primaryTabs = countedNavItems.slice(0, countedNavItems.length > 5 ? 4 : 5);
+  const hasMore = countedNavItems.length > primaryTabs.length;
 
 
   const getInitials = () => {
@@ -149,6 +157,11 @@ export function DashboardLayout({
                               <span>{item.label}</span>
                             </Link>
                           </SidebarMenuButton>
+                           {!!item.badgeCount && item.badgeCount > 0 && (
+                             <SidebarMenuBadge className="rounded-full bg-primary text-primary-foreground">
+                               {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                             </SidebarMenuBadge>
+                           )}
                         </SidebarMenuItem>
                       );
                     })}
@@ -252,7 +265,12 @@ export function DashboardLayout({
                                   )}
                                 >
                                   {item.icon}
-                                  {item.label}
+                                   <span className="flex-1">{item.label}</span>
+                                   {!!item.badgeCount && item.badgeCount > 0 && (
+                                     <Badge className="ml-auto min-w-5 justify-center rounded-full px-1.5 text-[10px]">
+                                       {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                                     </Badge>
+                                   )}
                                 </Link>
                               </SheetClose>
                             );

@@ -484,6 +484,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       bank_account_number: bankAccountNumber.trim() || null,
       bank_branch_code: bankBranchCode.trim() || null,
       bank_account_type: bankAccountType.trim() || null,
+      payment_reference: analysis?.extracted?.payment_reference?.trim() || invoiceNumber.trim() || null,
       document_number: invoiceNumber.trim() || null,
       document_date: invoiceDate || null,
       subtotal: subtotal ? Number(subtotal) : null,

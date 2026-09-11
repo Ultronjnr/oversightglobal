@@ -68,6 +68,7 @@ export interface CreateTxnFromInvoiceInput {
   bank_account_number?: string | null;
   bank_branch_code?: string | null;
   bank_account_type?: string | null;
+  payment_reference?: string | null;
   document_number?: string | null;
   document_date?: string | null;
   subtotal?: number | null;
@@ -239,10 +240,6 @@ export async function createTransactionFromInvoice(
       if (input.supplier_vat_number) txnUpdate.vat_number = input.supplier_vat_number.trim();
     }
     if (input.supplier_id) txnUpdate.supplier_id = input.supplier_id;
-    if (input.bank_name) txnUpdate.bank_name = input.bank_name.trim();
-    if (input.bank_account_number) txnUpdate.bank_account_number = input.bank_account_number.trim();
-    if (input.bank_branch_code) txnUpdate.bank_branch_code = input.bank_branch_code.trim();
-    if (input.bank_account_type) txnUpdate.bank_account_type = input.bank_account_type.trim();
     if (input.project_id) txnUpdate.project_id = input.project_id;
     if (input.donor_id) txnUpdate.donor_id = input.donor_id;
     const { data: txnRow } = await supabase
@@ -270,6 +267,15 @@ export async function createTransactionFromInvoice(
 
     const transactionId = (txnRow as any)?.id as string | undefined;
 
+    // The scan is analysed before its PR exists. Link the completed result now
+    // so payment batches can recover document details for one-off suppliers.
+    if (input.ocr_analysis_id) {
+      await supabase
+        .from("ocr_analyses" as any)
+        .update({ pr_id: prRow.id })
+        .eq("id", input.ocr_analysis_id);
+    }
+
     // Attach the original invoice file (best effort)
     if (input.file && transactionId) {
       // Persist OCR JSON, the human-corrected fields and a version-history
@@ -288,6 +294,7 @@ export async function createTransactionFromInvoice(
         bank_account_number: input.bank_account_number ?? null,
         bank_branch_code: input.bank_branch_code ?? null,
         bank_account_type: input.bank_account_type ?? null,
+        payment_reference: input.payment_reference ?? input.document_number ?? null,
       };
       const aiExtracted = {
         ocr_analysis_id: input.ocr_analysis_id ?? null,
