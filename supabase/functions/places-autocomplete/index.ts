@@ -51,7 +51,10 @@ Deno.serve(async (req) => {
         ? body.sessionToken
         : undefined;
 
+    // Gateway routes "places/..." to places.googleapis.com; direct calls use
+    // the API's real "/v1/..." paths.
     const baseUrl = useDirect ? "https://places.googleapis.com" : GATEWAY_URL;
+    const placesPath = (p: string) => (useDirect ? p.replace(/^places\//, "") : p);
     const placesHeaders = (fieldMask: string): Record<string, string> => {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
