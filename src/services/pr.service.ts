@@ -106,15 +106,18 @@ export async function createPurchaseRequisition(
 
     // 5. Determine initial status based on how the organisation is staffed.
     //    A one-person organisation must never be routed through a fake
-    //    Employee -> HOD -> Finance chain: it goes straight to the single
-    //    authorised person's own approval step.
+    //    Employee -> HOD -> Finance chain: the submission simply records the
+    //    information and is auto-approved so it lands in Approved - Not Paid.
     const staffing = await getOrgStaffing(profile.organization_id);
-    const hasHOD = staffing.isSingleUser
+    const isSoleUser = staffing.isSingleUser;
+    const hasHOD = isSoleUser
       ? false
       : staffing.hasHod || (await organizationHasHOD(profile.organization_id));
     const initialStatus: PRStatus = hasHOD
       ? "PENDING_HOD_APPROVAL"
-      : "PENDING_FINANCE_APPROVAL";
+      : isSoleUser
+        ? ("FINANCE_APPROVED" as PRStatus)
+        : "PENDING_FINANCE_APPROVAL";
 
     // 6. Create initial history entry
     const userName = `${profile.name}${profile.surname ? " " + profile.surname : ""}`;
@@ -125,11 +128,24 @@ export async function createPurchaseRequisition(
       timestamp: new Date().toISOString(),
       details: hasHOD
         ? "Submitted for HOD approval"
-        : staffing.isSingleUser
-          ? "Single-user organisation: ready for your own review and approval"
+        : isSoleUser
+          ? "Single-user organisation: recorded and auto-approved on submission"
           : "Submitted directly for Finance approval (no HOD in organization)",
     };
 
+    const history: PRHistoryEntry[] = isSoleUser
+      ? [
+          historyEntry,
+          {
+            action: "FINANCE_APPROVED",
+            user_id: user.id,
+            user_name: userName,
+            timestamp: new Date().toISOString(),
+            details:
+              "Auto-approved: sole authorised user in the organisation. Sent to Approved – Not Paid.",
+          },
+        ]
+      : [historyEntry];
 
     // 7. Insert the PR using raw insert (types may not be updated yet)
     const insertData = {
@@ -142,13 +158,13 @@ export async function createPurchaseRequisition(
       total_amount: totalAmount,
       currency: await getOrgCurrency(profile.organization_id),
       urgency: input.urgency,
-      hod_status: hasHOD ? "Pending" : "N/A",
-      finance_status: "Pending",
+      hod_status: hasHOD ? "Pending" : isSoleUser ? "N/A" : "N/A",
+      finance_status: isSoleUser ? "Approved" : "Pending",
       status: initialStatus,
       due_date: input.due_date || null,
       payment_due_date: input.payment_due_date || null,
       document_url: input.document_url || null,
-      history: [historyEntry] as unknown as Json,
+      history: history as unknown as Json,
       requires_reimbursement: input.requires_reimbursement ?? false,
       project_id: input.project_id || null,
       donor_id: input.donor_id || null,
