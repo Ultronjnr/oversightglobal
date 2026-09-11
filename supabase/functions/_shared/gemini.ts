@@ -80,14 +80,28 @@ export class GeminiProvider implements AiProvider {
       },
     };
 
-    const res = await fetch(
-      `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(this.#apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
-    );
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), ATTEMPT_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(
+        `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(this.#apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: abort.signal,
+        },
+      );
+    } catch (e) {
+      if (abort.signal.aborted) {
+        throw new Error(`AI timed out after ${Math.round(ATTEMPT_TIMEOUT_MS / 1000)}s`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+
 
     if (!res.ok) {
       const text = await res.text();
