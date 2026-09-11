@@ -51,10 +51,19 @@ Deno.serve(async (req) => {
         ? body.sessionToken
         : undefined;
 
-    const gatewayHeaders: Record<string, string> = {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
-      "Content-Type": "application/json",
+    const baseUrl = useDirect ? "https://places.googleapis.com" : GATEWAY_URL;
+    const placesHeaders = (fieldMask: string): Record<string, string> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Goog-FieldMask": fieldMask,
+      };
+      if (useDirect) {
+        headers["X-Goog-Api-Key"] = OWN_GOOGLE_KEY!;
+      } else {
+        headers.Authorization = `Bearer ${LOVABLE_API_KEY}`;
+        headers["X-Connection-Api-Key"] = GOOGLE_MAPS_API_KEY!;
+      }
+      return headers;
     };
 
     if (action === "autocomplete") {
