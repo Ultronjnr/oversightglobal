@@ -9,9 +9,11 @@
  */
 
 /** Fast current Flash model on the Google Generative Language API. */
-export const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 /** Used automatically if the primary model is unavailable / overloaded. */
-export const FALLBACK_GEMINI_MODEL = "gemini-2.0-flash";
+export const FALLBACK_GEMINI_MODEL = "gemini-3.1-flash-lite";
+/** Hard ceiling per model attempt so a stalled provider can't hang the scan. */
+const ATTEMPT_TIMEOUT_MS = 75_000;
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface AiFilePart {
