@@ -21,9 +21,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Prefer the workspace's own Google key (works on custom domains);
+    // fall back to the managed connector gateway.
+    const OWN_GOOGLE_KEY = Deno.env.get("GOOGLE_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {
+    const useDirect = Boolean(OWN_GOOGLE_KEY);
+    if (!useDirect && (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY)) {
       return json({ error: "Address lookup is not configured." }, 500);
     }
 
@@ -47,10 +51,19 @@ Deno.serve(async (req) => {
         ? body.sessionToken
         : undefined;
 
-    const gatewayHeaders: Record<string, string> = {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "X-Connection-Api-Key": GOOGLE_MAPS_API_KEY,
-      "Content-Type": "application/json",
+    const baseUrl = useDirect ? "https://places.googleapis.com" : GATEWAY_URL;
+    const placesHeaders = (fieldMask: string): Record<string, string> => {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "X-Goog-FieldMask": fieldMask,
+      };
+      if (useDirect) {
+        headers["X-Goog-Api-Key"] = OWN_GOOGLE_KEY!;
+      } else {
+        headers.Authorization = `Bearer ${LOVABLE_API_KEY}`;
+        headers["X-Connection-Api-Key"] = GOOGLE_MAPS_API_KEY!;
+      }
+      return headers;
     };
 
     if (action === "autocomplete") {
@@ -58,13 +71,11 @@ Deno.serve(async (req) => {
       if (input.length < 3) return json({ suggestions: [] });
       if (input.length > 200) return json({ error: "Query too long" }, 400);
 
-      const res = await fetch(`${GATEWAY_URL}/places/v1/places:autocomplete`, {
+      const res = await fetch(`${baseUrl}/places/v1/places:autocomplete`, {
         method: "POST",
-        headers: {
-          ...gatewayHeaders,
-          "X-Goog-FieldMask":
-            "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
-        },
+        headers: placesHeaders(
+          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+        ),
         body: JSON.stringify({
           input,
           sessionToken,
@@ -93,15 +104,12 @@ Deno.serve(async (req) => {
       const placeId = String(body?.placeId ?? "").trim();
       if (!placeId || placeId.length > 300) return json({ error: "Invalid place" }, 400);
 
-      const url = new URL(`${GATEWAY_URL}/places/v1/places/${encodeURIComponent(placeId)}`);
+      const url = new URL(`${baseUrl}/places/v1/places/${encodeURIComponent(placeId)}`);
       if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
 
       const res = await fetch(url.toString(), {
         method: "GET",
-        headers: {
-          ...gatewayHeaders,
-          "X-Goog-FieldMask": "id,formattedAddress,displayName,location",
-        },
+        headers: placesHeaders("id,formattedAddress,displayName,location"),
       });
 
       if (!res.ok) {
