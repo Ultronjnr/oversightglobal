@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
       const placeId = String(body?.placeId ?? "").trim();
       if (!placeId || placeId.length > 300) return json({ error: "Invalid place" }, 400);
 
-      const url = new URL(`${baseUrl}/places/v1/places/${encodeURIComponent(placeId)}`);
+      const url = new URL(`${baseUrl}/${placesPath(`places/v1/places/${encodeURIComponent(placeId)}`)}`);
       if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
 
       const res = await fetch(url.toString(), {
