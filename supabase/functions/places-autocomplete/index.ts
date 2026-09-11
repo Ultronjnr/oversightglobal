@@ -21,9 +21,13 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Prefer the workspace's own Google key (works on custom domains);
+    // fall back to the managed connector gateway.
+    const OWN_GOOGLE_KEY = Deno.env.get("GOOGLE_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const GOOGLE_MAPS_API_KEY = Deno.env.get("GOOGLE_MAPS_API_KEY");
-    if (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY) {
+    const useDirect = Boolean(OWN_GOOGLE_KEY);
+    if (!useDirect && (!LOVABLE_API_KEY || !GOOGLE_MAPS_API_KEY)) {
       return json({ error: "Address lookup is not configured." }, 500);
     }
 
