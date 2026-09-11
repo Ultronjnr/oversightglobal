@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Loader2, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Suggestion {
-  place_id: number;
-  display_name: string;
+  placeId: string;
+  description: string;
 }
 
 interface Props {
@@ -15,9 +16,14 @@ interface Props {
   required?: boolean;
 }
 
+const newSessionToken = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : Math.random().toString(36).slice(2);
+
 /**
- * Address field with type-ahead suggestions (OpenStreetMap / Nominatim).
- * Users can still type a free-form address if nothing matches.
+ * Address field with Google Places (New) type-ahead suggestions, served through
+ * an authenticated backend function. Free-form typing is still allowed.
  */
 export function AddressAutocomplete({ id, value, onChange, placeholder, required }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -25,6 +31,8 @@ export function AddressAutocomplete({ id, value, onChange, placeholder, required
   const [loading, setLoading] = useState(false);
   const skipNextLookup = useRef(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const sessionToken = useRef<string>(newSessionToken());
+  const requestSeq = useRef(0);
 
   useEffect(() => {
     if (skipNextLookup.current) {
@@ -32,33 +40,39 @@ export function AddressAutocomplete({ id, value, onChange, placeholder, required
       return;
     }
     const query = value.trim();
-    if (query.length < 4) {
+    if (query.length < 3) {
       setSuggestions([]);
+      setOpen(false);
       return;
     }
-    const controller = new AbortController();
+
+    const seq = ++requestSeq.current;
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=za&q=${encodeURIComponent(query)}`,
-          { signal: controller.signal, headers: { Accept: "application/json" } },
-        );
-        if (!res.ok) throw new Error("lookup failed");
-        const data = (await res.json()) as Suggestion[];
-        setSuggestions(data);
-        setOpen(data.length > 0);
+        const { data, error } = await supabase.functions.invoke("places-autocomplete", {
+          body: {
+            action: "autocomplete",
+            input: query,
+            sessionToken: sessionToken.current,
+          },
+        });
+        if (seq !== requestSeq.current) return;
+        if (error) throw error;
+        const list = (data?.suggestions ?? []) as Suggestion[];
+        setSuggestions(list);
+        setOpen(list.length > 0);
       } catch {
-        setSuggestions([]);
+        if (seq === requestSeq.current) {
+          setSuggestions([]);
+          setOpen(false);
+        }
       } finally {
-        setLoading(false);
+        if (seq === requestSeq.current) setLoading(false);
       }
-    }, 400);
+    }, 300);
 
-    return () => {
-      controller.abort();
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [value]);
 
   useEffect(() => {
@@ -69,11 +83,30 @@ export function AddressAutocomplete({ id, value, onChange, placeholder, required
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const pick = (s: Suggestion) => {
+  const pick = async (s: Suggestion) => {
     skipNextLookup.current = true;
-    onChange(s.display_name);
+    onChange(s.description);
     setOpen(false);
     setSuggestions([]);
+    requestSeq.current++;
+
+    try {
+      const { data } = await supabase.functions.invoke("places-autocomplete", {
+        body: {
+          action: "details",
+          placeId: s.placeId,
+          sessionToken: sessionToken.current,
+        },
+      });
+      if (data?.formattedAddress) {
+        skipNextLookup.current = true;
+        onChange(data.formattedAddress as string);
+      }
+    } catch {
+      /* keep the picked description */
+    } finally {
+      sessionToken.current = newSessionToken();
+    }
   };
 
   return (
@@ -93,14 +126,14 @@ export function AddressAutocomplete({ id, value, onChange, placeholder, required
       {open && suggestions.length > 0 && (
         <ul className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-border bg-popover shadow-lg">
           {suggestions.map((s) => (
-            <li key={s.place_id}>
+            <li key={s.placeId}>
               <button
                 type="button"
                 onClick={() => pick(s)}
                 className="w-full text-left px-3 py-2 text-sm flex gap-2 items-start hover:bg-accent"
               >
                 <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-                <span>{s.display_name}</span>
+                <span>{s.description}</span>
               </button>
             </li>
           ))}
