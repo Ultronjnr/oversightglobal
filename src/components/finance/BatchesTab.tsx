@@ -47,6 +47,24 @@ import {
   type BatchExportData,
 } from "@/services/batch-export.service";
 
+type DocumentPaymentDetails = {
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_branch_code: string | null;
+  bank_account_type: string | null;
+  payment_reference: string | null;
+};
+
+function documentPaymentDetails(value: Record<string, any>): DocumentPaymentDetails {
+  return {
+    bank_name: value.bank_name || null,
+    bank_account_number: value.bank_account_number || value.account_number || null,
+    bank_branch_code: value.bank_branch_code || value.branch_code || null,
+    bank_account_type: value.bank_account_type || value.account_type || null,
+    payment_reference: value.payment_reference || value.document_number || value.reference_number || null,
+  };
+}
+
 
 interface BatchAllocation {
   id: string;
@@ -115,6 +133,7 @@ export function BatchesTab() {
   const [bankDetails, setBankDetails] = useState<
     Record<string, { bank_name: string | null; bank_account_number: string | null; bank_branch_code: string | null; bank_account_type: string | null }>
   >({});
+  const [documentDetails, setDocumentDetails] = useState<Record<string, DocumentPaymentDetails>>({});
   const [currentUser, setCurrentUser] = useState<string>("");
   const [exportingId, setExportingId] = useState<string | null>(null);
 
@@ -156,7 +175,7 @@ export function BatchesTab() {
              pr:purchase_requisitions ( transaction_id, currency )
            ),
            transaction:transactions (
-              id, invoice_id, supplier_name, amount, amount_paid, currency, status, document_url,
+               id, invoice_id, supplier_name, amount, amount_paid, currency, status, document_url,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
@@ -204,6 +223,42 @@ export function BatchesTab() {
       }
     }
     setBatches(rows);
+
+    const transactionIds = Array.from(new Set(
+      rows.flatMap((row) => row.allocations).map((allocation) => allocation.transaction_id).filter(Boolean) as string[],
+    ));
+    const prIds = Array.from(new Set(
+      rows.flatMap((row) => row.allocations).map((allocation) => allocation.transaction?.pr?.id).filter(Boolean) as string[],
+    ));
+    const detailMap: Record<string, DocumentPaymentDetails> = {};
+
+    if (transactionIds.length > 0) {
+      const { data: attachments } = await supabase
+        .from("attachments" as any)
+        .select("transaction_id, ai_extracted, created_at")
+        .in("transaction_id", transactionIds)
+        .eq("is_current", true)
+        .order("created_at", { ascending: false });
+      (attachments || []).forEach((row: any) => {
+        if (!row.transaction_id || detailMap[row.transaction_id]) return;
+        const value = row.ai_extracted?.corrected || row.ai_extracted?.ocr || row.ai_extracted || {};
+        detailMap[row.transaction_id] = documentPaymentDetails(value);
+      });
+    }
+
+    if (prIds.length > 0) {
+      const { data: analyses } = await supabase
+        .from("ocr_analyses" as any)
+        .select("pr_id, extracted, created_at")
+        .in("pr_id", prIds)
+        .eq("status", "COMPLETED")
+        .order("created_at", { ascending: false });
+      (analyses || []).forEach((row: any) => {
+        if (!row.pr_id || detailMap[row.pr_id]) return;
+        detailMap[row.pr_id] = documentPaymentDetails(row.extracted || {});
+      });
+    }
+    setDocumentDetails(detailMap);
 
     // Fetch supplier bank details (Finance/Admin restricted) for involved suppliers
     const supplierIds = Array.from(
@@ -367,9 +422,10 @@ export function BatchesTab() {
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—";
       const sup = a.invoice?.supplier || a.transaction?.supplier;
       const supBank = sup?.id ? bankDetails[sup.id] : undefined;
-      const accountNumber = supBank?.bank_account_number || null;
-      const branchCode = supBank?.bank_branch_code || null;
-      const accountType = supBank?.bank_account_type || "Current/Cheque";
+      const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
+      const accountNumber = supBank?.bank_account_number || scanBank?.bank_account_number || null;
+      const branchCode = supBank?.bank_branch_code || scanBank?.bank_branch_code || null;
+      const accountType = supBank?.bank_account_type || scanBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
@@ -382,7 +438,7 @@ export function BatchesTab() {
         supplier_account: accountNumber || supplierCode || "—",
         branch_code: branchCode || "—",
         account_type: accountType || "—",
-        statement_ref: b.payment_reference || txnRef,
+        statement_ref: a.payment_reference || scanBank?.payment_reference || b.payment_reference || txnRef,
         pr_number: prNumber,
         vat_registered: !!vatNumber,
         payment_status: isFull ? "Paid" : batchStatusLabel(b.status),
@@ -467,13 +523,15 @@ export function BatchesTab() {
     const name =
       sup?.company_name || a.transaction?.supplier_name || "—";
     const bank = sup?.id ? bankDetails[sup.id] : undefined;
+    const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
     return {
       name,
       email: sup?.contact_email || null,
-      bank_name: bank?.bank_name || null,
-      account: bank?.bank_account_number || null,
-      branch: bank?.bank_branch_code || null,
-      account_type: bank?.bank_account_type || null,
+      bank_name: bank?.bank_name || scanBank?.bank_name || null,
+      account: bank?.bank_account_number || scanBank?.bank_account_number || null,
+      branch: bank?.bank_branch_code || scanBank?.bank_branch_code || null,
+      account_type: bank?.bank_account_type || scanBank?.bank_account_type || null,
+      payment_reference: scanBank?.payment_reference || null,
       txnRef:
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—",
       currency:
@@ -487,7 +545,7 @@ export function BatchesTab() {
     b.allocations.forEach((a, i) => {
       defaults[a.id] = {
         reference:
-          a.payment_reference ||
+          a.payment_reference || allocationPayee(a).payment_reference ||
           `${b.batch_number || b.id.slice(0, 8).toUpperCase()}-${String(i + 1).padStart(2, "0")}`,
         date: today(),
         pop: null,
@@ -828,7 +886,7 @@ export function BatchesTab() {
                                     {txnRef}
                                   </TableCell>
                                   <TableCell className="font-mono text-xs">
-                                    {a.payment_reference || (
+                                     {a.payment_reference || allocationPayee(a).payment_reference || (
                                       <span className="text-muted-foreground">—</span>
                                     )}
                                   </TableCell>

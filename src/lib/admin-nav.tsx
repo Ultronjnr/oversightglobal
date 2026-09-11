@@ -10,6 +10,8 @@ export interface NavItem {
   group?: string;
   /** Hide the entry when the signed-in user lacks this permission. */
   permission?: string;
+  /** Live actionable item count rendered as a compact navigation bubble. */
+  badgeCount?: number;
 }
 
 /**
