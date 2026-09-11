@@ -79,7 +79,7 @@ export function CostCenterHistoryContent() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <StatCard label="Total Spent" value={formatCurrency(totals.totalSpent)} valueColor="primary" isLoading={loading} />
         <StatCard label="This Month" value={formatCurrency(totals.thisMonth)} valueColor="success" isLoading={loading} />
         <StatCard label="VAT Recoverable" value={formatCurrency(totals.totalVat)} valueColor="warning" isLoading={loading} />
@@ -134,7 +134,7 @@ export function CostCenterHistoryContent() {
                       <p className="font-semibold truncate">{s.department}</p>
                       <Badge variant="outline" className="text-xs">COST CENTER</Badge>
                     </div>
-                    <p className="text-2xl font-bold text-primary">{formatCurrency(s.totalSpent)}</p>
+                    <p className="text-lg lg:text-xl font-bold text-primary tabular-nums truncate">{formatCurrency(s.totalSpent)}</p>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{s.count} transaction{s.count === 1 ? "" : "s"}</span>
                       <span>VAT {formatCurrency(s.totalVat)}</span>
