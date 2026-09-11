@@ -9,9 +9,11 @@
  */
 
 /** Fast current Flash model on the Google Generative Language API. */
-export const DEFAULT_GEMINI_MODEL = "gemini-flash-latest";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
 /** Used automatically if the primary model is unavailable / overloaded. */
-export const FALLBACK_GEMINI_MODEL = "gemini-2.0-flash";
+export const FALLBACK_GEMINI_MODEL = "gemini-3.1-flash-lite";
+/** Hard ceiling per model attempt so a stalled provider can't hang the scan. */
+const ATTEMPT_TIMEOUT_MS = 75_000;
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export interface AiFilePart {
@@ -78,14 +80,28 @@ export class GeminiProvider implements AiProvider {
       },
     };
 
-    const res = await fetch(
-      `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(this.#apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      },
-    );
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), ATTEMPT_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(
+        `${GEMINI_ENDPOINT}/${model}:generateContent?key=${encodeURIComponent(this.#apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          signal: abort.signal,
+        },
+      );
+    } catch (e) {
+      if (abort.signal.aborted) {
+        throw new Error(`AI timed out after ${Math.round(ATTEMPT_TIMEOUT_MS / 1000)}s`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+
 
     if (!res.ok) {
       const text = await res.text();
@@ -140,8 +156,13 @@ export async function extractStructuredData<T = Record<string, unknown>>(
   label = "ai",
 ): Promise<AiJsonResult<T>> {
   let lastErr: unknown = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const model = attempt === 1 ? req.model : FALLBACK_GEMINI_MODEL;
+  const primary = req.model ?? DEFAULT_GEMINI_MODEL;
+  // Primary first; on transient overload retry it once, then drop to the
+  // lighter fallback model so the user always gets a result quickly.
+  const plan = [primary, primary, FALLBACK_GEMINI_MODEL];
+  for (let attempt = 1; attempt <= plan.length; attempt++) {
+    const model = plan[attempt - 1];
+    if (attempt > 1) await new Promise((r) => setTimeout(r, 800));
     try {
       const result = await provider.generateJson<T>({ ...req, model });
       console.log(JSON.stringify({
