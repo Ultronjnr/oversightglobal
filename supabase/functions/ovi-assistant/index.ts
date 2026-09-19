@@ -29,7 +29,8 @@ Available destinations (use the exact path):
 - /finance/portal?tab=invoices — supplier invoices
 - /finance/portal?tab=payments — approved but not paid payment queue / batches
 - /finance/portal?tab=reimbursements — staff reimbursement claims
-- /finance/portal?tab=vat — VAT assessment
+- /finance/portal?tab=vat_dashboard — VAT dashboard
+- /finance/portal?tab=input_vat — input VAT assessment
 - /finance/portal?tab=reports — financial reports and exports
 - /admin/portal — Super User workspace
 - /admin/portal?tab=users — users and roles
@@ -38,7 +39,7 @@ Available destinations (use the exact path):
 - /supplier/portal — supplier workspace: quotes, negotiations, invoices
 - /donations — donations / Section 18A module
 - /analytics — analytics
-- /expense-history — expense history
+- /expenses — expense history
 - /cost-center-history — cost centre / department history
 - /billing — billing and subscription
 - /inbox — requisition chat inbox
