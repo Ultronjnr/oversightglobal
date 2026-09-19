@@ -184,6 +184,42 @@ export async function createPurchaseRequisition(
     // Cast the response to our type
     const pr = prData as unknown as PurchaseRequisition;
 
+    // Auto-approved sole-user PRs must still reserve the project budget,
+    // exactly like the Finance approval path does (hard block on overrun).
+    if (isSoleUser && input.project_id) {
+      const { data: allocRes, error: allocErr } = await supabase.rpc(
+        "allocate_project_funds",
+        {
+          _project_id: input.project_id,
+          _donor_id: input.donor_id || null,
+          _amount: Number(totalAmount ?? 0),
+          _source_type: "PR",
+          _source_id: (pr as any).id,
+          _description: `PR ${transactionId} auto-approved (sole authorised user)`,
+        }
+      );
+
+      if (allocErr || (allocRes as any)?.success === false) {
+        // Roll the PR back out of the approved state so the budget is never
+        // silently exceeded, then surface the reason to the requester.
+        await supabase
+          .from("purchase_requisitions" as any)
+          .update({
+            status: "PENDING_FINANCE_APPROVAL",
+            finance_status: "Pending",
+          })
+          .eq("id", (pr as any).id);
+
+        return {
+          success: false,
+          error:
+            (allocRes as any)?.error ||
+            allocErr?.message ||
+            "Project budget allocation failed",
+        };
+      }
+    }
+
     return {
       success: true,
       data: pr,
