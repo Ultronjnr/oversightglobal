@@ -147,7 +147,41 @@ export async function createPurchaseRequisition(
         ]
       : [historyEntry];
 
-    // 7. Insert the PR using raw insert (types may not be updated yet)
+    // 7. Sole-user PRs against a donation project must reserve the budget
+    //    BEFORE the requisition is approved, otherwise the approval trigger
+    //    creates an "Approved - Not Paid" payment entry that cannot be
+    //    removed from the client if the reservation is then refused.
+    const reserveBeforeApproval = Boolean(isSoleUser && input.project_id);
+
+    if (reserveBeforeApproval) {
+      const { data: summaryRes, error: summaryErr } = await supabase.rpc(
+        "get_project_budget_summary" as never,
+        { _project_id: input.project_id } as never
+      );
+      const summary = summaryRes as unknown as
+        | { success: boolean; error?: string; remaining?: number }
+        | null;
+
+      if (summaryErr || !summary?.success) {
+        return {
+          success: false,
+          error:
+            summary?.error ||
+            summaryErr?.message ||
+            "Could not check the project budget",
+        };
+      }
+
+      const remaining = Number(summary.remaining ?? 0);
+      if (Number(totalAmount ?? 0) > remaining) {
+        return {
+          success: false,
+          error: `This request exceeds the remaining project budget (${remaining.toFixed(2)} available).`,
+        };
+      }
+    }
+
+    // 8. Insert the PR using raw insert (types may not be updated yet)
     const insertData = {
       transaction_id: transactionId,
       organization_id: profile.organization_id,
@@ -158,9 +192,10 @@ export async function createPurchaseRequisition(
       total_amount: totalAmount,
       currency: await getOrgCurrency(profile.organization_id),
       urgency: input.urgency,
-      hod_status: hasHOD ? "Pending" : isSoleUser ? "N/A" : "N/A",
-      finance_status: isSoleUser ? "Approved" : "Pending",
-      status: initialStatus,
+      hod_status: hasHOD ? "Pending" : "N/A",
+      // Hold the approval back until the budget reservation succeeds.
+      finance_status: isSoleUser && !reserveBeforeApproval ? "Approved" : "Pending",
+      status: reserveBeforeApproval ? "PENDING_FINANCE_APPROVAL" : initialStatus,
       due_date: input.due_date || null,
       payment_due_date: input.payment_due_date || null,
       document_url: input.document_url || null,
@@ -182,11 +217,9 @@ export async function createPurchaseRequisition(
     }
 
     // Cast the response to our type
-    const pr = prData as unknown as PurchaseRequisition;
+    let pr = prData as unknown as PurchaseRequisition;
 
-    // Auto-approved sole-user PRs must still reserve the project budget,
-    // exactly like the Finance approval path does (hard block on overrun).
-    if (isSoleUser && input.project_id) {
+    if (reserveBeforeApproval) {
       const { data: allocRes, error: allocErr } = await supabase.rpc(
         "allocate_project_funds",
         {
@@ -200,24 +233,37 @@ export async function createPurchaseRequisition(
       );
 
       if (allocErr || (allocRes as any)?.success === false) {
-        // Roll the PR back out of the approved state so the budget is never
-        // silently exceeded, then surface the reason to the requester.
-        await supabase
-          .from("purchase_requisitions" as any)
-          .update({
-            status: "PENDING_FINANCE_APPROVAL",
-            finance_status: "Pending",
-          })
-          .eq("id", (pr as any).id);
-
+        // The requisition never became approved, so nothing was queued for
+        // payment. It simply waits for approval with the budget untouched.
         return {
           success: false,
           error:
             (allocRes as any)?.error ||
             allocErr?.message ||
-            "Project budget allocation failed",
+            "Project budget allocation failed. The request was saved but not approved.",
         };
       }
+
+      // Budget secured - promote the requisition to approved.
+      const { data: approvedPr, error: approveErr } = await supabase
+        .from("purchase_requisitions" as any)
+        .update({
+          status: "FINANCE_APPROVED",
+          finance_status: "Approved",
+        })
+        .eq("id", (pr as any).id)
+        .select()
+        .single();
+
+      if (approveErr) {
+        logError("prSoleUserAutoApprove", approveErr);
+        return {
+          success: false,
+          error: getSafeErrorMessage(approveErr),
+        };
+      }
+
+      pr = approvedPr as unknown as PurchaseRequisition;
     }
 
     return {
