@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import heroBg from "@/assets/landing-bg.jpg";
+import heroCorporate from "@/assets/hero-corporate.png.asset.json";
 import {
   ArrowRight,
   Sparkles,
@@ -17,6 +17,7 @@ import {
   BarChart3,
   Clock,
   Megaphone,
+  FileCheck2,
 } from "lucide-react";
 import {
   getLiveAdvertisements,
@@ -40,23 +41,7 @@ interface Snapshot {
   pendingPRs: number;
 }
 
-type Tone = "primary" | "success" | "warning" | "destructive";
-
-interface Story {
-  key: string;
-  kicker: string;
-  headline: string;
-  sub: string;
-  href: string;
-  ctaLabel: string;
-}
-
-const toneRing: Record<Tone, string> = {
-  primary: "text-primary",
-  success: "text-success",
-  warning: "text-warning",
-  destructive: "text-destructive",
-};
+const AUTOPLAY_MS = 6000;
 
 function Sparkline({ points }: { points: number[] }) {
   const max = Math.max(1, ...points);
@@ -70,11 +55,7 @@ function Sparkline({ points }: { points: number[] }) {
   return (
     <svg viewBox="0 0 100 30" preserveAspectRatio="none" className="h-8 w-full">
       <path d={d} fill="none" stroke="hsl(var(--success))" strokeWidth="1.6" />
-      <path
-        d={`${d} L100,30 L0,30 Z`}
-        fill="hsl(var(--success) / 0.12)"
-        stroke="none"
-      />
+      <path d={`${d} L100,30 L0,30 Z`} fill="hsl(var(--success) / 0.12)" stroke="none" />
     </svg>
   );
 }
@@ -115,25 +96,21 @@ function Tile({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-2xl border border-white/70 bg-white/85 p-3 shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_12px_28px_-20px_hsl(220_40%_20%/0.45)] backdrop-blur-xl sm:p-4">
+    <div className="flex min-w-0 flex-col rounded-2xl border border-white/70 bg-white/90 p-3 shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_16px_34px_-22px_hsl(220_40%_20%/0.5)] backdrop-blur-xl sm:p-4">
       <div
         className={cn(
-          "mb-2 grid h-8 w-8 place-items-center rounded-full text-white shadow-sm",
+          "mb-2 grid h-9 w-9 place-items-center rounded-full text-white shadow-sm",
           iconClass,
         )}
       >
         {icon}
       </div>
-      <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">
-        {label}
-      </p>
-      <p className="whitespace-nowrap text-sm font-bold tabular-nums leading-tight text-foreground sm:text-base lg:text-lg">
+      <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{label}</p>
+      <p className="whitespace-nowrap text-base font-bold tabular-nums leading-tight text-foreground sm:text-lg lg:text-xl">
         {value}
       </p>
       {hint && (
-        <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
-          {hint}
-        </p>
+        <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">{hint}</p>
       )}
       {children && <div className="mt-auto pt-1.5">{children}</div>}
     </div>
@@ -141,11 +118,12 @@ function Tile({
 }
 
 /**
- * Premium intelligence panel shown at the top of every portal.
+ * Large hero carousel shown at the top of every portal.
  *
- * Left: a rotating hero story drawn from the organisation's live data.
- * Middle: six live metric tiles. Right: the advert Ovasyt has published
- * for this organisation (or an Ovasyt message when none is live).
+ * Slide 1 — live organisation insights (greeting, headline, six KPI tiles,
+ * quick-updates column). Slide 2 — the advert Ovasyt published for this
+ * organisation (omitted entirely when none is live). Slide 3 — audit and
+ * compliance readiness. Autoplays every 6s, pauses on interaction.
  */
 export function SmartPanel() {
   const { profile, role } = useAuth();
@@ -154,12 +132,11 @@ export function SmartPanel() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [ads, setAds] = useState<Advertisement[]>([]);
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const since = new Date();
-      since.setDate(since.getDate() - 90);
       const monthStart = new Date();
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
@@ -180,9 +157,7 @@ export function SmartPanel() {
       if (cancelled) return;
 
       const rows = txns || [];
-      const inMonth = rows.filter(
-        (t) => new Date(t.created_at as string) >= monthStart,
-      );
+      const inMonth = rows.filter((t) => new Date(t.created_at as string) >= monthStart);
       const prevMonth = rows.filter((t) => {
         const d = new Date(t.created_at as string);
         return d >= prevMonthStart && d < monthStart;
@@ -191,8 +166,7 @@ export function SmartPanel() {
       const spendMtd = inMonth.reduce((s, t) => s + Number(t.amount || 0), 0);
       const spendPrevMtd = prevMonth.reduce((s, t) => s + Number(t.amount || 0), 0);
       const outstanding = rows.reduce(
-        (s, t) =>
-          s + Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0),
+        (s, t) => s + Math.max(Number(t.amount || 0) - Number(t.amount_paid || 0), 0),
         0,
       );
       const total = rows.reduce((s, t) => s + Number(t.amount || 0), 0);
@@ -204,7 +178,6 @@ export function SmartPanel() {
       });
       const top = [...bySupplier.entries()].sort((a, b) => b[1] - a[1])[0];
 
-      // 8 weekly buckets for the sparkline / activity bars
       const now = Date.now();
       const trend: number[] = [];
       const weekBars: number[] = [];
@@ -219,9 +192,7 @@ export function SmartPanel() {
         weekBars.push(bucket.length);
       }
 
-      const missingDocs = rows.filter(
-        (t) => !t.document_url && !t.scan_document_path,
-      ).length;
+      const missingDocs = rows.filter((t) => !t.document_url && !t.scan_document_path).length;
       const prRows = prs || [];
       const prDone = prRows.filter((p) =>
         ["FULFILLED", "CLOSED", "FINANCE_APPROVED"].includes(String(p.status)),
@@ -248,8 +219,7 @@ export function SmartPanel() {
           top && total > 0
             ? { name: top[0], share: Math.round((top[1] / total) * 100) }
             : null,
-        pendingPRs: prRows.filter((p) => String(p.status).startsWith("PENDING"))
-          .length,
+        pendingPRs: prRows.filter((p) => String(p.status).startsWith("PENDING")).length,
       });
     })();
     return () => {
@@ -258,8 +228,14 @@ export function SmartPanel() {
   }, [profile?.organization_id]);
 
   useEffect(() => {
-    getLiveAdvertisements().then(setAds);
-  }, []);
+    let cancelled = false;
+    getLiveAdvertisements().then((rows) => {
+      if (!cancelled) setAds(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.organization_id]);
 
   const advert = ads[0] ?? null;
 
@@ -269,343 +245,404 @@ export function SmartPanel() {
     }
   }, [advert?.id, profile?.organization_id]);
 
-  const stories = useMemo<Story[]>(() => {
-    const d = data;
-    const list: Story[] = [
-      {
-        key: "intro",
-        kicker: "Ovasyt",
-        headline: "Smarter spend. Greater impact.",
-        sub: "Track your finances, stay compliant and make better decisions with real-time insights — all in one place.",
-        href: "/analytics",
-        ctaLabel: "Open analytics",
-      },
-    ];
-
-    if (d?.topSupplier) {
-      list.push({
-        key: "supplier",
-        kicker: "From your data",
-        headline: `${d.topSupplier.name} is ${d.topSupplier.share}% of spend`,
-        sub: "Your biggest supplier over the last 90 days. Compare quotes before the next order.",
-        href: "/analytics",
-        ctaLabel: "See breakdown",
-      });
-    }
-
-    if (orgWide) {
-      list.push({
-        key: "outstanding",
-        kicker: "Waiting to be paid",
-        headline: formatCurrency(d?.outstanding || 0),
-        sub: `${d?.unpaidCount ?? 0} approved items are still unsettled. Create a payment batch to clear them.`,
-        href: "/admin/portal?tab=payments",
-        ctaLabel: "Open payment queue",
-      });
-    }
-
-    list.push({
-      key: "docs",
-      kicker: "Audit readiness",
-      headline: d?.missingDocs
-        ? `${d.missingDocs} records without a document`
-        : "Every record has a document",
-      sub: d?.missingDocs
-        ? "Attach the invoice or receipt so SARS reviews stay painless."
-        : "Your records are fully supported by documents.",
-      href: "/expenses",
-      ctaLabel: "Open expense history",
-    });
-
-    list.push({
-      key: "approvals",
-      kicker: "Needs a decision",
-      headline: `${d?.pendingPRs ?? 0} requisitions in review`,
-      sub: "Approvals move faster when they are cleared the same day.",
-      href:
-        role === "HOD"
-          ? "/hod/portal"
-          : role === "FINANCE"
-            ? "/finance/portal?tab=incoming"
-            : role === "ADMIN"
-              ? "/admin/portal?tab=approvals"
-              : "/employee/portal?tab=requisitions",
-      ctaLabel: "Review requisitions",
-    });
-
-    return list;
-  }, [data, orgWide, role]);
-
-  const total = stories.length;
-  useEffect(() => {
-    if (paused || total < 2) return;
-    const t = setInterval(() => setIndex((i) => (i + 1) % total), 8000);
-    return () => clearInterval(t);
-  }, [paused, total]);
-
-  const story = stories[Math.min(index, total - 1)];
   const loading = !data;
   const greeting = (() => {
     const h = new Date().getHours();
     return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   })();
+  const firstName = (profile?.name || "there").split(" ")[0];
   const mtdDelta =
     data && data.spendPrevMtd > 0
-      ? Math.round(
-          ((data.spendMtd - data.spendPrevMtd) / data.spendPrevMtd) * 100,
-        )
+      ? Math.round(((data.spendMtd - data.spendPrevMtd) / data.spendPrevMtd) * 100)
       : null;
   const barMax = Math.max(1, ...(data?.weekBars ?? [1]));
+  const approvalsHref =
+    role === "HOD"
+      ? "/hod/portal"
+      : role === "FINANCE"
+        ? "/finance/portal?tab=incoming"
+        : role === "ADMIN"
+          ? "/admin/portal?tab=approvals"
+          : "/employee/portal?tab=requisitions";
+
+  // Slides are rebuilt only when their inputs change — no work per tick.
+  const slides = useMemo(
+    () => ["insights", ...(advert ? ["advert"] : []), "audit"] as const,
+    [advert],
+  );
+  const total = slides.length;
+
+  useEffect(() => {
+    if (index > total - 1) setIndex(0);
+  }, [index, total]);
+
+  useEffect(() => {
+    if (paused || total < 2) return;
+    const t = setInterval(() => setIndex((i) => (i + 1) % total), AUTOPLAY_MS);
+    return () => clearInterval(t);
+  }, [paused, total]);
+
+  useEffect(
+    () => () => {
+      if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    },
+    [],
+  );
+
+  /** Any manual interaction pauses autoplay, which resumes shortly after. */
+  const interact = useCallback((next: (i: number) => number) => {
+    setPaused(true);
+    setIndex((i) => next(i));
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => setPaused(false), 12000);
+  }, []);
+
+  const active = slides[Math.min(index, total - 1)];
+
+  const adCta = advert?.cta_url ? (
+    advert.cta_url.startsWith("http") ? (
+      <Button
+        asChild
+        className="mt-4 rounded-full"
+        onClick={() =>
+          recordAdvertisementEvent(advert.id, "CLICK", profile?.organization_id ?? null)
+        }
+      >
+        <a href={advert.cta_url} target="_blank" rel="noreferrer">
+          {advert.cta_label || "Learn more"}
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </a>
+      </Button>
+    ) : (
+      <Button
+        asChild
+        className="mt-4 rounded-full"
+        onClick={() =>
+          recordAdvertisementEvent(advert.id, "CLICK", profile?.organization_id ?? null)
+        }
+      >
+        <Link to={advert.cta_url}>
+          {advert.cta_label || "Learn more"}
+          <ArrowRight className="ml-1.5 h-4 w-4" />
+        </Link>
+      </Button>
+    )
+  ) : null;
 
   return (
     <section
-      aria-label="Smart insights"
-      className="mb-5 w-full"
+      aria-label="Organisation insights"
+      aria-roledescription="carousel"
+      className="mb-6 w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-primary/10 via-primary/5 to-white p-2.5 shadow-[0_20px_50px_-24px_hsl(var(--primary)/0.45)] sm:p-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_1.75fr_0.9fr]">
-          {/* Hero story */}
-          <div className="relative min-h-[260px] overflow-hidden rounded-2xl text-white">
-            <img
-              src={heroBg}
-              alt=""
-              aria-hidden
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-            <div
-              aria-hidden
-              className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40"
-            />
-            <div className="relative flex h-full flex-col p-4 sm:p-5">
-              <div className="flex items-center gap-2">
-                <div className="grid h-8 w-8 place-items-center rounded-xl bg-white/20 backdrop-blur">
-                  <Sparkles className="h-4 w-4" />
+      <div className="relative w-full overflow-hidden rounded-[28px] border border-white/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
+        {/* Shared background — loaded once for every slide */}
+        <img
+          src={heroCorporate.url}
+          alt=""
+          aria-hidden
+          loading="eager"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/45 to-primary/15"
+        />
+
+        <div className="relative min-h-[520px] p-4 sm:p-6 lg:min-h-[440px] lg:p-7">
+          {/* Slide 1 — live organisation insights */}
+          {active === "insights" && (
+            <div className="grid animate-fade-in gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
+              <div className="flex flex-col text-white">
+                <div className="flex items-center gap-2.5">
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/20 backdrop-blur">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold leading-tight">
+                      {greeting}, {firstName}
+                    </p>
+                    <p className="text-xs leading-tight text-white/85">
+                      Here's what's happening with your organisation today.
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold leading-tight">
-                    {greeting}, {profile?.name || "there"}
+
+                <div className="mt-8 lg:mt-12">
+                  <h2 className="text-3xl font-bold leading-[1.1] tracking-tight drop-shadow-sm sm:text-4xl">
+                    Smarter spend. Greater impact.
+                  </h2>
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
+                    Track your finances, stay compliant and make better decisions with
+                    real-time insights — all in one place.
                   </p>
-                  <p className="text-[11px] leading-tight text-white/80">
-                    Here's what's happening with your organisation today.
-                  </p>
+                  <Button asChild variant="secondary" className="mt-5 rounded-full">
+                    <Link to="/analytics">
+                      Open analytics
+                      <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </Link>
+                  </Button>
                 </div>
               </div>
 
-              <div className="mt-6 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
-                  {story.kicker}
-                </p>
-                <h2 className="mt-1 text-xl font-bold leading-tight sm:text-2xl">
-                  {story.headline}
-                </h2>
-                <p className="mt-2 max-w-md text-xs leading-relaxed text-white/85 sm:text-sm">
-                  {story.sub}
-                </p>
-                <Button
-                  asChild
-                  size="sm"
-                  variant="secondary"
-                  className="mt-3 rounded-full"
+              <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+                <Tile
+                  label="Total Spend (MTD)"
+                  value={loading ? "—" : formatCurrency(data!.spendMtd)}
+                  hint={
+                    mtdDelta === null
+                      ? undefined
+                      : `${mtdDelta >= 0 ? "↑" : "↓"} ${Math.abs(mtdDelta)}% vs last month`
+                  }
+                  icon={<Wallet className="h-4 w-4" />}
+                  iconClass="bg-success"
                 >
-                  <Link to={story.href}>
-                    {story.ctaLabel}
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </Link>
-                </Button>
-              </div>
+                  <Sparkline points={data?.trend ?? [0, 0, 0]} />
+                </Tile>
 
-              <div className="mt-4 flex items-center justify-between">
-                <div className="flex gap-1.5">
-                  {stories.map((s, i) => (
-                    <button
-                      key={s.key}
-                      aria-label={`Show ${s.kicker}`}
-                      onClick={() => setIndex(i)}
-                      className={cn(
-                        "h-1.5 rounded-full transition-all",
-                        i === index ? "w-6 bg-white" : "w-1.5 bg-white/50",
-                      )}
-                    />
-                  ))}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    aria-label="Previous insight"
-                    onClick={() => setIndex((i) => (i - 1 + total) % total)}
-                    className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur transition hover:bg-white/30"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
-                    aria-label="Next insight"
-                    onClick={() => setIndex((i) => (i + 1) % total)}
-                    className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur transition hover:bg-white/30"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Live metric tiles */}
-          <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-3">
-            <Tile
-              label="Total Spend (MTD)"
-              value={loading ? "—" : formatCurrency(data!.spendMtd)}
-              hint={
-                mtdDelta === null
-                  ? undefined
-                  : `${mtdDelta >= 0 ? "↑" : "↓"} ${Math.abs(mtdDelta)}% vs last month`
-              }
-              icon={<Wallet className="h-4 w-4" />}
-              iconClass="bg-success"
-            >
-              <Sparkline points={data?.trend ?? [0, 0, 0]} />
-            </Tile>
-
-            <Tile
-              label="Outstanding Payables"
-              value={loading ? "—" : formatCurrency(data!.outstanding)}
-              hint={`${data?.unpaidCount ?? 0} items pending`}
-              icon={<Clock className="h-4 w-4" />}
-              iconClass="bg-warning"
-            />
-
-            <Tile
-              label="Undocumented Records"
-              value={loading ? "—" : String(data!.missingDocs)}
-              hint="require attention"
-              icon={<FileWarning className="h-4 w-4" />}
-              iconClass="bg-destructive"
-            />
-
-            <Tile
-              label="Procurement Progress"
-              value={loading ? "—" : `${data!.prDone} / ${data!.prTotal}`}
-              hint="completed"
-              icon={<ShoppingCart className="h-4 w-4" />}
-              iconClass="bg-primary"
-            >
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-primary"
-                  style={{
-                    width: `${
-                      data && data.prTotal > 0
-                        ? Math.round((data.prDone / data.prTotal) * 100)
-                        : 0
-                    }%`,
-                  }}
+                <Tile
+                  label="Outstanding Payables"
+                  value={loading ? "—" : formatCurrency(data!.outstanding)}
+                  hint={`${data?.unpaidCount ?? 0} items pending`}
+                  icon={<Clock className="h-4 w-4" />}
+                  iconClass="bg-warning"
                 />
-              </div>
-            </Tile>
 
-            <Tile
-              label="Audit Readiness"
-              value={loading ? "—" : `${data!.auditPct}%`}
-              hint="on track"
-              icon={<ShieldCheck className="h-4 w-4" />}
-              iconClass="bg-success"
-            >
-              <div className="flex items-center gap-2">
-                <Ring pct={data?.auditPct ?? 0} />
-                <span
-                  className={cn(
-                    "text-xs font-semibold tabular-nums",
-                    toneRing.success,
-                  )}
+                <Tile
+                  label="Undocumented Records"
+                  value={loading ? "—" : String(data!.missingDocs)}
+                  hint="require attention"
+                  icon={<FileWarning className="h-4 w-4" />}
+                  iconClass="bg-destructive"
+                />
+
+                <Tile
+                  label="Procurement Progress"
+                  value={loading ? "—" : `${data!.prDone} / ${data!.prTotal}`}
+                  hint="completed"
+                  icon={<ShoppingCart className="h-4 w-4" />}
+                  iconClass="bg-primary"
                 >
-                  {data?.auditPct ?? 0}%
-                </span>
-              </div>
-            </Tile>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{
+                        width: `${
+                          data && data.prTotal > 0
+                            ? Math.round((data.prDone / data.prTotal) * 100)
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </Tile>
 
-            <Tile
-              label="Recent Activity"
-              value={loading ? "—" : String(data!.weekCount)}
-              hint="transactions this week"
-              icon={<BarChart3 className="h-4 w-4" />}
-              iconClass="bg-primary"
-            >
-              <div className="flex h-8 items-end gap-1">
-                {(data?.weekBars ?? []).map((b, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 rounded-sm bg-primary/60"
-                    style={{ height: `${Math.max(8, (b / barMax) * 100)}%` }}
-                  />
-                ))}
-              </div>
-            </Tile>
-          </div>
+                <Tile
+                  label="Audit Readiness"
+                  value={loading ? "—" : `${data!.auditPct}%`}
+                  hint="on track"
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  iconClass="bg-success"
+                >
+                  <div className="flex items-center gap-2">
+                    <Ring pct={data?.auditPct ?? 0} />
+                    <span className="text-xs font-semibold tabular-nums text-success">
+                      {data?.auditPct ?? 0}%
+                    </span>
+                  </div>
+                </Tile>
 
-          {/* Advert / notice column */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-b from-primary/15 to-white p-4">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm">
-              <Megaphone className="h-3.5 w-3.5" />
-              {advert ? "Quick Updates" : "From Ovasyt"}
+                <Tile
+                  label="Recent Activity"
+                  value={loading ? "—" : String(data!.weekCount)}
+                  hint="transactions this week"
+                  icon={<BarChart3 className="h-4 w-4" />}
+                  iconClass="bg-primary"
+                >
+                  <div className="flex h-8 items-end gap-1">
+                    {(data?.weekBars ?? []).map((b, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 rounded-sm bg-primary/60"
+                        style={{ height: `${Math.max(8, (b / barMax) * 100)}%` }}
+                      />
+                    ))}
+                  </div>
+                </Tile>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-5 shadow-[0_16px_40px_-24px_hsl(220_40%_20%/0.55)] backdrop-blur-xl">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
+                  <Megaphone className="h-3.5 w-3.5" />
+                  Quick Updates
+                </div>
+                <h3 className="mt-3 text-xl font-bold leading-tight text-foreground">
+                  {advert ? advert.headline : "Scan an invoice, skip the typing"}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {advert?.body ||
+                    "Ovi reads your invoice, fills in the transaction and matches the donor and project for you."}
+                </p>
+                {adCta ?? (
+                  <Button asChild className="mt-4 rounded-full">
+                    <Link to="/billing">
+                      Learn more
+                      <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+              </div>
             </div>
-            <h3 className="mt-3 text-lg font-bold leading-tight text-foreground">
-              {advert ? advert.headline : "Scan an invoice, skip the typing"}
-            </h3>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              {advert
-                ? advert.body
-                : "Ovi reads your invoice, fills in the transaction and matches the donor and project for you."}
-            </p>
-            {advert?.cta_url ? (
-              advert.cta_url.startsWith("http") ? (
-                <Button
-                  asChild
-                  size="sm"
-                  className="mt-4 rounded-full"
-                  onClick={() =>
-                    recordAdvertisementEvent(
-                      advert.id,
-                      "CLICK",
-                      profile?.organization_id ?? null,
-                    )
-                  }
-                >
-                  <a href={advert.cta_url} target="_blank" rel="noreferrer">
-                    {advert.cta_label || "Learn more"}
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </a>
-                </Button>
-              ) : (
-                <Button
-                  asChild
-                  size="sm"
-                  className="mt-4 rounded-full"
-                  onClick={() =>
-                    recordAdvertisementEvent(
-                      advert.id,
-                      "CLICK",
-                      profile?.organization_id ?? null,
-                    )
-                  }
-                >
-                  <Link to={advert.cta_url}>
-                    {advert.cta_label || "Learn more"}
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+          )}
+
+          {/* Slide 2 — advertisement (only rendered when one is live) */}
+          {active === "advert" && advert && (
+            <div className="grid animate-fade-in items-center gap-6 lg:grid-cols-[1.15fr_1fr]">
+              <div className="text-white">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
+                  <Megaphone className="h-3.5 w-3.5" />
+                  Featured for your organisation
+                </div>
+                <h2 className="mt-5 text-3xl font-bold leading-[1.1] tracking-tight drop-shadow-sm sm:text-4xl">
+                  {advert.headline}
+                </h2>
+                {advert.body && (
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/90 sm:text-base">
+                    {advert.body}
+                  </p>
+                )}
+                {adCta}
+              </div>
+              <div className="hidden items-center justify-center lg:flex">
+                {advert.image_url ? (
+                  <img
+                    src={advert.image_url}
+                    alt={advert.title}
+                    loading="lazy"
+                    className="max-h-[300px] w-full rounded-2xl border border-white/60 object-cover shadow-xl"
+                  />
+                ) : (
+                  <div className="grid h-[240px] w-full place-items-center rounded-2xl border border-white/50 bg-white/15 backdrop-blur-xl">
+                    <Sparkles className="h-14 w-14 text-white/80" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Slide 3 — audit & compliance readiness */}
+          {active === "audit" && (
+            <div className="grid animate-fade-in gap-5 lg:grid-cols-[1.05fr_1.7fr]">
+              <div className="text-white">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Audit readiness
+                </div>
+                <h2 className="mt-5 text-3xl font-bold leading-[1.1] tracking-tight drop-shadow-sm sm:text-4xl">
+                  {loading
+                    ? "Checking your records…"
+                    : data!.missingDocs > 0
+                      ? `${data!.missingDocs} records need a document`
+                      : "Every record is fully supported"}
+                </h2>
+                <p className="mt-3 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
+                  {data?.missingDocs
+                    ? "Attach the invoice or receipt so a SARS or donor review stays painless."
+                    : "Your documentation is complete. Keep scanning invoices as they arrive."}
+                </p>
+                <Button asChild variant="secondary" className="mt-5 rounded-full">
+                  <Link to="/expenses">
+                    Open expense history
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
                   </Link>
                 </Button>
-              )
-            ) : (
-              !advert && (
-                <Button asChild size="sm" className="mt-4 rounded-full">
-                  <Link to="/billing">
-                    See what's included
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 xl:grid-cols-2">
+                <Tile
+                  label="Documentation status"
+                  value={loading ? "—" : `${data!.auditPct}%`}
+                  hint="records with a document"
+                  icon={<ShieldCheck className="h-4 w-4" />}
+                  iconClass="bg-success"
+                >
+                  <div className="flex items-center gap-2">
+                    <Ring pct={data?.auditPct ?? 0} />
+                    <span className="text-xs font-semibold tabular-nums text-success">
+                      {data?.auditPct ?? 0}%
+                    </span>
+                  </div>
+                </Tile>
+                <Tile
+                  label="Outstanding documents"
+                  value={loading ? "—" : String(data!.missingDocs)}
+                  hint="need an invoice or receipt"
+                  icon={<FileWarning className="h-4 w-4" />}
+                  iconClass="bg-destructive"
+                />
+                <Tile
+                  label="Procurement activity"
+                  value={loading ? "—" : `${data!.prDone} / ${data!.prTotal}`}
+                  hint="requisitions completed"
+                  icon={<ShoppingCart className="h-4 w-4" />}
+                  iconClass="bg-primary"
+                />
+                <Tile
+                  label={orgWide ? "Awaiting a decision" : "Your open requisitions"}
+                  value={loading ? "—" : String(data!.pendingPRs)}
+                  hint="in review"
+                  icon={<FileCheck2 className="h-4 w-4" />}
+                  iconClass="bg-warning"
+                >
+                  <Link
+                    to={approvalsHref}
+                    className="text-xs font-semibold text-primary hover:underline"
+                  >
+                    Review requisitions →
                   </Link>
-                </Button>
-              )
-            )}
-          </div>
+                </Tile>
+              </div>
+            </div>
+          )}
         </div>
+
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous slide"
+              onClick={() => interact((i) => (i - 1 + total) % total)}
+              className="absolute left-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-primary shadow-lg backdrop-blur transition hover:bg-white"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next slide"
+              onClick={() => interact((i) => (i + 1) % total)}
+              className="absolute right-3 top-1/2 z-10 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/80 text-primary shadow-lg backdrop-blur transition hover:bg-white"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+              {slides.map((s, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-label={`Go to slide ${i + 1}`}
+                  aria-current={i === index}
+                  onClick={() => interact(() => i)}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    i === index ? "w-6 bg-white" : "w-2 bg-white/60 hover:bg-white/80",
+                  )}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );

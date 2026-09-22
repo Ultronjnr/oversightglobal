@@ -41,12 +41,19 @@ export interface AdvertisementInput {
   target_roles: string[];
 }
 
-/** Adverts the signed-in user is allowed to see right now (RLS decides). */
+/**
+ * Adverts the signed-in user is allowed to see right now. Targeting is
+ * enforced by RLS; the schedule window is filtered here as well so an
+ * expired or not-yet-started advert never reaches the dashboard.
+ */
 export async function getLiveAdvertisements(): Promise<Advertisement[]> {
+  const nowIso = new Date().toISOString();
   const { data, error } = await supabase
     .from("advertisements")
     .select("*")
     .eq("status", "PUBLISHED")
+    .or(`starts_at.is.null,starts_at.lte.${nowIso}`)
+    .or(`ends_at.is.null,ends_at.gte.${nowIso}`)
     .order("priority", { ascending: false })
     .limit(5);
 
