@@ -91,6 +91,12 @@ interface BatchAllocation {
     currency: string | null;
     status: string | null;
     document_url?: string | null;
+    payment_reference?: string | null;
+    invoice_number?: string | null;
+    bank_name?: string | null;
+    bank_account_number?: string | null;
+    bank_branch_code?: string | null;
+    bank_account_type?: string | null;
     supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null } | null;
     invoice?: { id: string; document_url: string } | null;
     pr?: { id: string; transaction_id: string; currency: string; document_url: string | null } | null;
@@ -176,6 +182,7 @@ export function BatchesTab() {
            ),
            transaction:transactions (
                id, invoice_id, supplier_name, amount, amount_paid, currency, status, document_url,
+               payment_reference, invoice_number, bank_name, bank_account_number, bank_branch_code, bank_account_type,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
@@ -423,9 +430,10 @@ export function BatchesTab() {
       const sup = a.invoice?.supplier || a.transaction?.supplier;
       const supBank = sup?.id ? bankDetails[sup.id] : undefined;
       const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
-      const accountNumber = supBank?.bank_account_number || scanBank?.bank_account_number || null;
-      const branchCode = supBank?.bank_branch_code || scanBank?.bank_branch_code || null;
-      const accountType = supBank?.bank_account_type || scanBank?.bank_account_type || "Current/Cheque";
+      const txnBank = a.transaction;
+      const accountNumber = supBank?.bank_account_number || txnBank?.bank_account_number || scanBank?.bank_account_number || null;
+      const branchCode = supBank?.bank_branch_code || txnBank?.bank_branch_code || scanBank?.bank_branch_code || null;
+      const accountType = supBank?.bank_account_type || txnBank?.bank_account_type || scanBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
@@ -434,11 +442,19 @@ export function BatchesTab() {
         total_amount: total,
         type: isFull ? "Full" : "Partial",
         currency,
-        invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
+        invoice_ref:
+          txnBank?.invoice_number ||
+          (a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef),
         supplier_account: accountNumber || supplierCode || "—",
         branch_code: branchCode || "—",
         account_type: accountType || "—",
-        statement_ref: a.payment_reference || scanBank?.payment_reference || b.payment_reference || txnRef,
+        statement_ref:
+          a.payment_reference ||
+          txnBank?.payment_reference ||
+          txnBank?.invoice_number ||
+          scanBank?.payment_reference ||
+          b.payment_reference ||
+          txnRef,
         pr_number: prNumber,
         vat_registered: !!vatNumber,
         payment_status: isFull ? "Paid" : batchStatusLabel(b.status),
@@ -524,14 +540,16 @@ export function BatchesTab() {
       sup?.company_name || a.transaction?.supplier_name || "—";
     const bank = sup?.id ? bankDetails[sup.id] : undefined;
     const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
+    const txn = a.transaction;
     return {
       name,
       email: sup?.contact_email || null,
-      bank_name: bank?.bank_name || scanBank?.bank_name || null,
-      account: bank?.bank_account_number || scanBank?.bank_account_number || null,
-      branch: bank?.bank_branch_code || scanBank?.bank_branch_code || null,
-      account_type: bank?.bank_account_type || scanBank?.bank_account_type || null,
-      payment_reference: scanBank?.payment_reference || null,
+      bank_name: bank?.bank_name || txn?.bank_name || scanBank?.bank_name || null,
+      account: bank?.bank_account_number || txn?.bank_account_number || scanBank?.bank_account_number || null,
+      branch: bank?.bank_branch_code || txn?.bank_branch_code || scanBank?.bank_branch_code || null,
+      account_type: bank?.bank_account_type || txn?.bank_account_type || scanBank?.bank_account_type || null,
+      payment_reference:
+        txn?.payment_reference || txn?.invoice_number || scanBank?.payment_reference || null,
       txnRef:
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—",
       currency:

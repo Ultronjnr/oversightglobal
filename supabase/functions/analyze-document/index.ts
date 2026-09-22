@@ -96,6 +96,8 @@ function systemPromptFor(docType: DocType): string {
     "  * bank_branch_code (universal/branch code, digits only)",
     "  * bank_account_type (Current/Cheque, Savings, or Transmission). Default to 'Current/Cheque' if not stated but a bank account is present.",
     "  If no banking details are printed, omit these fields.",
+    "- PAYMENT REFERENCE: look for a 'Payment Reference', 'Beneficiary Reference', 'Use as reference' or 'Deposit reference' instruction, usually beside the banking details. Put it in payment_reference exactly as printed.",
+    "- If no payment reference is printed anywhere, leave payment_reference empty - never invent one. The invoice number will be used instead.",
     "- Map fields when calling extract_document_data:",
     "  receipt_number → document_number, date → document_date, supplier_vat → supplier_vat_number,",
     "  vat_total → vat_amount, total → total_amount.",

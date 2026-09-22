@@ -103,6 +103,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankBranchCode, setBankBranchCode] = useState("");
   const [bankAccountType, setBankAccountType] = useState("");
+  const [paymentReference, setPaymentReference] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [subtotal, setSubtotal] = useState<string>("");
@@ -233,6 +234,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
     setBankBranchCode("");
     setBankAccountType("");
     setInvoiceNumber("");
+    setPaymentReference("");
     setInvoiceDate("");
     setSubtotal("");
     setVatAmount("");
@@ -431,6 +433,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       setBankAccountType(e.bank_account_type ?? "");
       setInvoiceNumber(e.document_number ?? "");
       setInvoiceDate(e.document_date ?? "");
+      // Reconciliation key: printed payment reference, else the invoice number.
+      setPaymentReference(
+        (e.payment_reference ?? "").trim() ||
+          (e.reference_number ?? "").trim() ||
+          (e.document_number ?? "").trim(),
+      );
       setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
       setVatAmount(typeof e.vat_amount === "number" ? String(e.vat_amount) : "");
       setTotalAmount(typeof e.total_amount === "number" ? String(e.total_amount) : "");
@@ -484,7 +492,11 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       bank_account_number: bankAccountNumber.trim() || null,
       bank_branch_code: bankBranchCode.trim() || null,
       bank_account_type: bankAccountType.trim() || null,
-      payment_reference: analysis?.extracted?.payment_reference?.trim() || invoiceNumber.trim() || null,
+      payment_reference:
+        paymentReference.trim() ||
+        analysis?.extracted?.payment_reference?.trim() ||
+        invoiceNumber.trim() ||
+        null,
       document_number: invoiceNumber.trim() || null,
       document_date: invoiceDate || null,
       subtotal: subtotal ? Number(subtotal) : null,
@@ -825,6 +837,18 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                     value={invoiceNumber}
                     onChange={(e) => setInvoiceNumber(e.target.value)}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="si-payref" className="text-xs">Payment Reference</Label>
+                  <Input
+                    id="si-payref"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder={invoiceNumber ? `Defaults to ${invoiceNumber}` : "Detected from invoice"}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Used to match this payment on your bank statement. Falls back to the invoice number.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="si-invdate" className="text-xs">Invoice Date</Label>

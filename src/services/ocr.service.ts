@@ -17,6 +17,8 @@ export interface OcrExtracted {
   total_amount?: number;
   payment_method?: string;
   payment_reference?: string;
+  reference_number?: string;
+  purchase_order_number?: string;
   notes?: string;
   confidence?: number;
   bank_name?: string;
