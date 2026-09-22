@@ -103,6 +103,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankBranchCode, setBankBranchCode] = useState("");
   const [bankAccountType, setBankAccountType] = useState("");
+  const [paymentReference, setPaymentReference] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [subtotal, setSubtotal] = useState<string>("");
@@ -825,6 +826,18 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                     value={invoiceNumber}
                     onChange={(e) => setInvoiceNumber(e.target.value)}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="si-payref" className="text-xs">Payment Reference</Label>
+                  <Input
+                    id="si-payref"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder={invoiceNumber ? `Defaults to ${invoiceNumber}` : "Detected from invoice"}
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Used to match this payment on your bank statement. Falls back to the invoice number.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="si-invdate" className="text-xs">Invoice Date</Label>
