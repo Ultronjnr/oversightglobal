@@ -23,11 +23,15 @@ export interface SupplierQuoteDraft {
   supplierId: string | null;
   /** Free-typed supplier name for off-platform suppliers. */
   supplierName: string;
+  /** Quotation number printed on the supplier's document. */
+  quoteNumber: string;
   description: string;
   /** Quantity of the quoted item(s). */
   quantity: number;
   /** Unit price as a raw numeric string. */
   price: string;
+  /** VAT amount on the quotation as a raw numeric string. */
+  vat: string;
   notes: string;
   file: File | null;
 }
@@ -36,30 +40,43 @@ export const createEmptyQuoteDraft = (): SupplierQuoteDraft => ({
   id: uuidv4(),
   supplierId: null,
   supplierName: "",
+  quoteNumber: "",
   description: "",
   quantity: 1,
   price: "",
+  vat: "",
   notes: "",
   file: null,
 });
 
-/** Line total for a quote row. */
+/** Line total (excluding VAT) for a quote row. */
 export const quoteRowTotal = (row: SupplierQuoteDraft) =>
   (Number(row.quantity) || 0) * (Number(row.price) || 0);
+
+/** VAT captured on the quote row. */
+export const quoteRowVat = (row: SupplierQuoteDraft) => Number(row.vat) || 0;
+
+/** Total including VAT — what the supplier will actually invoice. */
+export const quoteRowGrandTotal = (row: SupplierQuoteDraft) =>
+  quoteRowTotal(row) + quoteRowVat(row);
 
 const OTHER = "__other__";
 
 interface Props {
   value: SupplierQuoteDraft[];
   onChange: (rows: SupplierQuoteDraft[]) => void;
+  /** Id of the quote the user has chosen to proceed with. */
+  selectedId?: string | null;
+  onSelect?: (id: string) => void;
 }
+
 
 /**
  * "Supplier Quotes" capture block — the primary content of the New PR form.
  * The requester adds every supplier they got a price from; Finance picks the
  * winning one later, so nothing here is a commitment.
  */
-export function PRSupplierQuotesInput({ value, onChange }: Props) {
+export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }: Props) {
   const { currency, format: formatCurrency } = useCurrency();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,16 +142,19 @@ export function PRSupplierQuotesInput({ value, onChange }: Props) {
         {value.map((row, index) => {
           const total = quoteRowTotal(row);
           const isLowest = lowest?.id === row.id && total > 0;
+          const isSelected = selectedId === row.id;
           return (
             <div
               key={row.id}
-              className="bg-white border border-border/60 rounded-lg overflow-hidden shadow-sm"
+              className={`bg-white border rounded-lg overflow-hidden shadow-sm ${
+                isSelected ? "border-primary ring-2 ring-primary/20" : "border-border/60"
+              }`}
             >
               <div className="flex">
                 <div className="w-1.5 bg-primary shrink-0" />
                 <div className="flex-1 p-5 space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h4 className="font-semibold text-foreground">
                         Quote {value.length - index}
                       </h4>
@@ -143,19 +163,38 @@ export function PRSupplierQuotesInput({ value, onChange }: Props) {
                           Lowest
                         </Badge>
                       )}
+                      {isSelected && (
+                        <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase">
+                          Selected
+                        </Badge>
+                      )}
                     </div>
-                    {value.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => remove(row.id)}
-                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {onSelect && !isSelected && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onSelect(row.id)}
+                          className="h-8 text-xs"
+                        >
+                          Use this quote
+                        </Button>
+                      )}
+                      {value.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(row.id)}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
+
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="space-y-2">
@@ -239,14 +278,50 @@ export function PRSupplierQuotesInput({ value, onChange }: Props) {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Quote Number</Label>
+                      <Input
+                        value={row.quoteNumber}
+                        onChange={(e) => update(row.id, { quoteNumber: e.target.value })}
+                        placeholder="e.g. QTE-12345"
+                        className="h-10 bg-white border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">
+                        VAT on quote ({currency})
+                      </Label>
+                      <AmountInput
+                        value={row.vat}
+                        onChange={(v) => update(row.id, { vat: v })}
+                        placeholder="e.g. 1 875.00"
+                        className="h-10 bg-white border-border"
+                      />
+                    </div>
+                  </div>
+
                   <div className="pt-3 border-t border-border/30 space-y-1.5">
                     <div className="flex items-center justify-end gap-3">
                       <span className="text-sm text-muted-foreground">Subtotal:</span>
-                      <span className="text-lg font-bold text-foreground w-32 text-right">
+                      <span className="text-base font-semibold text-foreground w-32 text-right">
                         {formatCurrency(total)}
                       </span>
                     </div>
+                    <div className="flex items-center justify-end gap-3">
+                      <span className="text-sm text-muted-foreground">VAT:</span>
+                      <span className="text-base font-semibold text-foreground w-32 text-right">
+                        {formatCurrency(quoteRowVat(row))}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-3">
+                      <span className="text-sm text-muted-foreground">Total:</span>
+                      <span className="text-lg font-bold text-foreground w-32 text-right">
+                        {formatCurrency(quoteRowGrandTotal(row))}
+                      </span>
+                    </div>
                   </div>
+
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">

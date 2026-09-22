@@ -12,7 +12,11 @@ export interface SourcedQuote {
   organization_id: string;
   supplier_id: string | null;
   supplier_name: string | null;
+  /** Quote/quotation number printed on the supplier's document. */
+  quote_number: string | null;
   amount: number;
+  /** VAT portion of the quoted amount, when the document shows one. */
+  vat_amount: number;
   delivery_time: string | null;
   valid_until: string | null;
   notes: string | null;
@@ -23,6 +27,7 @@ export interface SourcedQuote {
   /** Resolved display name (platform supplier name wins over the typed one). */
   display_supplier: string;
 }
+
 
 /** All quotes attached to a requisition — portal-submitted and manually captured. */
 export async function getPRSourcingQuotes(
@@ -46,7 +51,10 @@ export async function getPRSourcingQuotes(
       organization_id: q.organization_id,
       supplier_id: q.supplier_id,
       supplier_name: q.supplier_name,
+      quote_number: q.quote_number ?? null,
       amount: Number(q.amount) || 0,
+      vat_amount: Number(q.vat_amount) || 0,
+
       delivery_time: q.delivery_time,
       valid_until: q.valid_until,
       notes: q.notes,
@@ -116,12 +124,17 @@ export interface ManualQuoteInput {
   prId: string;
   supplierId?: string | null;
   supplierName?: string | null;
+  /** Quotation number printed on the supplier's document. */
+  quoteNumber?: string | null;
   amount: number;
+  /** VAT portion of the quoted amount. */
+  vatAmount?: number | null;
   deliveryTime?: string | null;
   validUntil?: string | null;
   notes?: string | null;
   documentPath?: string | null;
 }
+
 
 /** Capture a quote received outside the platform (email, phone, walk-in PDF). */
 export async function addManualQuote(
@@ -157,7 +170,10 @@ export async function addManualQuote(
         organization_id: pr.organization_id,
         supplier_id: input.supplierId || null,
         supplier_name: input.supplierName?.trim() || null,
+        quote_number: input.quoteNumber?.trim() || null,
         amount: input.amount,
+        vat_amount: Number(input.vatAmount) || 0,
+
         delivery_time: input.deliveryTime?.trim() || null,
         valid_until: input.validUntil || null,
         notes: input.notes?.trim() || null,

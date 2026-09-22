@@ -22,6 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } from "@/services/pr.service";
+import { acceptQuote } from "@/services/finance.service";
 import { getApprovedSuppliers, type ApprovedSupplier } from "@/services/supplier.service";
 import { SuggestSupplierModal } from "@/components/pr/SuggestSupplierModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -165,10 +166,17 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
       ? pricedQuotes.reduce((a, b) => (quoteTotalOf(a) <= quoteTotalOf(b) ? a : b))
       : null;
 
-  const calculateGrandTotal = () => (lowestQuote ? quoteTotalOf(lowestQuote) : 0);
+  // The quote the user chose to proceed with. Defaults to the cheapest one,
+  // but the decision stays with the person raising the requisition.
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const chosenQuote =
+    pricedQuotes.find((q) => q.id === selectedQuoteId) ?? lowestQuote;
+
+  const calculateGrandTotal = () => (chosenQuote ? quoteTotalOf(chosenQuote) : 0);
 
   // Amount used for the project budget reservation preview.
   const fundingTotal = calculateGrandTotal();
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,10 +224,11 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!lowestQuote) {
+    if (!chosenQuote) {
       toast.error("Add at least one supplier quote with a supplier and price");
       return;
     }
+
 
     if (overBudget) {
       toast.error("This requisition exceeds the remaining budget on the selected project");
@@ -237,20 +246,21 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         if (url) documentUrl = url;
       }
 
-      // The requisition line is derived from the lowest quote; every captured
-      // quote is attached below so Finance can pick a different winner.
+      // The requisition line follows the quote the user selected; every other
+      // captured quote is attached below as an alternative for the record.
       const prItems: PRItem[] = [
         {
-          id: lowestQuote.id,
+          id: chosenQuote.id,
           description:
-            lowestQuote.description ||
-            lowestQuote.supplierName ||
+            chosenQuote.description ||
+            chosenQuote.supplierName ||
             "Supplier quote",
-          quantity: Number(lowestQuote.quantity) || 1,
-          unit_price: Number(lowestQuote.price) || 0,
-          total: quoteTotalOf(lowestQuote),
+          quantity: Number(chosenQuote.quantity) || 1,
+          unit_price: Number(chosenQuote.price) || 0,
+          total: quoteTotalOf(chosenQuote),
         },
       ];
+
 
       // Use bypass function if HOD is submitting their own PR
       const createFn = bypassHODApproval ? createPurchaseRequisitionBypassHOD : createPurchaseRequisition;
@@ -272,8 +282,10 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         return;
       }
 
-      // Attach the captured supplier quotes so Finance can choose a winner.
+      // Attach every captured supplier quote — the selected one plus the
+      // alternatives, each kept against the supplier that issued it.
       const newPrId = result.data?.id;
+      let selectedQuoteRecordId: string | null = null;
       if (newPrId && pricedQuotes.length > 0) {
         let attached = 0;
         let lastError: string | undefined;
@@ -287,12 +299,16 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
             prId: newPrId,
             supplierId: q.supplierId,
             supplierName: q.supplierId ? null : q.supplierName.trim(),
+            quoteNumber: q.quoteNumber?.trim() || null,
             amount: quoteTotalOf(q),
+            vatAmount: Number(q.vat) || 0,
             notes: [q.description, q.notes].filter(Boolean).join(" — ") || null,
             documentPath: path,
           });
-          if (res.success) attached += 1;
-          else lastError = res.error;
+          if (res.success) {
+            attached += 1;
+            if (q.id === chosenQuote.id && res.id) selectedQuoteRecordId = res.id;
+          } else lastError = res.error;
         }
         if (attached < pricedQuotes.length) {
           toast.error(
@@ -301,6 +317,16 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
         }
       }
 
+      // Lock in the chosen quote (and therefore the chosen supplier) so the
+      // requisition moves on to "awaiting invoice" from that supplier.
+      if (newPrId && selectedQuoteRecordId) {
+        const accepted = await acceptQuote(selectedQuoteRecordId, newPrId);
+        if (!accepted.success && accepted.error) {
+          toast.info(
+            "Requisition saved. The winning quote still needs to be confirmed under Quotes.",
+          );
+        }
+      }
 
       toast.success(`PR ${result.data?.transaction_id} created successfully!`);
 
@@ -309,6 +335,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
       
       setUploadedFile(null);
       setSupplierQuotes([createEmptyQuoteDraft()]);
+      setSelectedQuoteId(null);
+
 
 
       
@@ -442,7 +470,10 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                     <PRSupplierQuotesInput
                       value={supplierQuotes}
                       onChange={setSupplierQuotes}
+                      selectedId={chosenQuote?.id ?? null}
+                      onSelect={setSelectedQuoteId}
                     />
+
                     <button
                       type="button"
                       onClick={() => setSuggestOpen(true)}
