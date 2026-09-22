@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getSubscriptionState, type SubscriptionState } from "@/services/subscription.service";
 import { useAuth } from "@/contexts/AuthContext";
+import { SCOPE_FREEZE_ACTIVE } from "@/lib/feature-scope";
 
 /**
  * Blocks portal content once the trial has lapsed or billing is past due.
@@ -22,7 +23,12 @@ export function SubscriptionLockGate({ children }: { children: ReactNode }) {
 
   const allowed = pathname.startsWith("/billing");
 
+  // Scope freeze: billing is switched off, so nobody is locked out of the
+  // workspace while the core workflow is being finished.
+  if (SCOPE_FREEZE_ACTIVE) return <>{children}</>;
+
   if (!state?.locked || allowed) return <>{children}</>;
+
 
   const pastDue = state.status === "PAST_DUE";
 

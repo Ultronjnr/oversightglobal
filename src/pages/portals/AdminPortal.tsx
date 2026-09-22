@@ -18,6 +18,8 @@ import { QuoteComparisonView } from "@/components/finance/QuoteComparisonView";
 import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab } from "@/components/finance/TransactionStatusTab";
+import { FeatureLockedCard } from "@/components/FeatureLockedCard";
+import { isAdminTabLocked } from "@/lib/feature-scope";
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
@@ -115,14 +117,20 @@ export default function AdminPortal() {
   const currentPage = tabParam ? tabPages[tabParam] : null;
 
   if (currentPage) {
+    const locked = isAdminTabLocked(tabParam);
     return (
       <DashboardLayout title={currentPage.title} navItems={navItems}>
-        <WorkspaceShell title={currentPage.title} description={currentPage.description} icon={currentPage.icon}>
-          {currentPage.content}
-        </WorkspaceShell>
+        {locked ? (
+          <FeatureLockedCard title={currentPage.title} />
+        ) : (
+          <WorkspaceShell title={currentPage.title} description={currentPage.description} icon={currentPage.icon}>
+            {currentPage.content}
+          </WorkspaceShell>
+        )}
       </DashboardLayout>
     );
   }
+
 
   return (
     <DashboardLayout title="Super User Dashboard" navItems={navItems} showInsights>
