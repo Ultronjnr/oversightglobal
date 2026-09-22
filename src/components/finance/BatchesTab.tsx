@@ -182,6 +182,7 @@ export function BatchesTab() {
            ),
            transaction:transactions (
                id, invoice_id, supplier_name, amount, amount_paid, currency, status, document_url,
+               payment_reference, invoice_number, bank_name, bank_account_number, bank_branch_code, bank_account_type,
              supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( id, transaction_id, currency, document_url )
            )
