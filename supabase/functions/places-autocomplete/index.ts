@@ -152,19 +152,16 @@ Deno.serve(async (req) => {
       const placeId = String(body?.placeId ?? "").trim();
       if (!placeId || placeId.length > 300) return json({ error: "Invalid place" }, 400);
 
-      const url = new URL(`${baseUrl}/${placesPath(`places/v1/places/${encodeURIComponent(placeId)}`)}`);
-      if (sessionToken) url.searchParams.set("sessionToken", sessionToken);
+      const search = new URLSearchParams();
+      if (sessionToken) search.set("sessionToken", sessionToken);
 
-      const res = await fetch(url.toString(), {
-        method: "GET",
-        headers: placesHeaders("id,formattedAddress,displayName,location"),
-      });
+      const res = await callPlaces(
+        `places/v1/places/${encodeURIComponent(placeId)}`,
+        "id,formattedAddress,displayName,location",
+        { method: "GET", search },
+      );
 
-      if (!res.ok) {
-        const details = await res.text();
-        console.error(`Place details failed [${res.status}]: ${details}`);
-        return json({ error: "Address lookup failed", status: res.status, details }, res.status);
-      }
+      if (!res.ok) return await failure(res);
 
       const place = await res.json();
       return json({
