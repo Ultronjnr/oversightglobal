@@ -323,7 +323,9 @@ export const REIMBURSEMENT_BUCKET_STATUSES: Record<ReimbursementBucket, Reimburs
   FINANCE_APPROVED: ["APPROVED"],
   AWAITING_PAYMENT: ["AWAITING_PAYMENT"],
   PAID: ["PAID"],
-  REJECTED: ["REJECTED", "DECLINED"],
+  // The database only stores DECLINED; "REJECTED" is a UI label, so querying
+  // it directly makes Postgres reject the whole request.
+  REJECTED: ["DECLINED"],
 };
 
 export interface ReimbursementPage {

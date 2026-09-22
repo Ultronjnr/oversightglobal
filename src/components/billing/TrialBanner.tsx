@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSubscriptionState, type SubscriptionState } from "@/services/subscription.service";
+import { SCOPE_FREEZE_ACTIVE } from "@/lib/feature-scope";
 
 /**
  * Shows the 14-day trial countdown and, once the trial has lapsed or billing is
@@ -15,6 +16,8 @@ export function TrialBanner() {
     getSubscriptionState().then(setState).catch(() => setState(null));
   }, []);
 
+  // Scope freeze: no billing prompts while subscriptions are switched off.
+  if (SCOPE_FREEZE_ACTIVE) return null;
   if (!state) return null;
 
   if (state.locked) {

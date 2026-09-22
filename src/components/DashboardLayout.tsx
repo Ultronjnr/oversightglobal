@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Logo } from "./Logo";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
-import { LogOut, Building2, Menu } from "lucide-react";
+import { LogOut, Building2, Menu, Lock as LockIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isFeatureLocked } from "@/lib/feature-scope";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalScanFAB } from "./capture/GlobalScanFAB";
@@ -149,15 +150,28 @@ export function DashboardLayout({
                   <SidebarMenu>
                     {group.items.map((item) => {
                       const isActive = isNavActive(item.href);
+                      const locked = isFeatureLocked(item.href);
                       return (
                         <SidebarMenuItem key={item.href}>
-                          <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
-                            <Link to={item.href}>
+                          {locked ? (
+                            <SidebarMenuButton
+                              disabled
+                              tooltip={`${item.label} — coming soon`}
+                              className="cursor-not-allowed opacity-50"
+                            >
                               {item.icon}
                               <span>{item.label}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                           {!!item.badgeCount && item.badgeCount > 0 && (
+                              <LockIcon className="ml-auto h-3.5 w-3.5" />
+                            </SidebarMenuButton>
+                          ) : (
+                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                              <Link to={item.href}>
+                                {item.icon}
+                                <span>{item.label}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          )}
+                           {!locked && !!item.badgeCount && item.badgeCount > 0 && (
                              <SidebarMenuBadge className="rounded-full bg-primary text-primary-foreground">
                                {item.badgeCount > 99 ? "99+" : item.badgeCount}
                              </SidebarMenuBadge>
@@ -253,6 +267,18 @@ export function DashboardLayout({
                           </p>
                           {group.items.map((item) => {
                             const isActive = isNavActive(item.href);
+                            if (isFeatureLocked(item.href)) {
+                              return (
+                                <div
+                                  key={item.href}
+                                  className="flex items-center gap-3 px-3 min-h-[48px] rounded-lg text-sm text-muted-foreground opacity-50"
+                                >
+                                  {item.icon}
+                                  <span className="flex-1">{item.label}</span>
+                                  <LockIcon className="h-3.5 w-3.5" />
+                                </div>
+                              );
+                            }
                             return (
                               <SheetClose asChild key={item.href}>
                                 <Link
