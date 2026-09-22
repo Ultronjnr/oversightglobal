@@ -243,8 +243,8 @@ export default function Login() {
     setUnverifiedEmail(null);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+        email: data.email.trim().toLowerCase(),
+        password: data.password.trim(),
       });
 
       if (error) {
