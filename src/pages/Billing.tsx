@@ -9,8 +9,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPortalNavItems } from "@/lib/admin-nav";
 import { verifyCheckout } from "@/services/subscription.service";
-import { FeatureLockedCard } from "@/components/FeatureLockedCard";
-import { SCOPE_FREEZE_ACTIVE } from "@/lib/feature-scope";
 
 export default function Billing() {
   const [tab, setTab] = useState("plans");
@@ -45,13 +43,6 @@ export default function Billing() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (SCOPE_FREEZE_ACTIVE) {
-    return (
-      <DashboardLayout title="Billing & Subscription" navItems={getPortalNavItems(role)}>
-        <FeatureLockedCard title="Billing & subscriptions" />
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout title="Billing & Subscription" navItems={getPortalNavItems(role)}>

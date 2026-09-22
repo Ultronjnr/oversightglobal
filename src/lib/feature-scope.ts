@@ -14,11 +14,21 @@ export const LOCKED_FEATURE_HREFS: Record<string, string> = {
   "/admin/portal?tab=users": "Additional users",
   "/admin/portal?tab=invitations": "User invitations",
   "/admin/portal?tab=permissions": "Advanced permissions",
-  "/billing": "Billing & subscriptions",
+  "/admin/portal?tab=vat_dashboard": "VAT Dashboard",
+  "/admin/portal?tab=reimbursements": "Reimbursements",
+  "/finance/portal?tab=vat_dashboard": "VAT Dashboard",
+  "/finance/portal?tab=reimbursements": "Reimbursements",
 };
 
 /** Super User tab keys that are temporarily unavailable. */
-export const LOCKED_ADMIN_TABS = ["users", "invitations", "permissions"] as const;
+export const LOCKED_ADMIN_TABS = [
+  "users",
+  "invitations",
+  "permissions",
+  "vat_dashboard",
+  "reimbursements",
+] as const;
+
 
 export function isFeatureLocked(href: string): boolean {
   return SCOPE_FREEZE_ACTIVE && href in LOCKED_FEATURE_HREFS;

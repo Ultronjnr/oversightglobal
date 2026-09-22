@@ -43,6 +43,7 @@ import {
 import { getAllSuppliers, acceptQuote, type Supplier } from "@/services/finance.service";
 import { getQuoteDocumentUrl } from "@/services/quote-document.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
+import { ProcurementTrailPanel } from "@/components/pr/ProcurementTrailPanel";
 
 interface SourcingQuotesModalProps {
   open: boolean;
@@ -277,6 +278,7 @@ export function SourcingQuotesModal({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
+                          {q.quote_number ? `Quote #${q.quote_number} · ` : ""}
                           {q.delivery_time ? `${q.delivery_time} · ` : ""}
                           {q.valid_until
                             ? `valid to ${format(new Date(q.valid_until), "dd MMM yyyy")}`
@@ -284,9 +286,17 @@ export function SourcingQuotesModal({
                         </p>
                       </div>
 
-                      <div className="text-lg font-semibold text-primary">
-                        {formatCurrency(q.amount)}
+                      <div className="text-right">
+                        <div className="text-lg font-semibold text-primary">
+                          {formatCurrency(q.amount)}
+                        </div>
+                        {q.vat_amount > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            incl. VAT {formatCurrency(q.vat_amount)}
+                          </div>
+                        )}
                       </div>
+
 
                       <div className="flex items-center gap-2">
                         {q.document_url && (
@@ -327,11 +337,20 @@ export function SourcingQuotesModal({
 
             <Separator />
 
+            <ProcurementTrailPanel
+              prId={pr.id}
+              canRecordInvoice={isFinance}
+              onChanged={load}
+            />
+
+            <Separator />
+
             {acceptedQuote ? (
               <p className="text-sm text-muted-foreground">
                 A winning quote has been selected for this requisition, so no
                 further quotes can be captured.
               </p>
+
             ) : (
               <div className="space-y-4">
                 <h4 className="text-sm font-semibold">Capture a quote</h4>

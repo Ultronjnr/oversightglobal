@@ -2249,6 +2249,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           pr_id: string
+          quote_number: string | null
           quote_request_id: string | null
           source: string
           status: string
@@ -2257,6 +2258,7 @@ export type Database = {
           transaction_id: string | null
           updated_at: string
           valid_until: string | null
+          vat_amount: number
         }
         Insert: {
           amount: number
@@ -2273,6 +2275,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           pr_id: string
+          quote_number?: string | null
           quote_request_id?: string | null
           source?: string
           status?: string
@@ -2281,6 +2284,7 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
+          vat_amount?: number
         }
         Update: {
           amount?: number
@@ -2297,6 +2301,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           pr_id?: string
+          quote_number?: string | null
           quote_request_id?: string | null
           source?: string
           status?: string
@@ -2305,6 +2310,7 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
+          vat_amount?: number
         }
         Relationships: [
           {
@@ -3888,6 +3894,15 @@ export type Database = {
       quote_request_current_org: { Args: { _id: string }; Returns: string }
       quote_request_current_supplier: { Args: { _id: string }; Returns: string }
       recompute_overdue_invoices: { Args: never; Returns: number }
+      record_internal_invoice: {
+        Args: {
+          _document_url: string
+          _invoice_supplier_name?: string
+          _pr_id: string
+          _quote_id: string
+        }
+        Returns: Json
+      }
       register_batch_export: { Args: { _batch_id: string }; Returns: Json }
       reject_reimbursement: {
         Args: { _notes?: string; _reimbursement_id: string }
