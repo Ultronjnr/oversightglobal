@@ -103,7 +103,7 @@ function Tile({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-3 shadow-lg backdrop-blur-xl sm:p-3.5">
+    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-3 shadow-lg backdrop-blur-xl sm:p-4">
       <div
         className={cn(
           "mb-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-primary-foreground shadow-sm",
@@ -112,12 +112,12 @@ function Tile({
       >
         {icon}
       </div>
-      <p className="min-h-7 text-[11px] leading-[1.2] text-muted-foreground sm:text-xs">{label}</p>
-      <p className="whitespace-nowrap text-[clamp(0.78rem,1.2vw,1.08rem)] font-bold tabular-nums leading-tight text-foreground">
+      <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{label}</p>
+      <p className="break-words text-[clamp(0.92rem,1.45vw,1.25rem)] font-bold tabular-nums leading-tight text-foreground">
         {value}
       </p>
       {hint && (
-        <p className="mt-1 line-clamp-2 min-h-6 text-[10px] leading-[1.2] text-muted-foreground sm:text-[11px]">{hint}</p>
+        <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">{hint}</p>
       )}
       {children && <div className="mt-auto pt-1.5">{children}</div>}
     </div>
@@ -137,8 +137,6 @@ export function SmartPanel() {
   const orgWide = role === "FINANCE" || role === "ADMIN";
   const [data, setData] = useState<Snapshot | null>(null);
   const [index, setIndex] = useState(0);
-  const [trackIndex, setTrackIndex] = useState(1);
-  const [transitioning, setTransitioning] = useState(true);
   const [paused, setPaused] = useState(false);
   const [ads, setAds] = useState<Advertisement[]>([]);
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -277,31 +275,16 @@ export function SmartPanel() {
     [ads],
   );
   const total = slides.length;
-  const loopSlides = useMemo(
-    () => total > 1 ? [slides[total - 1], ...slides, slides[0]] : slides,
-    [slides, total],
-  );
 
   useEffect(() => {
-    setIndex(0);
-    setTransitioning(false);
-    setTrackIndex(total > 1 ? 1 : 0);
-    const frame = requestAnimationFrame(() => setTransitioning(true));
-    return () => cancelAnimationFrame(frame);
-  }, [total]);
-
-  const move = useCallback((direction: 1 | -1) => {
-    if (total < 2) return;
-    setTransitioning(true);
-    setIndex((current) => (current + direction + total) % total);
-    setTrackIndex((current) => current + direction);
-  }, [total]);
+    if (index > total - 1) setIndex(0);
+  }, [index, total]);
 
   useEffect(() => {
     if (paused || total < 2) return;
-    const t = setInterval(() => move(1), AUTOPLAY_MS);
+    const t = setInterval(() => setIndex((i) => (i + 1) % total), AUTOPLAY_MS);
     return () => clearInterval(t);
-  }, [move, paused, total]);
+  }, [paused, total]);
 
   useEffect(
     () => () => {
@@ -311,29 +294,12 @@ export function SmartPanel() {
   );
 
   /** Any manual interaction pauses autoplay, which resumes shortly after. */
-  const interact = useCallback((nextIndex: number, direction?: 1 | -1) => {
+  const interact = useCallback((next: (i: number) => number) => {
     setPaused(true);
-    if (direction) {
-      move(direction);
-    } else {
-      setTransitioning(true);
-      setIndex(nextIndex);
-      setTrackIndex(nextIndex + 1);
-    }
+    setIndex((i) => next(i));
     if (resumeTimer.current) clearTimeout(resumeTimer.current);
     resumeTimer.current = setTimeout(() => setPaused(false), 12000);
-  }, [move]);
-
-  const finishTransition = useCallback(() => {
-    if (total < 2) return;
-    if (trackIndex === total + 1) {
-      setTransitioning(false);
-      setTrackIndex(1);
-    } else if (trackIndex === 0) {
-      setTransitioning(false);
-      setTrackIndex(total);
-    }
-  }, [total, trackIndex]);
+  }, []);
 
   const active = slides[Math.min(index, total - 1)] ?? slides[0];
   const activeAdvert = active?.kind === "advert" ? active.advert : undefined;
@@ -383,15 +349,10 @@ export function SmartPanel() {
     >
       <div className="relative w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
         <div
-          className={cn(
-            "flex motion-reduce:transition-none",
-            transitioning && "transition-transform duration-700 ease-in-out",
-          )}
-          style={{ transform: `translateX(-${trackIndex * 100}%)` }}
-          onTransitionEnd={finishTransition}
+          className="flex transition-transform duration-700 ease-in-out motion-reduce:transition-none"
+          style={{ transform: `translateX(-${index * 100}%)` }}
         >
-        {loopSlides.map((slide, renderedIndex) => {
-          const slideIndex = total > 1 ? (renderedIndex - 1 + total) % total : renderedIndex;
+        {slides.map((slide, slideIndex) => {
           const slideAdvert = slide.kind === "advert" ? slide.advert : undefined;
           const background = slideAdvert?.image_url ||
             (slide.kind === "insights"
@@ -405,7 +366,7 @@ export function SmartPanel() {
           return (
           <article
             key={slide.key}
-             aria-hidden={slideIndex !== index}
+            aria-hidden={slideIndex !== index}
             className="relative min-w-full overflow-hidden"
           >
             <img
@@ -430,7 +391,7 @@ export function SmartPanel() {
         <div className="relative min-h-[600px] p-5 pb-14 sm:min-h-[560px] sm:p-7 sm:pb-14 lg:min-h-[480px] lg:px-14 lg:py-8">
           {/* Slide 1 — live organisation insights */}
           {slide.kind === "insights" && (
-            <div className="grid gap-4 lg:grid-cols-[1fr_1.9fr_0.9fr]">
+            <div className="grid gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
               <div className="flex min-w-0 flex-col text-primary-foreground">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/20 backdrop-blur">
@@ -463,7 +424,7 @@ export function SmartPanel() {
                 </div>
               </div>
 
-               <div className="grid auto-rows-fr grid-cols-2 gap-3 xl:grid-cols-3">
+              <div className="grid auto-rows-fr grid-cols-2 gap-3 xl:grid-cols-3">
                 <Tile
                   label="Total Spend (MTD)"
                    value={loading || !data ? "—" : formatCurrency(data.spendMtd)}
@@ -706,7 +667,7 @@ export function SmartPanel() {
               size="icon"
               variant="secondary"
               aria-label="Previous slide"
-               onClick={() => interact((index - 1 + total) % total, -1)}
+              onClick={() => interact((i) => (i - 1 + total) % total)}
               className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full shadow-lg backdrop-blur"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -716,7 +677,7 @@ export function SmartPanel() {
               size="icon"
               variant="secondary"
               aria-label="Next slide"
-               onClick={() => interact((index + 1) % total, 1)}
+              onClick={() => interact((i) => (i + 1) % total)}
               className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full shadow-lg backdrop-blur"
             >
               <ChevronRight className="h-5 w-5" />
@@ -730,7 +691,7 @@ export function SmartPanel() {
                    size="icon"
                   aria-label={`Go to slide ${i + 1}`}
                   aria-current={i === index}
-                   onClick={() => interact(i)}
+                  onClick={() => interact(() => i)}
                   className={cn(
                      "h-5 min-h-5 min-w-0 rounded-full p-0 transition-all",
                      i === index ? "w-8 bg-primary-foreground" : "w-5 bg-primary-foreground/60 hover:bg-primary-foreground/80",
