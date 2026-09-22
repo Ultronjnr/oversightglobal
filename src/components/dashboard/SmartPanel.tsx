@@ -261,7 +261,7 @@ export function SmartPanel() {
     getLiveAdvertisements().then(setAds);
   }, []);
 
-  const advert = ads[0] ?? null;
+  const advert = ads.length > 0 ? ads[index % ads.length] : null;
 
   useEffect(() => {
     if (advert) {
@@ -364,10 +364,10 @@ export function SmartPanel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-primary/10 via-primary/5 to-white p-2.5 shadow-[0_20px_50px_-24px_hsl(var(--primary)/0.45)] sm:p-4">
-        <div className="grid gap-3 lg:grid-cols-[1fr_1.75fr_0.9fr]">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/15 via-background to-primary/10 p-3 shadow-[0_20px_50px_-24px_hsl(var(--primary)/0.45)] sm:p-4">
+        <div className="grid gap-3 lg:min-h-[356px] lg:grid-cols-[1.45fr_2fr_1fr]">
           {/* Hero story */}
-          <div className="relative min-h-[260px] overflow-hidden rounded-2xl text-white">
+          <div className="relative min-h-[320px] overflow-hidden rounded-xl text-primary-foreground lg:min-h-[324px]">
             <img
               src={heroBg}
               alt=""
@@ -376,9 +376,9 @@ export function SmartPanel() {
             />
             <div
               aria-hidden
-              className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/70 to-primary/40"
+              className="absolute inset-0 bg-gradient-to-br from-primary/90 via-primary/75 to-primary/35"
             />
-            <div className="relative flex h-full flex-col p-4 sm:p-5">
+            <div key={story.key} className="relative flex h-full animate-fade-in flex-col p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <div className="grid h-8 w-8 place-items-center rounded-xl bg-white/20 backdrop-blur">
                   <Sparkles className="h-4 w-4" />
@@ -387,20 +387,20 @@ export function SmartPanel() {
                   <p className="truncate text-sm font-semibold leading-tight">
                     {greeting}, {profile?.name || "there"}
                   </p>
-                  <p className="text-[11px] leading-tight text-white/80">
+                  <p className="text-[11px] leading-tight text-primary-foreground/80">
                     Here's what's happening with your organisation today.
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-white/70">
+              <div className="mt-10 flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/70">
                   {story.kicker}
                 </p>
-                <h2 className="mt-1 text-xl font-bold leading-tight sm:text-2xl">
+                <h2 className="mt-2 max-w-lg text-2xl font-bold leading-tight sm:text-3xl">
                   {story.headline}
                 </h2>
-                <p className="mt-2 max-w-md text-xs leading-relaxed text-white/85 sm:text-sm">
+                <p className="mt-3 max-w-md text-sm leading-relaxed text-primary-foreground/90">
                   {story.sub}
                 </p>
                 <Button
@@ -425,7 +425,9 @@ export function SmartPanel() {
                       onClick={() => setIndex(i)}
                       className={cn(
                         "h-1.5 rounded-full transition-all",
-                        i === index ? "w-6 bg-white" : "w-1.5 bg-white/50",
+                        i === index
+                          ? "w-6 bg-primary-foreground"
+                          : "w-1.5 bg-primary-foreground/50",
                       )}
                     />
                   ))}
@@ -434,14 +436,14 @@ export function SmartPanel() {
                   <button
                     aria-label="Previous insight"
                     onClick={() => setIndex((i) => (i - 1 + total) % total)}
-                    className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur transition hover:bg-white/30"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/20 backdrop-blur transition hover:bg-primary-foreground/30"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
                   <button
                     aria-label="Next insight"
                     onClick={() => setIndex((i) => (i + 1) % total)}
-                    className="grid h-7 w-7 place-items-center rounded-full bg-white/20 backdrop-blur transition hover:bg-white/30"
+                    className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/20 backdrop-blur transition hover:bg-primary-foreground/30"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>
@@ -451,7 +453,7 @@ export function SmartPanel() {
           </div>
 
           {/* Live metric tiles */}
-          <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-3">
+          <div className="grid min-h-[320px] grid-cols-2 gap-2.5 xl:grid-cols-3">
             <Tile
               label="Total Spend (MTD)"
               value={loading ? "—" : formatCurrency(data!.spendMtd)}
@@ -543,25 +545,38 @@ export function SmartPanel() {
           </div>
 
           {/* Advert / notice column */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-b from-primary/15 to-white p-4">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm">
+          <div className="relative min-h-[320px] overflow-hidden rounded-xl border border-primary/15 bg-gradient-to-b from-primary/15 to-card p-5">
+            {advert?.image_url && (
+              <>
+                <img
+                  src={advert.image_url}
+                  alt=""
+                  aria-hidden
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-card/35 via-card/75 to-card" />
+              </>
+            )}
+            <div key={advert?.id ?? "default-advert"} className="relative flex h-full animate-fade-in flex-col">
+            <div className="inline-flex w-fit items-center gap-1.5 rounded-full bg-card/90 px-2.5 py-1 text-[11px] font-semibold text-primary shadow-sm backdrop-blur">
               <Megaphone className="h-3.5 w-3.5" />
               {advert ? "Quick Updates" : "From Ovasyt"}
             </div>
-            <h3 className="mt-3 text-lg font-bold leading-tight text-foreground">
+            <h3 className="mt-5 text-xl font-bold leading-tight text-foreground">
               {advert ? advert.headline : "Scan an invoice, skip the typing"}
             </h3>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {advert
                 ? advert.body
                 : "Ovi reads your invoice, fills in the transaction and matches the donor and project for you."}
             </p>
+            <div className="mt-auto pt-5">
             {advert?.cta_url ? (
               advert.cta_url.startsWith("http") ? (
                 <Button
                   asChild
                   size="sm"
-                  className="mt-4 rounded-full"
+                   className="rounded-full"
                   onClick={() =>
                     recordAdvertisementEvent(
                       advert.id,
@@ -579,7 +594,7 @@ export function SmartPanel() {
                 <Button
                   asChild
                   size="sm"
-                  className="mt-4 rounded-full"
+                   className="rounded-full"
                   onClick={() =>
                     recordAdvertisementEvent(
                       advert.id,
@@ -596,7 +611,7 @@ export function SmartPanel() {
               )
             ) : (
               !advert && (
-                <Button asChild size="sm" className="mt-4 rounded-full">
+                 <Button asChild size="sm" className="rounded-full">
                   <Link to="/billing">
                     See what's included
                     <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -604,7 +619,38 @@ export function SmartPanel() {
                 </Button>
               )
             )}
+            </div>
+            </div>
           </div>
+        </div>
+
+        <button
+          aria-label="Previous dashboard slide"
+          onClick={() => setIndex((i) => (i - 1 + total) % total)}
+          className="absolute left-1 top-1/2 z-10 hidden h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-primary/15 bg-card text-primary shadow-lg transition hover:bg-accent lg:grid"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          aria-label="Next dashboard slide"
+          onClick={() => setIndex((i) => (i + 1) % total)}
+          className="absolute right-1 top-1/2 z-10 hidden h-9 w-9 translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-primary/15 bg-card text-primary shadow-lg transition hover:bg-accent lg:grid"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+
+        <div className="mt-3 hidden items-center justify-center gap-2 lg:flex">
+          {stories.map((s, i) => (
+            <button
+              key={`panel-${s.key}`}
+              aria-label={`Show dashboard slide ${i + 1}`}
+              onClick={() => setIndex(i)}
+              className={cn(
+                "h-2 rounded-full transition-all",
+                i === index ? "w-7 bg-primary" : "w-2 bg-primary/20",
+              )}
+            />
+          ))}
         </div>
       </div>
     </section>
