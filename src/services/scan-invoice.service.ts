@@ -218,8 +218,18 @@ export async function createTransactionFromInvoice(
     }
 
     // Link supplier to the auto-created transaction
+    const invoiceNumber = input.document_number?.trim() || null;
+    // Reconciliation key: use the printed payment reference, else the invoice
+    // number, so every payment can later be matched to a bank statement line.
+    const paymentReference = input.payment_reference?.trim() || invoiceNumber;
     const txnUpdate: Record<string, unknown> = {
       supplier_name: input.supplier_name.trim(),
+      invoice_number: invoiceNumber,
+      payment_reference: paymentReference,
+      bank_name: input.bank_name?.trim() || null,
+      bank_account_number: input.bank_account_number?.trim() || null,
+      bank_branch_code: input.bank_branch_code?.trim() || null,
+      bank_account_type: input.bank_account_type?.trim() || null,
     };
     // Persist detected VAT figures on the single source-of-truth transaction.
     {
