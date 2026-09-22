@@ -128,7 +128,7 @@ export default function Oversight() {
               <ShieldCheck className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-bold leading-tight">Ovasyt Oversight</p>
+              <p className="text-sm font-bold leading-tight">Ovasyt Internal</p>
               <p className="text-[11px] leading-tight text-muted-foreground">
                 Internal platform dashboard
               </p>

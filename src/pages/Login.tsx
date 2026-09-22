@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchPrimaryRole, portalPathForRole } from "@/lib/role-routing";
+import { isPlatformAdmin } from "@/services/platform.service";
 import { PageSeo } from "@/components/site/PageSeo";
 
 const loginSchema = z.object({
@@ -115,6 +116,12 @@ export default function Login() {
     const next = getNextPath();
     if (next) {
       window.location.href = next;
+      return;
+    }
+
+    // Ovasyt internal staff land on the internal dashboard.
+    if (await isPlatformAdmin()) {
+      navigate("/ovasyt-admin", { replace: true });
       return;
     }
 
