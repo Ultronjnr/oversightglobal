@@ -1,326 +1,211 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { Logo } from "@/components/Logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton,
+  SidebarMenuItem, SidebarProvider, SidebarRail, SidebarTrigger, useSidebar,
+} from "@/components/ui/sidebar";
 import { formatCurrency } from "@/lib/utils";
 import {
-  Building2,
-  Users,
-  Receipt,
-  HandCoins,
-  Activity,
-  Megaphone,
-  LogOut,
-  ShieldCheck,
+  Activity, BarChart3, Building2, ChevronRight, Eye, FileSearch, HandCoins,
+  LayoutDashboard, LogOut, Megaphone, MousePointerClick, ReceiptText,
+  ShieldCheck, Sparkles, UserPlus, Users, Wallet, Waypoints,
 } from "lucide-react";
 import {
-  getPlatformOrganizations,
-  getPlatformOverview,
-  type PlatformOrganization,
-  type PlatformOverview,
+  getPlatformCustomerIntelligence, getPlatformOrganizations, getPlatformOverview,
+  getPlatformRecentUsers, type PlatformCustomerIntelligence, type PlatformOrganization,
+  type PlatformOverview, type PlatformRecentUser,
 } from "@/services/platform.service";
 import { AdvertisementsManager } from "@/components/oversight/AdvertisementsManager";
 
-function Metric({
-  label,
-  value,
-  hint,
-  icon,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  icon: JSX.Element;
-}) {
+const traffic = {
+  visitors: 52, pageViews: 223, viewsPerVisit: 4.29, duration: "4m 7s", bounce: 67,
+  daily: [4, 9, 6, 3, 10, 6, 10, 4],
+  sources: [["Direct", 38], ["bing.com", 6], ["google.com", 4], ["Gmail", 2], ["Other", 4]] as const,
+  pages: [["/", 27], ["/login", 14], ["/pricing", 9], ["/contact", 8], ["NPO bank accounts", 8], ["/about", 7]] as const,
+  devices: [["Desktop", 65.4], ["Mobile", 34.6]] as const,
+  countries: [["South Africa", 35], ["United States", 14], ["Poland", 1], ["Morocco", 1]] as const,
+};
+
+type Section = "overview" | "organizations" | "intelligence" | "analytics" | "adverts" | "activity";
+
+const sectionMeta: Record<Section, { label: string; description: string; icon: ElementType }> = {
+  overview: { label: "Overview", description: "Real-time intelligence and ecosystem health", icon: LayoutDashboard },
+  organizations: { label: "Organisations", description: "Customer profiles, contacts and platform activity", icon: Building2 },
+  intelligence: { label: "Customer Intelligence", description: "What customers need and how they discovered Ovasyt", icon: Sparkles },
+  analytics: { label: "Analytics", description: "Visitor acquisition, engagement and popular pages", icon: BarChart3 },
+  adverts: { label: "Advertisements", description: "Create, target and measure dashboard campaigns", icon: Megaphone },
+  activity: { label: "Platform Activity", description: "Recent users and operational platform signals", icon: Activity },
+};
+
+function InternalSidebar({ section, setSection }: { section: Section; setSection: (value: Section) => void }) {
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const { profile, user, signOut } = useAuth();
+  const collapsed = state === "collapsed";
+  const select = (value: Section) => { setSection(value); if (isMobile) setOpenMobile(false); };
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between gap-3 p-4">
-        <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="truncate text-xl font-bold tabular-nums">{value}</p>
-          {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    <Sidebar collapsible="icon" className="border-sidebar-border">
+      <SidebarHeader className="border-b border-sidebar-border px-3 py-4">
+        <div className="flex h-10 items-center overflow-hidden">
+          {collapsed ? (
+            <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground"><ShieldCheck className="h-5 w-5" /></div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Logo size="sm" className="w-28 overflow-hidden [&_img]:h-10" />
+              <div className="border-l border-sidebar-border pl-2"><p className="text-xs font-bold">Internal</p><p className="text-[10px] text-muted-foreground">Command center</p></div>
+            </div>
+          )}
         </div>
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {(Object.keys(sectionMeta) as Section[]).map((key) => {
+                const item = sectionMeta[key];
+                return <SidebarMenuItem key={key}>
+                  <SidebarMenuButton isActive={section === key} tooltip={item.label} onClick={() => select(key)}>
+                    <item.icon className="h-4 w-4" /><span>{item.label}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>;
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-sidebar-border p-2">
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Customer app"><Link to="/dashboard"><Waypoints className="h-4 w-4" /><span>Customer app</span></Link></SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Log out" onClick={() => signOut()}><LogOut className="h-4 w-4" /><span>Log out</span></SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        {!collapsed && <div className="mt-2 px-2 pb-1"><p className="truncate text-xs font-semibold">{profile?.name || "Ovasyt administrator"}</p><p className="truncate text-[10px] text-muted-foreground">{profile?.email || user?.email}</p></div>}
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
   );
 }
 
-function Bars({
-  rows,
-  valueLabel,
-}: {
-  rows: { label: string; amount: number }[];
-  valueLabel?: string;
-}) {
-  const max = Math.max(1, ...rows.map((r) => r.amount));
-  if (rows.length === 0)
-    return <p className="text-sm text-muted-foreground">No data yet.</p>;
-  return (
-    <div className="space-y-2.5">
-      {rows.map((r) => (
-        <div key={r.label}>
-          <div className="mb-1 flex items-center justify-between text-xs">
-            <span className="truncate pr-2">{r.label}</span>
-            <span className="tabular-nums text-muted-foreground">
-              {valueLabel === "count" ? r.amount : formatCurrency(r.amount)}
-            </span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary"
-              style={{ width: `${Math.round((r.amount / max) * 100)}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+function StatCard({ label, value, hint, icon: Icon, tone = "primary" }: { label: string; value: string; hint: string; icon: ElementType; tone?: "primary" | "success" | "warning" }) {
+  const toneClass = tone === "success" ? "bg-success/10 text-success" : tone === "warning" ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary";
+  return <Card className="overflow-hidden border-border/70 shadow-sm transition-shadow hover:shadow-md">
+    <CardContent className="p-4 sm:p-5">
+      <div className="mb-4 flex items-start justify-between gap-3"><div className={`grid h-10 w-10 place-items-center rounded-xl ${toneClass}`}><Icon className="h-5 w-5" /></div><Badge variant="secondary" className="text-[10px]">Live</Badge></div>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p><p className="mt-1 break-words text-xl font-bold leading-tight tabular-nums sm:text-2xl">{value}</p><p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>
+    </CardContent>
+  </Card>;
+}
+
+function Distribution({ title, rows, empty = "No information captured yet." }: { title: string; rows: { label: string; amount: number }[]; empty?: string }) {
+  const max = Math.max(1, ...rows.map((row) => row.amount));
+  return <Card className="border-border/70 shadow-sm"><CardHeader className="pb-3"><CardTitle className="text-base">{title}</CardTitle></CardHeader><CardContent className="space-y-4">
+    {rows.length === 0 ? <p className="text-sm text-muted-foreground">{empty}</p> : rows.map((row) => <div key={row.label}>
+      <div className="mb-1.5 flex justify-between gap-3 text-xs"><span className="truncate font-medium">{row.label}</span><span className="tabular-nums text-muted-foreground">{row.amount}</span></div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-700" style={{ width: `${Math.max(5, row.amount / max * 100)}%` }} /></div>
+    </div>)}
+  </CardContent></Card>;
+}
+
+function countValues(items: PlatformCustomerIntelligence[], key: keyof PlatformCustomerIntelligence) {
+  const counts = new Map<string, number>();
+  items.forEach((item) => { const value = item[key]; if (typeof value === "string" && value.trim()) counts.set(value, (counts.get(value) ?? 0) + 1); });
+  return [...counts].map(([label, amount]) => ({ label, amount })).sort((a, b) => b.amount - a.amount);
+}
+
+function PageSection({ title, children }: { title: string; children: ReactNode }) {
+  return <section><div className="mb-4 flex items-center justify-between"><h2 className="text-lg font-bold">{title}</h2></div>{children}</section>;
 }
 
 export default function Oversight() {
   const { isStaff, isLoading } = usePlatformAdmin();
-  const { user, profile, signOut } = useAuth();
+  const { user } = useAuth();
+  const [section, setSection] = useState<Section>("overview");
   const [overview, setOverview] = useState<PlatformOverview | null>(null);
   const [orgs, setOrgs] = useState<PlatformOrganization[]>([]);
+  const [customers, setCustomers] = useState<PlatformCustomerIntelligence[]>([]);
+  const [recentUsers, setRecentUsers] = useState<PlatformRecentUser[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     if (!isStaff) return;
-    Promise.all([getPlatformOverview(), getPlatformOrganizations()]).then(
-      ([o, list]) => {
-        setOverview(o);
-        setOrgs(list);
-        setLoadingData(false);
-      },
-    );
+    Promise.all([getPlatformOverview(), getPlatformOrganizations(), getPlatformCustomerIntelligence(), getPlatformRecentUsers(30)]).then(([summary, organizations, intelligence, users]) => {
+      setOverview(summary); setOrgs(organizations); setCustomers(intelligence); setRecentUsers(users); setLoadingData(false);
+    });
   }, [isStaff]);
+
+  const completedOnboarding = customers.filter((item) => item.onboarding_completed_at).length;
+  const incompleteProfiles = customers.filter((item) => !item.organisation_type).length;
+  const typedOrgRows = (overview?.org_types ?? []).filter((item) => item.label !== "Unspecified").map((item) => ({ label: item.label, amount: Number(item.value) }));
+  const signupCount = customers.filter((item) => Date.now() - new Date(item.organization_created_at).getTime() <= 30 * 86400000).length;
+  const orgById = useMemo(() => new Map(orgs.map((org) => [org.id, org])), [orgs]);
 
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (!isStaff) return <Navigate to="/dashboard" replace />;
 
-  const ctr =
-    overview && overview.ad_views > 0
-      ? `${Math.round((overview.ad_clicks / overview.ad_views) * 100)}% click-through`
-      : "No views yet";
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-sm font-bold leading-tight">Ovasyt Internal</p>
-              <p className="text-[11px] leading-tight text-muted-foreground">
-                Internal platform dashboard
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:block">
-              {profile?.email || user.email}
-            </span>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard">App</Link>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => signOut()}>
-              <LogOut className="mr-1.5 h-4 w-4" />
-              Logout
-            </Button>
-          </div>
-        </div>
+  const page = sectionMeta[section];
+  return <SidebarProvider>
+    <InternalSidebar section={section} setSection={setSection} />
+    <SidebarInset className="min-w-0 bg-background">
+      <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/90 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-3"><SidebarTrigger className="h-9 w-9" /><div className="min-w-0"><h1 className="truncate text-lg font-bold sm:text-xl">{page.label}</h1><p className="hidden truncate text-xs text-muted-foreground sm:block">{page.description}</p></div></div>
+        <Badge variant="outline" className="shrink-0 gap-1.5"><span className="h-2 w-2 rounded-full bg-success" />Internal admin</Badge>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6">
-        <h1 className="text-2xl font-bold sm:text-3xl">Platform overview</h1>
+      <main className="mx-auto w-full max-w-[1600px] space-y-7 p-4 sm:p-6 lg:p-8">
+        {loadingData ? <LoadingScreen /> : <>
+          {section === "overview" && <>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <StatCard label="Organisations" value={String(overview?.organizations ?? 0)} hint={`${signupCount} new in the last 30 days`} icon={Building2} />
+              <StatCard label="Active users" value={String(overview?.active_users_30d ?? 0)} hint={`${overview?.users ?? 0} accounts in total`} icon={Users} tone="success" />
+              <StatCard label="Transaction volume" value={formatCurrency(overview?.transaction_value ?? 0)} hint={`${overview?.transactions ?? 0} recorded transactions`} icon={Wallet} />
+              <StatCard label="Donations recorded" value={formatCurrency(overview?.donations_value ?? 0)} hint={`${overview?.donors ?? 0} donors · ${overview?.projects ?? 0} projects`} icon={HandCoins} tone="warning" />
+            </div>
 
-        {loadingData ? (
-          <p className="text-sm text-muted-foreground">Loading platform data…</p>
-        ) : (
-          <Tabs defaultValue="overview" className="space-y-5">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="organizations">Organisations</TabsTrigger>
-              <TabsTrigger value="adverts">Advertisements</TabsTrigger>
-            </TabsList>
+            <div className="grid gap-6 xl:grid-cols-12">
+              <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Traffic analytics</CardTitle><p className="mt-1 text-xs text-muted-foreground">15–22 September 2026</p></div><Badge variant="secondary">{traffic.visitors} visitors</Badge></CardHeader><CardContent>
+                <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4"><Mini label="Page views" value={String(traffic.pageViews)} /><Mini label="Views / visit" value={String(traffic.viewsPerVisit)} /><Mini label="Visit duration" value={traffic.duration} /><Mini label="Bounce rate" value={`${traffic.bounce}%`} /></div>
+                <div className="flex h-40 items-end gap-3 border-b border-border px-1">{traffic.daily.map((value, index) => <div key={index} className="flex h-full flex-1 items-end"><div className="w-full rounded-t-md bg-primary/80 transition-all hover:bg-primary" style={{ height: `${Math.max(18, value * 9)}%` }} /></div>)}</div>
+                <div className="mt-2 flex justify-between text-[10px] text-muted-foreground"><span>Sep 15</span><span>Sep 17</span><span>Sep 19</span><span>Sep 22</span></div>
+              </CardContent></Card>
+              <Card className="overflow-hidden border-primary/20 bg-primary text-primary-foreground shadow-lg xl:col-span-4"><CardContent className="flex h-full min-h-64 flex-col justify-between p-6"><div><Sparkles className="mb-5 h-7 w-7" /><h2 className="text-xl font-bold">Onboarding health</h2><p className="mt-2 text-sm text-primary-foreground/75">Customer profiles completed and ready for informed support.</p></div><div><div className="mb-2 flex items-end justify-between"><span className="text-4xl font-bold">{customers.length ? Math.round(completedOnboarding / customers.length * 100) : 0}%</span><span className="text-xs">{completedOnboarding} of {customers.length}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary-foreground/20"><div className="h-full rounded-full bg-primary-foreground" style={{ width: `${customers.length ? completedOnboarding / customers.length * 100 : 0}%` }} /></div>{incompleteProfiles > 0 && <p className="mt-3 text-xs text-primary-foreground/75">{incompleteProfiles} profiles need an organisation type.</p>}</div></CardContent></Card>
+            </div>
 
-            <TabsContent value="overview" className="space-y-5">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <Metric
-                  label="Organisations"
-                  value={String(overview?.organizations ?? 0)}
-                  hint={`${overview?.org_types?.length ?? 0} industry types`}
-                  icon={<Building2 className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Active users (30 days)"
-                  value={String(overview?.active_users_30d ?? 0)}
-                  hint={`${overview?.users ?? 0} accounts in total`}
-                  icon={<Users className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Transaction volume"
-                  value={formatCurrency(overview?.transaction_value ?? 0)}
-                  hint={`${overview?.transactions ?? 0} transactions`}
-                  icon={<Receipt className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Donations recorded"
-                  value={formatCurrency(overview?.donations_value ?? 0)}
-                  hint={`${overview?.donors ?? 0} donors · ${overview?.projects ?? 0} projects`}
-                  icon={<HandCoins className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Invoice scans"
-                  value={String(overview?.scans ?? 0)}
-                  icon={<Activity className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Requisitions & quotes"
-                  value={`${overview?.requisitions ?? 0} / ${overview?.quotes ?? 0}`}
-                  hint={`${overview?.suppliers ?? 0} suppliers`}
-                  icon={<Activity className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Payment batches"
-                  value={String(overview?.batches ?? 0)}
-                  hint={`${formatCurrency(overview?.paid_value ?? 0)} settled`}
-                  icon={<Receipt className="h-4 w-4" />}
-                />
-                <Metric
-                  label="Advert performance"
-                  value={`${overview?.ad_views ?? 0} / ${overview?.ad_clicks ?? 0}`}
-                  hint={ctr}
-                  icon={<Megaphone className="h-4 w-4" />}
-                />
-              </div>
+            <div className="grid gap-6 xl:grid-cols-12">
+              <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader><CardTitle>Recent organisations</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Organisation</TableHead><TableHead>Type</TableHead><TableHead>Contact</TableHead><TableHead className="text-right">Volume</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{customers.slice(0, 6).map((customer) => <TableRow key={customer.organization_id}><TableCell className="font-semibold">{customer.organization_name}</TableCell><TableCell><Badge variant="outline">{customer.organisation_type || "Profile incomplete"}</Badge></TableCell><TableCell><p className="text-xs">{customer.contact_name || "Primary contact"}</p><p className="max-w-48 truncate text-[11px] text-muted-foreground">{customer.contact_email || "No email captured"}</p></TableCell><TableCell className="text-right tabular-nums">{formatCurrency(Number(orgById.get(customer.organization_id)?.transaction_value ?? 0))}</TableCell><TableCell className="text-xs text-muted-foreground">{new Date(customer.organization_created_at).toLocaleDateString()}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+              <div className="space-y-6 xl:col-span-4"><Distribution title="Organisation types" rows={typedOrgRows} /><Distribution title="Top expense categories" rows={(overview?.categories ?? []).slice(0, 5).map((item) => ({ label: item.label, amount: Number(item.amount) }))} /></div>
+            </div>
+          </>}
 
-              <div className="grid gap-4 lg:grid-cols-3">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Organisation types</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Bars
-                      valueLabel="count"
-                      rows={(overview?.org_types ?? []).map((t) => ({
-                        label: t.label,
-                        amount: Number(t.value),
-                      }))}
-                    />
-                  </CardContent>
-                </Card>
+          {section === "organizations" && <PageSection title={`All organisations (${customers.length})`}><Card className="border-border/70 shadow-sm"><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>Organisation</TableHead><TableHead>Business details</TableHead><TableHead>Primary contact</TableHead><TableHead>Registration</TableHead><TableHead>Activity</TableHead></TableRow></TableHeader><TableBody>{customers.map((customer) => { const org = orgById.get(customer.organization_id); return <TableRow key={customer.organization_id}><TableCell><p className="font-semibold">{customer.organization_name}</p><p className="text-xs text-muted-foreground">Joined {new Date(customer.organization_created_at).toLocaleDateString()}</p></TableCell><TableCell><Badge variant="outline">{customer.organisation_type || "Profile incomplete"}</Badge><p className="mt-1 max-w-56 truncate text-xs text-muted-foreground">{customer.address || "No address captured"}</p></TableCell><TableCell><p className="text-sm">{customer.contact_name || "—"}</p><p className="text-xs text-muted-foreground">{customer.contact_email || "No email"}</p><p className="text-xs text-muted-foreground">{customer.contact_phone || "No phone"}</p></TableCell><TableCell className="text-xs"><p>{customer.registration_number || "No registration number"}</p><p className="text-muted-foreground">{customer.pbo_registered ? `PBO ${customer.pbo_number || "registered"}` : "PBO not recorded"}</p></TableCell><TableCell><p className="text-sm font-semibold">{org?.users ?? 0} users</p><p className="text-xs text-muted-foreground">{org?.transactions ?? 0} transactions</p></TableCell></TableRow>; })}</TableBody></Table></CardContent></Card></PageSection>}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Expense categories</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Bars
-                      rows={(overview?.categories ?? []).map((c) => ({
-                        label: c.label,
-                        amount: Number(c.amount),
-                      }))}
-                    />
-                  </CardContent>
-                </Card>
+          {section === "intelligence" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Onboarding completed" value={String(completedOnboarding)} hint={`${customers.length - completedOnboarding} still incomplete`} icon={ShieldCheck} tone="success" /><StatCard label="New signups" value={String(signupCount)} hint="Organisations in the last 30 days" icon={UserPlus} /><StatCard label="Contactable customers" value={String(customers.filter((item) => item.contact_email).length)} hint="Primary email available" icon={Users} /><StatCard label="Profile gaps" value={String(incompleteProfiles)} hint="Organisation type not yet captured" icon={FileSearch} tone="warning" /></div><div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"><Distribution title="Primary pain points" rows={countValues(customers, "pain_point")} /><Distribution title="Supported causes" rows={countValues(customers, "cause")} /><Distribution title="Funding sources" rows={countValues(customers, "funding")} /><Distribution title="Team size" rows={countValues(customers, "team_size")} /><Distribution title="How customers found Ovasyt" rows={countValues(customers, "heard_about")} /></div></>}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">
-                      Spending pattern (12 months)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Bars
-                      rows={(overview?.monthly ?? []).map((m) => ({
-                        label: m.month,
-                        amount: Number(m.amount),
-                      }))}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+          {section === "analytics" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><StatCard label="Visitors" value={String(traffic.visitors)} hint="Selected period" icon={Users} /><StatCard label="Page views" value={String(traffic.pageViews)} hint="Across public and app pages" icon={Eye} /><StatCard label="Views per visit" value={String(traffic.viewsPerVisit)} hint="Engagement depth" icon={MousePointerClick} /><StatCard label="Visit duration" value={traffic.duration} hint="Average session" icon={Activity} tone="success" /><StatCard label="Bounce rate" value={`${traffic.bounce}%`} hint="Single-page visits" icon={ChevronRight} tone="warning" /></div><div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4"><Distribution title="Traffic sources" rows={traffic.sources.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Popular pages" rows={traffic.pages.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Devices (%)" rows={traffic.devices.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Countries" rows={traffic.countries.map(([label, amount]) => ({ label, amount }))} /></div></>}
 
-            <TabsContent value="organizations">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    All organisations ({orgs.length})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Organisation</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Users</TableHead>
-                        <TableHead className="text-right">Transactions</TableHead>
-                        <TableHead className="text-right">Value</TableHead>
-                        <TableHead className="text-right">Requisitions</TableHead>
-                        <TableHead className="text-right">Donations</TableHead>
-                        <TableHead>Last activity</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orgs.map((o) => (
-                        <TableRow key={o.id}>
-                          <TableCell className="font-medium">{o.name}</TableCell>
-                          <TableCell>{o.organisation_type}</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {o.users}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {o.transactions}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatCurrency(Number(o.transaction_value))}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {o.requisitions}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatCurrency(Number(o.donations_value))}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {o.last_activity
-                              ? new Date(o.last_activity).toLocaleDateString()
-                              : "—"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
+          {section === "activity" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Invoice scans" value={String(overview?.scans ?? 0)} hint="Documents analysed" icon={FileSearch} /><StatCard label="Requisitions / quotes" value={`${overview?.requisitions ?? 0} / ${overview?.quotes ?? 0}`} hint={`${overview?.suppliers ?? 0} suppliers`} icon={ReceiptText} /><StatCard label="Payment batches" value={String(overview?.batches ?? 0)} hint={`${formatCurrency(overview?.paid_value ?? 0)} settled`} icon={Wallet} tone="success" /><StatCard label="Advert views / clicks" value={`${overview?.ad_views ?? 0} / ${overview?.ad_clicks ?? 0}`} hint="Published campaign engagement" icon={Megaphone} /></div><PageSection title="New users"><Card className="border-border/70 shadow-sm"><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Organisation</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{recentUsers.map((item) => <TableRow key={item.user_id}><TableCell><p className="font-semibold">{item.full_name || "Unnamed user"}</p><p className="text-xs text-muted-foreground">{item.email}</p></TableCell><TableCell>{item.organization_name || "Internal account"}</TableCell><TableCell>{item.role || "No role"}</TableCell><TableCell><Badge variant={item.status === "ACTIVE" ? "default" : "secondary"}>{item.status}</Badge></TableCell><TableCell className="text-xs text-muted-foreground">{new Date(item.joined_at).toLocaleDateString()}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card></PageSection></>}
 
-            <TabsContent value="adverts">
-              <AdvertisementsManager organizations={orgs} />
-            </TabsContent>
-          </Tabs>
-        )}
+          {section === "adverts" && <AdvertisementsManager organizations={orgs} />}
+        </>}
       </main>
-    </div>
-  );
+    </SidebarInset>
+  </SidebarProvider>;
+}
+
+function Mini({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-lg border border-border/70 bg-muted/35 p-3"><p className="text-[11px] text-muted-foreground">{label}</p><p className="mt-1 text-lg font-bold tabular-nums">{value}</p></div>;
 }
