@@ -430,9 +430,10 @@ export function BatchesTab() {
       const sup = a.invoice?.supplier || a.transaction?.supplier;
       const supBank = sup?.id ? bankDetails[sup.id] : undefined;
       const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
-      const accountNumber = supBank?.bank_account_number || scanBank?.bank_account_number || null;
-      const branchCode = supBank?.bank_branch_code || scanBank?.bank_branch_code || null;
-      const accountType = supBank?.bank_account_type || scanBank?.bank_account_type || "Current/Cheque";
+      const txnBank = a.transaction;
+      const accountNumber = supBank?.bank_account_number || txnBank?.bank_account_number || scanBank?.bank_account_number || null;
+      const branchCode = supBank?.bank_branch_code || txnBank?.bank_branch_code || scanBank?.bank_branch_code || null;
+      const accountType = supBank?.bank_account_type || txnBank?.bank_account_type || scanBank?.bank_account_type || "Current/Cheque";
       return {
         supplier: supplierName,
         contact,
