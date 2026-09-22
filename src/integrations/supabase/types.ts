@@ -14,6 +14,147 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisement_events: {
+        Row: {
+          advertisement_id: string
+          created_at: string
+          event_type: string
+          id: string
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          advertisement_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          advertisement_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisement_events_advertisement_id_fkey"
+            columns: ["advertisement_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advertisement_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advertisement_targets: {
+        Row: {
+          advertisement_id: string
+          created_at: string
+          organization_id: string
+        }
+        Insert: {
+          advertisement_id: string
+          created_at?: string
+          organization_id: string
+        }
+        Update: {
+          advertisement_id?: string
+          created_at?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advertisement_targets_advertisement_id_fkey"
+            columns: ["advertisement_id"]
+            isOneToOne: false
+            referencedRelation: "advertisements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advertisement_targets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advertisements: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          cta_label: string | null
+          cta_url: string | null
+          ends_at: string | null
+          headline: string
+          id: string
+          image_url: string | null
+          priority: number
+          starts_at: string | null
+          status: string
+          target_all: boolean
+          target_org_types: string[]
+          target_roles: string[]
+          target_tiers: string[]
+          title: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          headline: string
+          id?: string
+          image_url?: string | null
+          priority?: number
+          starts_at?: string | null
+          status?: string
+          target_all?: boolean
+          target_org_types?: string[]
+          target_roles?: string[]
+          target_tiers?: string[]
+          title: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_label?: string | null
+          cta_url?: string | null
+          ends_at?: string | null
+          headline?: string
+          id?: string
+          image_url?: string | null
+          priority?: number
+          starts_at?: string | null
+          status?: string
+          target_all?: boolean
+          target_org_types?: string[]
+          target_roles?: string[]
+          target_tiers?: string[]
+          title?: string
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       approval_events: {
         Row: {
           amount: number | null
@@ -1882,6 +2023,27 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_admins: {
+        Row: {
+          created_at: string
+          email: string | null
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       pr_message_attachments: {
         Row: {
           created_at: string
@@ -3622,6 +3784,10 @@ export type Database = {
         Args: { _notes?: string; _reimbursement_id: string }
         Returns: Json
       }
+      advertisement_visible_to_me: {
+        Args: { _ad: Database["public"]["Tables"]["advertisements"]["Row"] }
+        Returns: boolean
+      }
       allocate_project_funds: {
         Args: {
           _amount: number
@@ -3827,6 +3993,7 @@ export type Database = {
       }
       is_donation_manager: { Args: { _user_id: string }; Returns: boolean }
       is_internal_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_supplier_linked_to_org: {
         Args: { _org_id: string; _supplier_id: string }
         Returns: boolean
@@ -3867,6 +4034,34 @@ export type Database = {
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
       organization_staffing: { Args: { _org_id: string }; Returns: Json }
+      platform_ad_performance: {
+        Args: never
+        Returns: {
+          clicks: number
+          ends_at: string
+          id: string
+          starts_at: string
+          status: string
+          title: string
+          views: number
+        }[]
+      }
+      platform_organizations: {
+        Args: never
+        Returns: {
+          created_at: string
+          donations_value: number
+          id: string
+          last_activity: string
+          name: string
+          organisation_type: string
+          requisitions: number
+          transaction_value: number
+          transactions: number
+          users: number
+        }[]
+      }
+      platform_overview: { Args: never; Returns: Json }
       post_pr_system_note: {
         Args: { _note: string; _pr_id: string }
         Returns: {
