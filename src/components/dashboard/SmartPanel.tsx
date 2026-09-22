@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import heroCorporate from "@/assets/hero-corporate.jpg";
-import citySlideAsset from "@/assets/dashboard-city-slide.png.asset.json";
+import citySlide from "@/assets/dashboard-city-slide.png";
 import everyRandAsset from "@/assets/slide-every-rand.jpg.asset.json";
 import sarsProofAsset from "@/assets/slide-sars-proof.jpg.asset.json";
 import vatAsset from "@/assets/slide-vat.jpg.asset.json";
@@ -358,7 +358,7 @@ export function SmartPanel() {
             (slide.kind === "insights"
               ? heroCorporate
               : slide.kind === "city"
-                ? citySlideAsset.url
+                ? citySlide
                 : slide.kind === "audit"
                   ? sarsProofAsset.url
                   : AD_FALLBACK_IMAGES[slideIndex % AD_FALLBACK_IMAGES.length]);
