@@ -442,11 +442,19 @@ export function BatchesTab() {
         total_amount: total,
         type: isFull ? "Full" : "Partial",
         currency,
-        invoice_ref: a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef,
+        invoice_ref:
+          txnBank?.invoice_number ||
+          (a.invoice_id ? a.invoice_id.slice(0, 8).toUpperCase() : txnRef),
         supplier_account: accountNumber || supplierCode || "—",
         branch_code: branchCode || "—",
         account_type: accountType || "—",
-        statement_ref: a.payment_reference || scanBank?.payment_reference || b.payment_reference || txnRef,
+        statement_ref:
+          a.payment_reference ||
+          txnBank?.payment_reference ||
+          txnBank?.invoice_number ||
+          scanBank?.payment_reference ||
+          b.payment_reference ||
+          txnRef,
         pr_number: prNumber,
         vat_registered: !!vatNumber,
         payment_status: isFull ? "Paid" : batchStatusLabel(b.status),
