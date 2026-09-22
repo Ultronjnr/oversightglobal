@@ -234,6 +234,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
     setBankBranchCode("");
     setBankAccountType("");
     setInvoiceNumber("");
+    setPaymentReference("");
     setInvoiceDate("");
     setSubtotal("");
     setVatAmount("");
@@ -432,6 +433,12 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       setBankAccountType(e.bank_account_type ?? "");
       setInvoiceNumber(e.document_number ?? "");
       setInvoiceDate(e.document_date ?? "");
+      // Reconciliation key: printed payment reference, else the invoice number.
+      setPaymentReference(
+        (e.payment_reference ?? "").trim() ||
+          (e.reference_number ?? "").trim() ||
+          (e.document_number ?? "").trim(),
+      );
       setSubtotal(typeof e.subtotal === "number" ? String(e.subtotal) : "");
       setVatAmount(typeof e.vat_amount === "number" ? String(e.vat_amount) : "");
       setTotalAmount(typeof e.total_amount === "number" ? String(e.total_amount) : "");
