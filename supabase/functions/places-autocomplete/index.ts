@@ -51,22 +51,74 @@ Deno.serve(async (req) => {
         ? body.sessionToken
         : undefined;
 
+    const gatewayAvailable = Boolean(LOVABLE_API_KEY && GOOGLE_MAPS_API_KEY);
+
     // Gateway routes "places/..." to places.googleapis.com; direct calls use
     // the API's real "/v1/..." paths.
-    const baseUrl = useDirect ? "https://places.googleapis.com" : GATEWAY_URL;
-    const placesPath = (p: string) => (useDirect ? p.replace(/^places\//, "") : p);
-    const placesHeaders = (fieldMask: string): Record<string, string> => {
+    const buildRequest = (
+      direct: boolean,
+      path: string,
+      fieldMask: string,
+      search?: URLSearchParams,
+    ) => {
+      const base = direct ? "https://places.googleapis.com" : GATEWAY_URL;
+      const p = direct ? path.replace(/^places\//, "") : path;
+      const url = new URL(`${base}/${p}`);
+      if (search) search.forEach((v, k) => url.searchParams.set(k, v));
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         "X-Goog-FieldMask": fieldMask,
       };
-      if (useDirect) {
+      if (direct) {
         headers["X-Goog-Api-Key"] = OWN_GOOGLE_KEY!;
       } else {
         headers.Authorization = `Bearer ${LOVABLE_API_KEY}`;
         headers["X-Connection-Api-Key"] = GOOGLE_MAPS_API_KEY!;
       }
-      return headers;
+      return { url: url.toString(), headers };
+    };
+
+    // Try the workspace key first; if it is blocked/restricted, retry through
+    // the managed connector gateway so address lookup keeps working.
+    const callPlaces = async (
+      path: string,
+      fieldMask: string,
+      init: { method: string; body?: string; search?: URLSearchParams },
+    ): Promise<Response> => {
+      const attempts = useDirect
+        ? gatewayAvailable
+          ? [true, false]
+          : [true]
+        : [false];
+      let last: Response | null = null;
+      for (const direct of attempts) {
+        const { url, headers } = buildRequest(direct, path, fieldMask, init.search);
+        const res = await fetch(url, { method: init.method, headers, body: init.body });
+        if (res.ok) return res;
+        last = res;
+        if (res.status !== 403 && res.status !== 401) break;
+      }
+      return last!;
+    };
+
+    const failure = async (res: Response) => {
+      const details = await res.text();
+      console.error(`Places request failed [${res.status}]: ${details}`);
+      const blocked =
+        res.status === 403 &&
+        (details.includes("API_KEY_SERVICE_BLOCKED") ||
+          details.includes("API_KEY_HTTP_REFERRER_BLOCKED") ||
+          details.includes("SERVICE_DISABLED"));
+      return json(
+        {
+          error: blocked
+            ? "Address lookup is not enabled for this Google API key yet. Enable Places API (New) for the key and set its application restrictions to None."
+            : "Address lookup failed",
+          status: res.status,
+          details,
+        },
+        res.status,
+      );
     };
 
     if (action === "autocomplete") {
