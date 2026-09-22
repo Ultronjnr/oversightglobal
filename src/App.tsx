@@ -93,6 +93,7 @@ const App = () => (
             <Route path="/book-demo" element={<BookDemo />} />
 
             {/* Internal Ovasyt platform dashboard (platform staff only) */}
+            <Route path="/ovasyt-admin" element={<Oversight />} />
             <Route path="/oversight" element={<Oversight />} />
 
             {/* Analytics - accessible by EMPLOYEE, HOD, FINANCE */}
