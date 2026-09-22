@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Megaphone, Plus, Trash2, Pencil } from "lucide-react";
+import { ImageUp, Megaphone, Plus, Trash2, Pencil } from "lucide-react";
 import {
   type AdStatus,
   type AdTone,
@@ -81,6 +81,7 @@ export function AdvertisementsManager({ organizations }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
 
   const load = async () => {
     const [list, perf] = await Promise.all([listAdvertisements(), getAdPerformance()]);
@@ -128,6 +129,53 @@ export function AdvertisementsManager({ organizations }: Props) {
 
   const toggleIn = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+  const selectImage = (file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Please choose an image smaller than 8 MB.");
+      return;
+    }
+
+    setProcessingImage(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxWidth = 1200;
+        const scale = Math.min(1, maxWidth / image.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          setProcessingImage(false);
+          toast.error("Could not prepare that image.");
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        setForm((current) => ({
+          ...current,
+          image_url: canvas.toDataURL("image/webp", 0.82),
+        }));
+        setProcessingImage(false);
+      };
+      image.onerror = () => {
+        setProcessingImage(false);
+        toast.error("Could not read that image.");
+      };
+      image.src = String(reader.result);
+    };
+    reader.onerror = () => {
+      setProcessingImage(false);
+      toast.error("Could not read that image.");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const submit = async () => {
     if (!form.title.trim() || !form.headline.trim()) {
@@ -337,6 +385,49 @@ export function AdvertisementsManager({ organizations }: Props) {
               />
             </div>
 
+            <div>
+              <Label>Advert image</Label>
+              <div className="mt-1.5 grid gap-3 sm:grid-cols-[1fr_180px]">
+                <label className="flex min-h-24 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 text-sm font-medium text-primary transition hover:bg-primary/10">
+                  <ImageUp className="h-5 w-5" />
+                  {processingImage ? "Preparing image…" : "Upload advert image"}
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="sr-only"
+                    disabled={processingImage}
+                    onChange={(event) => selectImage(event.target.files?.[0])}
+                  />
+                </label>
+                {form.image_url ? (
+                  <div className="relative h-24 overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={form.image_url}
+                      alt="Advert preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="secondary"
+                      className="absolute right-1 top-1 h-7 w-7"
+                      onClick={() => setForm({ ...form, image_url: "" })}
+                      aria-label="Remove advert image"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid h-24 place-items-center rounded-lg border bg-muted text-xs text-muted-foreground">
+                    Image preview
+                  </div>
+                )}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Landscape images work best. The headline and message remain readable over the image.
+              </p>
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <Label>Button label</Label>
@@ -507,7 +598,7 @@ export function AdvertisementsManager({ organizations }: Props) {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={saving}>
+            <Button onClick={submit} disabled={saving || processingImage}>
               {saving ? "Saving…" : "Save advert"}
             </Button>
           </DialogFooter>
