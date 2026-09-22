@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import heroCorporate from "@/assets/hero-corporate.jpg";
+import citySlide from "@/assets/dashboard-city-slide.png";
 import everyRandAsset from "@/assets/slide-every-rand.jpg.asset.json";
 import sarsProofAsset from "@/assets/slide-sars-proof.jpg.asset.json";
 import vatAsset from "@/assets/slide-vat.jpg.asset.json";
@@ -263,10 +264,11 @@ export function SmartPanel() {
           ? "/admin/portal?tab=approvals"
           : "/employee/portal?tab=requisitions";
 
-  type Slide = { key: string; kind: "insights" | "advert" | "audit"; advert?: Advertisement };
+  type Slide = { key: string; kind: "insights" | "city" | "advert" | "audit"; advert?: Advertisement };
   const slides = useMemo<Slide[]>(
     () => [
       { key: "insights", kind: "insights" },
+      { key: "city", kind: "city" },
       ...ads.map((advert) => ({ key: `advert-${advert.id}`, kind: "advert" as const, advert })),
       { key: "audit", kind: "audit" },
     ],
@@ -346,35 +348,50 @@ export function SmartPanel() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="relative w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
-        {/* Each carousel page has its own visual identity. */}
-        <img
-          src={
-            activeAdvert?.image_url ||
-            (active?.kind === "audit"
-              ? sarsProofAsset.url
-              : active?.kind === "insights"
-                ? heroCorporate
-                : AD_FALLBACK_IMAGES[index % AD_FALLBACK_IMAGES.length])
-          }
-          alt=""
-          aria-hidden
-          loading="eager"
-          className="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-        />
         <div
-          aria-hidden
-          className={cn(
-            "absolute inset-0",
-            active?.kind === "advert"
-              ? "bg-gradient-to-r from-foreground/90 via-foreground/65 to-foreground/20"
-              : "bg-gradient-to-r from-primary/85 via-primary/45 to-primary/10",
-          )}
-        />
+          className="flex transition-transform duration-700 ease-in-out motion-reduce:transition-none"
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
+        {slides.map((slide, slideIndex) => {
+          const slideAdvert = slide.kind === "advert" ? slide.advert : undefined;
+          const background = slideAdvert?.image_url ||
+            (slide.kind === "insights"
+              ? heroCorporate
+              : slide.kind === "city"
+                ? citySlide
+                : slide.kind === "audit"
+                  ? sarsProofAsset.url
+                  : AD_FALLBACK_IMAGES[slideIndex % AD_FALLBACK_IMAGES.length]);
+
+          return (
+          <article
+            key={slide.key}
+            aria-hidden={slideIndex !== index}
+            className="relative min-w-full overflow-hidden"
+          >
+            <img
+              src={background}
+              alt=""
+              aria-hidden
+              loading={slideIndex < 2 ? "eager" : "lazy"}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div
+              aria-hidden
+              className={cn(
+                "absolute inset-0",
+                slide.kind === "advert"
+                  ? "bg-gradient-to-r from-foreground/90 via-foreground/70 to-foreground/25"
+                  : slide.kind === "city"
+                    ? "bg-gradient-to-r from-primary/90 via-primary/60 to-primary/15"
+                    : "bg-gradient-to-r from-primary/85 via-primary/45 to-primary/10",
+              )}
+            />
 
         <div className="relative min-h-[600px] p-5 pb-14 sm:min-h-[560px] sm:p-7 sm:pb-14 lg:min-h-[480px] lg:px-14 lg:py-8">
           {/* Slide 1 — live organisation insights */}
-          {active?.kind === "insights" && (
-            <div className="grid animate-fade-in gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
+          {slide.kind === "insights" && (
+            <div className="grid gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
               <div className="flex min-w-0 flex-col text-primary-foreground">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/20 backdrop-blur">
@@ -514,30 +531,58 @@ export function SmartPanel() {
             </div>
           )}
 
-          {/* Slide 2 — advertisement (only rendered when one is live) */}
-          {active?.kind === "advert" && activeAdvert && (
-            <div className="flex min-h-[480px] animate-fade-in items-center sm:min-h-[430px]">
+          {/* Slide 2 — financial command centre */}
+          {slide.kind === "city" && (
+            <div className="flex min-h-[500px] items-center sm:min-h-[450px] lg:min-h-[416px]">
+              <div className="max-w-2xl text-primary-foreground">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-xs font-semibold backdrop-blur">
+                  <BarChart3 className="h-4 w-4" />
+                  Your financial command centre
+                </div>
+                <h2 className="mt-5 text-4xl font-bold leading-[1.08] drop-shadow-sm sm:text-5xl lg:text-6xl">
+                  Clarity across every payment.
+                </h2>
+                <p className="mt-4 max-w-xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg">
+                  Follow expenses, requisitions and supplier payments from capture to completion without losing the audit trail.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Button asChild variant="secondary" className="rounded-full">
+                    <Link to="/transactions">
+                      View transactions <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="rounded-full border-primary-foreground/50 bg-background/15 text-primary-foreground hover:bg-background/25 hover:text-primary-foreground">
+                    <Link to="/admin/portal?tab=payment_batches">Payment batches</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Advertisement pages — only rendered when live and targeted */}
+          {slide.kind === "advert" && slideAdvert && (
+            <div className="flex min-h-[500px] items-center sm:min-h-[450px] lg:min-h-[416px]">
               <div className="max-w-3xl text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
                   <Megaphone className="h-3.5 w-3.5" />
                   Featured for your organisation
                 </div>
                 <h2 className="mt-5 max-w-2xl break-words text-3xl font-bold leading-[1.1] drop-shadow-sm sm:text-5xl lg:text-6xl">
-                  {activeAdvert.headline}
+                  {slideAdvert.headline}
                 </h2>
-                {activeAdvert.body && (
+                {slideAdvert.body && (
                   <p className="mt-4 max-w-2xl break-words text-base leading-relaxed text-primary-foreground/90 sm:text-lg">
-                    {activeAdvert.body}
+                    {slideAdvert.body}
                   </p>
                 )}
-                {renderAdCta(activeAdvert)}
+                {renderAdCta(slideAdvert)}
               </div>
             </div>
           )}
 
-          {/* Slide 3 — audit & compliance readiness */}
-          {active?.kind === "audit" && (
-            <div className="grid animate-fade-in gap-5 lg:grid-cols-[1.05fr_1.7fr]">
+          {/* Final page — audit & compliance readiness */}
+          {slide.kind === "audit" && (
+            <div className="grid gap-5 lg:grid-cols-[1.05fr_1.7fr]">
               <div className="text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
                   <ShieldCheck className="h-3.5 w-3.5" />
@@ -609,6 +654,10 @@ export function SmartPanel() {
               </div>
             </div>
           )}
+        </div>
+          </article>
+          );
+        })}
         </div>
 
         {total > 1 && (
