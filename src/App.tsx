@@ -39,6 +39,7 @@ import Contact from "./pages/Contact";
 import Insights from "./pages/Insights";
 import BookDemo from "./pages/BookDemo";
 import Oversight from "./pages/Oversight";
+import { PlatformAnalyticsTracker } from "@/components/PlatformAnalyticsTracker";
 
 // Portals
 import EmployeePortal from "./pages/portals/EmployeePortal";
@@ -65,6 +66,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <PlatformAnalyticsTracker />
         <AuthProvider>
           <CurrencyProvider>
           <PRNotificationProvider>

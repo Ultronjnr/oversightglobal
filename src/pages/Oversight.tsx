@@ -23,12 +23,12 @@ import {
 } from "lucide-react";
 import {
   getPlatformCustomerIntelligence, getPlatformOrganizations, getPlatformOverview,
-  getPlatformRecentUsers, type PlatformCustomerIntelligence, type PlatformOrganization,
-  type PlatformOverview, type PlatformRecentUser,
+  getPlatformRecentUsers, getPlatformLiveAnalytics, type PlatformCustomerIntelligence, type PlatformOrganization,
+  type PlatformOverview, type PlatformRecentUser, type PlatformLiveAnalytics,
 } from "@/services/platform.service";
 import { AdvertisementsManager } from "@/components/oversight/AdvertisementsManager";
 
-const traffic = {
+const trafficFallback = {
   visitors: 52, pageViews: 223, viewsPerVisit: 4.29, duration: "4m 7s", bounce: 67,
   daily: [4, 9, 6, 3, 10, 6, 10, 4],
   sources: [["Direct", 38], ["bing.com", 6], ["google.com", 4], ["Gmail", 2], ["Other", 4]] as const,
@@ -138,12 +138,13 @@ export default function Oversight() {
   const [orgs, setOrgs] = useState<PlatformOrganization[]>([]);
   const [customers, setCustomers] = useState<PlatformCustomerIntelligence[]>([]);
   const [recentUsers, setRecentUsers] = useState<PlatformRecentUser[]>([]);
+  const [liveTraffic, setLiveTraffic] = useState<PlatformLiveAnalytics | null>(null);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     if (!isStaff) return;
-    Promise.all([getPlatformOverview(), getPlatformOrganizations(), getPlatformCustomerIntelligence(), getPlatformRecentUsers(30)]).then(([summary, organizations, intelligence, users]) => {
-      setOverview(summary); setOrgs(organizations); setCustomers(intelligence); setRecentUsers(users); setLoadingData(false);
+    Promise.all([getPlatformOverview(), getPlatformOrganizations(), getPlatformCustomerIntelligence(), getPlatformRecentUsers(30), getPlatformLiveAnalytics(30)]).then(([summary, organizations, intelligence, users, analytics]) => {
+      setOverview(summary); setOrgs(organizations); setCustomers(intelligence); setRecentUsers(users); setLiveTraffic(analytics); setLoadingData(false);
     });
   }, [isStaff]);
 
@@ -152,6 +153,18 @@ export default function Oversight() {
   const typedOrgRows = (overview?.org_types ?? []).filter((item) => item.label !== "Unspecified").map((item) => ({ label: item.label, amount: Number(item.value) }));
   const signupCount = customers.filter((item) => Date.now() - new Date(item.organization_created_at).getTime() <= 30 * 86400000).length;
   const orgById = useMemo(() => new Map(orgs.map((org) => [org.id, org])), [orgs]);
+  const traffic = liveTraffic && liveTraffic.page_views > 0 ? {
+    visitors: liveTraffic.visitors,
+    pageViews: liveTraffic.page_views,
+    viewsPerVisit: liveTraffic.views_per_visit,
+    bounce: liveTraffic.bounce_rate,
+    daily: liveTraffic.daily.map((item) => item.visitors),
+    sources: liveTraffic.sources.map((item) => [item.label, item.value] as const),
+    pages: liveTraffic.pages.map((item) => [item.label, item.value] as const),
+    devices: liveTraffic.devices.map((item) => [item.label, item.value] as const),
+  } : trafficFallback;
+  const growth = overview?.organization_growth ?? [];
+  const growthMax = Math.max(1, ...growth.map((item) => Number(item.total)));
 
   if (isLoading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
@@ -177,8 +190,8 @@ export default function Oversight() {
             </div>
 
             <div className="grid gap-6 xl:grid-cols-12">
-              <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Traffic analytics</CardTitle><p className="mt-1 text-xs text-muted-foreground">15–22 September 2026</p></div><Badge variant="secondary">{traffic.visitors} visitors</Badge></CardHeader><CardContent>
-                <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4"><Mini label="Page views" value={String(traffic.pageViews)} /><Mini label="Views / visit" value={String(traffic.viewsPerVisit)} /><Mini label="Visit duration" value={traffic.duration} /><Mini label="Bounce rate" value={`${traffic.bounce}%`} /></div>
+              <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Traffic analytics</CardTitle><p className="mt-1 text-xs text-muted-foreground">Live rolling 30 days</p></div><Badge variant="secondary">{traffic.visitors} visitors</Badge></CardHeader><CardContent>
+                <div className="mb-6 grid grid-cols-3 gap-3"><Mini label="Page views" value={String(traffic.pageViews)} /><Mini label="Views / visit" value={String(traffic.viewsPerVisit)} /><Mini label="Bounce rate" value={`${traffic.bounce}%`} /></div>
                 <div className="flex h-40 items-end gap-3 border-b border-border px-1">{traffic.daily.map((value, index) => <div key={index} className="flex h-full flex-1 items-end"><div className="w-full rounded-t-md bg-primary/80 transition-all hover:bg-primary" style={{ height: `${Math.max(18, value * 9)}%` }} /></div>)}</div>
                 <div className="mt-2 flex justify-between text-[10px] text-muted-foreground"><span>Sep 15</span><span>Sep 17</span><span>Sep 19</span><span>Sep 22</span></div>
               </CardContent></Card>
@@ -187,15 +200,16 @@ export default function Oversight() {
 
             <div className="grid gap-6 xl:grid-cols-12">
               <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader><CardTitle>Recent organisations</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Organisation</TableHead><TableHead>Type</TableHead><TableHead>Contact</TableHead><TableHead className="text-right">Volume</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{customers.slice(0, 6).map((customer) => <TableRow key={customer.organization_id}><TableCell className="font-semibold">{customer.organization_name}</TableCell><TableCell><Badge variant="outline">{customer.organisation_type || "Profile incomplete"}</Badge></TableCell><TableCell><p className="text-xs">{customer.contact_name || "Primary contact"}</p><p className="max-w-48 truncate text-[11px] text-muted-foreground">{customer.contact_email || "No email captured"}</p></TableCell><TableCell className="text-right tabular-nums">{formatCurrency(Number(orgById.get(customer.organization_id)?.transaction_value ?? 0))}</TableCell><TableCell className="text-xs text-muted-foreground">{new Date(customer.organization_created_at).toLocaleDateString()}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
-              <div className="space-y-6 xl:col-span-4"><Distribution title="Organisation types" rows={typedOrgRows} /><Distribution title="Top expense categories" currency rows={(overview?.categories ?? []).slice(0, 5).map((item) => ({ label: item.label, amount: Number(item.amount) }))} /></div>
+               <div className="space-y-6 xl:col-span-4"><Distribution title="Organisation types" rows={typedOrgRows} /><Distribution title="Industries & causes" rows={(overview?.industries ?? []).map((item) => ({ label: item.label, amount: Number(item.value) }))} /><Distribution title="Spending patterns" currency rows={(overview?.categories ?? []).slice(0, 5).map((item) => ({ label: item.label, amount: Number(item.amount) }))} /></div>
             </div>
+             <Card className="border-border/70 shadow-sm"><CardHeader><CardTitle>Organisation growth over time</CardTitle></CardHeader><CardContent><div className="flex h-48 items-end gap-2 border-b border-border">{growth.map((item) => <div key={item.month} className="group flex h-full flex-1 items-end" title={`${item.month}: ${item.total} total, ${item.new_organizations} new`}><div className="w-full rounded-t-md bg-primary/80 transition-colors group-hover:bg-primary" style={{ height: `${Math.max(5, Number(item.total) / growthMax * 100)}%` }} /></div>)}</div><div className="mt-2 flex justify-between text-[10px] text-muted-foreground"><span>{growth[0]?.month ?? ""}</span><span>{growth[growth.length - 1]?.month ?? ""}</span></div></CardContent></Card>
           </>}
 
           {section === "organizations" && <PageSection title={`All organisations (${customers.length})`}><Card className="border-border/70 shadow-sm"><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>Organisation</TableHead><TableHead>Business details</TableHead><TableHead>Primary contact</TableHead><TableHead>Registration</TableHead><TableHead>Activity</TableHead></TableRow></TableHeader><TableBody>{customers.map((customer) => { const org = orgById.get(customer.organization_id); return <TableRow key={customer.organization_id}><TableCell><p className="font-semibold">{customer.organization_name}</p><p className="text-xs text-muted-foreground">Joined {new Date(customer.organization_created_at).toLocaleDateString()}</p></TableCell><TableCell><Badge variant="outline">{customer.organisation_type || "Profile incomplete"}</Badge><p className="mt-1 max-w-56 truncate text-xs text-muted-foreground">{customer.address || "No address captured"}</p></TableCell><TableCell><p className="text-sm">{customer.contact_name || "—"}</p><p className="text-xs text-muted-foreground">{customer.contact_email || "No email"}</p><p className="text-xs text-muted-foreground">{customer.contact_phone || "No phone"}</p></TableCell><TableCell className="text-xs"><p>{customer.registration_number || "No registration number"}</p><p className="text-muted-foreground">{customer.pbo_registered ? `PBO ${customer.pbo_number || "registered"}` : "PBO not recorded"}</p></TableCell><TableCell><p className="text-sm font-semibold">{org?.users ?? 0} users</p><p className="text-xs text-muted-foreground">{org?.transactions ?? 0} transactions</p></TableCell></TableRow>; })}</TableBody></Table></CardContent></Card></PageSection>}
 
           {section === "intelligence" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Onboarding completed" value={String(completedOnboarding)} hint={`${customers.length - completedOnboarding} still incomplete`} icon={ShieldCheck} tone="success" /><StatCard label="New signups" value={String(signupCount)} hint="Organisations in the last 30 days" icon={UserPlus} /><StatCard label="Contactable customers" value={String(customers.filter((item) => item.contact_email).length)} hint="Primary email available" icon={Users} /><StatCard label="Profile gaps" value={String(incompleteProfiles)} hint="Organisation type not yet captured" icon={FileSearch} tone="warning" /></div><div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"><Distribution title="Primary pain points" rows={countValues(customers, "pain_point")} /><Distribution title="Supported causes" rows={countValues(customers, "cause")} /><Distribution title="Funding sources" rows={countValues(customers, "funding")} /><Distribution title="Team size" rows={countValues(customers, "team_size")} /><Distribution title="How customers found Ovasyt" rows={countValues(customers, "heard_about")} /></div></>}
 
-          {section === "analytics" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><StatCard label="Visitors" value={String(traffic.visitors)} hint="Selected period" icon={Users} /><StatCard label="Page views" value={String(traffic.pageViews)} hint="Across public and app pages" icon={Eye} /><StatCard label="Views per visit" value={String(traffic.viewsPerVisit)} hint="Engagement depth" icon={MousePointerClick} /><StatCard label="Visit duration" value={traffic.duration} hint="Average session" icon={Activity} tone="success" /><StatCard label="Bounce rate" value={`${traffic.bounce}%`} hint="Single-page visits" icon={ChevronRight} tone="warning" /></div><div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4"><Distribution title="Traffic sources" rows={traffic.sources.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Popular pages" rows={traffic.pages.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Devices (%)" rows={traffic.devices.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Countries" rows={traffic.countries.map(([label, amount]) => ({ label, amount }))} /></div></>}
+          {section === "analytics" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Visitors" value={String(traffic.visitors)} hint="Rolling 30 days" icon={Users} /><StatCard label="Page views" value={String(traffic.pageViews)} hint="Across public and app pages" icon={Eye} /><StatCard label="Views per visit" value={String(traffic.viewsPerVisit)} hint="Engagement depth" icon={MousePointerClick} /><StatCard label="Bounce rate" value={`${traffic.bounce}%`} hint="Single-page visits" icon={ChevronRight} tone="warning" /></div><div className="grid gap-6 lg:grid-cols-3"><Distribution title="Traffic sources" rows={traffic.sources.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Popular pages" rows={traffic.pages.map(([label, amount]) => ({ label, amount }))} /><Distribution title="Devices" rows={traffic.devices.map(([label, amount]) => ({ label, amount }))} /></div></>}
 
           {section === "activity" && <><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Invoice scans" value={String(overview?.scans ?? 0)} hint="Documents analysed" icon={FileSearch} /><StatCard label="Requisitions / quotes" value={`${overview?.requisitions ?? 0} / ${overview?.quotes ?? 0}`} hint={`${overview?.suppliers ?? 0} suppliers`} icon={ReceiptText} /><StatCard label="Payment batches" value={String(overview?.batches ?? 0)} hint={`${formatCurrency(overview?.paid_value ?? 0)} settled`} icon={Wallet} tone="success" /><StatCard label="Advert views / clicks" value={`${overview?.ad_views ?? 0} / ${overview?.ad_clicks ?? 0}`} hint="Published campaign engagement" icon={Megaphone} /></div><PageSection title="New users"><Card className="border-border/70 shadow-sm"><CardContent className="overflow-x-auto p-0"><Table><TableHeader><TableRow><TableHead>User</TableHead><TableHead>Organisation</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{recentUsers.map((item) => <TableRow key={item.user_id}><TableCell><p className="font-semibold">{item.full_name || "Unnamed user"}</p><p className="text-xs text-muted-foreground">{item.email}</p></TableCell><TableCell>{item.organization_name || "Internal account"}</TableCell><TableCell>{item.role || "No role"}</TableCell><TableCell><Badge variant={item.status === "ACTIVE" ? "default" : "secondary"}>{item.status}</Badge></TableCell><TableCell className="text-xs text-muted-foreground">{new Date(item.joined_at).toLocaleDateString()}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card></PageSection></>}
 

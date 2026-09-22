@@ -2044,6 +2044,33 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_analytics_events: {
+        Row: {
+          device_type: string
+          id: string
+          occurred_at: string
+          path: string
+          referrer_host: string | null
+          session_id: string
+        }
+        Insert: {
+          device_type: string
+          id?: string
+          occurred_at?: string
+          path: string
+          referrer_host?: string | null
+          session_id: string
+        }
+        Update: {
+          device_type?: string
+          id?: string
+          occurred_at?: string
+          path?: string
+          referrer_host?: string | null
+          session_id?: string
+        }
+        Relationships: []
+      }
       pr_message_attachments: {
         Row: {
           created_at: string
@@ -4071,6 +4098,7 @@ export type Database = {
           team_size: string
         }[]
       }
+      platform_live_analytics: { Args: { _days?: number }; Returns: Json }
       platform_organizations: {
         Args: never
         Returns: {

@@ -40,6 +40,7 @@ import {
   saveAdvertisement,
   setAdvertisementStatus,
   setAdvertisementTargets,
+  uploadAdvertisementImage,
 } from "@/services/advertisement.service";
 import {
   getAdPerformance,
@@ -81,6 +82,7 @@ export function AdvertisementsManager({ organizations }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const load = async () => {
     const [list, perf] = await Promise.all([listAdvertisements(), getAdPerformance()]);
@@ -100,12 +102,14 @@ export function AdvertisementsManager({ organizations }: Props) {
   const openNew = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
     setOpen(true);
   };
 
   const openEdit = async (ad: Advertisement) => {
     const orgIds = await getAdvertisementTargets(ad.id);
     setEditingId(ad.id);
+    setImageFile(null);
     setForm({
       title: ad.title,
       headline: ad.headline,
@@ -135,12 +139,22 @@ export function AdvertisementsManager({ organizations }: Props) {
       return;
     }
     setSaving(true);
+    let imageUrl = form.image_url.trim() || null;
+    if (imageFile) {
+      const uploaded = await uploadAdvertisementImage(imageFile);
+      if (!uploaded.path) {
+        setSaving(false);
+        toast.error(uploaded.error || "Could not upload the advert image.");
+        return;
+      }
+      imageUrl = uploaded.path;
+    }
     const res = await saveAdvertisement(
       {
         title: form.title.trim(),
         headline: form.headline.trim(),
         body: form.body.trim() || null,
-        image_url: form.image_url.trim() || null,
+        image_url: imageUrl,
         cta_label: form.cta_label.trim() || null,
         cta_url: form.cta_url.trim() || null,
         tone: form.tone,
@@ -335,6 +349,19 @@ export function AdvertisementsManager({ organizations }: Props) {
                 value={form.body}
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="advert-image">Full-slide background image</Label>
+              <Input
+                id="advert-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                JPG, PNG or WebP, up to 8 MB. A wide image works best in the customer carousel.
+              </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">

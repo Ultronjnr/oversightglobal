@@ -22,6 +22,19 @@ export interface PlatformOverview {
   org_types: { label: string; value: number }[];
   categories: { label: string; value: number; amount: number }[];
   monthly: { month: string; value: number; amount: number }[];
+  industries: { label: string; value: number }[];
+  organization_growth: { month: string; total: number; new_organizations: number }[];
+}
+
+export interface PlatformLiveAnalytics {
+  visitors: number;
+  page_views: number;
+  views_per_visit: number;
+  bounce_rate: number;
+  daily: { day: string; visitors: number; page_views: number }[];
+  pages: { label: string; value: number }[];
+  sources: { label: string; value: number }[];
+  devices: { label: string; value: number }[];
 }
 
 export interface PlatformOrganization {
@@ -136,4 +149,13 @@ export async function getPlatformRecentUsers(limit = 20): Promise<PlatformRecent
     return [];
   }
   return (data || []) as unknown as PlatformRecentUser[];
+}
+
+export async function getPlatformLiveAnalytics(days = 30): Promise<PlatformLiveAnalytics | null> {
+  const { data, error } = await supabase.rpc("platform_live_analytics", { _days: days });
+  if (error) {
+    logError("getPlatformLiveAnalytics", error);
+    return null;
+  }
+  return data as unknown as PlatformLiveAnalytics;
 }
