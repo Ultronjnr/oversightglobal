@@ -61,7 +61,30 @@ export async function getLiveAdvertisements(): Promise<Advertisement[]> {
     logError("getLiveAdvertisements", error);
     return [];
   }
-  return (data || []) as unknown as Advertisement[];
+  const adverts = (data || []) as unknown as Advertisement[];
+  return Promise.all(adverts.map(async (advert) => {
+    if (!advert.image_url || /^https?:\/\//.test(advert.image_url)) return advert;
+    const { data: signed } = await supabase.storage
+      .from("advertisement-images")
+      .createSignedUrl(advert.image_url, 3600);
+    return { ...advert, image_url: signed?.signedUrl ?? null };
+  }));
+}
+
+export async function uploadAdvertisementImage(file: File): Promise<{ path?: string; error?: string }> {
+  if (!file.type.startsWith("image/")) return { error: "Choose an image file." };
+  if (file.size > 8 * 1024 * 1024) return { error: "The image must be smaller than 8 MB." };
+  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${crypto.randomUUID()}.${extension}`;
+  const { error } = await supabase.storage.from("advertisement-images").upload(path, file, {
+    contentType: file.type,
+    upsert: false,
+  });
+  if (error) {
+    logError("uploadAdvertisementImage", error);
+    return { error: error.message };
+  }
+  return { path };
 }
 
 /** Every advert — only platform staff can read these (RLS). */
