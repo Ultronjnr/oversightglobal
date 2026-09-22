@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import heroCorporate from "@/assets/hero-corporate.png.asset.json";
+import heroCorporate from "@/assets/hero-corporate.jpg";
 import {
   ArrowRight,
   Sparkles,
@@ -340,7 +340,7 @@ export function SmartPanel() {
       <div className="relative w-full overflow-hidden rounded-[28px] border border-white/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
         {/* Shared background — loaded once for every slide */}
         <img
-          src={heroCorporate.url}
+          src={heroCorporate}
           alt=""
           aria-hidden
           loading="eager"
@@ -348,10 +348,10 @@ export function SmartPanel() {
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-r from-primary/85 via-primary/45 to-primary/15"
+          className="absolute inset-0 bg-gradient-to-r from-primary/80 via-primary/35 to-primary/5"
         />
 
-        <div className="relative min-h-[520px] p-4 sm:p-6 lg:min-h-[440px] lg:p-7">
+        <div className="relative min-h-[520px] p-4 sm:p-6 lg:min-h-[440px] lg:px-14 lg:py-7">
           {/* Slide 1 — live organisation insights */}
           {active === "insights" && (
             <div className="grid animate-fade-in gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
