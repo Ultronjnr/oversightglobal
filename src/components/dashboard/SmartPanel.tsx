@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import heroCorporate from "@/assets/hero-corporate.jpg";
 import everyRandAsset from "@/assets/slide-every-rand.jpg.asset.json";
 import sarsProofAsset from "@/assets/slide-sars-proof.jpg.asset.json";
+import vatAsset from "@/assets/slide-vat.jpg.asset.json";
+import whatsappAsset from "@/assets/slide-whatsapp.jpg.asset.json";
+import leakingMoneyAsset from "@/assets/slide-leaking-money.jpg.asset.json";
 import {
   ArrowRight,
   Sparkles,
@@ -44,6 +47,7 @@ interface Snapshot {
 }
 
 const AUTOPLAY_MS = 6000;
+const AD_FALLBACK_IMAGES = [everyRandAsset.url, vatAsset.url, whatsappAsset.url, leakingMoneyAsset.url];
 
 function Sparkline({ points }: { points: number[] }) {
   const max = Math.max(1, ...points);
@@ -341,12 +345,16 @@ export function SmartPanel() {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative w-full overflow-hidden rounded-[28px] border border-white/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
+      <div className="relative w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
         {/* Each carousel page has its own visual identity. */}
         <img
           src={
             activeAdvert?.image_url ||
-            (active?.kind === "audit" ? sarsProofAsset.url : active?.kind === "insights" ? heroCorporate : everyRandAsset.url)
+            (active?.kind === "audit"
+              ? sarsProofAsset.url
+              : active?.kind === "insights"
+                ? heroCorporate
+                : AD_FALLBACK_IMAGES[index % AD_FALLBACK_IMAGES.length])
           }
           alt=""
           aria-hidden
@@ -369,7 +377,7 @@ export function SmartPanel() {
             <div className="grid animate-fade-in gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
               <div className="flex min-w-0 flex-col text-primary-foreground">
                 <div className="flex items-center gap-2.5">
-                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-white/20 backdrop-blur">
+                  <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/20 backdrop-blur">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
@@ -538,7 +546,7 @@ export function SmartPanel() {
                 <h2 className="mt-5 text-3xl font-bold leading-[1.1] tracking-tight drop-shadow-sm sm:text-4xl">
                   {loading
                     ? "Checking your records…"
-                    : data!.missingDocs > 0
+                    : data && data.missingDocs > 0
                        ? `${data.missingDocs} records need a document`
                       : "Every record is fully supported"}
                 </h2>
@@ -636,7 +644,7 @@ export function SmartPanel() {
                   aria-current={i === index}
                   onClick={() => interact(() => i)}
                   className={cn(
-                     "h-5 min-h-5 rounded-full p-0 transition-all",
+                     "h-5 min-h-5 min-w-0 rounded-full p-0 transition-all",
                      i === index ? "w-8 bg-primary-foreground" : "w-5 bg-primary-foreground/60 hover:bg-primary-foreground/80",
                   )}
                 />
