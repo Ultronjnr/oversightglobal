@@ -126,23 +126,16 @@ Deno.serve(async (req) => {
       if (input.length < 3) return json({ suggestions: [] });
       if (input.length > 200) return json({ error: "Query too long" }, 400);
 
-      const res = await fetch(`${baseUrl}/${placesPath("places/v1/places:autocomplete")}`, {
-        method: "POST",
-        headers: placesHeaders(
-          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
-        ),
-        body: JSON.stringify({
-          input,
-          sessionToken,
-          includedRegionCodes: ["ZA"],
-        }),
-      });
+      const res = await callPlaces(
+        "places/v1/places:autocomplete",
+        "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
+        {
+          method: "POST",
+          body: JSON.stringify({ input, sessionToken, includedRegionCodes: ["ZA"] }),
+        },
+      );
 
-      if (!res.ok) {
-        const details = await res.text();
-        console.error(`Places autocomplete failed [${res.status}]: ${details}`);
-        return json({ error: "Address lookup failed", status: res.status, details }, res.status);
-      }
+      if (!res.ok) return await failure(res);
 
       const data = await res.json();
       const suggestions = (data?.suggestions ?? [])
