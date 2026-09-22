@@ -540,14 +540,16 @@ export function BatchesTab() {
       sup?.company_name || a.transaction?.supplier_name || "—";
     const bank = sup?.id ? bankDetails[sup.id] : undefined;
     const scanBank = documentDetails[a.transaction_id || ""] || documentDetails[a.transaction?.pr?.id || ""];
+    const txn = a.transaction;
     return {
       name,
       email: sup?.contact_email || null,
-      bank_name: bank?.bank_name || scanBank?.bank_name || null,
-      account: bank?.bank_account_number || scanBank?.bank_account_number || null,
-      branch: bank?.bank_branch_code || scanBank?.bank_branch_code || null,
-      account_type: bank?.bank_account_type || scanBank?.bank_account_type || null,
-      payment_reference: scanBank?.payment_reference || null,
+      bank_name: bank?.bank_name || txn?.bank_name || scanBank?.bank_name || null,
+      account: bank?.bank_account_number || txn?.bank_account_number || scanBank?.bank_account_number || null,
+      branch: bank?.bank_branch_code || txn?.bank_branch_code || scanBank?.bank_branch_code || null,
+      account_type: bank?.bank_account_type || txn?.bank_account_type || scanBank?.bank_account_type || null,
+      payment_reference:
+        txn?.payment_reference || txn?.invoice_number || scanBank?.payment_reference || null,
       txnRef:
         a.invoice?.pr?.transaction_id || a.transaction?.pr?.transaction_id || "—",
       currency:
