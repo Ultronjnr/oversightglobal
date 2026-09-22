@@ -419,34 +419,43 @@ export function SmartPanel() {
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex gap-1.5">
                   {stories.map((s, i) => (
-                    <button
+                    <Button
                       key={s.key}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
                       aria-label={`Show ${s.kicker}`}
                       onClick={() => setIndex(i)}
                       className={cn(
-                        "h-1.5 rounded-full transition-all",
+                        "h-6 min-w-0 rounded-full p-0 transition-all hover:bg-primary-foreground/30",
                         i === index
-                          ? "w-6 bg-primary-foreground"
-                          : "w-1.5 bg-primary-foreground/50",
+                          ? "w-7 bg-primary-foreground"
+                          : "w-2 bg-primary-foreground/50",
                       )}
                     />
                   ))}
                 </div>
                 <div className="flex gap-1">
-                  <button
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     aria-label="Previous insight"
                     onClick={() => setIndex((i) => (i - 1 + total) % total)}
                     className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/20 backdrop-blur transition hover:bg-primary-foreground/30"
                   >
                     <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
                     aria-label="Next insight"
                     onClick={() => setIndex((i) => (i + 1) % total)}
                     className="grid h-8 w-8 place-items-center rounded-full bg-primary-foreground/20 backdrop-blur transition hover:bg-primary-foreground/30"
                   >
                     <ChevronRight className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -624,29 +633,38 @@ export function SmartPanel() {
           </div>
         </div>
 
-        <button
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           aria-label="Previous dashboard slide"
           onClick={() => setIndex((i) => (i - 1 + total) % total)}
           className="absolute left-1 top-1/2 z-10 hidden h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-primary/15 bg-card text-primary shadow-lg transition hover:bg-accent lg:grid"
         >
           <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           aria-label="Next dashboard slide"
           onClick={() => setIndex((i) => (i + 1) % total)}
           className="absolute right-1 top-1/2 z-10 hidden h-9 w-9 translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-primary/15 bg-card text-primary shadow-lg transition hover:bg-accent lg:grid"
         >
           <ChevronRight className="h-5 w-5" />
-        </button>
+        </Button>
 
         <div className="mt-3 hidden items-center justify-center gap-2 lg:flex">
           {stories.map((s, i) => (
-            <button
+            <Button
               key={`panel-${s.key}`}
+              type="button"
+              variant="ghost"
+              size="icon"
               aria-label={`Show dashboard slide ${i + 1}`}
               onClick={() => setIndex(i)}
               className={cn(
-                "h-2 rounded-full transition-all",
+                "h-6 min-w-0 rounded-full p-0 transition-all hover:bg-primary/30",
                 i === index ? "w-7 bg-primary" : "w-2 bg-primary/20",
               )}
             />
