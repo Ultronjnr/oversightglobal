@@ -124,12 +124,14 @@ function Tile({
       >
         {icon}
       </div>
-      <p className="truncate text-[11px] text-muted-foreground sm:text-xs">{label}</p>
-      <p className="truncate text-base font-bold tabular-nums text-foreground sm:text-lg">
+      <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">
+        {label}
+      </p>
+      <p className="whitespace-nowrap text-sm font-bold tabular-nums leading-tight text-foreground sm:text-base lg:text-lg">
         {value}
       </p>
       {hint && (
-        <p className="truncate text-[10px] text-muted-foreground sm:text-[11px]">
+        <p className="text-[10px] leading-tight text-muted-foreground sm:text-[11px]">
           {hint}
         </p>
       )}
@@ -363,9 +365,9 @@ export function SmartPanel() {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-gradient-to-br from-primary/10 via-primary/5 to-white p-2.5 shadow-[0_20px_50px_-24px_hsl(var(--primary)/0.45)] sm:p-4">
-        <div className="grid gap-3 lg:grid-cols-[1.05fr_1.5fr_0.85fr]">
+        <div className="grid gap-3 lg:grid-cols-[1fr_1.75fr_0.9fr]">
           {/* Hero story */}
-          <div className="relative min-h-[240px] overflow-hidden rounded-2xl text-white">
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl text-white">
             <img
               src={heroBg}
               alt=""
@@ -449,7 +451,7 @@ export function SmartPanel() {
           </div>
 
           {/* Live metric tiles */}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-3">
             <Tile
               label="Total Spend (MTD)"
               value={loading ? "—" : formatCurrency(data!.spendMtd)}
