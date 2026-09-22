@@ -47,6 +47,42 @@ export interface AdPerformanceRow {
   clicks: number;
 }
 
+export interface PlatformCustomerIntelligence {
+  organization_id: string;
+  organization_name: string;
+  organisation_type: string | null;
+  company_email: string | null;
+  phone: string | null;
+  address: string | null;
+  registration_number: string | null;
+  tax_number: string | null;
+  pbo_registered: boolean | null;
+  pbo_number: string | null;
+  organization_created_at: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  pain_point: string | null;
+  cause: string | null;
+  funding: string | null;
+  team_size: string | null;
+  heard_about: string | null;
+  onboarding_completed_at: string | null;
+}
+
+export interface PlatformRecentUser {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+  status: string;
+  role: string | null;
+  organization_id: string | null;
+  organization_name: string | null;
+  organisation_type: string | null;
+  joined_at: string;
+}
+
 /** Is the signed-in user Ovasyt platform staff? */
 export async function isPlatformAdmin(): Promise<boolean> {
   const { data, error } = await supabase.rpc("is_platform_admin", {});
@@ -82,4 +118,22 @@ export async function getAdPerformance(): Promise<AdPerformanceRow[]> {
     return [];
   }
   return (data || []) as unknown as AdPerformanceRow[];
+}
+
+export async function getPlatformCustomerIntelligence(): Promise<PlatformCustomerIntelligence[]> {
+  const { data, error } = await supabase.rpc("platform_customer_intelligence");
+  if (error) {
+    logError("getPlatformCustomerIntelligence", error);
+    return [];
+  }
+  return (data || []) as unknown as PlatformCustomerIntelligence[];
+}
+
+export async function getPlatformRecentUsers(limit = 20): Promise<PlatformRecentUser[]> {
+  const { data, error } = await supabase.rpc("platform_recent_users", { _limit: limit });
+  if (error) {
+    logError("getPlatformRecentUsers", error);
+    return [];
+  }
+  return (data || []) as unknown as PlatformRecentUser[];
 }
