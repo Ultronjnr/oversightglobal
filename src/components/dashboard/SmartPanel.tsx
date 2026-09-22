@@ -115,10 +115,10 @@ function Tile({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-2xl border border-white/70 bg-white/85 p-3 shadow-[0_1px_0_0_hsl(0_0%_100%)_inset,0_12px_28px_-20px_hsl(220_40%_20%/0.45)] backdrop-blur-xl sm:p-4">
+    <div className="flex min-w-0 flex-col rounded-xl border border-card/70 bg-card/85 p-3 shadow-lg backdrop-blur-xl sm:p-4">
       <div
         className={cn(
-          "mb-2 grid h-8 w-8 place-items-center rounded-full text-white shadow-sm",
+          "mb-2 grid h-8 w-8 place-items-center rounded-full text-primary-foreground shadow-sm",
           iconClass,
         )}
       >
@@ -380,7 +380,7 @@ export function SmartPanel() {
             />
             <div key={story.key} className="relative flex h-full animate-fade-in flex-col p-5 sm:p-6">
               <div className="flex items-center gap-2">
-                <div className="grid h-8 w-8 place-items-center rounded-xl bg-white/20 backdrop-blur">
+                <div className="grid h-8 w-8 place-items-center rounded-xl bg-primary-foreground/20 backdrop-blur">
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
