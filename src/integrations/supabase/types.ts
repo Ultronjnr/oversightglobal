@@ -4046,6 +4046,31 @@ export type Database = {
           views: number
         }[]
       }
+      platform_customer_intelligence: {
+        Args: never
+        Returns: {
+          address: string
+          cause: string
+          company_email: string
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          funding: string
+          heard_about: string
+          onboarding_completed_at: string
+          organisation_type: string
+          organization_created_at: string
+          organization_id: string
+          organization_name: string
+          pain_point: string
+          pbo_number: string
+          pbo_registered: boolean
+          phone: string
+          registration_number: string
+          tax_number: string
+          team_size: string
+        }[]
+      }
       platform_organizations: {
         Args: never
         Returns: {
@@ -4062,6 +4087,21 @@ export type Database = {
         }[]
       }
       platform_overview: { Args: never; Returns: Json }
+      platform_recent_users: {
+        Args: { _limit?: number }
+        Returns: {
+          email: string
+          full_name: string
+          joined_at: string
+          organisation_type: string
+          organization_id: string
+          organization_name: string
+          phone: string
+          role: string
+          status: string
+          user_id: string
+        }[]
+      }
       post_pr_system_note: {
         Args: { _note: string; _pr_id: string }
         Returns: {
