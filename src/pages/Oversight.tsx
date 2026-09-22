@@ -3,7 +3,7 @@ import { Navigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePlatformAdmin } from "@/hooks/use-platform-admin";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { Logo } from "@/components/Logo";
+import internalLogo from "@/assets/ovasyt-internal-logo.png";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ function InternalSidebar({ section, setSection }: { section: Section; setSection
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground"><ShieldCheck className="h-5 w-5" /></div>
           ) : (
             <div className="flex items-center gap-2">
-              <Logo size="sm" className="w-28 overflow-hidden [&_img]:h-10" />
+              <img src={internalLogo} alt="Ovasyt" className="h-10 w-28 object-contain object-left" />
               <div className="border-l border-sidebar-border pl-2"><p className="text-xs font-bold">Internal</p><p className="text-[10px] text-muted-foreground">Command center</p></div>
             </div>
           )}
@@ -110,11 +110,11 @@ function StatCard({ label, value, hint, icon: Icon, tone = "primary" }: { label:
   </Card>;
 }
 
-function Distribution({ title, rows, empty = "No information captured yet." }: { title: string; rows: { label: string; amount: number }[]; empty?: string }) {
+function Distribution({ title, rows, empty = "No information captured yet.", currency = false }: { title: string; rows: { label: string; amount: number }[]; empty?: string; currency?: boolean }) {
   const max = Math.max(1, ...rows.map((row) => row.amount));
   return <Card className="border-border/70 shadow-sm"><CardHeader className="pb-3"><CardTitle className="text-base">{title}</CardTitle></CardHeader><CardContent className="space-y-4">
     {rows.length === 0 ? <p className="text-sm text-muted-foreground">{empty}</p> : rows.map((row) => <div key={row.label}>
-      <div className="mb-1.5 flex justify-between gap-3 text-xs"><span className="truncate font-medium">{row.label}</span><span className="tabular-nums text-muted-foreground">{row.amount}</span></div>
+      <div className="mb-1.5 flex justify-between gap-3 text-xs"><span className="truncate font-medium">{row.label}</span><span className="tabular-nums text-muted-foreground">{currency ? formatCurrency(row.amount) : row.amount}</span></div>
       <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-primary transition-[width] duration-700" style={{ width: `${Math.max(5, row.amount / max * 100)}%` }} /></div>
     </div>)}
   </CardContent></Card>;
@@ -187,7 +187,7 @@ export default function Oversight() {
 
             <div className="grid gap-6 xl:grid-cols-12">
               <Card className="border-border/70 shadow-sm xl:col-span-8"><CardHeader><CardTitle>Recent organisations</CardTitle></CardHeader><CardContent className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Organisation</TableHead><TableHead>Type</TableHead><TableHead>Contact</TableHead><TableHead className="text-right">Volume</TableHead><TableHead>Joined</TableHead></TableRow></TableHeader><TableBody>{customers.slice(0, 6).map((customer) => <TableRow key={customer.organization_id}><TableCell className="font-semibold">{customer.organization_name}</TableCell><TableCell><Badge variant="outline">{customer.organisation_type || "Profile incomplete"}</Badge></TableCell><TableCell><p className="text-xs">{customer.contact_name || "Primary contact"}</p><p className="max-w-48 truncate text-[11px] text-muted-foreground">{customer.contact_email || "No email captured"}</p></TableCell><TableCell className="text-right tabular-nums">{formatCurrency(Number(orgById.get(customer.organization_id)?.transaction_value ?? 0))}</TableCell><TableCell className="text-xs text-muted-foreground">{new Date(customer.organization_created_at).toLocaleDateString()}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
-              <div className="space-y-6 xl:col-span-4"><Distribution title="Organisation types" rows={typedOrgRows} /><Distribution title="Top expense categories" rows={(overview?.categories ?? []).slice(0, 5).map((item) => ({ label: item.label, amount: Number(item.amount) }))} /></div>
+              <div className="space-y-6 xl:col-span-4"><Distribution title="Organisation types" rows={typedOrgRows} /><Distribution title="Top expense categories" currency rows={(overview?.categories ?? []).slice(0, 5).map((item) => ({ label: item.label, amount: Number(item.amount) }))} /></div>
             </div>
           </>}
 
