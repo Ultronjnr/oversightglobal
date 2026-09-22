@@ -10,7 +10,7 @@ import { FundingPoolsTab } from "@/components/donations/FundingPoolsTab";
 import { ProjectsTab } from "@/components/donations/ProjectsTab";
 import { ReceiptsTab } from "@/components/donations/ReceiptsTab";
 import { ReportsTab } from "@/components/donations/ReportsTab";
-import { BrandingTab } from "@/components/donations/BrandingTab";
+import { CompanyDetailsTab } from "@/components/donations/CompanyDetailsTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPortalNavItems } from "@/lib/admin-nav";
 
@@ -28,7 +28,7 @@ export default function Donations() {
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="w-max sm:w-full flex sm:grid sm:grid-cols-8 mb-4">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="branding">Branding</TabsTrigger>
+              <TabsTrigger value="branding">Company Details</TabsTrigger>
               <TabsTrigger value="projects">Projects</TabsTrigger>
               <TabsTrigger value="donors">Donors</TabsTrigger>
               <TabsTrigger value="donations">Donations</TabsTrigger>
@@ -38,7 +38,7 @@ export default function Donations() {
             </TabsList>
           </div>
           <TabsContent value="dashboard"><DonationDashboardTab /></TabsContent>
-          <TabsContent value="branding"><BrandingTab /></TabsContent>
+          <TabsContent value="branding"><CompanyDetailsTab /></TabsContent>
           <TabsContent value="projects"><ProjectsTab /></TabsContent>
           <TabsContent value="donors"><DonorRegistryTab /></TabsContent>
           <TabsContent value="donations"><DonationsTab /></TabsContent>
