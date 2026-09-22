@@ -119,6 +119,10 @@ export function CompanyProfileTab() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <p className="text-xs text-muted-foreground">
+          These details are reused across the system — Section 18A company details and
+          receipts fill in automatically from here, so you only capture them once.
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">Organisation Name *</Label>
