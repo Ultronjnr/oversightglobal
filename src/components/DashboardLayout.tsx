@@ -198,7 +198,7 @@ export function DashboardLayout({
         </Sidebar>
       )}
 
-      <SidebarInset className="min-h-screen bg-[hsl(220,30%,97%)]">
+      <SidebarInset className="min-h-screen min-w-0 overflow-x-hidden bg-background">
         {/* Header */}
         <header className="sticky top-0 z-50 bg-white border-b border-border/40 shadow-sm">
           <div className="px-4 sm:px-6">
@@ -385,7 +385,7 @@ export function DashboardLayout({
 
         <main
           className={cn(
-            "px-4 sm:px-6 py-5 sm:py-8",
+            "min-w-0 max-w-full overflow-x-hidden px-4 py-5 sm:px-6 sm:py-8",
             navItems.length > 0 && "pb-24 md:pb-8"
           )}
         >
