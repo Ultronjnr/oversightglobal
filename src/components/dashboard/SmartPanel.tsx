@@ -112,8 +112,8 @@ function Tile({
       >
         {icon}
       </div>
-      <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{label}</p>
-      <p className="break-words text-[15px] font-bold tabular-nums leading-tight text-foreground sm:text-base xl:text-lg">
+      <p className="min-w-0 break-words text-[11px] leading-tight text-muted-foreground sm:text-xs">{label}</p>
+      <p className="min-w-0 max-w-full break-words text-sm font-bold tabular-nums leading-tight text-foreground sm:text-[15px] xl:text-base">
         {value}
       </p>
       {hint && (
@@ -388,7 +388,7 @@ export function SmartPanel() {
               )}
             />
 
-        <div className="relative min-h-[980px] p-5 pb-14 sm:min-h-[800px] sm:p-7 sm:pb-14 xl:h-[540px] xl:min-h-0 xl:px-10 xl:py-8">
+        <div className="relative min-h-[980px] p-5 pb-16 sm:min-h-[800px] sm:p-7 sm:pb-16 xl:h-[540px] xl:min-h-0 xl:px-16 xl:py-8">
           {/* Slide 1 — live organisation insights */}
           {slide.kind === "insights" && (
             <div className="grid h-full min-w-0 gap-4 xl:grid-cols-[minmax(210px,1.02fr)_minmax(360px,1.65fr)_minmax(210px,0.95fr)]">
@@ -668,7 +668,7 @@ export function SmartPanel() {
               variant="secondary"
               aria-label="Previous slide"
               onClick={() => interact((i) => (i - 1 + total) % total)}
-              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full shadow-lg backdrop-blur"
+               className="absolute bottom-3 left-3 z-10 rounded-full shadow-lg backdrop-blur xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -678,7 +678,7 @@ export function SmartPanel() {
               variant="secondary"
               aria-label="Next slide"
               onClick={() => interact((i) => (i + 1) % total)}
-              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full shadow-lg backdrop-blur"
+               className="absolute bottom-3 right-3 z-10 rounded-full shadow-lg backdrop-blur xl:bottom-auto xl:top-1/2 xl:-translate-y-1/2"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
