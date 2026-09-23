@@ -388,10 +388,10 @@ export function SmartPanel() {
               )}
             />
 
-        <div className="relative min-h-[980px] p-5 pb-14 sm:min-h-[800px] sm:p-7 sm:pb-14 lg:h-[540px] lg:min-h-0 lg:px-8 lg:py-8 xl:px-10">
+        <div className="relative min-h-[980px] p-5 pb-14 sm:min-h-[800px] sm:p-7 sm:pb-14 xl:h-[540px] xl:min-h-0 xl:px-10 xl:py-8">
           {/* Slide 1 — live organisation insights */}
           {slide.kind === "insights" && (
-            <div className="grid h-full min-w-0 gap-4 lg:grid-cols-[minmax(210px,1.02fr)_minmax(360px,1.65fr)_minmax(210px,0.95fr)]">
+            <div className="grid h-full min-w-0 gap-4 xl:grid-cols-[minmax(210px,1.02fr)_minmax(360px,1.65fr)_minmax(210px,0.95fr)]">
               <div className="flex min-w-0 flex-col text-primary-foreground">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/20 backdrop-blur">
@@ -407,7 +407,7 @@ export function SmartPanel() {
                   </div>
                 </div>
 
-                <div className="mt-8 lg:mt-10">
+                <div className="mt-8 xl:mt-10">
                   <h2 className="text-3xl font-bold leading-[1.1] drop-shadow-sm sm:text-4xl">
                     Smarter spend. Greater impact.
                   </h2>
@@ -424,7 +424,7 @@ export function SmartPanel() {
                 </div>
               </div>
 
-              <div className="grid min-h-0 min-w-0 auto-rows-fr grid-cols-2 gap-3 lg:grid-cols-3">
+              <div className="grid min-h-0 min-w-0 auto-rows-fr grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-3">
                 <Tile
                   label="Total Spend (MTD)"
                    value={loading || !data ? "—" : formatCurrency(data.spendMtd)}
@@ -582,7 +582,7 @@ export function SmartPanel() {
 
           {/* Final page — audit & compliance readiness */}
           {slide.kind === "audit" && (
-             <div className="grid h-full min-w-0 gap-5 lg:grid-cols-[minmax(250px,1.05fr)_minmax(420px,1.7fr)]">
+             <div className="grid h-full min-w-0 gap-5 xl:grid-cols-[minmax(250px,1.05fr)_minmax(420px,1.7fr)]">
               <div className="text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
                   <ShieldCheck className="h-3.5 w-3.5" />
