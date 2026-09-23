@@ -103,7 +103,7 @@ function Tile({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-3 shadow-lg backdrop-blur-xl sm:p-4">
+    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-3 shadow-lg backdrop-blur-xl">
       <div
         className={cn(
           "mb-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-primary-foreground shadow-sm",
@@ -113,7 +113,7 @@ function Tile({
         {icon}
       </div>
       <p className="text-[11px] leading-tight text-muted-foreground sm:text-xs">{label}</p>
-      <p className="break-words text-[clamp(0.92rem,1.45vw,1.25rem)] font-bold tabular-nums leading-tight text-foreground">
+      <p className="break-words text-[15px] font-bold tabular-nums leading-tight text-foreground sm:text-base xl:text-lg">
         {value}
       </p>
       {hint && (
@@ -343,11 +343,11 @@ export function SmartPanel() {
     <section
       aria-label="Organisation insights"
       aria-roledescription="carousel"
-      className="mb-6 w-full"
+      className="mb-6 min-w-0 w-full max-w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="relative w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
+      <div className="relative isolate w-full max-w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
         <div
           className="flex transition-transform duration-700 ease-in-out motion-reduce:transition-none"
           style={{ transform: `translateX(-${index * 100}%)` }}
@@ -367,7 +367,7 @@ export function SmartPanel() {
           <article
             key={slide.key}
             aria-hidden={slideIndex !== index}
-            className="relative min-w-full overflow-hidden"
+             className="relative min-w-full max-w-full overflow-hidden"
           >
             <img
               src={background}
@@ -388,10 +388,10 @@ export function SmartPanel() {
               )}
             />
 
-        <div className="relative min-h-[600px] p-5 pb-14 sm:min-h-[560px] sm:p-7 sm:pb-14 lg:min-h-[480px] lg:px-14 lg:py-8">
+        <div className="relative min-h-[980px] p-5 pb-14 sm:min-h-[800px] sm:p-7 sm:pb-14 lg:h-[540px] lg:min-h-0 lg:px-8 lg:py-8 xl:px-10">
           {/* Slide 1 — live organisation insights */}
           {slide.kind === "insights" && (
-            <div className="grid gap-4 lg:grid-cols-[1.05fr_1.7fr_0.95fr]">
+            <div className="grid h-full min-w-0 gap-4 lg:grid-cols-[minmax(210px,1.02fr)_minmax(360px,1.65fr)_minmax(210px,0.95fr)]">
               <div className="flex min-w-0 flex-col text-primary-foreground">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-foreground/20 backdrop-blur">
@@ -407,8 +407,8 @@ export function SmartPanel() {
                   </div>
                 </div>
 
-                <div className="mt-8 lg:mt-12">
-                  <h2 className="text-3xl font-bold leading-[1.1] tracking-tight drop-shadow-sm sm:text-4xl">
+                <div className="mt-8 lg:mt-10">
+                  <h2 className="text-3xl font-bold leading-[1.1] drop-shadow-sm sm:text-4xl">
                     Smarter spend. Greater impact.
                   </h2>
                    <p className="mt-3 max-w-md text-sm leading-relaxed text-primary-foreground/90 sm:text-base">
@@ -424,7 +424,7 @@ export function SmartPanel() {
                 </div>
               </div>
 
-              <div className="grid auto-rows-fr grid-cols-2 gap-3 xl:grid-cols-3">
+              <div className="grid min-h-0 min-w-0 auto-rows-fr grid-cols-2 gap-3 lg:grid-cols-3">
                 <Tile
                   label="Total Spend (MTD)"
                    value={loading || !data ? "—" : formatCurrency(data.spendMtd)}
@@ -510,7 +510,7 @@ export function SmartPanel() {
                 </Tile>
               </div>
 
-               <div className="relative min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-5 shadow-lg backdrop-blur-xl">
+               <div className="relative min-h-0 min-w-0 overflow-hidden rounded-2xl border border-border/70 bg-background/90 p-5 shadow-lg backdrop-blur-xl">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
                   <Megaphone className="h-3.5 w-3.5" />
                   Quick Updates
@@ -533,7 +533,7 @@ export function SmartPanel() {
 
           {/* Slide 2 — financial command centre */}
           {slide.kind === "city" && (
-            <div className="flex min-h-[500px] items-center sm:min-h-[450px] lg:min-h-[416px]">
+            <div className="flex h-full items-center">
               <div className="max-w-2xl text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-xs font-semibold backdrop-blur">
                   <BarChart3 className="h-4 w-4" />
@@ -561,7 +561,7 @@ export function SmartPanel() {
 
           {/* Advertisement pages — only rendered when live and targeted */}
           {slide.kind === "advert" && slideAdvert && (
-            <div className="flex min-h-[500px] items-center sm:min-h-[450px] lg:min-h-[416px]">
+            <div className="flex h-full items-center">
               <div className="max-w-3xl text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
                   <Megaphone className="h-3.5 w-3.5" />
@@ -582,7 +582,7 @@ export function SmartPanel() {
 
           {/* Final page — audit & compliance readiness */}
           {slide.kind === "audit" && (
-            <div className="grid gap-5 lg:grid-cols-[1.05fr_1.7fr]">
+             <div className="grid h-full min-w-0 gap-5 lg:grid-cols-[minmax(250px,1.05fr)_minmax(420px,1.7fr)]">
               <div className="text-primary-foreground">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-background/20 px-3 py-1 text-[11px] font-semibold backdrop-blur">
                   <ShieldCheck className="h-3.5 w-3.5" />
