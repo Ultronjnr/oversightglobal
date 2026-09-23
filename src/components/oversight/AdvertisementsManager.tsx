@@ -325,16 +325,18 @@ export function AdvertisementsManager({ organizations }: Props) {
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label>Internal title</Label>
+                <Label htmlFor="advert-title">Internal title</Label>
                 <Input
+                  id="advert-title"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="Spring upgrade push"
                 />
               </div>
               <div>
-                <Label>Headline shown to users</Label>
+                <Label htmlFor="advert-headline">Headline shown to users</Label>
                 <Input
+                  id="advert-headline"
                   value={form.headline}
                   onChange={(e) => setForm({ ...form, headline: e.target.value })}
                   placeholder="Important notice"
@@ -343,8 +345,9 @@ export function AdvertisementsManager({ organizations }: Props) {
             </div>
 
             <div>
-              <Label>Message</Label>
+              <Label htmlFor="advert-body">Message</Label>
               <Textarea
+                id="advert-body"
                 rows={3}
                 value={form.body}
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
@@ -366,22 +369,25 @@ export function AdvertisementsManager({ organizations }: Props) {
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
-                <Label>Button label</Label>
+                <Label htmlFor="advert-cta-label">Button label</Label>
                 <Input
+                  id="advert-cta-label"
                   value={form.cta_label}
                   onChange={(e) => setForm({ ...form, cta_label: e.target.value })}
                   placeholder="Learn more"
                 />
               </div>
               <div className="sm:col-span-2">
-                <Label>Button link</Label>
+                <Label htmlFor="advert-cta-url">Button link</Label>
                 <Input
+                  id="advert-cta-url"
                   value={form.cta_url}
                   onChange={(e) => setForm({ ...form, cta_url: e.target.value })}
                   placeholder="/billing or https://..."
                 />
               </div>
             </div>
+
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
@@ -402,8 +408,9 @@ export function AdvertisementsManager({ organizations }: Props) {
                 </Select>
               </div>
               <div>
-                <Label>Priority</Label>
+                <Label htmlFor="advert-priority">Priority</Label>
                 <Input
+                  id="advert-priority"
                   type="number"
                   value={form.priority}
                   onChange={(e) =>
@@ -412,12 +419,12 @@ export function AdvertisementsManager({ organizations }: Props) {
                 />
               </div>
               <div>
-                <Label>Status</Label>
+                <Label htmlFor="advert-status">Status</Label>
                 <Select
                   value={form.status}
                   onValueChange={(v) => setForm({ ...form, status: v as AdStatus })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="advert-status">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -431,16 +438,18 @@ export function AdvertisementsManager({ organizations }: Props) {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <Label>Start date</Label>
+                <Label htmlFor="advert-start">Start date</Label>
                 <Input
+                  id="advert-start"
                   type="date"
                   value={form.starts_at}
                   onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
                 />
               </div>
               <div>
-                <Label>End date</Label>
+                <Label htmlFor="advert-end">End date</Label>
                 <Input
+                  id="advert-end"
                   type="date"
                   value={form.ends_at}
                   onChange={(e) => setForm({ ...form, ends_at: e.target.value })}
