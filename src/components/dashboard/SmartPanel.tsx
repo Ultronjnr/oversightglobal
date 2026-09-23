@@ -349,7 +349,7 @@ export function SmartPanel() {
     >
       <div className="relative isolate w-full max-w-full overflow-hidden rounded-[28px] border border-primary-foreground/60 shadow-[0_34px_80px_-40px_hsl(var(--primary)/0.6)]">
         <div
-          className="flex transition-transform duration-700 ease-in-out motion-reduce:transition-none"
+          className="flex w-full min-w-0 transition-transform duration-700 ease-in-out motion-reduce:transition-none"
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
         {slides.map((slide, slideIndex) => {
@@ -367,7 +367,7 @@ export function SmartPanel() {
           <article
             key={slide.key}
             aria-hidden={slideIndex !== index}
-             className="relative min-w-full max-w-full overflow-hidden"
+             className="relative w-full min-w-0 max-w-full flex-none overflow-hidden"
           >
             <img
               src={background}
