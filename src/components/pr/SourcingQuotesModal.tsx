@@ -44,6 +44,7 @@ import { getAllSuppliers, acceptQuote, type Supplier } from "@/services/finance.
 import { getQuoteDocumentUrl } from "@/services/quote-document.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
 import { ProcurementTrailPanel } from "@/components/pr/ProcurementTrailPanel";
+import { calculateVatTreatment } from "@/lib/vat";
 
 interface SourcingQuotesModalProps {
   open: boolean;
@@ -156,14 +157,16 @@ export function SourcingQuotesModal({
   const handleAdd = async () => {
     setSaving(true);
     try {
+      const totals = calculateVatTreatment(Number(amount), "standard_inclusive");
       const result = await addManualQuote({
         prId: pr.id,
         supplierId: supplierId && supplierId !== MANUAL_SUPPLIER ? supplierId : null,
         supplierName:
           supplierId === MANUAL_SUPPLIER || !supplierId ? supplierName : null,
-        amount: Number(amount),
+        amount: totals.subtotal,
+        vatAmount: totals.vat,
         vatTreatment: "standard_inclusive",
-        totalAmount: Number(amount),
+        totalAmount: totals.total,
         deliveryTime,
         validUntil: validUntil || null,
         notes,
