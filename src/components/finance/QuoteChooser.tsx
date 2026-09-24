@@ -47,7 +47,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
       // Recommend the lowest live quote up front — Finance can change it.
       const live = res.data.filter((q) => q.status !== "REJECTED");
       if (live.length > 0) {
-        setSelectedId(live.reduce((a, b) => (a.amount <= b.amount ? a : b)).id);
+        setSelectedId(live.reduce((a, b) => (a.total_amount <= b.total_amount ? a : b)).id);
       }
     }
     setLoading(false);
@@ -63,7 +63,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
   );
   const lowestId = useMemo(() => {
     if (live.length === 0) return null;
-    return live.reduce((a, b) => (a.amount <= b.amount ? a : b)).id;
+    return live.reduce((a, b) => (a.total_amount <= b.total_amount ? a : b)).id;
   }, [live]);
 
   const accepted = quotes.find((q) => q.status === "ACCEPTED") || null;
@@ -176,7 +176,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
               </p>
 
               <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight text-foreground">
-                {formatCurrency(q.amount)}
+                {formatCurrency(q.total_amount)}
               </p>
 
               <div className="mt-2 flex items-center gap-2 text-xs">
@@ -227,7 +227,7 @@ export function QuoteChooser({ prId, onSelected, onApprove, onDecline }: Props) 
               </span>{" "}
               at{" "}
               <span className="font-semibold tabular-nums text-background">
-                {formatCurrency(selected.amount)}
+                 {formatCurrency(selected.total_amount)}
               </span>
               {selected.id === lowestId ? " · lowest quote" : ""}
             </>

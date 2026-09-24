@@ -34,6 +34,8 @@ import { ProjectBudgetPreview } from "@/components/finance/ProjectBudgetPreview"
 import {
   PRSupplierQuotesInput,
   createEmptyQuoteDraft,
+  quoteRowCalculation,
+  quoteRowGrandTotal,
   type SupplierQuoteDraft,
 } from "@/components/pr/PRSupplierQuotesInput";
 import {
@@ -156,7 +158,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
 
   // ---- Supplier quote maths -------------------------------------------------
   const quoteTotalOf = (q: SupplierQuoteDraft) =>
-    (Number(q.quantity) || 0) * (Number(q.price) || 0);
+    quoteRowGrandTotal(q);
 
   const pricedQuotes = supplierQuotes.filter(
     (q) => (q.supplierId || q.supplierName.trim()) && quoteTotalOf(q) > 0,
@@ -172,7 +174,8 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
   const chosenQuote =
     pricedQuotes.find((q) => q.id === selectedQuoteId) ?? lowestQuote;
 
-  const calculateGrandTotal = () => (chosenQuote ? quoteTotalOf(chosenQuote) : 0);
+  const chosenCalculation = chosenQuote ? quoteRowCalculation(chosenQuote) : null;
+  const calculateGrandTotal = () => chosenCalculation?.total ?? 0;
 
   // Amount used for the project budget reservation preview.
   const fundingTotal = calculateGrandTotal();
@@ -257,7 +260,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
             "Supplier quote",
           quantity: Number(chosenQuote.quantity) || 1,
           unit_price: Number(chosenQuote.price) || 0,
-          total: quoteTotalOf(chosenQuote),
+          total: quoteRowGrandTotal(chosenQuote),
         },
       ];
 
@@ -300,8 +303,10 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
             supplierId: q.supplierId,
             supplierName: q.supplierId ? null : q.supplierName.trim(),
             quoteNumber: q.quoteNumber?.trim() || null,
-            amount: quoteTotalOf(q),
-            vatAmount: Number(q.vat) || 0,
+            amount: quoteRowCalculation(q).subtotal,
+            vatAmount: quoteRowCalculation(q).vat,
+            vatTreatment: q.vatTreatment,
+            totalAmount: quoteRowCalculation(q).total,
             notes: [q.description, q.notes].filter(Boolean).join(" — ") || null,
             documentPath: path,
           });
@@ -336,10 +341,7 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
       setUploadedFile(null);
       setSupplierQuotes([createEmptyQuoteDraft()]);
       setSelectedQuoteId(null);
-
-
-
-      
+      onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
       console.error("Submit error:", error);
@@ -490,13 +492,15 @@ export function PurchaseRequisitionModal({ open, onOpenChange, onSuccess, bypass
                         <div className="flex items-center justify-between gap-6 text-sm">
                           <span className="text-muted-foreground shrink-0">Subtotal:</span>
                           <span className="text-right font-semibold text-foreground whitespace-nowrap tabular-nums">
-                            {formatCurrency(calculateGrandTotal())}
+                            {formatCurrency(chosenCalculation?.subtotal ?? 0)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-6 text-sm">
-                          <span className="text-muted-foreground shrink-0">VAT (0%):</span>
+                          <span className="text-muted-foreground shrink-0">
+                            {chosenCalculation?.summaryLabel ?? "VAT"}:
+                          </span>
                           <span className="text-right font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
-                            {formatCurrency(0)}
+                            {formatCurrency(chosenCalculation?.vat ?? 0)}
                           </span>
                         </div>
                       </div>

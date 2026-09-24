@@ -16,6 +16,11 @@ import {
 } from "@/components/ui/select";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { getAllSuppliers, type Supplier } from "@/services/finance.service";
+import {
+  calculateVatTreatment,
+  VAT_TREATMENT_OPTIONS,
+  type VatTreatment,
+} from "@/lib/vat";
 
 export interface SupplierQuoteDraft {
   id: string;
@@ -32,6 +37,7 @@ export interface SupplierQuoteDraft {
   price: string;
   /** VAT amount on the quotation as a raw numeric string. */
   vat: string;
+  vatTreatment: VatTreatment;
   notes: string;
   file: File | null;
 }
@@ -45,6 +51,7 @@ export const createEmptyQuoteDraft = (): SupplierQuoteDraft => ({
   quantity: 1,
   price: "",
   vat: "",
+  vatTreatment: "standard_exclusive",
   notes: "",
   file: null,
 });
@@ -58,7 +65,10 @@ export const quoteRowVat = (row: SupplierQuoteDraft) => Number(row.vat) || 0;
 
 /** Total including VAT — what the supplier will actually invoice. */
 export const quoteRowGrandTotal = (row: SupplierQuoteDraft) =>
-  quoteRowTotal(row) + quoteRowVat(row);
+  calculateVatTreatment(quoteRowTotal(row), row.vatTreatment, quoteRowVat(row)).total;
+
+export const quoteRowCalculation = (row: SupplierQuoteDraft) =>
+  calculateVatTreatment(quoteRowTotal(row), row.vatTreatment, quoteRowVat(row));
 
 const OTHER = "__other__";
 
@@ -140,7 +150,9 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
 
       <div className="space-y-4">
         {value.map((row, index) => {
-          const total = quoteRowTotal(row);
+          const enteredTotal = quoteRowTotal(row);
+          const calculation = quoteRowCalculation(row);
+          const total = calculation.total;
           const isLowest = lowest?.id === row.id && total > 0;
           const isSelected = selectedId === row.id;
           return (
@@ -289,15 +301,36 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm text-muted-foreground">
-                        VAT on quote ({currency})
-                      </Label>
-                      <AmountInput
-                        value={row.vat}
-                        onChange={(v) => update(row.id, { vat: v })}
-                        placeholder="e.g. 1 875.00"
-                        className="h-10 bg-white border-border"
-                      />
+                      <Label className="text-sm text-muted-foreground">VAT treatment</Label>
+                      <Select
+                        value={row.vatTreatment}
+                        onValueChange={(value: VatTreatment) =>
+                          update(row.id, {
+                            vatTreatment: value,
+                            vat: value === "custom" ? row.vat : "",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-10 bg-white border-border">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-[120] bg-white">
+                          {VAT_TREATMENT_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {row.vatTreatment === "custom" && (
+                        <AmountInput
+                          value={row.vat}
+                          onChange={(v) => update(row.id, { vat: v })}
+                          placeholder="e.g. 1 875.00"
+                          className="h-10 bg-white border-border"
+                          aria-label={`VAT amount (${currency})`}
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -305,19 +338,19 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
                     <div className="flex items-center justify-end gap-3">
                       <span className="text-sm text-muted-foreground">Subtotal:</span>
                       <span className="text-base font-semibold text-foreground w-32 text-right">
-                        {formatCurrency(total)}
+                        {formatCurrency(calculation.subtotal)}
                       </span>
                     </div>
                     <div className="flex items-center justify-end gap-3">
-                      <span className="text-sm text-muted-foreground">VAT:</span>
+                      <span className="text-sm text-muted-foreground">{calculation.summaryLabel}:</span>
                       <span className="text-base font-semibold text-foreground w-32 text-right">
-                        {formatCurrency(quoteRowVat(row))}
+                        {formatCurrency(calculation.vat)}
                       </span>
                     </div>
                     <div className="flex items-center justify-end gap-3">
                       <span className="text-sm text-muted-foreground">Total:</span>
                       <span className="text-lg font-bold text-foreground w-32 text-right">
-                        {formatCurrency(quoteRowGrandTotal(row))}
+                        {formatCurrency(calculation.total)}
                       </span>
                     </div>
                   </div>
@@ -392,7 +425,7 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
           </span>{" "}
           at{" "}
           <span className="font-semibold text-foreground">
-            {formatCurrency(quoteRowTotal(lowest))}
+             {formatCurrency(quoteRowGrandTotal(lowest))}
           </span>
         </p>
       )}

@@ -281,6 +281,8 @@ export async function submitQuote(params: {
       supplier_id: supplier.id,
       transaction_id: quoteRequest?.transaction_id ?? null,
       amount: params.amount,
+      total_amount: params.amount,
+      vat_treatment: "standard_inclusive",
       delivery_time: params.deliveryTime || null,
       valid_until: params.validUntil || null,
       notes: params.notes || null,

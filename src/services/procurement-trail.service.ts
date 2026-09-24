@@ -13,6 +13,7 @@ export interface TrailQuote {
   supplier_name: string;
   amount: number;
   vat_amount: number;
+  total_amount: number;
   status: string;
   document_url: string | null;
   created_at: string;
@@ -49,6 +50,7 @@ const toTrailQuote = (q: any): TrailQuote => ({
   supplier_name: q.supplier?.company_name || q.supplier_name || "Unnamed supplier",
   amount: Number(q.amount) || 0,
   vat_amount: Number(q.vat_amount) || 0,
+  total_amount: Number(q.total_amount) || Number(q.amount) || 0,
   status: q.status,
   document_url: q.document_url ?? null,
   created_at: q.created_at,
@@ -71,7 +73,7 @@ export async function getProcurementTrail(
       supabase
         .from("quotes")
         .select(
-          "id, quote_number, supplier_id, supplier_name, amount, vat_amount, status, document_url, created_at, supplier:suppliers!quotes_supplier_id_fkey(id, company_name)"
+          "id, quote_number, supplier_id, supplier_name, amount, vat_amount, total_amount, status, document_url, created_at, supplier:suppliers!quotes_supplier_id_fkey(id, company_name)"
         )
         .eq("pr_id", prId)
         .order("created_at", { ascending: true }),

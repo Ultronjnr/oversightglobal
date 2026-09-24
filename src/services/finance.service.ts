@@ -69,6 +69,9 @@ export interface Quote {
   organization_id: string;
   pr_id: string;
   amount: number;
+  vat_amount: number;
+  vat_treatment: string;
+  total_amount: number;
   delivery_time: string | null;
   valid_until: string | null;
   notes: string | null;
@@ -824,7 +827,7 @@ export async function acceptQuote(
           user_name: userName,
           timestamp: new Date().toISOString(),
           details: `Accepted quote from ${supplierName} for ${formatCurrency(
-            quoteData.amount,
+            quoteData.total_amount,
             pr.currency
           )}. Other quotes have been automatically rejected.`,
         };
@@ -835,7 +838,7 @@ export async function acceptQuote(
           .from("purchase_requisitions")
           .update({
             history: newHistory as unknown as Json,
-            total_amount: quoteData.amount,
+             total_amount: quoteData.total_amount,
           })
           .eq("id", prId);
 
@@ -844,7 +847,7 @@ export async function acceptQuote(
         postSystemNote(
           prId,
           `✅ Quotation from ${supplierName} accepted by Finance (${formatCurrency(
-            quoteData.amount,
+             quoteData.total_amount,
             pr.currency
           )}). Awaiting final invoice from supplier.`
         ).catch((err) => console.warn("[finance] postSystemNote failed:", err));

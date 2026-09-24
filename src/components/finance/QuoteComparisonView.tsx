@@ -113,7 +113,7 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
     setCounterModal({
       isOpen: true,
       quote,
-      amount: String(quote.amount || ""),
+      amount: String(quote.total_amount || ""),
       notes: "",
     });
   };
@@ -283,7 +283,7 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
                       <div className="bg-muted/50 rounded-lg p-4 mb-4 text-center">
                         <p className="text-xs text-muted-foreground mb-1">Total Amount</p>
                         <p className="text-2xl font-bold text-primary">
-                          {formatCurrency(quote.amount)}
+                          {formatCurrency(quote.total_amount)}
                         </p>
                         {quote.status === "COUNTER_OFFERED" && quote.counter_offer_amount != null && (
                           <div className="mt-2 pt-2 border-t border-border/60 text-xs">
@@ -450,7 +450,7 @@ export function QuoteComparisonView({ prId, onQuoteAction }: QuoteComparisonView
               <div className="bg-muted/40 rounded-md p-3 text-sm flex justify-between">
                 <span className="text-muted-foreground">Supplier's current price</span>
                 <span className="font-mono font-semibold">
-                  {formatCurrency(counterModal.quote.amount)}
+                  {formatCurrency(counterModal.quote.total_amount)}
                 </span>
               </div>
             )}
