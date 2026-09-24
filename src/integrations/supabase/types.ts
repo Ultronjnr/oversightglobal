@@ -4061,6 +4061,10 @@ export type Database = {
       }
       organization_has_admin: { Args: { _org_id: string }; Returns: boolean }
       organization_staffing: { Args: { _org_id: string }; Returns: Json }
+      plan_limit_for_org: {
+        Args: { _key: string; _org: string }
+        Returns: number
+      }
       platform_ad_performance: {
         Args: never
         Returns: {
