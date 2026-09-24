@@ -364,7 +364,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "PARTIALLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
+        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(total_amount)")
         .eq("status", "PARTIALLY_PAID")
         .order("updated_at", { ascending: false });
       const invoices = (data || []) as any[];
@@ -380,7 +380,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
         });
       }
       const invRows = invoices.map((inv) => {
-        const total = inv.quote?.amount || 0;
+        const total = inv.quote?.total_amount || 0;
         const paid = paidMap[inv.id] || 0;
         return {
           id: inv.id,
@@ -425,11 +425,11 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
     if (filter === "FULLY_PAID") {
       const { data } = await supabase
         .from("invoices")
-        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(amount)")
+        .select("id, transaction_id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency), quote:quotes(total_amount)")
         .eq("status", "PAID")
         .order("updated_at", { ascending: false });
       const invRows = (data || []).map((inv: any) => {
-        const total = inv.quote?.amount || 0;
+        const total = inv.quote?.total_amount || 0;
         return {
           id: inv.id,
           transactionId: inv.pr?.transaction_id || "-",
@@ -475,7 +475,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
       const { data: invData } = await supabase
         .from("invoices")
         .select(
-          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency, payment_due_date), quote:quotes(amount)"
+          "id, status, created_at, updated_at, supplier:suppliers(company_name, contact_email), pr:purchase_requisitions(id, transaction_id, currency, payment_due_date), quote:quotes(total_amount)"
         )
         .in("status", ["UPLOADED", "AWAITING_PAYMENT", "PARTIALLY_PAID"]);
       const invoices = (invData || []) as any[];
@@ -493,7 +493,7 @@ async function loadRows(filter: TransactionStatusFilter): Promise<TransactionRow
 
       const invoiceRows: TransactionRow[] = invoices
         .map((inv) => {
-          const total = Number(inv.quote?.amount || 0);
+          const total = Number(inv.quote?.total_amount || 0);
           const paid = paidMap[inv.id] || 0;
           const remaining = Math.max(total - paid, 0);
           const dueStr = inv.pr?.payment_due_date;

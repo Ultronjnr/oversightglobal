@@ -176,7 +176,7 @@ export function BatchesTab() {
            id, invoice_id, transaction_id, amount_paid, payment_reference, pop_file_path, payment_date,
            invoice:invoices (
              id, document_url, status,
-             quote:quotes ( amount ),
+              quote:quotes ( total_amount ),
               supplier:suppliers ( id, company_name, contact_email, vat_number, supplier_code ),
              pr:purchase_requisitions ( transaction_id, currency )
            ),

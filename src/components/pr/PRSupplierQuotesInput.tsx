@@ -111,7 +111,7 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
   const priced = value.filter((r) => quoteRowTotal(r) > 0);
   const lowest =
     priced.length > 0
-      ? priced.reduce((a, b) => (quoteRowTotal(a) <= quoteRowTotal(b) ? a : b))
+      ? priced.reduce((a, b) => (quoteRowGrandTotal(a) <= quoteRowGrandTotal(b) ? a : b))
       : null;
 
   const nameOf = (row: SupplierQuoteDraft) =>
@@ -150,7 +150,6 @@ export function PRSupplierQuotesInput({ value, onChange, selectedId, onSelect }:
 
       <div className="space-y-4">
         {value.map((row, index) => {
-          const enteredTotal = quoteRowTotal(row);
           const calculation = quoteRowCalculation(row);
           const total = calculation.total;
           const isLowest = lowest?.id === row.id && total > 0;

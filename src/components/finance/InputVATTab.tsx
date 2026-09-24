@@ -118,14 +118,17 @@ export function InputVATTab() {
         const { data, error } = await supabase
           .from("invoices")
           .select(
-            "id, pr_id, status, document_url, created_at, updated_at, supplier:suppliers(company_name, vat_number), pr:purchase_requisitions(transaction_id, currency), quote:quotes(amount)"
+            "id, pr_id, status, document_url, created_at, updated_at, supplier:suppliers(company_name, vat_number), pr:purchase_requisitions(transaction_id, currency), quote:quotes(total_amount, vat_amount)"
           )
           .order("updated_at", { ascending: false });
         if (error) throw error;
 
         const mapped: VATRow[] = (data || []).map((inv: any) => {
-          const gross = Number(inv.quote?.amount || 0);
-          const { exclusive, vat } = splitInclusive(gross);
+          const gross = Number(inv.quote?.total_amount || 0);
+          const storedVat = Number(inv.quote?.vat_amount || 0);
+          const fallback = splitInclusive(gross);
+          const exclusive = storedVat > 0 ? gross - storedVat : fallback.exclusive;
+          const vat = storedVat > 0 ? storedVat : fallback.vat;
           const status = deriveStatus(inv);
           return {
             id: inv.id,

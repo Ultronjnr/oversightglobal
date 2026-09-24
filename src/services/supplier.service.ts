@@ -47,6 +47,9 @@ export interface SupplierQuote {
   organization_id: string;
   pr_id: string;
   amount: number;
+  vat_amount: number;
+  vat_treatment: string;
+  total_amount: number;
   delivery_time: string | null;
   valid_until: string | null;
   notes: string | null;
@@ -343,6 +346,9 @@ export async function respondToCounterOffer(
         .from("quotes")
         .update({
           amount: quote.counter_offer_amount,
+          total_amount: quote.counter_offer_amount,
+          vat_amount: 0,
+          vat_treatment: "standard_inclusive",
           status: "SUBMITTED",
         })
         .eq("id", quoteId);
@@ -398,6 +404,9 @@ export async function counterBackQuote(params: {
       .from("quotes")
       .update({
         amount: params.amount,
+        total_amount: params.amount,
+        vat_amount: 0,
+        vat_treatment: "standard_inclusive",
         item_prices: params.itemPrices && params.itemPrices.length > 0
           ? (params.itemPrices as unknown as Json)
           : null,
@@ -443,7 +452,7 @@ export async function getSupplierStats(): Promise<{
       (q) => q.status === "ACCEPTED"
     );
 
-    const totalValue = acceptedQuotes.reduce((sum, q) => sum + (q.amount || 0), 0);
+    const totalValue = acceptedQuotes.reduce((sum, q) => sum + (q.total_amount || 0), 0);
 
     return {
       success: true,
