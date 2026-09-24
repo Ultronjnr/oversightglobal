@@ -1,9 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  createAiProvider,
-  DEFAULT_GEMINI_MODEL,
-  scanInvoice,
-} from "../_shared/gemini.ts";
+
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const AI_MODEL = "openai/gpt-6-astra";
+const MAX_AI_ATTEMPTS = 3;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,6 +60,177 @@ const EXTRACTION_SCHEMA = `{
   "confidence": 0.85,
   "notes": "string"
 }`;
+
+class AiGatewayError extends Error {
+  status: number;
+  retryAfterMs: number | null;
+
+  constructor(message: string, status: number, retryAfterMs: number | null = null) {
+    super(message);
+    this.status = status;
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+function parseRetryAfter(value: string | null): number | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const date = Date.parse(value);
+  return Number.isFinite(date) ? Math.max(0, date - Date.now()) : null;
+}
+
+function extractJsonObject(text: string): Record<string, unknown> | null {
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try {
+    const parsed = JSON.parse(cleaned);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
+      : null;
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start < 0 || end <= start) return null;
+    try {
+      const parsed = JSON.parse(cleaned.slice(start, end + 1));
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+function responseOutputText(payload: Record<string, unknown>): string {
+  if (typeof payload.output_text === "string") return payload.output_text;
+  const output = Array.isArray(payload.output) ? payload.output : [];
+  return output.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const content = Array.isArray((item as Record<string, unknown>).content)
+      ? (item as Record<string, unknown>).content as unknown[]
+      : [];
+    return content.flatMap((part) => {
+      if (!part || typeof part !== "object") return [];
+      const text = (part as Record<string, unknown>).text;
+      return typeof text === "string" ? [text] : [];
+    });
+  }).join("");
+}
+
+async function readResponseStream(res: Response): Promise<string> {
+  if (!res.body) throw new AiGatewayError("AI returned an empty response.", 502);
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let answer = "";
+  let terminalAnswer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
+    const events = buffer.split("\n\n");
+    buffer = events.pop() ?? "";
+    for (const event of events) {
+      for (const line of event.split("\n")) {
+        if (!line.startsWith("data:")) continue;
+        const raw = line.slice(5).trim();
+        if (!raw || raw === "[DONE]") continue;
+        try {
+          const data = JSON.parse(raw) as Record<string, unknown>;
+          if (data.type === "response.output_text.delta" && typeof data.delta === "string") {
+            answer += data.delta;
+          }
+          if (data.type === "response.completed" && data.response && typeof data.response === "object") {
+            terminalAnswer = responseOutputText(data.response as Record<string, unknown>);
+          }
+          if (data.type === "error") {
+            const error = data.error as Record<string, unknown> | undefined;
+            throw new AiGatewayError(
+              typeof error?.message === "string" ? error.message : "AI could not scan this invoice.",
+              502,
+            );
+          }
+        } catch (error) {
+          if (error instanceof AiGatewayError) throw error;
+        }
+      }
+    }
+    if (done) break;
+  }
+  return answer.trim() || terminalAnswer.trim();
+}
+
+async function scanInvoiceWithLovableAi(
+  file: { mimeType: string; data: string },
+  systemPrompt: string,
+): Promise<{ data: Record<string, unknown>; model: string }> {
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) throw new AiGatewayError("Invoice scanning is not configured.", 401);
+
+  const mediaPart = file.mimeType === "application/pdf"
+    ? {
+        type: "input_file",
+        filename: "invoice.pdf",
+        file_data: `data:application/pdf;base64,${file.data}`,
+      }
+    : {
+        type: "input_image",
+        image_url: `data:${file.mimeType};base64,${file.data}`,
+      };
+
+  let lastError: AiGatewayError | null = null;
+  for (let attempt = 0; attempt < MAX_AI_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) {
+      const waitMs = lastError?.retryAfterMs ?? (1200 * (2 ** (attempt - 1)) + Math.floor(Math.random() * 350));
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+
+    const response = await fetch(AI_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Lovable-API-Key": key,
+        "X-Lovable-AIG-SDK": "fetch",
+      },
+      body: JSON.stringify({
+        model: AI_MODEL,
+        stream: true,
+        reasoning: { effort: "low", summary: "auto" },
+        input: [{
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `${systemPrompt}\n\nReturn one valid JSON object only, without markdown. Use this shape: ${EXTRACTION_SCHEMA}\n\nExtract all invoice fields now. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.`,
+            },
+            mediaPart,
+          ],
+        }],
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
+      const message = typeof payload.message === "string"
+        ? payload.message
+        : typeof payload.error === "string"
+          ? payload.error
+          : "AI could not scan this invoice.";
+      const error = new AiGatewayError(message, response.status, parseRetryAfter(response.headers.get("Retry-After")));
+      if (response.status !== 429 && response.status < 500) throw error;
+      lastError = error;
+      continue;
+    }
+
+    const text = await readResponseStream(response);
+    const data = extractJsonObject(text);
+    if (!data) throw new AiGatewayError("AI could not read enough invoice detail. Try a clearer image or PDF.", 422);
+    return { data, model: AI_MODEL };
+  }
+
+  throw lastError ?? new AiGatewayError("Invoice scanning is temporarily busy. Please try again shortly.", 503);
+}
 
 function systemPromptFor(docType: DocType): string {
   const base = [
@@ -126,14 +296,9 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       return json({ error: "Backend environment not configured" }, 500);
-    }
-
-    if (!GEMINI_API_KEY) {
-      return json({ error: "GEMINI_API_KEY not configured" }, 500);
     }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -278,13 +443,9 @@ Deno.serve(async (req) => {
       }
       const base64 = encodeBase64(buf);
 
-      // Direct Google Gemini call (own API key) via the shared, provider-agnostic AI service.
-      const provider = createAiProvider(DEFAULT_GEMINI_MODEL);
-      const result = await scanInvoice(
-        provider,
+      const result = await scanInvoiceWithLovableAi(
         { mimeType: contentType, data: base64 },
         systemPromptFor(document_type),
-        EXTRACTION_SCHEMA,
       );
       const model = result.model;
       const extracted = result.data as Record<string, unknown> | null;
@@ -315,7 +476,8 @@ Deno.serve(async (req) => {
         .from("ocr_analyses")
         .update({ status: "FAILED", error_message: message })
         .eq("id", created.id);
-      return json({ error: message }, 500);
+      const status = e instanceof AiGatewayError ? e.status : 500;
+      return json({ error: message }, status);
     }
   } catch (e) {
     console.error("analyze-document outer error", e);
@@ -410,43 +572,6 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
     item.amount = total;
     item.needs_review = needsReview;
   }
-}
-
-function extractJsonObject(raw: string): string | null {
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
-
-  let depth = 0;
-  let start = -1;
-  let inString = false;
-  let escaped = false;
-  for (let i = 0; i < cleaned.length; i++) {
-    const ch = cleaned[i];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (ch === "{") {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-      if (depth === 0 && start >= 0) return cleaned.slice(start, i + 1);
-    }
-  }
-  return null;
 }
 
 function coerceExtracted(extracted: Record<string, unknown>) {
