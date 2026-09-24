@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Building2, Loader2, PartyPopper } from "lucide-react";
+import { ScanInvoiceModal } from "@/components/finance/ScanInvoiceModal";
 
 interface Option {
   value: string;
@@ -162,6 +163,7 @@ const EMPTY_ORG: OrgForm = {
 };
 
 export default function Onboarding() {
+  const [scanOpen, setScanOpen] = useState(false);
   const { user, profile, isLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -334,9 +336,7 @@ export default function Onboarding() {
     setStep(step + 1);
   };
 
-  const finish = () => {
-    navigate("/admin/portal?firstrun=1", { replace: true });
-  };
+  const finish = () => setScanOpen(true);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-indigo-50/60 flex flex-col items-center px-4 py-10">
@@ -601,6 +601,14 @@ export default function Onboarding() {
           </>
         )}
       </div>
+      <ScanInvoiceModal
+        open={scanOpen}
+        onOpenChange={setScanOpen}
+        onCreated={() => {
+          toast.success("Invoice saved. Continue in Approved – Not Paid.");
+          navigate("/admin/portal", { replace: true });
+        }}
+      />
     </div>
   );
 }

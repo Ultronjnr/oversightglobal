@@ -73,7 +73,17 @@ export async function analyzeDocument(
     });
     if (error) {
       logError("analyzeDocument", error);
-      return { success: false, error: getSafeErrorMessage(error) };
+      let message = getSafeErrorMessage(error);
+      const context = (error as { context?: Response }).context;
+      if (context) {
+        try {
+          const payload = await context.clone().json() as { error?: string; message?: string };
+          message = payload.error || payload.message || message;
+        } catch {
+          // Keep the safe client message when the function returned no JSON body.
+        }
+      }
+      return { success: false, error: message };
     }
     if (!data?.success) {
       return { success: false, error: data?.error || "OCR analysis failed" };

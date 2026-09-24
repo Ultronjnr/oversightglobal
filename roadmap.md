@@ -9,3 +9,6 @@
 - [x] Add organisation type, industry, spending, active-user, and growth widgets
 - [x] Replace the dated traffic snapshot with live first-party analytics
 - [x] Add internal advert image upload and verify customer carousel delivery
+- [ ] Repair Scan Invoice AI extraction and surface useful scan errors
+- [ ] Open Scan Invoice from onboarding and return saved transactions to the Super User dashboard
+- [ ] Verify saved scans appear in the Approved – Not Paid badge and queue
