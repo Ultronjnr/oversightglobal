@@ -19,7 +19,7 @@ import { InvoicesTable } from "@/components/finance/InvoicesTable";
 import { PaymentPreparationTab } from "@/components/finance/PaymentPreparationTab";
 import { TransactionStatusTab } from "@/components/finance/TransactionStatusTab";
 import { FeatureLockedCard } from "@/components/FeatureLockedCard";
-import { isAdminTabLocked } from "@/lib/feature-scope";
+import { isAdminTabLocked, usePaidPlanUnlock } from "@/lib/feature-scope";
 import { BatchesTab } from "@/components/finance/BatchesTab";
 import { InputVATTab } from "@/components/finance/InputVATTab";
 import { VatDashboardTab } from "@/components/finance/VatDashboardTab";
@@ -49,6 +49,7 @@ export default function AdminPortal() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  usePaidPlanUnlock();
   const staffing = useOrgStaffing();
   const { can } = usePermissions();
   const navItems = getAdminNavItems(can);
