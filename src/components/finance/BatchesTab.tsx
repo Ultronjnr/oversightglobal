@@ -78,7 +78,7 @@ interface BatchAllocation {
     id: string;
     document_url: string;
     status: string;
-    quote?: { amount: number };
+    quote?: { total_amount: number };
     supplier?: { id: string; company_name: string; contact_email: string; vat_number: string | null; supplier_code: string | null };
     pr?: { transaction_id: string; currency: string };
   } | null;
@@ -416,7 +416,7 @@ export function BatchesTab() {
         a.invoice_id?.slice(0, 8) ||
         "—";
       const total =
-        Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+        Number(a.invoice?.quote?.total_amount || a.transaction?.amount || 0);
       const currency =
         a.invoice?.pr?.currency || a.transaction?.currency || a.transaction?.pr?.currency;
       const isFull =
@@ -848,7 +848,7 @@ export function BatchesTab() {
                           <TableBody>
                             {b.allocations.map((a) => {
                               const total =
-                                Number(a.invoice?.quote?.amount || a.transaction?.amount || 0);
+                                Number(a.invoice?.quote?.total_amount || a.transaction?.amount || 0);
                               const isFull =
                                 a.invoice?.status === "PAID" ||
                                 ["PAID", "COMPLETED", "FULLY_PAID"].includes(a.transaction?.status || "");

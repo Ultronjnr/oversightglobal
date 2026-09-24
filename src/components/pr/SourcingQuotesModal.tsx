@@ -162,6 +162,8 @@ export function SourcingQuotesModal({
         supplierName:
           supplierId === MANUAL_SUPPLIER || !supplierId ? supplierName : null,
         amount: Number(amount),
+        vatTreatment: "standard_inclusive",
+        totalAmount: Number(amount),
         deliveryTime,
         validUntil: validUntil || null,
         notes,
