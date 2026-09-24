@@ -117,7 +117,7 @@ export function UploadInvoiceModal({
               <div>
                 <span className="text-muted-foreground">Amount</span>
                 <p className="font-semibold text-lg text-primary">
-                  {formatCurrency(quote.amount)}
+                  {formatCurrency(quote.total_amount)}
                 </p>
               </div>
               <div>

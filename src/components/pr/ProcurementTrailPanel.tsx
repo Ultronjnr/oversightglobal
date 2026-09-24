@@ -92,7 +92,7 @@ export function ProcurementTrailPanel({ prId, canRecordInvoice = false, onChange
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {formatCurrency(selected.amount)}
+            {formatCurrency(selected.total_amount)}
             {selected.vat_amount > 0 && ` · VAT ${formatCurrency(selected.vat_amount)}`}
           </p>
         </div>
@@ -169,7 +169,7 @@ export function ProcurementTrailPanel({ prId, canRecordInvoice = false, onChange
                 {q.supplier_name}
                 {q.quote_number ? ` · Quote #${q.quote_number}` : ""}
               </span>
-              <span className="text-muted-foreground">{formatCurrency(q.amount)}</span>
+              <span className="text-muted-foreground">{formatCurrency(q.total_amount)}</span>
             </div>
           ))}
         </div>

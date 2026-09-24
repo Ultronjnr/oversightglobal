@@ -2444,10 +2444,12 @@ export type Database = {
           status: string
           supplier_id: string | null
           supplier_name: string | null
+          total_amount: number
           transaction_id: string | null
           updated_at: string
           valid_until: string | null
           vat_amount: number
+          vat_treatment: string
         }
         Insert: {
           amount: number
@@ -2470,10 +2472,12 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
+          total_amount?: number
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
           vat_amount?: number
+          vat_treatment?: string
         }
         Update: {
           amount?: number
@@ -2496,10 +2500,12 @@ export type Database = {
           status?: string
           supplier_id?: string | null
           supplier_name?: string | null
+          total_amount?: number
           transaction_id?: string | null
           updated_at?: string
           valid_until?: string | null
           vat_amount?: number
+          vat_treatment?: string
         }
         Relationships: [
           {

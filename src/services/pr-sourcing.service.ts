@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 import { analyzeDocument, type OcrExtracted } from "@/services/ocr.service";
 import { v4 as uuidv4 } from "uuid";
+import type { VatTreatment } from "@/lib/vat";
 
 const QUOTE_BUCKET = "quote-documents";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -17,6 +18,8 @@ export interface SourcedQuote {
   amount: number;
   /** VAT portion of the quoted amount, when the document shows one. */
   vat_amount: number;
+  vat_treatment: VatTreatment;
+  total_amount: number;
   delivery_time: string | null;
   valid_until: string | null;
   notes: string | null;
@@ -54,6 +57,8 @@ export async function getPRSourcingQuotes(
       quote_number: q.quote_number ?? null,
       amount: Number(q.amount) || 0,
       vat_amount: Number(q.vat_amount) || 0,
+      vat_treatment: (q.vat_treatment as VatTreatment) || "standard_exclusive",
+      total_amount: Number(q.total_amount) || Number(q.amount) || 0,
 
       delivery_time: q.delivery_time,
       valid_until: q.valid_until,
@@ -129,6 +134,8 @@ export interface ManualQuoteInput {
   amount: number;
   /** VAT portion of the quoted amount. */
   vatAmount?: number | null;
+  vatTreatment?: VatTreatment;
+  totalAmount?: number | null;
   deliveryTime?: string | null;
   validUntil?: string | null;
   notes?: string | null;
@@ -173,6 +180,8 @@ export async function addManualQuote(
         quote_number: input.quoteNumber?.trim() || null,
         amount: input.amount,
         vat_amount: Number(input.vatAmount) || 0,
+        vat_treatment: input.vatTreatment || "standard_exclusive",
+        total_amount: Number(input.totalAmount) || input.amount,
 
         delivery_time: input.deliveryTime?.trim() || null,
         valid_until: input.validUntil || null,

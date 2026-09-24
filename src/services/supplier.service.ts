@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { PRItem } from "@/types/pr.types";
 import type { Json } from "@/integrations/supabase/types";
+import { calculateVatTreatment } from "@/lib/vat";
 
 export interface SupplierProfile {
   id: string;
@@ -47,6 +48,9 @@ export interface SupplierQuote {
   organization_id: string;
   pr_id: string;
   amount: number;
+  vat_amount: number;
+  vat_treatment: string;
+  total_amount: number;
   delivery_time: string | null;
   valid_until: string | null;
   notes: string | null;
@@ -273,6 +277,8 @@ export async function submitQuote(params: {
       .eq("id", params.quoteRequestId)
       .maybeSingle();
 
+    const totals = calculateVatTreatment(params.amount, "standard_inclusive");
+
     // Insert the quote; transaction_id is also enforced by the database trigger.
     const { error: insertError } = await supabase.from("quotes").insert({
       quote_request_id: params.quoteRequestId,
@@ -280,7 +286,10 @@ export async function submitQuote(params: {
       organization_id: params.organizationId,
       supplier_id: supplier.id,
       transaction_id: quoteRequest?.transaction_id ?? null,
-      amount: params.amount,
+      amount: totals.subtotal,
+      total_amount: totals.total,
+      vat_amount: totals.vat,
+      vat_treatment: "standard_inclusive",
       delivery_time: params.deliveryTime || null,
       valid_until: params.validUntil || null,
       notes: params.notes || null,
@@ -337,10 +346,14 @@ export async function respondToCounterOffer(
       if (!quote.counter_offer_amount) {
         return { success: false, error: "Counter-offer amount missing" };
       }
+      const totals = calculateVatTreatment(quote.counter_offer_amount, "standard_inclusive");
       const { error } = await supabase
         .from("quotes")
         .update({
-          amount: quote.counter_offer_amount,
+          amount: totals.subtotal,
+          total_amount: totals.total,
+          vat_amount: totals.vat,
+          vat_treatment: "standard_inclusive",
           status: "SUBMITTED",
         })
         .eq("id", quoteId);
@@ -392,10 +405,14 @@ export async function counterBackQuote(params: {
       ? (quote.notes ? `${quote.notes}\n---\nSupplier counter: ${params.notes}` : `Supplier counter: ${params.notes}`)
       : quote.notes;
 
+    const totals = calculateVatTreatment(params.amount, "standard_inclusive");
     const { error } = await supabase
       .from("quotes")
       .update({
-        amount: params.amount,
+        amount: totals.subtotal,
+        total_amount: totals.total,
+        vat_amount: totals.vat,
+        vat_treatment: "standard_inclusive",
         item_prices: params.itemPrices && params.itemPrices.length > 0
           ? (params.itemPrices as unknown as Json)
           : null,
@@ -441,7 +458,7 @@ export async function getSupplierStats(): Promise<{
       (q) => q.status === "ACCEPTED"
     );
 
-    const totalValue = acceptedQuotes.reduce((sum, q) => sum + (q.amount || 0), 0);
+    const totalValue = acceptedQuotes.reduce((sum, q) => sum + (q.total_amount || 0), 0);
 
     return {
       success: true,

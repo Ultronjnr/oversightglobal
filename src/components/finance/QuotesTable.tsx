@@ -152,7 +152,7 @@ export function QuotesTable() {
                     </TableCell>
                     <TableCell>
                       <p className="font-semibold text-primary">
-                        {formatCurrency(quote.amount)}
+                         {formatCurrency(quote.total_amount)}
                       </p>
                     </TableCell>
                     <TableCell>

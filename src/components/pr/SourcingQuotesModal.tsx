@@ -44,6 +44,7 @@ import { getAllSuppliers, acceptQuote, type Supplier } from "@/services/finance.
 import { getQuoteDocumentUrl } from "@/services/quote-document.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
 import { ProcurementTrailPanel } from "@/components/pr/ProcurementTrailPanel";
+import { calculateVatTreatment } from "@/lib/vat";
 
 interface SourcingQuotesModalProps {
   open: boolean;
@@ -97,7 +98,7 @@ export function SourcingQuotesModal({
   const cheapestId = useMemo(() => {
     const live = quotes.filter((q) => q.status !== "REJECTED");
     if (live.length === 0) return null;
-    return live.reduce((a, b) => (a.amount <= b.amount ? a : b)).id;
+    return live.reduce((a, b) => (a.total_amount <= b.total_amount ? a : b)).id;
   }, [quotes]);
 
   const acceptedQuote = quotes.find((q) => q.status === "ACCEPTED") || null;
@@ -156,12 +157,16 @@ export function SourcingQuotesModal({
   const handleAdd = async () => {
     setSaving(true);
     try {
+      const totals = calculateVatTreatment(Number(amount), "standard_inclusive");
       const result = await addManualQuote({
         prId: pr.id,
         supplierId: supplierId && supplierId !== MANUAL_SUPPLIER ? supplierId : null,
         supplierName:
           supplierId === MANUAL_SUPPLIER || !supplierId ? supplierName : null,
-        amount: Number(amount),
+        amount: totals.subtotal,
+        vatAmount: totals.vat,
+        vatTreatment: "standard_inclusive",
+        totalAmount: totals.total,
         deliveryTime,
         validUntil: validUntil || null,
         notes,
@@ -288,7 +293,7 @@ export function SourcingQuotesModal({
 
                       <div className="text-right">
                         <div className="text-lg font-semibold text-primary">
-                          {formatCurrency(q.amount)}
+                          {formatCurrency(q.total_amount)}
                         </div>
                         {q.vat_amount > 0 && (
                           <div className="text-xs text-muted-foreground">

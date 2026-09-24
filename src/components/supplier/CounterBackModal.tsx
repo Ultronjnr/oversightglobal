@@ -65,7 +65,7 @@ export function CounterBackModal({ open, onOpenChange, quote, currency = "ZAR", 
 
   const handleSubmit = async () => {
     if (!quote) return;
-    const total = itemPrices.length > 0 ? revisedTotal : quote.amount;
+    const total = itemPrices.length > 0 ? revisedTotal : quote.total_amount;
     if (!(total > 0)) {
       toast.error("Enter valid per-item prices");
       return;
@@ -92,7 +92,7 @@ export function CounterBackModal({ open, onOpenChange, quote, currency = "ZAR", 
   };
 
   const financeCounter = Number(quote?.counter_offer_amount) || 0;
-  const previousAmount = Number(quote?.amount) || 0;
+  const previousAmount = Number(quote?.total_amount) || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

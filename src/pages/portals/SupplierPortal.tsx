@@ -752,7 +752,7 @@ export default function SupplierPortal() {
                           .map((q) => {
                             const req = quoteRequests.find((r) => r.id === q.quote_request_id);
                             const counter = Number(q.counter_offer_amount) || 0;
-                            const prev = Number(q.amount) || 0;
+                            const prev = Number(q.total_amount) || 0;
                             const deltaPct = prev > 0 ? ((counter - prev) / prev) * 100 : 0;
                             return (
                               <TableRow key={q.id}>
@@ -892,7 +892,7 @@ export default function SupplierPortal() {
                                 {format(new Date(quote.created_at), "MMM d, yyyy")}
                               </TableCell>
                               <TableCell className="font-mono font-semibold text-primary">
-                                {formatCurrency(quote.amount)}
+                                {formatCurrency(quote.total_amount)}
                               </TableCell>
                               <TableCell>
                                 {quote.delivery_time || "—"}
