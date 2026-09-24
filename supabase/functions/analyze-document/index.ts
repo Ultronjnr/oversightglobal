@@ -574,43 +574,6 @@ function normalizeLineItems(extracted: Record<string, unknown>) {
   }
 }
 
-function extractJsonObject(raw: string): string | null {
-  const cleaned = raw
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-  if (cleaned.startsWith("{") && cleaned.endsWith("}")) return cleaned;
-
-  let depth = 0;
-  let start = -1;
-  let inString = false;
-  let escaped = false;
-  for (let i = 0; i < cleaned.length; i++) {
-    const ch = cleaned[i];
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escaped = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (ch === "{") {
-      if (depth === 0) start = i;
-      depth++;
-    } else if (ch === "}") {
-      depth--;
-      if (depth === 0 && start >= 0) return cleaned.slice(start, i + 1);
-    }
-  }
-  return null;
-}
-
 function coerceExtracted(extracted: Record<string, unknown>) {
   for (const key of ["subtotal", "vat_amount", "vat_rate", "total_amount", "confidence"]) {
     const n = toNum(extracted[key]);
