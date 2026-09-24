@@ -388,7 +388,7 @@ export function SmartPanel() {
               )}
             />
 
-        <div className="relative min-h-[980px] p-5 pb-16 sm:min-h-[800px] sm:p-7 sm:pb-16 xl:h-[540px] xl:min-h-0 xl:px-16 xl:py-8">
+        <div className="relative min-h-[520px] p-5 pb-16 sm:min-h-[480px] sm:p-7 sm:pb-16 xl:h-[540px] xl:min-h-0 xl:px-16 xl:py-8">
           {/* Slide 1 — live organisation insights */}
           {slide.kind === "insights" && (
             <div className="grid h-full min-w-0 gap-4 xl:grid-cols-[minmax(210px,1.02fr)_minmax(360px,1.65fr)_minmax(210px,0.95fr)]">
