@@ -31,12 +31,13 @@ export const LOCKED_ADMIN_TABS = [
 
 
 export function isFeatureLocked(href: string): boolean {
-  return SCOPE_FREEZE_ACTIVE && href in LOCKED_FEATURE_HREFS;
+  return SCOPE_FREEZE_ACTIVE && !paidUnlocked && href in LOCKED_FEATURE_HREFS;
 }
 
 export function isAdminTabLocked(tab: string | null | undefined): boolean {
   return (
     SCOPE_FREEZE_ACTIVE &&
+    !paidUnlocked &&
     !!tab &&
     (LOCKED_ADMIN_TABS as readonly string[]).includes(tab)
   );
@@ -44,3 +45,35 @@ export function isAdminTabLocked(tab: string | null | undefined): boolean {
 
 export const SCOPE_FREEZE_MESSAGE =
   "This area is being finished and is switched off for now. Your current plan covers one Super User running the full expense, invoice, requisition and payment workflow.";
+
+/* ---- Paid plan unlock: an ACTIVE paid subscription lifts the scope freeze ---- */
+import { useEffect, useState } from "react";
+import { getSubscriptionState } from "@/services/subscription.service";
+
+let paidUnlocked = false;
+let pending: Promise<boolean> | null = null;
+
+function loadPaid(): Promise<boolean> {
+  if (!pending) {
+    pending = getSubscriptionState()
+      .then((s) => (paidUnlocked = s.status === "ACTIVE" && !!s.plan_id))
+      .catch(() => false);
+  }
+  return pending;
+}
+
+/** Re-renders once the org's paid status is known. */
+export function usePaidPlanUnlock(): boolean {
+  const [paid, setPaid] = useState(paidUnlocked);
+  useEffect(() => {
+    let alive = true;
+    loadPaid().then((p) => alive && setPaid(p));
+    return () => { alive = false; };
+  }, []);
+  return paid;
+}
+
+export function resetPaidPlanCache() {
+  pending = null;
+  paidUnlocked = false;
+}

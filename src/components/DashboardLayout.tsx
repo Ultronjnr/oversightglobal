@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { LogOut, Building2, Menu, Lock as LockIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isFeatureLocked } from "@/lib/feature-scope";
+import { isFeatureLocked, usePaidPlanUnlock } from "@/lib/feature-scope";
 import { Badge } from "./ui/badge";
 import { NotificationBell } from "./NotificationBell";
 import { GlobalScanFAB } from "./capture/GlobalScanFAB";
@@ -88,6 +88,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const { profile, role, signOut } = useAuth();
   const liveNavCounts = useNavigationBadgeCounts();
+  usePaidPlanUnlock();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const countedNavItems = navItems.map((item) => ({
