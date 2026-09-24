@@ -29,12 +29,12 @@ import {
 import { AdvertisementsManager } from "@/components/oversight/AdvertisementsManager";
 
 const trafficFallback = {
-  visitors: 52, pageViews: 223, viewsPerVisit: 4.29, duration: "4m 7s", bounce: 67,
-  daily: [4, 9, 6, 3, 10, 6, 10, 4],
-  sources: [["Direct", 38], ["bing.com", 6], ["google.com", 4], ["Gmail", 2], ["Other", 4]] as const,
-  pages: [["/", 27], ["/login", 14], ["/pricing", 9], ["/contact", 8], ["NPO bank accounts", 8], ["/about", 7]] as const,
-  devices: [["Desktop", 65.4], ["Mobile", 34.6]] as const,
-  countries: [["South Africa", 35], ["United States", 14], ["Poland", 1], ["Morocco", 1]] as const,
+  visitors: 0, pageViews: 0, viewsPerVisit: 0, duration: "—", bounce: 0,
+  daily: [] as number[],
+  sources: [] as (readonly [string, number])[],
+  pages: [] as (readonly [string, number])[],
+  devices: [] as (readonly [string, number])[],
+  countries: [] as (readonly [string, number])[],
 };
 
 type Section = "overview" | "organizations" | "intelligence" | "analytics" | "adverts" | "activity";
