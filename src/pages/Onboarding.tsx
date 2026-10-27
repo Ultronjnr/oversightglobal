@@ -520,7 +520,15 @@ export default function Onboarding() {
             <Button className="w-full mt-8" size="lg" onClick={finish}>
               Capture my first expense →
             </Button>
-            <p className="text-xs text-muted-foreground mt-3">Takes under a minute</p>
+            <p className="text-xs text-muted-foreground mt-2">Takes under a minute</p>
+            <Button
+              variant="outline"
+              className="w-full mt-4"
+              size="lg"
+              onClick={() => navigate("/admin/portal", { replace: true })}
+            >
+              Skip for now — go to my dashboard
+            </Button>
           </div>
         ) : (
           <>
