@@ -18,7 +18,6 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { PageSeo } from "@/components/site/PageSeo";
 import { useRevealOnScroll } from "@/hooks/use-reveal-on-scroll";
-import { BOOKING_URL } from "@/lib/booking";
 
 import slideBg1 from "@/assets/slide-leaking-money.jpg.asset.json";
 import slideBg2 from "@/assets/slide-sars-proof.jpg.asset.json";
