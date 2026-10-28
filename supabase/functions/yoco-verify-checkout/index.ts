@@ -15,6 +15,9 @@ Deno.serve(async (req) => {
 
     const { userId, orgId } = await getAuthContext(req);
     if (!userId || !orgId) return json({ error: "Unauthorized" }, 401);
+    const { data: adminRole } = await adminClient()
+      .from("user_roles").select("role").eq("user_id", userId).eq("role", "ADMIN").limit(1);
+    if (!adminRole || adminRole.length === 0) return json({ error: "Only a Super User can activate the plan" }, 403);
 
     const { invoiceId } = await req.json();
     if (!invoiceId) return json({ error: "Missing invoiceId" }, 400);
