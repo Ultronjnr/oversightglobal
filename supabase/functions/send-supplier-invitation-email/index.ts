@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
+import { isAllowedAppLink } from '../_shared/allowed-link.ts'
 import { decodeJwtRole, logEmailSend } from '../_shared/email-send-log.ts'
 
 // Sends the supplier invitation (and its reminders) for exactly one recipient.
@@ -44,6 +45,7 @@ Deno.serve(async (req) => {
 
   if (!recipientEmail) return json({ error: 'recipientEmail is required' }, 400)
   if (!registrationUrl) return json({ error: 'registrationUrl is required' }, 400)
+  if (!isAllowedAppLink(registrationUrl, '/supplier/register')) return json({ error: 'Invalid registrationUrl' }, 400)
 
   const supabase = createClient(supabaseUrl, serviceKey)
 
