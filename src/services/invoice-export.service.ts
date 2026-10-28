@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csv";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvoiceDocumentUrl } from "@/services/invoice.service";
 
@@ -216,13 +217,13 @@ export async function generateInvoiceCsv(
 
     const rows = rangeResult.data.map((inv) =>
       [
-        `"${inv.transactionId}"`,
-        `"${inv.supplierName.replace(/"/g, '""')}"`,
-        `"${inv.supplierEmail}"`,
+        csvCell(inv.transactionId),
+        csvCell(inv.supplierName),
+        csvCell(inv.supplierEmail),
         inv.totalAmount.toFixed(2),
-        `"${inv.currency}"`,
-        `"${inv.paymentStatus}"`,
-        `"${new Date(inv.createdAt).toISOString()}"`,
+        csvCell(inv.currency),
+        csvCell(inv.paymentStatus),
+        csvCell(new Date(inv.createdAt).toISOString()),
       ].join(",")
     );
 

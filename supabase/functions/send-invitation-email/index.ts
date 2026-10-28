@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { sendTemplateEmail } from '../_shared/transactional-email-templates/send-email.ts'
+import { isAllowedAppLink } from '../_shared/allowed-link.ts'
 import { decodeJwtRole, logEmailSend } from '../_shared/email-send-log.ts'
 
 // Sends the team invitation email for exactly one recipient.
@@ -43,6 +44,7 @@ Deno.serve(async (req) => {
 
   if (!recipientEmail) return json({ error: 'recipientEmail is required' }, 400)
   if (!inviteLink) return json({ error: 'inviteLink is required' }, 400)
+  if (!isAllowedAppLink(inviteLink, '/invite')) return json({ error: 'Invalid inviteLink' }, 400)
 
   const supabase = createClient(supabaseUrl, serviceKey)
 

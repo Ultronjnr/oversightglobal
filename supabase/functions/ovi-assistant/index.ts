@@ -5,6 +5,7 @@
  * route the frontend can navigate the user to. Real AI only (Gemini); if the
  * model or key is unavailable we return a graceful fallback, never fake answers.
  */
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { createAiProvider, extractStructuredData } from "../_shared/gemini.ts";
 
 const corsHeaders = {
@@ -66,6 +67,14 @@ ${ROUTES}`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return json({ error: "Authentication required" }, 401);
+  const authClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: claims, error: claimsErr } = await authClient.auth.getClaims(token);
+  if (claimsErr || !claims?.claims?.sub) return json({ error: "Authentication required" }, 401);
 
   try {
     const { messages, role } = (await req.json()) as {
