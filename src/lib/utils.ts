@@ -9,8 +9,9 @@ export function cn(...inputs: ClassValue[]) {
  * Format a number with space as thousands separator and 2 decimal places
  * e.g., 1234567.89 -> "1 234 567.89"
  */
-export function formatNumber(value: number, decimals: number = 2): string {
-  const fixed = value.toFixed(decimals);
+export function formatNumber(value: number | string | null | undefined, decimals: number = 2): string {
+  const num = typeof value === "number" ? value : Number(value ?? 0);
+  const fixed = (Number.isFinite(num) ? num : 0).toFixed(decimals);
   const [integerPart, decimalPart] = fixed.split(".");
   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
