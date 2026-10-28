@@ -31,10 +31,15 @@ Deno.serve(async (req) => {
     const providedCronSecret = req.headers.get("x-cron-secret");
     const isCron = !!cronSecret && providedCronSecret === cronSecret;
 
-    const { orgId } = isCron ? { orgId: null as string | null } : await getAuthContext(req);
+    const { userId, orgId } = isCron ? { userId: null as string | null, orgId: null as string | null } : await getAuthContext(req);
 
     if (!isCron && !orgId) {
       return json({ error: "Unauthorized" }, 401);
+    }
+    if (!isCron) {
+      const { data: roles } = await adminClient()
+        .from("user_roles").select("role").eq("user_id", userId!).in("role", ["ADMIN", "FINANCE"]).limit(1);
+      if (!roles || roles.length === 0) return json({ error: "Only Finance or a Super User can refresh payment status" }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
