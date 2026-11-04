@@ -519,15 +519,7 @@ export default function HODPortal() {
                                 </div>
 
                                 {/* Additional Info */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-muted-foreground">Due Date:</span>
-                                    <p className="font-medium">
-                                      {pr.due_date
-                                        ? format(new Date(pr.due_date), "dd MMM yyyy")
-                                        : "-"}
-                                    </p>
-                                  </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                   <div>
                                     <span className="text-muted-foreground">Payment Due:</span>
                                     <p className="font-medium">

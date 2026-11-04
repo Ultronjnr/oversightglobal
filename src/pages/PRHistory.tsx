@@ -579,15 +579,7 @@ export default function PRHistory() {
                 <PRHistoryTimeline history={selectedPR.history as any} />
 
                 {/* Dates */}
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Due Date</p>
-                    <p className="font-medium">
-                      {selectedPR.due_date
-                        ? format(new Date(selectedPR.due_date), "MMM dd, yyyy")
-                        : "Not set"}
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 gap-4 pt-4 border-t">
                   <div>
                     <p className="text-sm text-muted-foreground">Payment Due Date</p>
                     <p className="font-medium">

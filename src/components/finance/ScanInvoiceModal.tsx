@@ -1027,7 +1027,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                     Derived from the invoice by Scan AI — VAT is never captured by hand.
                   </p>
                 </div>
-                <div>
+                <div className={isStaff ? "col-span-2" : ""}>
                   <Label htmlFor="si-total" className="text-xs">
                     Total ({currency}) <span className="text-destructive">*</span>
                   </Label>
@@ -1039,6 +1039,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                     onChange={(e) => setTotalAmount(e.target.value)}
                   />
                 </div>
+                {!isStaff && (
                 <div>
                   <Label className="text-xs">
                     Category <span className="text-destructive">*</span>
@@ -1114,6 +1115,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                     </div>
                   )}
                 </div>
+                )}
               </div>
 
               {isStaff ? (

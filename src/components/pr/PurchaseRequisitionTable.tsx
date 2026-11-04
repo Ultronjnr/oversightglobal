@@ -216,15 +216,7 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                         </div>
 
                         {/* Additional Info */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div className="bg-white rounded-lg p-3 border border-border/30">
-                            <span className="text-muted-foreground text-xs">Due Date</span>
-                            <p className="font-medium mt-1">
-                              {pr.due_date
-                                ? format(new Date(pr.due_date), "dd MMM yyyy")
-                                : "-"}
-                            </p>
-                          </div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                           <div className="bg-white rounded-lg p-3 border border-border/30">
                             <span className="text-muted-foreground text-xs">Payment Due</span>
                             <p className="font-medium mt-1">
