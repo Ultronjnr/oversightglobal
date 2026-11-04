@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
+import { usePaymentsChanged } from "@/lib/data-events";
 import { supabase } from "@/integrations/supabase/client";
 import { BatchPaymentModal, type BatchPaymentItem } from "./BatchPaymentModal";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
@@ -115,6 +116,7 @@ export function TransactionStatusTab({ filter }: { filter: TransactionStatusFilt
   const [attachRow, setAttachRow] = useState<TransactionRow | null>(null);
   const meta = filterMeta[filter];
   const supportsBatch = filter === "PARTIALLY_PAID";
+  usePaymentsChanged(() => setReloadKey((k) => k + 1));
 
   useEffect(() => {
     let cancelled = false;

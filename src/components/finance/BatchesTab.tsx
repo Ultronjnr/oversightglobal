@@ -1,3 +1,4 @@
+import { emitPaymentsChanged, usePaymentsChanged } from "@/lib/data-events";
 import { Fragment, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -145,6 +146,7 @@ export function BatchesTab() {
 
   useEffect(() => {
     void fetchBatches();
+    emitPaymentsChanged();
     // Live refresh: reload when batches or their allocations change (create,
     // confirm, cancel, or status transitions).
     const channel = supabase
@@ -511,6 +513,7 @@ export function BatchesTab() {
 
       toast.success("Batch report exported", { description: `Export ID: ${exportId.slice(0, 8)}…` });
       void fetchBatches();
+    emitPaymentsChanged();
     } catch (e: any) {
       console.error("[BatchesTab] Export PDF failed", e);
       toast.error("Export failed", { description: e?.message || "Could not generate the batch PDF." });
@@ -529,6 +532,7 @@ export function BatchesTab() {
     }
     toast.success("Batch cancelled");
     void fetchBatches();
+    emitPaymentsChanged();
   };
 
   const today = () => new Date().toISOString().slice(0, 10);
@@ -673,6 +677,7 @@ export function BatchesTab() {
     });
     closeProcessWizard();
     void fetchBatches();
+    emitPaymentsChanged();
   };
 
   /** Open the stored proof of payment for a confirmed batch. */

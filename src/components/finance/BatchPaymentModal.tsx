@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/utils";
+import { emitPaymentsChanged } from "@/lib/data-events";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface BatchPaymentItem {
@@ -120,6 +121,7 @@ export function BatchPaymentModal({ open, onOpenChange, items, onConfirmed }: Ba
       description: `Batch ${result.batch_number || ""} — confirm it as paid from the Batches tab.`,
     });
     onOpenChange(false);
+    emitPaymentsChanged();
     onConfirmed();
   };
 

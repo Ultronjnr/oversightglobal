@@ -20,3 +20,20 @@ export function useRequisitionsChanged(callback: () => void) {
     return () => window.removeEventListener(EVENT, handler);
   }, []);
 }
+
+/** Fired after a payment batch, payment or reimbursement status changes. */
+const PAYMENTS_EVENT = "ovasyt:payments-changed";
+
+export function emitPaymentsChanged() {
+  window.dispatchEvent(new CustomEvent(PAYMENTS_EVENT));
+}
+
+export function usePaymentsChanged(callback: () => void) {
+  const ref = useRef(callback);
+  ref.current = callback;
+  useEffect(() => {
+    const handler = () => ref.current();
+    window.addEventListener(PAYMENTS_EVENT, handler);
+    return () => window.removeEventListener(PAYMENTS_EVENT, handler);
+  }, []);
+}

@@ -15,6 +15,13 @@
       "when": 1793792811325,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793818621197,
+      "tag": "0002_finance_final_reimbursement_approval",
+      "breakpoints": true
     }
   ]
 }
