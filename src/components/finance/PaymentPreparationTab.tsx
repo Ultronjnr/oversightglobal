@@ -655,7 +655,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
                     <span className="text-xs text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-semibold">
+                <TableCell className="text-right font-semibold whitespace-nowrap">
                   {formatCurrency(row.amount, row.currency)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">

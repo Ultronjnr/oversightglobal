@@ -22,7 +22,9 @@ import {
 } from "lucide-react";
 
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { currencySymbol } from "@/lib/utils";
+import { currencySymbol, formatCurrency } from "@/lib/utils";
+import { HODEditPRModal } from "@/components/pr/HODEditPRModal";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
@@ -146,6 +148,8 @@ export default function HODPortal() {
       return next;
     });
   };
+
+  const [editPR, setEditPR] = useState<PurchaseRequisition | null>(null);
 
   const openApproveModal = (pr: PurchaseRequisition) => {
     // Permission + approval-limit guard (mirrored by database enforcement).
@@ -420,8 +424,8 @@ export default function HODPortal() {
                               {urgencyConfig[pr.urgency]?.label || pr.urgency}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {pr.currency} {pr.total_amount.toLocaleString()}
+                          <TableCell className="text-right font-medium whitespace-nowrap">
+                            {formatCurrency(pr.total_amount, pr.currency)}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {format(new Date(pr.created_at), "dd MMM yyyy")}
@@ -506,10 +510,10 @@ export default function HODPortal() {
                                             <td className="p-2">{item.description}</td>
                                             <td className="text-right p-2">{item.quantity}</td>
                                             <td className="text-right p-2">
-                                              {currencySymbol(pr.currency)} {item.unit_price.toFixed(2)}
+                                              {formatCurrency(item.unit_price, pr.currency)}
                                             </td>
                                             <td className="text-right p-2 font-medium">
-                                              {currencySymbol(pr.currency)} {item.total.toFixed(2)}
+                                              {formatCurrency(item.total, pr.currency)}
                                             </td>
                                           </tr>
                                         ))}
@@ -537,7 +541,7 @@ export default function HODPortal() {
                                   <div>
                                     <span className="text-muted-foreground">Total:</span>
                                     <p className="font-medium text-primary">
-                                      {pr.currency} {pr.total_amount.toLocaleString()}
+                                      {formatCurrency(pr.total_amount, pr.currency)}
                                     </p>
                                   </div>
                                 </div>
@@ -552,7 +556,8 @@ export default function HODPortal() {
                                 </div>
 
 
-                                {pr.document_url && (
+                                <div className="flex items-center justify-between gap-4">
+                                {pr.document_url ? (
                                   <div>
                                     <button
                                       onClick={(e) => {
@@ -565,7 +570,19 @@ export default function HODPortal() {
                                       View Attached Document
                                     </button>
                                   </div>
-                                )}
+                                ) : <span />}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditPR(pr);
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Edit Requisition
+                                  </Button>
+                                </div>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -577,6 +594,12 @@ export default function HODPortal() {
               </div>
             )}
           </div>
+          <HODEditPRModal
+            pr={editPR}
+            open={!!editPR}
+            onOpenChange={(o) => !o && setEditPR(null)}
+            onSaved={() => fetchPRs()}
+          />
         </DialogContent>
       </Dialog>
 

@@ -58,5 +58,6 @@ export function formatCurrency(
   currency: string = DEFAULT_CURRENCY,
   decimals: number = 2
 ): string {
-  return `${currencySymbol(currency)} ${formatNumber(amount, decimals)}`;
+  // Non-breaking spaces keep amounts on a single line in tables.
+  return `${currencySymbol(currency)}\u00A0${formatNumber(amount, decimals).replace(/ /g, "\u00A0")}`;
 }
