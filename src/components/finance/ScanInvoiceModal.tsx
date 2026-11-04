@@ -41,6 +41,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from "@/components/ui/textarea";
 import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { compressImage } from "@/lib/image-compression";
+import { emitRequisitionsChanged } from "@/lib/data-events";
 import { listProjects, listDonors } from "@/services/donation.service";
 import { upsertProject, upsertDonor } from "@/services/donation.service";
 import type { DonationProject, Donor } from "@/services/donation.service";
@@ -282,6 +283,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
     setScanError(null);
     setFromCache(false);
     setFileHash(null);
+    setScanPath(null);
     setCompressing(true);
     try {
       const compressed = await compressImage(f, {
@@ -379,47 +381,33 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
         setFileHash(hash);
       }
 
-      // 2. Ask backend if we already have a completed analysis for this hash.
-      setScanStage("cache");
-      setScanProgress(25);
-      const probe = await analyzeDocument({
-        document_type: "INVOICE",
-        file_hash: hash,
-        probe_only: true,
-      });
-      if (probe.success && probe.analysis) {
-        applyAnalysis(probe.analysis);
-        setFromCache(true);
-        setScanStage("done");
-        setScanProgress(100);
-        toast.success("Loaded instantly from cache — no AI call needed");
-        return;
-      }
-
-      // 3. Upload staging file.
+      // 2. Upload the file once (kept so it stays attached to the invoice).
       setScanStage("uploading");
-      setScanProgress(45);
+      setScanProgress(35);
       const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
-      const path = `${user.id}/scan/${Date.now()}-${safe}`;
-      const { error: upErr } = await supabase.storage
-        .from("invoice-documents")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (upErr) {
-        setScanStage("failed");
-        setScanError(`Upload failed: ${upErr.message}`);
-        return;
+      const path = scanPath ?? `${user.id}/scan/${Date.now()}-${safe}`;
+      if (!scanPath) {
+        const { error: upErr } = await supabase.storage
+          .from("invoice-documents")
+          .upload(path, file, { contentType: file.type, upsert: false });
+        if (upErr) {
+          setScanStage("failed");
+          setScanError(`Upload failed: ${upErr.message}`);
+          return;
+        }
+        setScanPath(path);
       }
-      setScanPath(path);
 
-      // 4. Extract with AI (multi-page PDFs are handled server-side).
+      // 3. One server call: it reuses a previous result for an identical file
+      // instantly, otherwise reads it with AI. "Re-scan" forces a fresh read.
       setScanStage("extracting");
-      setScanProgress(70);
+      setScanProgress(60);
       const res = await analyzeDocument({
         document_type: "INVOICE",
         bucket: "invoice-documents",
         storage_path: path,
         file_hash: hash,
-        force: true,
+        force: !!analysis,
       });
       if (!res.success || !res.analysis) {
         setScanStage("failed");
@@ -438,6 +426,16 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       setScanning(false);
     }
   };
+
+  // Start reading the invoice as soon as a new file is ready — no extra click.
+  const autoScannedFile = useRef<File | null>(null);
+  useEffect(() => {
+    if (!open || !file || compressing || scanning || analysis) return;
+    if (autoScannedFile.current === file) return;
+    autoScannedFile.current = file;
+    void runScan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, file, compressing]);
 
   const applyAnalysis = (a: OcrAnalysis) => {
       setAnalysis(a);
@@ -529,6 +527,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       setSubmitting(false);
       if (!r.success) { toast.error(r.error || "Failed to submit invoice"); return; }
       toast.success(role === "HOD" ? "Invoice saved and sent to Finance for approval" : "Invoice saved and sent to your HOD for approval");
+      emitRequisitionsChanged();
       onCreated?.();
       reset();
       onOpenChange(false);
@@ -578,6 +577,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       return;
     }
     toast.success("Transaction created from invoice");
+    emitRequisitionsChanged();
     onCreated?.();
     reset();
     onOpenChange(false);

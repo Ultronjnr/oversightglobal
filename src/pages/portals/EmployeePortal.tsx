@@ -15,6 +15,7 @@ import { Undo2, ClipboardList as ClipboardIcon } from "lucide-react";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import type { PurchaseRequisition } from "@/types/pr.types";
 import { toast } from "sonner";
+import { useRequisitionsChanged } from "@/lib/data-events";
 
 export default function EmployeePortal() {
   const navigate = useNavigate();
@@ -48,6 +49,12 @@ export default function EmployeePortal() {
     };
     fetchStats();
   }, [refreshTrigger]);
+
+  // Reload as soon as a scanned invoice is submitted from the global scan button.
+  useRequisitionsChanged(() => {
+    setShowCleared(false);
+    setRefreshTrigger((prev) => prev + 1);
+  });
 
   const handleFormSuccess = () => {
     setShowPRModal(false);

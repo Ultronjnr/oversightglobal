@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "@/hooks/use-permissions";
 import { toast } from "sonner";
+import { useRequisitionsChanged } from "@/lib/data-events";
 import { format } from "date-fns";
 import {
   User,
@@ -130,6 +131,9 @@ export default function HODPortal() {
   useEffect(() => {
     fetchPRs();
   }, [refreshTrigger]);
+
+  // Reload as soon as a scanned invoice is submitted from the global scan button.
+  useRequisitionsChanged(() => setRefreshTrigger((prev) => prev + 1));
 
   const toggleRow = (id: string) => {
     setExpandedRows((prev) => {

@@ -55,7 +55,8 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
   };
 
   const fetchPRs = async () => {
-    setLoading(true);
+    // Keep the current rows on screen while reloading so new items just appear.
+    if (prs.length === 0) setLoading(true);
     setError(null);
     try {
       const result = await getUserPurchaseRequisitions();

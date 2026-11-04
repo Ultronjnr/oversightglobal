@@ -196,13 +196,18 @@ async function scanInvoiceWithLovableAi(
       body: JSON.stringify({
         model: AI_MODEL,
         stream: true,
-        reasoning: { effort: "low", summary: "auto" },
+        // Speed: lowest supported reasoning, no reasoning summary, terse output,
+        // and a stable instruction prefix the provider can cache between scans.
+        reasoning: { effort: "low" },
+        text: { verbosity: "low" },
+        prompt_cache_key: "ovasyt-invoice-ocr-v1",
+        instructions: `${systemPrompt}\n\nReturn one valid JSON object only, without markdown or commentary. Omit fields that are not on the document. Use this shape: ${EXTRACTION_SCHEMA}`,
         input: [{
           role: "user",
           content: [
             {
               type: "input_text",
-              text: `${systemPrompt}\n\nReturn one valid JSON object only, without markdown. Use this shape: ${EXTRACTION_SCHEMA}\n\nExtract all invoice fields now. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.`,
+              text: "Extract all invoice fields now. total_amount and confidence are required. If line items are unclear, return one summary line item using the invoice total.",
             },
             mediaPart,
           ],
