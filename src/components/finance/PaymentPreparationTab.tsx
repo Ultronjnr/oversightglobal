@@ -509,7 +509,7 @@ export function PaymentPreparationTab({ onPaymentComplete }: PaymentPreparationT
         ))}
       </div>
 
-      <div className="rounded-lg border border-border/50 overflow-hidden">
+      <div className="rounded-lg border border-border/50 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/30">
