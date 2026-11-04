@@ -7,18 +7,21 @@ import { Label } from "@/components/ui/label";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   listPlans, getSubscription, selectPlan, cancelSubscription,
-  createCheckout,
+  createCheckout, createTestCheckout,
   type SubscriptionPlan, type OrganizationSubscription, type BillingCycle,
 } from "@/services/subscription.service";
 import { toast } from "sonner";
-import { Check, Star, Loader2 } from "lucide-react";
+import { Check, Star, Loader2, FlaskConical } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function PlansTab({ onCheckout }: { onCheckout?: () => void } = {}) {
   const { format } = useCurrency();
+  const { role } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [sub, setSub] = useState<OrganizationSubscription | null>(null);
   const [cycle, setCycle] = useState<BillingCycle>("MONTHLY");
   const [busy, setBusy] = useState<string | null>(null);
+  const [testBusy, setTestBusy] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -142,6 +145,39 @@ export function PlansTab({ onCheckout }: { onCheckout?: () => void } = {}) {
       <p className="text-xs text-muted-foreground text-center">
         Payments are processed securely by Yoco. You'll be redirected to complete checkout.
       </p>
+
+      {role === "ADMIN" && (
+        <Card className="p-4 border-dashed max-w-3xl mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <FlaskConical className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold">Yoco integration test</p>
+                <p className="text-xs text-muted-foreground">
+                  Super Users only. Opens a temporary R2.00 checkout to verify the Yoco connection — no plan, invoice or subscription is changed.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={testBusy}
+              onClick={async () => {
+                setTestBusy(true);
+                try {
+                  const url = await createTestCheckout();
+                  window.location.href = url;
+                } catch (e: any) {
+                  toast.error(e.message || "Could not open test checkout");
+                  setTestBusy(false);
+                }
+              }}
+            >
+              {testBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Test R2.00 checkout"}
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

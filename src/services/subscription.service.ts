@@ -181,6 +181,18 @@ export async function createCheckout(planId: string, cycle: BillingCycle): Promi
   return url as string;
 }
 
+/** Temporary integration test: admin-only R2.00 Yoco checkout (no plan/invoice changes). */
+export async function createTestCheckout(): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("yoco-create-checkout", {
+    body: { testCheckout: true, returnUrl: window.location.origin },
+  });
+  if (error) throw new Error((data as any)?.error || error.message);
+  if ((data as any)?.error) throw new Error((data as any).error);
+  const url = (data as any)?.redirectUrl;
+  if (!url) throw new Error("Yoco did not return a checkout URL");
+  return url as string;
+}
+
 /** Confirm a checkout after the user returns from Yoco. */
 export async function verifyCheckout(invoiceId: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("yoco-verify-checkout", {

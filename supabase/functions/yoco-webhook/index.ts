@@ -68,6 +68,20 @@ Deno.serve(async (req) => {
     if (inv) {
       const type = String(event.type ?? "");
       if (type.includes("succeeded")) {
+        // Confirm the payment details match the invoice before activating:
+        // amount (cents), currency and the checkout reference must all agree.
+        const expectedCents = Math.round(Number(inv.amount) * 100);
+        const paidCents = payload?.amount != null ? Number(payload.amount) : null;
+        const paidCurrency = payload?.currency ? String(payload.currency).toUpperCase() : null;
+        const referenceOk = !chargeId || !inv.yoco_charge_id || chargeId === inv.yoco_charge_id;
+        const amountOk = paidCents == null || paidCents === expectedCents;
+        const currencyOk = !paidCurrency || paidCurrency === String(inv.currency || "ZAR").toUpperCase();
+        if (!referenceOk || !amountOk || !currencyOk) {
+          console.error("yoco-webhook: payment detail mismatch", {
+            invoiceId: inv.id, expectedCents, paidCents, paidCurrency, chargeId, referenceOk,
+          });
+          return json({ error: "Payment details do not match the invoice" }, 409);
+        }
         await admin.from("subscription_invoices").update({
           status: "PAID", paid_at: new Date().toISOString(), yoco_charge_id: chargeId ?? inv.yoco_charge_id,
         }).eq("id", inv.id);

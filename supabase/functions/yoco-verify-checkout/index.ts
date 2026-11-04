@@ -1,7 +1,7 @@
 import { corsHeaders, json, adminClient, getAuthContext } from "../_shared/payments.ts";
 
 function yocoSecret(): string | undefined {
-  return Deno.env.get("YOCO_SECRET_KEY") ?? Deno.env.get("STRIPE_TEST_API_KEY") ?? undefined;
+  return Deno.env.get("YOCO_SECRET_KEY") ?? undefined;
 }
 
 // Confirms a hosted-checkout result when the user returns from Yoco, so the
@@ -39,6 +39,15 @@ Deno.serve(async (req) => {
 
     const state = String(body?.status ?? "").toLowerCase();
     if (state === "completed" || state === "succeeded") {
+      // Confirm amount and currency match the invoice before activating.
+      const expectedCents = Math.round(Number((inv as any).amount) * 100);
+      const paidCents = body?.amount != null ? Number(body.amount) : null;
+      const paidCurrency = body?.currency ? String(body.currency).toUpperCase() : null;
+      if ((paidCents != null && paidCents !== expectedCents) ||
+          (paidCurrency && paidCurrency !== String((inv as any).currency || "ZAR").toUpperCase())) {
+        console.error("yoco-verify-checkout: detail mismatch", { invoiceId, expectedCents, paidCents, paidCurrency });
+        return json({ error: "Payment details do not match the invoice" }, 409);
+      }
       await admin.from("subscription_invoices")
         .update({ status: "PAID", paid_at: new Date().toISOString() }).eq("id", invoiceId);
       await admin.from("organization_subscriptions").update({

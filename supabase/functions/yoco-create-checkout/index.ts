@@ -2,10 +2,14 @@ import { corsHeaders, json, adminClient, getAuthContext } from "../_shared/payme
 
 const YOCO_CHECKOUT_URL = "https://payments.yoco.com/api/checkouts";
 
-// The Yoco secret key lives in YOCO_SECRET_KEY. STRIPE_TEST_API_KEY is a legacy
-// slot that currently holds the Yoco test secret key.
+// The Yoco secret key lives in YOCO_SECRET_KEY only. YOCO_MODE ("test" | "live")
+// selects which key the merchant has stored there; it is never hardcoded.
 function yocoSecret(): string | undefined {
-  return Deno.env.get("YOCO_SECRET_KEY") ?? Deno.env.get("STRIPE_TEST_API_KEY") ?? undefined;
+  return Deno.env.get("YOCO_SECRET_KEY") ?? undefined;
+}
+
+function yocoMode(): "test" | "live" {
+  return Deno.env.get("YOCO_MODE") === "live" ? "live" : "test";
 }
 
 // Creates a Yoco hosted checkout for the selected plan and returns the redirect URL.
@@ -24,7 +28,37 @@ Deno.serve(async (req) => {
       .from("user_roles").select("role").eq("user_id", userId).eq("role", "ADMIN").maybeSingle();
     if (!role) return json({ error: "Only administrators can manage billing" }, 403);
 
-    const { planId, cycle = "MONTHLY", returnUrl } = await req.json();
+    const { planId, cycle = "MONTHLY", returnUrl, testCheckout = false } = await req.json();
+    const base = (returnUrl || req.headers.get("origin") || "").replace(/\/$/, "");
+    const mode = yocoMode();
+
+    // Temporary integration test: a dedicated R2.00 checkout that touches no
+    // plans, invoices or subscription records. Admin-only (enforced above).
+    if (testCheckout) {
+      const res = await fetch(YOCO_CHECKOUT_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          amount: 200,
+          currency: "ZAR",
+          successUrl: `${base}/billing?checkout=success&test=1`,
+          cancelUrl: `${base}/billing?checkout=cancelled`,
+          failureUrl: `${base}/billing?checkout=failed`,
+          metadata: { test: true, organizationId: orgId, userId, mode },
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.error("yoco test checkout failed", res.status, body);
+        return json({ error: body?.displayMessage || body?.message || `Yoco checkout failed (${res.status})` }, 400);
+      }
+      return json({ redirectUrl: body?.redirectUrl, checkoutId: body?.id, mode, test: true });
+    }
+
     if (!planId) return json({ error: "Missing planId" }, 400);
 
     const { data: plan } = await admin
@@ -69,7 +103,6 @@ Deno.serve(async (req) => {
     }).select().single();
     if (invErr) throw invErr;
 
-    const base = (returnUrl || req.headers.get("origin") || "").replace(/\/$/, "");
     const res = await fetch(YOCO_CHECKOUT_URL, {
       method: "POST",
       headers: {
@@ -101,7 +134,7 @@ Deno.serve(async (req) => {
     await admin.from("subscription_invoices")
       .update({ yoco_charge_id: body?.id ?? null }).eq("id", (invoice as any).id);
 
-    return json({ redirectUrl: body?.redirectUrl, checkoutId: body?.id, invoiceId: (invoice as any).id });
+    return json({ redirectUrl: body?.redirectUrl, checkoutId: body?.id, invoiceId: (invoice as any).id, mode });
   } catch (e) {
     console.error("yoco-create-checkout error", e);
     return json({ error: String((e as Error).message ?? e) }, 500);
