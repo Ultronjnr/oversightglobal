@@ -1232,7 +1232,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
               ) : (
                 <Receipt className="h-4 w-4" />
               )}
-              Confirm &amp; Save Transaction
+              Confirm &amp; Save Invoice
             </Button>
         </div>
       </DialogContent>
