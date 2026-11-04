@@ -36,6 +36,10 @@ import {
   validateSarsInvoice,
   type SarsValidationCode,
 } from "@/services/scan-invoice.service";
+import { submitScannedInvoiceForApproval } from "@/services/scan-invoice.service";
+import { useAuth } from "@/contexts/AuthContext";
+import { Textarea } from "@/components/ui/textarea";
+import { CostCenterDropdown } from "@/components/pr/CostCenterDropdown";
 import { compressImage } from "@/lib/image-compression";
 import { listProjects, listDonors } from "@/services/donation.service";
 import { upsertProject, upsertDonor } from "@/services/donation.service";
@@ -79,6 +83,16 @@ const codeLabels: Record<SarsValidationCode, string> = {
 
 export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: Props) {
   const { currency } = useCurrency();
+  const { role, profile } = useAuth();
+  // Employees and HODs submit scanned invoices for approval; Finance/Admin capture directly.
+  const isStaff = role === "EMPLOYEE" || role === "HOD";
+  const [techSpecs, setTechSpecs] = useState("");
+  const [paymentDueDate, setPaymentDueDate] = useState("");
+  const [urgency, setUrgency] = useState<"LOW" | "NORMAL" | "HIGH" | "URGENT">("NORMAL");
+  const [department, setDepartment] = useState<string>("");
+  useEffect(() => {
+    if (!department && (profile as any)?.department) setDepartment((profile as any).department);
+  }, [profile, department]);
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
   const [scanStage, setScanStage] = useState<"idle" | "hashing" | "cache" | "uploading" | "extracting" | "done" | "failed">("idle");
@@ -213,6 +227,9 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
   }, [open, sampleUrl]);
 
   const reset = () => {
+    setTechSpecs("");
+    setPaymentDueDate("");
+    setUrgency("NORMAL");
     setFile(null);
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -478,6 +495,45 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       toast.error("Supplier name is required");
       return;
     }
+    if (isStaff) {
+      if (!techSpecs.trim()) { toast.error("Enter the technical / business specifications"); return; }
+      if (!paymentDueDate) { toast.error("Select a payment due date"); return; }
+      if (!department) { toast.error("Select a cost center / department"); return; }
+      setSubmitting(true);
+      const r = await submitScannedInvoiceForApproval({
+        file,
+        scan_path: scanPath,
+        role: role as "EMPLOYEE" | "HOD",
+        supplier_name: supplierName.trim(),
+        supplier_vat_number: supplierVat.trim() || null,
+        document_number: invoiceNumber.trim() || null,
+        document_date: invoiceDate || null,
+        subtotal: subtotal ? Number(subtotal) : null,
+        vat_amount: vatAmount ? Number(vatAmount) : null,
+        total_amount: total,
+        category_id: categoryId || null,
+        technical_specs: techSpecs,
+        payment_due_date: paymentDueDate,
+        urgency,
+        department,
+        line_items: lineItems.map((li) => ({
+          description: li.description,
+          quantity: Number(li.quantity) || undefined,
+          unit_price: Number(li.unit_price) || undefined,
+          total: Number(li.total) || undefined,
+        })),
+        ocr_analysis_id: analysis?.id ?? null,
+        ocr_extracted: (analysis?.extracted as Record<string, unknown>) ?? null,
+        ocr_confidence: analysis?.confidence ?? null,
+      });
+      setSubmitting(false);
+      if (!r.success) { toast.error(r.error || "Failed to submit invoice"); return; }
+      toast.success(role === "HOD" ? "Invoice saved and sent to Finance for approval" : "Invoice saved and sent to your HOD for approval");
+      onCreated?.();
+      reset();
+      onOpenChange(false);
+      return;
+    }
     if (!categoryId) {
       toast.error("Select a category");
       return;
@@ -515,10 +571,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
       ocr_extracted: (analysis?.extracted as Record<string, unknown>) ?? null,
       ocr_confidence: analysis?.confidence ?? null,
     });
-    // best-effort cleanup of the scan staging file
-    if (scanPath) {
-      supabase.storage.from("invoice-documents").remove([scanPath]).catch(() => {});
-    }
+    // The original scan is kept in storage so it stays attached to the invoice.
     setSubmitting(false);
     if (!res.success) {
       toast.error(res.error || "Failed to create transaction");
@@ -1063,7 +1116,39 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                 </div>
               </div>
 
-              {/* Donor / Project linkage — enforces budget allocation */}
+              {isStaff ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs">Technical / Business specifications *</Label>
+                    <Textarea
+                      value={techSpecs}
+                      onChange={(e) => setTechSpecs(e.target.value)}
+                      placeholder="What was bought and why it is needed"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Payment due date *</Label>
+                      <Input type="date" value={paymentDueDate} onChange={(e) => setPaymentDueDate(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Urgency level *</Label>
+                      <Select value={urgency} onValueChange={(v) => setUrgency(v as any)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LOW">Low</SelectItem>
+                          <SelectItem value="NORMAL">Normal</SelectItem>
+                          <SelectItem value="HIGH">High</SelectItem>
+                          <SelectItem value="URGENT">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <CostCenterDropdown value={department} onChange={setDepartment} required label="Cost Center / Department" />
+                </div>
+              ) : (
+              /* Donor / Project linkage — enforces budget allocation */
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">
@@ -1213,6 +1298,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
                   )}
                 </div>
               </div>
+              )}
             </>
           )}
           </div>
@@ -1232,7 +1318,7 @@ export function ScanInvoiceModal({ open, onOpenChange, onCreated, sampleUrl }: P
               ) : (
                 <Receipt className="h-4 w-4" />
               )}
-              Confirm &amp; Save Invoice
+              {isStaff ? "Confirm & Submit for Approval" : "Confirm & Save Invoice"}
             </Button>
         </div>
       </DialogContent>

@@ -404,3 +404,128 @@ export async function createTransactionFromInvoice(
     return { success: false, error: getSafeErrorMessage(e) };
   }
 }
+export interface SubmitScannedInvoiceInput {
+  file: File | null;
+  /** Path of the already-uploaded scan in the invoice-documents bucket. */
+  scan_path?: string | null;
+  role: "EMPLOYEE" | "HOD";
+  supplier_name: string;
+  supplier_vat_number?: string | null;
+  document_number?: string | null;
+  document_date?: string | null;
+  subtotal?: number | null;
+  vat_amount?: number | null;
+  total_amount: number;
+  category_id?: string | null;
+  technical_specs: string;
+  payment_due_date: string;
+  urgency: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+  department: string;
+  line_items?: Array<{ description: string; quantity?: number; unit_price?: number; total?: number }>;
+  ocr_analysis_id?: string | null;
+  ocr_extracted?: Record<string, unknown> | null;
+  ocr_confidence?: number | null;
+}
+
+/**
+ * Employee / HOD scanned invoice: saved with its document and routed through
+ * the normal requisition approval chain (Employee -> HOD -> Finance,
+ * HOD -> Finance). Never auto-approved.
+ */
+export async function submitScannedInvoiceForApproval(
+  input: SubmitScannedInvoiceInput,
+): Promise<CreateTxnFromInvoiceResult> {
+  try {
+    const total = Number(input.total_amount);
+    if (!Number.isFinite(total) || total <= 0) return { success: false, error: "Total amount must be greater than zero" };
+    if (!input.supplier_name?.trim()) return { success: false, error: "Supplier name is required" };
+    if (!input.technical_specs?.trim()) return { success: false, error: "Technical / business specifications are required" };
+    if (!input.payment_due_date) return { success: false, error: "Payment due date is required" };
+    if (!input.department?.trim()) return { success: false, error: "Cost center / department is required" };
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    // 1. Save the scanned document so approvers can view it.
+    let documentPath: string | null = null;
+    if (input.file) {
+      const safe = input.file.name.replace(/[^\w.\-]+/g, "_").slice(0, 100);
+      const docPath = `${user.id}/invoice-${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage
+        .from("pr-documents")
+        .upload(docPath, input.file, { contentType: input.file.type });
+      if (upErr) return { success: false, error: `Could not save the invoice document: ${upErr.message}` };
+      documentPath = docPath;
+    }
+
+    const label = input.document_number
+      ? `Invoice ${input.document_number} – ${input.supplier_name.trim()}`
+      : `Invoice from ${input.supplier_name.trim()}`;
+    const clean = (input.line_items ?? []).filter((li) => li && (li.description?.trim() || (li.total ?? 0) > 0));
+    const items = (clean.length ? clean : [{ description: label, quantity: 1, unit_price: total, total }]).map((li, i) => {
+      const qty = Number(li.quantity) > 0 ? Number(li.quantity) : 1;
+      const lineTotal = Number(li.total) || 0;
+      const unit = Number(li.unit_price) > 0 ? Number(li.unit_price) : Number((lineTotal / qty).toFixed(2));
+      return {
+        id: `scan-${i + 1}`,
+        description: `${li.description?.trim() || label}${i === 0 ? ` | Specs: ${input.technical_specs.trim()}` : ""}`,
+        quantity: qty,
+        unit_price: unit,
+        total: lineTotal || Number((unit * qty).toFixed(2)),
+        supplier_preference: input.supplier_name.trim(),
+      };
+    });
+
+    const { createPurchaseRequisition, createPurchaseRequisitionBypassHOD } = await import("@/services/pr.service");
+    const createFn = input.role === "HOD" ? createPurchaseRequisitionBypassHOD : createPurchaseRequisition;
+    const res = await createFn({
+      items: items as any,
+      urgency: input.urgency as any,
+      department: input.department,
+      payment_due_date: input.payment_due_date,
+      document_url: documentPath ?? undefined,
+      category_id: input.category_id ?? null,
+    });
+    if (!res.success || !res.data) return { success: false, error: res.error || "Could not submit invoice" };
+    const prId = (res.data as any).id as string;
+
+    // 2. Link the AI result and the attachment record (best effort).
+    if (input.ocr_analysis_id) {
+      await supabase.from("ocr_analyses" as any).update({ pr_id: prId }).eq("id", input.ocr_analysis_id);
+    }
+    if (input.file) {
+      const corrected = {
+        supplier_name: input.supplier_name.trim(),
+        supplier_vat_number: input.supplier_vat_number ?? null,
+        document_number: input.document_number ?? null,
+        document_date: input.document_date ?? null,
+        subtotal: input.subtotal ?? null,
+        vat_amount: input.vat_amount ?? null,
+        total_amount: total,
+        technical_specs: input.technical_specs.trim(),
+        scan_path: input.scan_path ?? null,
+      };
+      const up = await uploadAttachment({
+        file: input.file,
+        kind: "INVOICE",
+        pr_id: prId,
+        supplier_name: input.supplier_name.trim(),
+        invoice_number: input.document_number ?? null,
+        invoice_date: input.document_date ?? null,
+        vat_number: input.supplier_vat_number ?? null,
+        notes: input.technical_specs.trim(),
+        ai_extracted: {
+          ocr_analysis_id: input.ocr_analysis_id ?? null,
+          ocr_confidence: input.ocr_confidence ?? null,
+          ocr: input.ocr_extracted ?? null,
+          corrected,
+        },
+      } as any);
+      if (!up.success) console.warn("[scan-invoice] attachment record failed:", up.error);
+    }
+    return { success: true, pr_id: prId };
+  } catch (err) {
+    logError("submitScannedInvoiceForApproval", err);
+    return { success: false, error: getSafeErrorMessage(err) };
+  }
+}

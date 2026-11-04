@@ -45,6 +45,8 @@ export interface CreatePRInput {
   project_id?: string | null;
   /** Optional Donation Management donor funding this spend. */
   donor_id?: string | null;
+  /** Optional expense/asset category. */
+  category_id?: string | null;
 }
 
 export interface PurchaseRequisition {

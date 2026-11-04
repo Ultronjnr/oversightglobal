@@ -203,6 +203,7 @@ export async function createPurchaseRequisition(
       requires_reimbursement: input.requires_reimbursement ?? false,
       project_id: input.project_id || null,
       donor_id: input.donor_id || null,
+      category_id: input.category_id || null,
     };
 
     const { data: prData, error: insertError } = await supabase
@@ -348,6 +349,7 @@ export async function createPurchaseRequisitionBypassHOD(
       history: [historyEntry] as unknown as Json,
       project_id: input.project_id || null,
       donor_id: input.donor_id || null,
+      category_id: input.category_id || null,
     };
 
     const { data: prData, error: insertError } = await supabase
