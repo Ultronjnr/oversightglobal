@@ -16,7 +16,7 @@ import { logError, getSafeErrorMessage } from "@/lib/error-handler";
 /**
  * Generate a unique transaction ID in format: PR-YYYYMMDD-XXXX
  */
-function generateTransactionId(): string {
+function generateTransactionId(prefix: string = "PR"): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -30,7 +30,7 @@ function generateTransactionId(): string {
     randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
   }
 
-  return `PR-${dateStr}-${randomPart}`;
+  return `${prefix}-${dateStr}-${randomPart}`;
 }
 
 /**
@@ -99,7 +99,7 @@ export async function createPurchaseRequisition(
     }
 
     // 3. Generate transaction ID
-    const transactionId = generateTransactionId();
+    const transactionId = generateTransactionId((input as any).transaction_prefix || "PR");
 
     // 4. Calculate total amount
     const totalAmount = calculateTotalAmount(input.items);
@@ -311,7 +311,7 @@ export async function createPurchaseRequisitionBypassHOD(
     }
 
     // 3. Generate transaction ID
-    const transactionId = generateTransactionId();
+    const transactionId = generateTransactionId((input as any).transaction_prefix || "PR");
 
     // 4. Calculate total amount
     const totalAmount = calculateTotalAmount(input.items);

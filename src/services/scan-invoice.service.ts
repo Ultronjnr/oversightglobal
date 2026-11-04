@@ -485,7 +485,8 @@ export async function submitScannedInvoiceForApproval(
       payment_due_date: input.payment_due_date,
       document_url: documentPath ?? undefined,
       category_id: input.category_id ?? null,
-    });
+      transaction_prefix: SCAN_REF_PREFIX,
+    } as any);
     if (!res.success || !res.data) return { success: false, error: res.error || "Could not submit invoice" };
     const prId = (res.data as any).id as string;
 

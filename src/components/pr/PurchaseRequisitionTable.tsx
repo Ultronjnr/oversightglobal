@@ -19,6 +19,8 @@ import { PRChatSlidePanel } from "./PRChatSlidePanel";
 import { AttachmentsPanel } from "@/components/attachments/AttachmentsPanel";
 import { getUserPurchaseRequisitions } from "@/services/pr.service";
 import { formatCurrency } from "@/lib/utils";
+import { isScanReference } from "@/lib/transaction-origin";
+import { Badge } from "@/components/ui/badge";
 import type { PurchaseRequisition, PRItem, PRStatus } from "@/types/pr.types";
 
 interface ChatState {
@@ -159,7 +161,11 @@ export function PurchaseRequisitionTable({ refreshTrigger }: PurchaseRequisition
                     {formatCurrency(pr.total_amount, pr.currency)}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge type="pr" status={pr.status} />
+                    {isScanReference(pr.transaction_id) && String(pr.status).startsWith("PENDING") ? (
+                      <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning">Pending Approval</Badge>
+                    ) : (
+                      <StatusBadge type="pr" status={pr.status} />
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {format(new Date(pr.created_at), "dd MMM yyyy")}
