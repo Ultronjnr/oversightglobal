@@ -52,6 +52,10 @@ Deno.serve(async (req) => {
     const payload = event?.payload ?? event?.data ?? {};
     const chargeId = payload?.id ?? null;
     const metaInvoiceId = payload?.metadata?.invoiceId ?? null;
+    // Hosted checkout: payload.id is the payment id; our stored reference is
+    // the checkout id, which Yoco returns in metadata.checkoutId.
+    const checkoutId = payload?.metadata?.checkoutId ?? null;
+    const isSandboxTest = String(payload?.metadata?.test ?? "") === "true";
 
     let inv: any = null;
     if (metaInvoiceId) {
@@ -59,9 +63,10 @@ Deno.serve(async (req) => {
         .from("subscription_invoices").select("*").eq("id", metaInvoiceId).maybeSingle();
       inv = data;
     }
-    if (!inv && chargeId) {
+    for (const ref of [checkoutId, chargeId]) {
+      if (inv || !ref) continue;
       const { data } = await admin
-        .from("subscription_invoices").select("*").eq("yoco_charge_id", chargeId).maybeSingle();
+        .from("subscription_invoices").select("*").eq("yoco_charge_id", ref).maybeSingle();
       inv = data;
     }
 
@@ -79,7 +84,7 @@ Deno.serve(async (req) => {
         const expectedCents = Math.round(Number(inv.amount) * 100);
         const paidCents = payload?.amount != null ? Number(payload.amount) : null;
         const paidCurrency = payload?.currency ? String(payload.currency).toUpperCase() : null;
-        const referenceOk = !chargeId || !inv.yoco_charge_id || chargeId === inv.yoco_charge_id;
+        const referenceOk = !inv.yoco_charge_id || [checkoutId, chargeId].includes(inv.yoco_charge_id);
         const amountOk = paidCents == null || paidCents === expectedCents;
         const currencyOk = !paidCurrency || paidCurrency === String(inv.currency || "ZAR").toUpperCase();
         if (!referenceOk || !amountOk || !currencyOk) {
@@ -89,8 +94,16 @@ Deno.serve(async (req) => {
           return json({ error: "Payment details do not match the invoice" }, 409);
         }
         await admin.from("subscription_invoices").update({
-          status: "PAID", paid_at: new Date().toISOString(), yoco_charge_id: chargeId ?? inv.yoco_charge_id,
-        }).eq("id", inv.id);
+          status: "PAID", paid_at: new Date().toISOString(),
+        }).eq("id", inv.id).neq("status", "PAID");
+        if (isSandboxTest || String(inv.invoice_number ?? "").startsWith("SANDBOX-")) {
+          // Sandbox test: confirm the subscription link without shortening or
+          // changing the organisation's real billing period.
+          await admin.from("organization_subscriptions").update({ status: "ACTIVE" })
+            .eq("organization_id", inv.organization_id).in("status", ["INCOMPLETE", "TRIALING", "PAST_DUE"]);
+          console.log("yoco-webhook sandbox payment applied", { invoiceId: inv.id });
+          return json({ success: true, sandbox: true });
+        }
         // Activate the subscription for the paid period
         await admin.from("organization_subscriptions").update({
           status: "ACTIVE",
@@ -98,7 +111,7 @@ Deno.serve(async (req) => {
           current_period_end: inv.period_end,
           next_billing_date: inv.period_end,
         }).eq("organization_id", inv.organization_id);
-      } else if (type === "payment.failed") {
+      } else if (type === "payment.failed" && !isSandboxTest) {
         await admin.from("subscription_invoices").update({ status: "FAILED" }).eq("id", inv.id);
         await admin.from("organization_subscriptions")
           .update({ status: "PAST_DUE" }).eq("organization_id", inv.organization_id);

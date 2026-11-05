@@ -35,28 +35,47 @@ Deno.serve(async (req) => {
     // Temporary integration test: a dedicated R2.00 checkout that touches no
     // plans, invoices or subscription records. Admin-only (enforced above).
     if (testCheckout) {
+      // Sandbox lifecycle test: refuse outright unless in test mode.
+      if (mode !== "test") return json({ error: "Test checkout is only available in test mode" }, 400);
+      const { data: sub } = await admin
+        .from("organization_subscriptions").select("id, plan_id").eq("organization_id", orgId).maybeSingle();
+      const today = new Date().toISOString().slice(0, 10);
+      // Dedicated R2.00 sandbox invoice (SANDBOX- prefix) so the webhook can
+      // mark it paid; never touches existing invoices or plan prices.
+      const { data: testInv, error: tErr } = await admin.from("subscription_invoices").insert({
+        organization_id: orgId,
+        subscription_id: (sub as any)?.id ?? null,
+        plan_id: (sub as any)?.plan_id ?? null,
+        invoice_number: `SANDBOX-${Date.now()}`,
+        amount: 2, currency: "ZAR", status: "OPEN",
+        period_start: today, period_end: today, due_date: today,
+      }).select("id").single();
+      if (tErr) throw tErr;
       const res = await fetch(YOCO_CHECKOUT_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${secretKey}`,
           "Content-Type": "application/json",
-          "Idempotency-Key": crypto.randomUUID(),
+          "Idempotency-Key": (testInv as any).id,
         },
         body: JSON.stringify({
           amount: 200,
           currency: "ZAR",
-          successUrl: `${base}/billing?checkout=success&test=1`,
+          successUrl: `${base}/billing?checkout=success&test=1&invoice=${(testInv as any).id}`,
           cancelUrl: `${base}/billing?checkout=cancelled`,
           failureUrl: `${base}/billing?checkout=failed`,
-          metadata: { test: true, organizationId: orgId, userId, mode },
+          metadata: { test: "true", organizationId: orgId, userId, mode, invoiceId: (testInv as any).id },
         }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         console.error("yoco test checkout failed", res.status, body);
+        await admin.from("subscription_invoices").update({ status: "VOID" }).eq("id", (testInv as any).id);
         return json({ error: body?.displayMessage || body?.message || `Yoco checkout failed (${res.status})` }, 400);
       }
-      return json({ redirectUrl: body?.redirectUrl, checkoutId: body?.id, mode, test: true });
+      await admin.from("subscription_invoices")
+        .update({ yoco_charge_id: body?.id ?? null }).eq("id", (testInv as any).id);
+      return json({ redirectUrl: body?.redirectUrl, checkoutId: body?.id, invoiceId: (testInv as any).id, mode, test: true });
     }
 
     if (!planId) return json({ error: "Missing planId" }, 400);
