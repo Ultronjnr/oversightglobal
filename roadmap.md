@@ -1,14 +1,7 @@
 # Roadmap
 
-- [x] Approve the executive command-center direction
-- [x] Add internal-admin-only customer intelligence and recent-user reports
-- [x] Build the collapsible Ovasyt Internal drawer and dashboard sections
-- [x] Connect live organisation, onboarding, signup, activity, and platform data
-- [x] Add Lovable traffic analytics views
-- [x] Verify the internal dashboard on desktop and mobile
-- [x] Add organisation type, industry, spending, active-user, and growth widgets
-- [x] Replace the dated traffic snapshot with live first-party analytics
-- [x] Add internal advert image upload and verify customer carousel delivery
-- [x] Repair Scan Invoice AI extraction and surface useful scan errors
-- [x] Open Scan Invoice from onboarding and return saved transactions to the Super User dashboard
-- [x] Verify saved scans route into the existing live Approved – Not Paid badge and queue
+- [x] Yoco: dedicated YOCO_SECRET_KEY / YOCO_MODE, remove Stripe-key fallback
+- [x] Yoco: admin-only R2.00 test checkout
+- [x] Yoco webhook: verify amount/currency/reference, handle payment + refund events
+- [ ] Yoco: user enters test secret key + webhook signing secret (blocked on user)
+- [ ] Yoco: run sandbox tests (success, failed, cancelled, duplicate webhook) (blocked on secrets)

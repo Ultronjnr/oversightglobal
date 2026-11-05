@@ -67,7 +67,13 @@ Deno.serve(async (req) => {
 
     if (inv) {
       const type = String(event.type ?? "");
-      if (type.includes("succeeded")) {
+      if (type === "refund.succeeded" || type === "refund.failed") {
+        // Refund outcomes are recorded in payment_provider_events (above) for
+        // audit; they never activate or fail a subscription.
+        console.log("yoco-webhook refund event", { type, invoiceId: inv.id });
+        return json({ success: true });
+      }
+      if (type === "payment.succeeded") {
         // Confirm the payment details match the invoice before activating:
         // amount (cents), currency and the checkout reference must all agree.
         const expectedCents = Math.round(Number(inv.amount) * 100);
@@ -92,7 +98,7 @@ Deno.serve(async (req) => {
           current_period_end: inv.period_end,
           next_billing_date: inv.period_end,
         }).eq("organization_id", inv.organization_id);
-      } else if (type.includes("failed")) {
+      } else if (type === "payment.failed") {
         await admin.from("subscription_invoices").update({ status: "FAILED" }).eq("id", inv.id);
         await admin.from("organization_subscriptions")
           .update({ status: "PAST_DUE" }).eq("organization_id", inv.organization_id);
