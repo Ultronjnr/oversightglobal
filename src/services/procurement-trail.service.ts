@@ -67,7 +67,7 @@ export async function getProcurementTrail(
     const [prRes, quotesRes, invoiceRes] = await Promise.all([
       supabase
         .from("purchase_requisitions")
-        .select("id, title, status, total_amount, created_at, transaction_id")
+        .select("id, status, total_amount, created_at, transaction_id")
         .eq("id", prId)
         .maybeSingle(),
       supabase
@@ -95,11 +95,14 @@ export async function getProcurementTrail(
     const pr: any = prRes.data;
 
     let transaction: ProcurementTrail["transaction"] = null;
-    if (pr?.transaction_id) {
+    if (pr?.id) {
+      // transaction_id on a PR is a display code (e.g. "PR-…"), not a row id;
+      // transactions link back to their requisition via pr_id.
       const { data: txn } = await supabase
         .from("transactions")
         .select("id, status, payment_reference")
-        .eq("id", pr.transaction_id)
+        .eq("pr_id", pr.id)
+        .limit(1)
         .maybeSingle();
       if (txn) {
         transaction = {
@@ -116,7 +119,7 @@ export async function getProcurementTrail(
         pr: pr
           ? {
               id: pr.id,
-              title: pr.title ?? null,
+              title: null,
               status: pr.status,
               total_amount: Number(pr.total_amount) || 0,
               created_at: pr.created_at,
