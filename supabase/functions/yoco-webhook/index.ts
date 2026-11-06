@@ -4,7 +4,19 @@ import { corsHeaders, json, adminClient, recordEvent } from "../_shared/payments
 async function verifySignature(secret: string, id: string, timestamp: string, body: string, signatureHeader: string): Promise<boolean> {
   try {
     // Yoco/svix: secret is "whsec_<base64>"; signed content = "id.timestamp.body"
-    const secretBytes = Uint8Array.from(atob(secret.replace(/^whsec_/, "")), (c) => c.charCodeAt(0));
+    // Tolerate pasted whitespace/quotes and base64url alphabet.
+    let b64 = secret.trim().replace(/^["']|["']$/g, "").replace(/^whsec_/, "").replace(/\s+/g, "")
+      .replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    let secretBytes: Uint8Array;
+    try {
+      secretBytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    } catch {
+      console.error("yoco-webhook: YOCO_WEBHOOK_SECRET is not a valid whsec_ signing secret", {
+        startsWithWhsec: secret.trim().startsWith("whsec_"),
+      });
+      return false;
+    }
     const key = await crypto.subtle.importKey("raw", secretBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     const signed = `${id}.${timestamp}.${body}`;
     const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signed));
