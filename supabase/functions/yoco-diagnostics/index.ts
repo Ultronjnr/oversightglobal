@@ -14,6 +14,22 @@ Deno.serve(async (req) => {
     if (!role?.length) return json({ error: "Only a Super User can run Yoco diagnostics" }, 403);
 
     const secretKey = Deno.env.get("YOCO_SECRET_KEY");
+
+    // Super User-approved cleanup: remove registered Yoco webhooks by id.
+    const reqBody = await req.json().catch(() => ({}));
+    if (reqBody?.action === "delete_webhooks") {
+      if (!secretKey) return json({ error: "Yoco secret key not configured" }, 503);
+      const ids: string[] = Array.isArray(reqBody.ids) ? reqBody.ids.filter((x: unknown) => typeof x === "string" && /^sub_[A-Za-z0-9]+$/.test(x)) : [];
+      const results = [];
+      for (const wid of ids) {
+        const r = await fetch(`https://payments.yoco.com/api/webhooks/${wid}`, {
+          method: "DELETE", headers: { Authorization: `Bearer ${secretKey}` },
+        });
+        results.push({ id: wid, status: r.status, ok: r.ok });
+      }
+      return json({ deleted: results });
+    }
+
     const webhookSecret = Deno.env.get("YOCO_WEBHOOK_SECRET");
     const modeRaw = Deno.env.get("YOCO_MODE");
     const report: Record<string, unknown> = {
