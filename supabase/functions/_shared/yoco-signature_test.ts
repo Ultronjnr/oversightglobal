@@ -18,6 +18,11 @@ Deno.test("tolerates quotes and whitespace pasted around the secret", async () =
   assertEquals(r.ok, true);
 });
 
+Deno.test("extracts the whsec_ value when a label was pasted with it", async () => {
+  const r = await verifyYocoSignature({ secret: `Signing secret: ${SECRET}`, id: ID, timestamp: TS, signatureHeader: SIG, body: BODY, nowSeconds: Number(TS) });
+  assertEquals(r.ok, true);
+});
+
 Deno.test("rejects a tampered body", async () => {
   const r = await verifyYocoSignature({ secret: SECRET, id: ID, timestamp: TS, signatureHeader: SIG, body: BODY + " ", nowSeconds: Number(TS) });
   assertEquals(r, { ok: false, reason: "bad_signature" });

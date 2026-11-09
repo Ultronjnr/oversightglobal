@@ -7,7 +7,9 @@ export const SIGNATURE_TOLERANCE_SECONDS = 300;
 
 /** Decode a whsec_ signing secret, tolerating pasted quotes/whitespace. */
 export function decodeSigningSecret(secret: string): Uint8Array<ArrayBuffer> | null {
-  let b64 = secret.trim().replace(/^["']|["']$/g, "").replace(/^whsec_/, "").replace(/\s+/g, "")
+  // If a label or extra text was pasted around the value, keep just the whsec_ token.
+  const token = secret.match(/whsec_[A-Za-z0-9+/=_-]+/)?.[0] ?? secret;
+  let b64 = token.trim().replace(/^["']|["']$/g, "").replace(/^whsec_/, "").replace(/\s+/g, "")
     .replace(/-/g, "+").replace(/_/g, "/");
   while (b64.length % 4) b64 += "=";
   try {
