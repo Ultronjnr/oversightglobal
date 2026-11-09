@@ -48,8 +48,17 @@ Deno.serve(async (req) => {
         console.error("yoco-verify-checkout: detail mismatch", { invoiceId, expectedCents, paidCents, paidCurrency });
         return json({ error: "Payment details do not match the invoice" }, 409);
       }
+      if (body?.processingMode && body.processingMode !== (Deno.env.get("YOCO_MODE") === "live" ? "live" : "test")) {
+        return json({ error: "Checkout was processed in a different Yoco mode" }, 409);
+      }
       await admin.from("subscription_invoices")
-        .update({ status: "PAID", paid_at: new Date().toISOString() }).eq("id", invoiceId);
+        .update({ status: "PAID", paid_at: new Date().toISOString() }).eq("id", invoiceId).neq("status", "PAID");
+      if (String((inv as any).invoice_number ?? "").startsWith("SANDBOX-")) {
+        // Sandbox R2.00 test: never touch the organisation's real billing period.
+        await admin.from("organization_subscriptions").update({ status: "ACTIVE" })
+          .eq("organization_id", orgId).in("status", ["INCOMPLETE", "TRIALING", "PAST_DUE"]);
+        return json({ status: "PAID", sandbox: true });
+      }
       await admin.from("organization_subscriptions").update({
         status: "ACTIVE",
         current_period_start: (inv as any).period_start,

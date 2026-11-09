@@ -6,19 +6,19 @@
 export const SIGNATURE_TOLERANCE_SECONDS = 300;
 
 /** Decode a whsec_ signing secret, tolerating pasted quotes/whitespace. */
-export function decodeSigningSecret(secret: string): Uint8Array | null {
+export function decodeSigningSecret(secret: string): Uint8Array<ArrayBuffer> | null {
   let b64 = secret.trim().replace(/^["']|["']$/g, "").replace(/^whsec_/, "").replace(/\s+/g, "")
     .replace(/-/g, "+").replace(/_/g, "/");
   while (b64.length % 4) b64 += "=";
   try {
-    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const bytes = new Uint8Array(Array.from(atob(b64), (c) => c.charCodeAt(0)));
     return bytes.length > 0 ? bytes : null;
   } catch {
     return null;
   }
 }
 
-export async function computeSignature(secretBytes: Uint8Array, id: string, timestamp: string, body: string): Promise<string> {
+export async function computeSignature(secretBytes: Uint8Array<ArrayBuffer>, id: string, timestamp: string, body: string): Promise<string> {
   const key = await crypto.subtle.importKey("raw", secretBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${id}.${timestamp}.${body}`));
   return btoa(String.fromCharCode(...new Uint8Array(sig)));
